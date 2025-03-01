@@ -7,14 +7,18 @@
 //
 // The commands are:
 //
-//	vet     validate promptfoo configuration files
-//	fmt     format promptfoo configuration files
+//	vet      validate promptfoo configuration files
+//	fmt      format promptfoo configuration files
+//	convert  convert promptfoo configuration files between formats
+//	run      execute promptfoo configuration files against LLM providers
 //
 // Examples:
 //
 //	cat config.yaml | pfutil vet
 //	cat config.json | pfutil fmt --output yaml
 //	pfutil fmt config.yaml --write
+//	pfutil convert config.yaml config.json --output json
+//	pfutil run config.yaml
 package main
 
 import (
@@ -36,6 +40,8 @@ func main() {
 
 	root.AddCommand(vetCmd())
 	root.AddCommand(fmtCmd())
+	root.AddCommand(convertCmd())
+	root.AddCommand(runCmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Println(err)
@@ -141,5 +147,82 @@ func runFmt(cmd *cobra.Command, args []string) error {
 			fmt.Fprint(cmd.OutOrStdout(), string(output))
 		}
 	}
+	return nil
+}
+
+// convertCmd returns a cobra.Command for the 'convert' subcommand.
+//
+// convert transforms promptfoo configuration files between different formats (yaml, json, etc.)
+//
+// Usage:
+//
+//	pfutil convert input.yaml output.json [--output json|yaml]
+func convertCmd() *cobra.Command {
+	var outputFormat string
+
+	cmd := &cobra.Command{
+		Use:   "convert [input_file] [output_file]",
+		Short: "Convert promptfoo configuration files between formats",
+		Long:  `Convert transforms promptfoo configuration files between different formats (yaml, json, etc.)`,
+		Args:  cobra.ExactArgs(2),
+		RunE:  runConvert,
+	}
+
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "", "Output format: 'yaml' or 'json' (default is determined by output file extension)")
+
+	return cmd
+}
+
+func runConvert(cmd *cobra.Command, args []string) error {
+	inputFile := args[0]
+	outputFile := args[1]
+	outputFormat, _ := cmd.Flags().GetString("output")
+
+	// If output format not specified, determine from output file extension
+	if outputFormat == "" {
+		ext := filepath.Ext(outputFile)
+		if ext == ".json" {
+			outputFormat = "json"
+		} else if ext == ".yaml" || ext == ".yml" {
+			outputFormat = "yaml"
+		} else {
+			return fmt.Errorf("cannot determine output format from extension '%s', please specify --output", ext)
+		}
+	}
+
+	// Read input file
+	data, err := os.ReadFile(inputFile)
+	if err != nil {
+		return fmt.Errorf("error reading input file %s: %v", inputFile, err)
+	}
+
+	// Parse the input
+	var config map[string]interface{}
+	err = yaml.Unmarshal(data, &config)
+	if err != nil {
+		return fmt.Errorf("error parsing input file %s: %v", inputFile, err)
+	}
+
+	// Convert to the output format
+	var output []byte
+	if outputFormat == "json" {
+		output, err = json.MarshalIndent(config, "", "  ")
+	} else if outputFormat == "yaml" {
+		output, err = yaml.Marshal(config)
+	} else {
+		return fmt.Errorf("unsupported output format: %s", outputFormat)
+	}
+
+	if err != nil {
+		return fmt.Errorf("error formatting data: %v", err)
+	}
+
+	// Write to output file
+	err = os.WriteFile(outputFile, output, 0644)
+	if err != nil {
+		return fmt.Errorf("error writing output file %s: %v", outputFile, err)
+	}
+
+	fmt.Fprintf(cmd.OutOrStdout(), "Successfully converted %s to %s\n", inputFile, outputFile)
 	return nil
 }

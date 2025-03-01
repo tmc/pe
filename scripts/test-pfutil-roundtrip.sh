@@ -8,6 +8,10 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+PROJECT_ROOT="$( dirname "$SCRIPT_DIR" )"
+
 INPUT_FILE=$1
 BASENAME=$(basename "$INPUT_FILE")
 EXTENSION="${BASENAME##*.}"
@@ -17,6 +21,9 @@ FILENAME="${BASENAME%.*}"
 JSON_FILE="/tmp/${FILENAME}_tmp.json"
 YAML_FILE="/tmp/${FILENAME}_tmp.yaml"
 CSV_FILE="/tmp/${FILENAME}_tmp.csv"
+
+# Change to project root to ensure pfutil is found
+cd "$PROJECT_ROOT"
 
 # Function to compare files
 compare_files() {
@@ -39,7 +46,7 @@ convert_file() {
         output_format="json"
     fi
 
-    if pfutil convert "$input_file" "$output_file" -o "$output_format" 2>/dev/null; then
+    if "$PROJECT_ROOT/pfutil" convert "$input_file" "$output_file" -o "$output_format"; then
         echo "Successfully converted $input_file to $output_file"
     else
         echo "Failed to convert $input_file to $output_file"
