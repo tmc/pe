@@ -27,8 +27,8 @@ pe is a comprehensive toolkit for prompt engineering tasks, supporting evaluatio
 
 ## Specifications
 
-* [prompt_engineering.proto](./specs/prompt_engineering.proto): Protobuf definitions for prompt
-  engineering concepts.
+* [prompt_engineering.proto](./specs/prompt_engineering.proto): Protobuf definitions for prompt engineering concepts
+* [promptfoo.proto](./specs/promptfoo.proto): Protobuf definitions for promptfoo evaluation results
 
 ## Directory Structure
 
