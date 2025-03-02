@@ -1,0 +1,211 @@
+syntax = "proto3";
+package promptfoo;
+
+// TokenUsage tracks token consumption and associated costs
+message TokenUsage {
+  int32 completion_tokens = 1;
+  int32 prompt_tokens = 2;
+  int32 total_tokens = 3;
+  double cost = 4;
+}
+
+// CompletionTokenDetails provides a detailed breakdown of token usage
+message CompletionTokenDetails {
+  int32 reasoning_tokens = 1;
+  int32 function_call_tokens = 2;
+  int32 function_return_tokens = 3;
+}
+
+// ProviderResponse represents a standardized response from any model provider
+message ProviderResponse {
+  string output = 1;
+  TokenUsage token_usage = 2;
+  double latency = 3;
+  string error = 4;
+  map<string, string> metadata = 5;
+  CompletionTokenDetails token_details = 6;
+}
+
+// GuardrailResponse represents the result of content moderation
+message GuardrailResponse {
+  bool flagged = 1;
+  repeated ModerationFlag flags = 2;
+  double score = 3;
+  string reason = 4;
+}
+
+// ModerationFlag represents a content moderation flag
+message ModerationFlag {
+  string category = 1;
+  double score = 2;
+}
+
+// AssertionType enumerates the types of assertions that can be performed
+enum AssertionType {
+  CONTAINS = 0;
+  NOT_CONTAINS = 1;
+  REGEX = 2;
+  ICONTAINS = 3;
+  INOT_CONTAINS = 4;
+  SIMILAR = 5;
+  LLM = 6;
+  JAVASCRIPT = 7;
+  PYTHON = 8;
+  WEBHOOK = 9;
+  EQUALS = 10;
+  NOT_EQUALS = 11;
+  LEVENSHTEIN = 12;
+  MODEL_GRADED_FACTUALITY = 13;
+  CLASSIFIER = 14;
+  PERPLEXITY = 15;
+  CONTAINS_JSON = 16;
+  VALID_JSON = 17;
+  ROUGE = 18;
+  CONTEXT_RECALL = 19;
+  CONTEXT_PRECISION = 20;
+  CONTEXT_RELEVANCE = 21;
+  CONTEXT_FAITHFULNESS = 22;
+  COSINE_SIMILARITY = 23;
+}
+
+// Assertion defines a single test case assertion
+message Assertion {
+  AssertionType type = 1;
+  string value = 2;
+  double threshold = 3;
+  string provider = 4;
+  map<string, string> options = 5;
+  repeated string path = 6;
+}
+
+// Vars represents a map of variables for test cases
+message Vars {
+  map<string, string> variables = 1;
+}
+
+// TestCase defines a single test case with variables and assertions
+message TestCase {
+  string id = 1;
+  Vars vars = 2;
+  repeated Assertion assert = 3;
+  map<string, string> options = 4;
+  string description = 5;
+}
+
+// GradingResult represents the result of grading an assertion
+message GradingResult {
+  bool pass = 1;
+  double score = 2;
+  string reason = 3;
+  string assertion_type = 4;
+  string assertion_value = 5;
+  double latency = 6;
+  map<string, string> metadata = 7;
+}
+
+// Prompt represents a prompt template or raw prompt
+message Prompt {
+  string raw = 1;
+  string display = 2;
+  string label = 3;
+  string provider = 4;
+  map<string, string> options = 5;
+}
+
+// PromptConfig defines configuration for prompt processing
+message PromptConfig {
+  string prefix = 1;
+  string suffix = 2;
+  map<string, string> options = 3;
+}
+
+// ProviderOptions defines configuration for a model provider
+message ProviderOptions {
+  string id = 1;
+  string label = 2;
+  map<string, string> config = 3;
+  string cache_key = 4;
+  double weight = 5;
+}
+
+// OutputConfig defines configuration for output handling
+message OutputConfig {
+  bool store_outputs = 1;
+  bool display_paths = 2;
+  repeated string output_paths = 3;
+  bool show_exceptions = 4;
+  string results_file = 5;
+  repeated string output_formats = 6;
+}
+
+// PromptMetrics tracks metrics for a single prompt
+message PromptMetrics {
+  double score = 1;
+  int32 num_passing = 2;
+  int32 num_failing = 3;
+  TokenUsage token_usage = 4;
+  double cost = 5;
+  double latency = 6;
+  map<string, double> scores = 7;
+}
+
+// CompletedPrompt combines a prompt with its evaluation metrics
+message CompletedPrompt {
+  Prompt prompt = 1;
+  PromptMetrics metrics = 2;
+}
+
+// EvaluateResult represents a complete evaluation run
+message EvaluateResult {
+  repeated TestCase test_cases = 1;
+  repeated Prompt prompts = 2;
+  repeated ProviderOptions providers = 3;
+  map<string, ProviderResponse> results = 4;
+  map<string, GradingResult> grading = 5;
+  map<string, CompletedPrompt> prompt_metrics = 6;
+  string outputs_file = 7;
+  string results_file = 8;
+  map<string, double> scores = 9;
+}
+
+// TestSuiteConfig defines a complete test suite configuration
+message TestSuiteConfig {
+  repeated string prompts = 1;
+  repeated string providers = 2;
+  repeated TestCase tests = 3;
+  OutputConfig output = 4;
+  map<string, string> sharing = 5;
+  map<string, string> orchestration = 6;
+  map<string, string> eval = 7;
+  bool verbose = 8;
+}
+
+// EvaluateStats provides statistical summary of evaluation results
+message EvaluateStats {
+  int32 num_prompts = 1;
+  int32 num_providers = 2;
+  int32 num_test_cases = 3;
+  int32 num_evals = 4;
+  int32 num_passing = 5;
+  int32 num_failing = 6;
+  double passing_rate = 7;
+  double total_tokens = 8;
+  double total_cost = 9;
+  double average_latency = 10;
+}
+
+// EvaluateTable represents a table of evaluation results
+message EvaluateTable {
+  repeated string columns = 1;
+  repeated string rows = 2;
+  repeated string cells = 3;
+}
+
+// EvaluateSummaryV3 represents a summary of evaluation results
+message EvaluateSummaryV3 {
+  EvaluateStats stats = 1;
+  repeated EvaluateTable tables = 2;
+  string results_file = 3;
+  string outputs_file = 4;
+  map<string, double> scores = 5;
+}
