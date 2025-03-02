@@ -1,0 +1,92 @@
+#!/bin/bash
+#
+# Default CGPT-based evaluator implementation
+# This is the default evaluator when no specific evaluator is found
+# Place this file in your PATH and make it executable (chmod +x pe-eval-provider-cgpt)
+
+# Check that we have a config file argument
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 <config_file>" >&2
+  exit 1
+fi
+
+CONFIG_FILE=$1
+TIMESTAMP=$(date +%Y%m%dT%H%M%S)
+EVAL_ID="eval-cgpt-${TIMESTAMP}"
+
+# Read the config file
+echo "Running CGPT-backed evaluation with config from: ${CONFIG_FILE}" >&2
+CONFIG=$(cat "$CONFIG_FILE")
+
+# In a real implementation, this would:
+# 1. Extract prompts, tests, and variables from the config
+# 2. For each prompt and test case, execute against CGPT
+# 3. Check the responses against the assertions
+# 4. Compile the results and output in the standard format
+
+# For example (pseudo-code):
+#   Extract prompts, tests, vars, assertions from config
+#   For each prompt:
+#     For each test case:
+#       Replace variables in prompt
+#       Send to CGPT
+#       Process response
+#       Validate against assertions
+#       Record results
+
+# For now, we return a simulated result
+cat << EOF
+{
+  "evalId": "${EVAL_ID}",
+  "config": ${CONFIG},
+  "results": {
+    "version": 3,
+    "timestamp": "$(date -Iseconds)",
+    "prompts": [
+      {
+        "raw": "What is the capital of {{country}}?",
+        "label": "What is the capital of {{country}}?",
+        "id": "p123456",
+        "metrics": {
+          "score": 1.0,
+          "testPassCount": 1,
+          "testFailCount": 0
+        }
+      }
+    ],
+    "results": [
+      {
+        "id": "r123456",
+        "promptId": "p123456",
+        "prompt": {
+          "raw": "What is the capital of France?",
+          "label": "What is the capital of France?"
+        },
+        "provider": {
+          "id": "google:chat-bison"
+        },
+        "response": {
+          "output": "The capital of France is Paris.",
+          "tokenUsage": {
+            "total": 10,
+            "prompt": 7,
+            "completion": 3
+          }
+        },
+        "success": true,
+        "score": 1.0,
+        "gradingResult": {
+          "pass": true,
+          "score": 1.0,
+          "reason": "Answer correctly identifies Paris as the capital of France"
+        }
+      }
+    ],
+    "stats": {
+      "successes": 1,
+      "failures": 0,
+      "errors": 0
+    }
+  }
+}
+EOF

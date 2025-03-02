@@ -1,0 +1,68 @@
+#!/bin/bash
+#
+# Sample pe-eval implementation that simulates running a real evaluation
+# Place this file in your PATH and make it executable (chmod +x pe-eval)
+
+# Check that we have a config file argument
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 <config_file>" >&2
+  exit 1
+fi
+
+CONFIG_FILE=$1
+TIMESTAMP=$(date +%Y%m%dT%H%M%S)
+EVAL_ID="eval-real-${TIMESTAMP}"
+
+# Read the config file
+echo "Running evaluation with config from: ${CONFIG_FILE}" >&2
+CONFIG=$(cat "$CONFIG_FILE")
+
+# Generate a simple result set
+cat << EOF
+{
+  "evalId": "${EVAL_ID}",
+  "config": ${CONFIG},
+  "results": {
+    "version": 3,
+    "timestamp": "$(date -Iseconds)",
+    "prompts": [
+      {
+        "raw": "What is the capital of {{country}}?",
+        "label": "What is the capital of {{country}}?",
+        "id": "p123456",
+        "metrics": {
+          "score": 1.0,
+          "testPassCount": 1,
+          "testFailCount": 0
+        }
+      }
+    ],
+    "results": [
+      {
+        "id": "r123456",
+        "promptId": "p123456",
+        "prompt": {
+          "raw": "What is the capital of France?",
+          "label": "What is the capital of France?"
+        },
+        "provider": {
+          "id": "generic-evaluator"
+        },
+        "response": {
+          "output": "The capital of France is Paris.",
+          "tokenUsage": {
+            "total": 10
+          }
+        },
+        "success": true,
+        "score": 1.0
+      }
+    ],
+    "stats": {
+      "successes": 1,
+      "failures": 0,
+      "errors": 0
+    }
+  }
+}
+EOF

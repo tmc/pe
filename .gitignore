@@ -1,0 +1,21 @@
+# Ignore files starting with .h and .claude
+.h*
+.claude*
+
+# Binaries (but not the cmd/pe directory)
+/pe
+/pfutil
+*_test
+/bin/
+*.exe
+*.so
+*.dylib
+
+# Node modules
+node_modules/
+
+# Results
+/eval-*/
+
+# Dependency directories
+vendor/

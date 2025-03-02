@@ -1,0 +1,24 @@
+# Example configuration for pe
+prompts:
+  - "What is the capital of {{country}}?"
+  - "Tell me about the capital city of {{country}}."
+
+providers:
+  - openai:gpt-4
+
+tests:
+  - vars:
+      country: "France"
+    assert:
+      - type: contains
+        value: "Paris"
+  - vars:
+      country: "Japan"
+    assert:
+      - type: contains
+        value: "Tokyo"
+  - vars:
+      country: "Brazil"
+    assert:
+      - type: contains
+        value: "Brasília"
