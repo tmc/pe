@@ -1,6 +1,60 @@
-# pe
+# pe: Prompt Engineering Toolkit
 
-pe is a comprehensive toolkit for prompt engineering tasks, supporting evaluation, validation, formatting and viewing of prompt configurations and results.
+`pe` is a comprehensive toolkit for prompt engineering tasks, supporting evaluation, validation, formatting and viewing of prompt configurations and results across multiple LLM providers.
+
+## Features
+
+- **Template-based prompts:** Use variables to test multiple variations
+- **Multiple provider support:** Test across OpenAI, Anthropic, Google AI and more  
+- **Assertion-based testing:** Verify outputs meet expected criteria
+- **Dry run mode:** Preview commands without making API calls
+- **Extensible architecture:** Easily add new providers and assertion types
+
+## Installation
+
+```bash
+go install github.com/tmc/pe/cmd/pe@latest
+```
+
+## Quick Start
+
+Create a YAML configuration file:
+
+```yaml
+# example.yaml
+prompts:
+  - "What is the capital of {{country}}?"
+
+providers:
+  - "openai:gpt-4"
+  - "anthropic:claude-3-haiku"
+
+tests:
+  - vars:
+      country: "France"
+    assert:
+      - type: "contains"
+        value: "Paris"
+  - vars:
+      country: "Japan"
+    assert:
+      - type: "contains"
+        value: "Tokyo"
+```
+
+Run an evaluation:
+
+```bash
+pe eval example.yaml -o results.json
+```
+
+Generate shell commands to run manually:
+
+```bash
+pe eval example.yaml --dry-run > commands.sh
+chmod +x commands.sh
+./commands.sh  # Run the commands if desired
+```
 
 ## Commands
 
@@ -25,33 +79,24 @@ pe is a comprehensive toolkit for prompt engineering tasks, supporting evaluatio
   * `pe convert input.yaml output.json`
   * `pe convert config.json config.yaml --output yaml`
 
-## Specifications
+## External Evaluators
 
-* [prompt_engineering.proto](./specs/prompt_engineering.proto): Protobuf definitions for prompt engineering concepts
-* [promptfoo.proto](./specs/promptfoo.proto): Protobuf definitions for promptfoo evaluation results
+`pe` supports external evaluator executables for running evaluations against real LLM providers:
+
+1. Provider-specific evaluators: `pe-eval-provider-{provider}` (e.g., `pe-eval-provider-openai`)
+2. Generic evaluator: `pe-eval`
+3. Default CGPT-based implementation: `pe-eval-provider-cgpt`
+
+When running `pe eval`, the tool will search your PATH for these executables in order, using the first one found. If none are found, it falls back to the built-in implementation.
 
 ## Directory Structure
 
 * `cmd/pe/`: Main command-line tool implementation
-* `internal/promptfoo/`: Types and utilities for promptfoo integration (internal use)
+* `internal/promptfoo/`: Types and utilities for promptfoo integration
+* `internal/cgpt/`: CGPT integration for prompt evaluation
 * `specs/`: Specifications and protocol definitions
 * `example/`: Example configuration files and evaluator scripts
-
-## Installation
-
-The easiest way to install is to run:
-
-```bash
-go install github.com/tmc/pe/cmd/pe@latest
-```
-
-You can also clone the repository and build it locally:
-
-```bash
-git clone https://github.com/tmc/pe.git
-cd pe
-go build -o pe ./cmd/pe
-```
+* `docs/`: Documentation
 
 ## Testing
 
@@ -59,25 +104,6 @@ go build -o pe ./cmd/pe
 # Run Go tests
 go test ./...
 ```
-
-## Dependencies
-
-* Go 1.18 or higher
-* Node.js and npm (for the promptfoo UI integration)
-
-## External Evaluators
-
-pe supports external evaluator executables for running evaluations against real LLM providers:
-
-1. Provider-specific evaluators: `pe-eval-provider-{provider}` (e.g., `pe-eval-provider-openai`)
-2. Generic evaluator: `pe-eval`
-3. Default CGPT-based implementation: `pe-eval-provider-cgpt`
-
-When running `pe eval`, the tool will search your PATH for these executables in order, using the first one found. If none are found, it falls back to the mock implementation.
-
-The system follows a discovery model similar to protocol buffers' protoc compiler, where provider implementations can be added independently by placing appropriate executables in your PATH.
-
-Example evaluator scripts are provided in the `example/` directory.
 
 ## Report Issues / Send Patches
 

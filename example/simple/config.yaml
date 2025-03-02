@@ -1,0 +1,31 @@
+# Example config file for pe evaluation tool
+# This is a trimmed down version that demonstrates the basic functionality
+
+# Define the prompts to test
+prompts:
+  - "What is the capital of {{country}}?"
+  - "Tell me about the capital city of {{country}}."
+
+# Define providers (models) to test with
+providers:
+  - "openai:gpt-4"
+  - "anthropic:claude-3-haiku"
+  - "googleai:gemini-2.0-flash"
+
+# Define test cases with variables
+tests:
+  - vars:
+      country: "France"
+    assert:
+      - type: "contains"
+        value: "Paris"
+  - vars:
+      country: "Japan"
+    assert:
+      - type: "contains"
+        value: "Tokyo"
+  - vars:
+      country: "Brazil"
+    assert:
+      - type: "contains"
+        value: "Brasília"
