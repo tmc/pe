@@ -1,0 +1,158 @@
+{
+  "id": "prompt-12345",
+  "createdAt": "2025-03-02T04:00:00Z",
+  "updatedAt": "2025-03-02T04:30:00Z",
+  "name": "Capital City Prompt",
+  "revisions": [
+    {
+      "id": "rev-67890",
+      "createdAt": "2025-03-02T04:00:00Z",
+      "systemPrompt": "You are a geography expert who specializes in capital cities. Provide accurate information about capital cities when asked.",
+      "modelName": "gpt-4",
+      "maxTokensToSample": 1024,
+      "temperature": 0.7,
+      "messages": [],
+      "examples": [
+        {
+          "id": "example-1",
+          "variableValues": {
+            "country": "France"
+          },
+          "goldenAnswer": "The capital of France is Paris.",
+          "promptRevisionId": "rev-67890"
+        },
+        {
+          "id": "example-2",
+          "variableValues": {
+            "country": "Japan"
+          },
+          "goldenAnswer": "The capital of Japan is Tokyo.",
+          "promptRevisionId": "rev-67890"
+        }
+      ],
+      "promptId": "prompt-12345",
+      "variables": [
+        {
+          "id": "var-1",
+          "name": "country",
+          "description": "The country to find the capital of",
+          "defaultValue": "United States",
+          "promptRevisionId": "rev-67890"
+        }
+      ],
+      "testCases": [
+        {
+          "id": "test-1",
+          "stableId": "test-capitals-1",
+          "description": "Test for capital of France",
+          "variableValues": {
+            "country": "France"
+          },
+          "expectedOutput": "Paris",
+          "createdAt": "2025-03-02T04:05:00Z",
+          "promptRevisionId": "rev-67890",
+          "isSuccess": true
+        },
+        {
+          "id": "test-2",
+          "stableId": "test-capitals-2",
+          "description": "Test for capital of Japan",
+          "variableValues": {
+            "country": "Japan"
+          },
+          "expectedOutput": "Tokyo",
+          "createdAt": "2025-03-02T04:05:00Z",
+          "promptRevisionId": "rev-67890",
+          "isSuccess": true
+        },
+        {
+          "id": "test-3",
+          "stableId": "test-capitals-3",
+          "description": "Test for capital of Brazil",
+          "variableValues": {
+            "country": "Brazil"
+          },
+          "expectedOutput": "Brasília",
+          "createdAt": "2025-03-02T04:05:00Z",
+          "promptRevisionId": "rev-67890",
+          "isSuccess": false
+        }
+      ]
+    }
+  ],
+  "latestRevision": {
+    "id": "rev-67890",
+    "createdAt": "2025-03-02T04:00:00Z",
+    "systemPrompt": "You are a geography expert who specializes in capital cities. Provide accurate information about capital cities when asked.",
+    "modelName": "gpt-4",
+    "maxTokensToSample": 1024,
+    "temperature": 0.7,
+    "messages": [],
+    "examples": [
+      {
+        "id": "example-1",
+        "variableValues": {
+          "country": "France"
+        },
+        "goldenAnswer": "The capital of France is Paris.",
+        "promptRevisionId": "rev-67890"
+      },
+      {
+        "id": "example-2",
+        "variableValues": {
+          "country": "Japan"
+        },
+        "goldenAnswer": "The capital of Japan is Tokyo.",
+        "promptRevisionId": "rev-67890"
+      }
+    ],
+    "promptId": "prompt-12345",
+    "variables": [
+      {
+        "id": "var-1",
+        "name": "country",
+        "description": "The country to find the capital of",
+        "defaultValue": "United States",
+        "promptRevisionId": "rev-67890"
+      }
+    ],
+    "testCases": [
+      {
+        "id": "test-1",
+        "stableId": "test-capitals-1",
+        "description": "Test for capital of France",
+        "variableValues": {
+          "country": "France"
+        },
+        "expectedOutput": "Paris",
+        "createdAt": "2025-03-02T04:05:00Z",
+        "promptRevisionId": "rev-67890",
+        "isSuccess": true
+      },
+      {
+        "id": "test-2",
+        "stableId": "test-capitals-2",
+        "description": "Test for capital of Japan",
+        "variableValues": {
+          "country": "Japan"
+        },
+        "expectedOutput": "Tokyo",
+        "createdAt": "2025-03-02T04:05:00Z",
+        "promptRevisionId": "rev-67890",
+        "isSuccess": true
+      },
+      {
+        "id": "test-3",
+        "stableId": "test-capitals-3",
+        "description": "Test for capital of Brazil",
+        "variableValues": {
+          "country": "Brazil"
+        },
+        "expectedOutput": "Brasília",
+        "createdAt": "2025-03-02T04:05:00Z",
+        "promptRevisionId": "rev-67890",
+        "isSuccess": false
+      }
+    ]
+  }
+}

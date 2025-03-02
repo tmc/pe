@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+package pe.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/tmc/pe/v1;pev1";
+
+// Prompt represents the top-level structure of a prompt
+message Prompt {
+  string id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  google.protobuf.Timestamp updated_at = 3;
+  string name = 4;
+  repeated PromptRevision revisions = 5;
+  PromptRevision latest_revision = 6;
+  map<string, string> metadata = 7;
+}
+
+// PromptRevision represents a revision of a prompt
+message PromptRevision {
+  string id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  string system_prompt = 3;
+  string model_name = 4;
+  int32 max_tokens_to_sample = 5;
+  float temperature = 6;
+  optional float average_rating = 7;
+  repeated google.protobuf.Struct tools = 8;
+  repeated Message messages = 9;
+  repeated Example examples = 10;
+  string prompt_id = 11;  // Reference to parent Prompt
+  repeated Variable variables = 12;
+  repeated TestCase test_cases = 13;
+  map<string, string> metadata = 14;
+}
+
+// Role represents the role of a message
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_SYSTEM = 1;
+  ROLE_HUMAN = 2;
+  ROLE_ASSISTANT = 3;
+}
+
+// Message represents a message in a prompt revision
+message Message {
+  string id = 1;
+  Role role = 2;
+  repeated Content contents = 3;
+  string prompt_revision_id = 4;  // Reference to parent PromptRevision
+  map<string, string> metadata = 5;
+}
+
+// Content represents the content of a message
+message Content {
+  string id = 1;
+  string type = 2;
+  optional string text = 3;
+  string message_id = 4;  // Reference to parent Message
+  map<string, string> metadata = 5;
+}
+
+// Example represents an example for a prompt revision
+message Example {
+  string id = 1;
+  map<string, string> variable_values = 2;
+  string golden_answer = 3;
+  // The docstring field is used to provide additional context or documentation for this example
+  string example_docstring = 4;
+  string prompt_revision_id = 5;  // Reference to parent PromptRevision
+  map<string, string> metadata = 6;
+}
+
+// Variable represents a variable in the prompt revision
+message Variable {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string default_value = 4;
+  string prompt_revision_id = 5;  // Reference to parent PromptRevision
+  map<string, string> metadata = 6;
+}
+
+// TestCase represents a test case for the prompt revision
+message TestCase {
+  string id = 1;
+  string stable_id = 2;  // Stable identifier linking TestCases across PromptRevisions
+  string description = 3;
+  map<string, string> variable_values = 4;
+  string expected_output = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+  string prompt_revision_id = 8;  // Reference to parent PromptRevision
+  string completion_text = 9;
+  google.protobuf.Timestamp completed_at = 10;
+  bool is_success = 11;
+  map<string, string> metadata = 12;
+}
+
+// EvaluationResult represents the result of an evaluation for a prompt revision
+message EvaluationResult {
+  string id = 1;
+  string test_case_stable_id = 2;  // Reference to the stable ID of the TestCase
+  map<string, string> variable_values = 3;
+  optional string golden_answer = 4;
+  google.protobuf.Timestamp created_at = 5;
+  optional google.protobuf.Timestamp submitted_at = 6;
+  google.protobuf.Timestamp completed_at = 7;
+  string completion_text = 8;
+  optional float rating = 9;
+  string prompt_revision_id = 10;  // Reference to parent PromptRevision
+  map<string, string> metadata = 11;
+}
