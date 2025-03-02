@@ -1,0 +1,14 @@
+prompts:
+  - "Explain the concept of prompt engineering in one paragraph."
+  - "What are 3 best practices for writing effective prompts for large language models?"
+  - "Compare and contrast zero-shot, one-shot, and few-shot prompting approaches."
+
+providers:
+  - "googleai:gemini-2.0-flash"
+  - "googleai:gemini-2.0-pro"
+  - "anthropic:claude-3-haiku"
+  - "anthropic:claude-3-sonnet"
+
+tests:
+  - vars:
+      topic: "prompt engineering"
