@@ -25,6 +25,7 @@ func evalCmd() *cobra.Command {
 	var outputFile string
 	var outputFormat string
 	var timeout string
+	var dryRun bool
 
 	cmd := &cobra.Command{
 		Use:   "eval [config_file]",
@@ -44,7 +45,7 @@ func evalCmd() *cobra.Command {
 				}
 			}
 			
-			return executeEval(cmd, configFile, outputFile, outputFormat, timeout)
+			return executeEval(cmd, configFile, outputFile, outputFormat, timeout, dryRun)
 		},
 	}
 
@@ -52,11 +53,12 @@ func evalCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Write results to file")
 	cmd.Flags().StringVarP(&outputFormat, "format", "f", "json", "Output format: 'json', 'yaml', or 'text'")
 	cmd.Flags().StringVarP(&timeout, "timeout", "t", "30s", "Timeout for the entire test run")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show commands that would be executed without running them")
 
 	return cmd
 }
 
-func executeEval(cmd *cobra.Command, configFile, outputFile, outputFormat, timeoutStr string) error {
+func executeEval(cmd *cobra.Command, configFile, outputFile, outputFormat, timeoutStr string, dryRun bool) error {
 	// Parse timeout
 	timeout, err := time.ParseDuration(timeoutStr)
 	if err != nil {
@@ -76,12 +78,39 @@ func executeEval(cmd *cobra.Command, configFile, outputFile, outputFormat, timeo
 		return fmt.Errorf("error parsing config file: %v", err)
 	}
 
-	// Look for provider-specific or generic evaluator executables
+	// In dry-run mode, we won't print a header anymore
+	// This is handled by the dry run implementation itself
+
+	// First try with external evaluator
 	results, err := executeWithExternalEvaluator(config, timeout)
 	if err != nil {
-		// Fall back to mock implementation if no external evaluator found
-		fmt.Fprintf(cmd.OutOrStdout(), "Note: Using mock implementation. No provider-specific evaluator found.\n")
-		results = generateMockResults(config, timeout)
+		// Check if we should explicitly avoid CGPT
+		useCGPT := os.Getenv("PE_USE_CGPT")
+		if useCGPT == "false" || useCGPT == "0" {
+			// Skip CGPT if explicitly disabled
+			if !dryRun {
+				fmt.Fprintf(cmd.OutOrStdout(), "Note: Using mock implementation (PE_USE_CGPT=false).\n")
+			}
+			results = generateMockResults(config, timeout)
+		} else {
+			// Try CGPT implementation by default
+			if !dryRun {
+				fmt.Fprintf(cmd.OutOrStdout(), "Note: Using CGPT implementation for evaluation.\n")
+			}
+			
+			// If dry-run mode, pass the flag to CGPT evaluator
+			if dryRun {
+				results, err = evaluateWithCGPTDryRun(config)
+			} else {
+				results, err = evaluateWithCGPT(config)
+			}
+			
+			// Fall back to mock implementation if CGPT fails
+			if err != nil {
+				fmt.Fprintf(cmd.OutOrStdout(), "Error with CGPT: %v\nFalling back to mock implementation.\n", err)
+				results = generateMockResults(config, timeout)
+			}
+		}
 	}
 
 	// Format the output
@@ -398,6 +427,12 @@ func executeWithExternalEvaluator(config map[string]interface{}, timeout time.Du
 	
 	// Then try generic evaluator
 	evaluators = append(evaluators, "pe-eval")
+	
+	// Try built-in evaluators if available
+	evalCGPT := os.Getenv("PE_EVAL_CGPT")
+	if evalCGPT != "" {
+		evaluators = append(evaluators, evalCGPT)
+	}
 	
 	// Finally, try default CGPT-based implementation
 	evaluators = append(evaluators, "pe-eval-provider-cgpt")
