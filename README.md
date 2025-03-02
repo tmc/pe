@@ -27,13 +27,14 @@ pe is a comprehensive toolkit for prompt engineering tasks, supporting evaluatio
 
 ## Specifications
 
-* [prompt_engineering.proto](./prompt_engineering.proto): Protobuf definitions for prompt
+* [prompt_engineering.proto](./specs/prompt_engineering.proto): Protobuf definitions for prompt
   engineering concepts.
 
 ## Directory Structure
 
 * `cmd/pe/`: Main command-line tool implementation
-* `promptfoo/`: Types and utilities for promptfoo integration
+* `internal/promptfoo/`: Types and utilities for promptfoo integration (internal use)
+* `specs/`: Specifications and protocol definitions
 * `example/`: Example configuration files and evaluator scripts
 
 ## Installation
