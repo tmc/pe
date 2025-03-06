@@ -101,9 +101,29 @@ When running `pe eval`, the tool will search your PATH for these executables in 
 ## Testing
 
 ```bash
-# Run Go tests
+# Run all Go tests
 go test ./...
+
+# Run all tests with the testing script
+./scripts/run-all-tests.sh
 ```
+
+### Testing Approach
+
+The project includes several types of tests:
+
+1. **Basic unit tests**: Standard Go tests for individual functions and packages
+   - Located in `tests/basic_tests/`
+   - Test core functionality of templates and evaluation
+
+2. **Package-level tests**: Tests within each package
+   - Located alongside the code they test
+   - Verify functionality within the package
+
+3. **Integration tests**: Tests for the complete system
+   - Test the CLI tools and their interactions with the rest of the system
+
+This multi-layered approach ensures that all components are tested individually and together, providing confidence in the overall system.
 
 ## Report Issues / Send Patches
 
