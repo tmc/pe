@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -199,4 +200,36 @@ func WriteResultToFile(result interface{}, filename, format string) error {
 	}
 	
 	return err
+}
+
+// ValidateConfig validates a configuration file for prompt evaluation.
+// It checks that the config file exists and contains valid configuration.
+func ValidateConfig(configPath string) error {
+	// Check if file exists
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		return fmt.Errorf("config file does not exist: %s", configPath)
+	}
+	
+	// Read the config file
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read config file: %w", err)
+	}
+	
+	// Perform basic validation on the config content
+	// In a real implementation, this would parse the YAML/JSON and validate the schema
+	
+	if len(data) == 0 {
+		return fmt.Errorf("config file is empty")
+	}
+	
+	// For now, just do a simple check for required fields
+	requiredFields := []string{"prompts", "vars", "models"}
+	for _, field := range requiredFields {
+		if !strings.Contains(string(data), field) {
+			return fmt.Errorf("config file missing required field: %s", field)
+		}
+	}
+	
+	return nil
 }
