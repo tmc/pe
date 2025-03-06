@@ -5,6 +5,7 @@ prompts:
 
 providers:
   - openai:gpt-4
+  - anthropic:claude-3-opus
 
 tests:
   - vars:
