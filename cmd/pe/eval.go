@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	
 	"os"
 	"os/exec"
 	"strings"
@@ -51,7 +52,7 @@ func evalCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&configFile, "config", "c", "", "Path to configuration file")
 	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Write results to file")
-	cmd.Flags().StringVarP(&outputFormat, "format", "f", "json", "Output format: 'json', 'yaml', or 'text'")
+	cmd.Flags().StringVarP(&outputFormat, "format", "f", "json", "Output format: 'json', 'yaml', 'csv', or 'text'")
 	cmd.Flags().StringVarP(&timeout, "timeout", "t", "30s", "Timeout for the entire test run")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show commands that would be executed without running them")
 
@@ -121,6 +122,9 @@ func executeEval(cmd *cobra.Command, configFile, outputFile, outputFormat, timeo
 		output, err = yaml.Marshal(results)
 	} else if outputFormat == "text" {
 		output = formatResultsAsText(results)
+	} else if outputFormat == "csv" {
+		// formatResultsAsCSV is implemented in csv.go
+		output, err = formatResultsAsCSV(results)
 	} else {
 		return fmt.Errorf("unsupported output format: %s", outputFormat)
 	}
@@ -149,8 +153,10 @@ func generateMockResults(config map[string]interface{}, timeout time.Duration) m
 	providers, _ := config["providers"].([]interface{})
 	tests, _ := config["tests"].([]interface{})
 	
-	// Create a unique evalId for this run (no longer using pfutil prefix)
-	evalId := fmt.Sprintf("eval-%s", time.Now().Format("20060102T150405"))
+	// Create a unique evalId for this run matching promptfoo's format exactly
+	evalId := fmt.Sprintf("eval-%s-%s", 
+		randomString(3), 
+		time.Now().Format("2006-01-02T15:04:05"))
 	timestamp := time.Now().Format(time.RFC3339)
 	
 	// Create prompt metadata for the result structure
@@ -500,8 +506,27 @@ func formatResultsAsText(results map[string]interface{}) []byte {
 
 	// Add details for each test result
 	textOutput += "Test Results\n------------\n"
-	allResults, _ := resultsData["results"].([]map[string]interface{})
-	for i, result := range allResults {
+	
+	// Get the detailed results as either []interface{} or []map[string]interface{}
+	allResultsIface, _ := resultsData["results"].([]interface{})
+	if allResultsIface == nil {
+		// Try the other common type we see
+		if resultsArr, ok := resultsData["results"].([]map[string]interface{}); ok {
+			// Convert to []interface{} 
+			allResultsIface = make([]interface{}, len(resultsArr))
+			for i, r := range resultsArr {
+				allResultsIface[i] = r
+			}
+		}
+	}
+	
+	// Process and print each test result
+	for i, resultIface := range allResultsIface {
+		result, ok := resultIface.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		
 		prompt, _ := result["prompt"].(map[string]interface{})
 		provider, _ := result["provider"].(map[string]interface{})
 		response, _ := result["response"].(map[string]interface{})
