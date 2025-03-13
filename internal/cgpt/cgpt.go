@@ -24,10 +24,10 @@ type ModelProvider struct {
 // DefaultProvider returns a default configured model provider
 func DefaultProvider() *ModelProvider {
 	return &ModelProvider{
-		Model:       "gemini-2.0-flash",
+		Model:       "gpt-4o",         // Default to OpenAI gpt-4o
 		MaxTokens:   1024,
 		Temperature: 0.2,
-		Backend:     "googleai",  // Default backend
+		Backend:     "openai",         // Default to OpenAI backend
 	}
 }
 
