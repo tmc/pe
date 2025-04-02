@@ -304,3 +304,54 @@ func processFileInclusions(promptTemplate string) (string, error) {
 	processor := NewFileProcessor(baseDir)
 	return processor.Process(promptTemplate)
 }
+
+// RenderTemplate processes a templated prompt with variables and optional file inclusions.
+// It first tries to use the simple variable replacement for promptfoo compatibility,
+// then falls back to the more complex template processing if needed.
+func RenderTemplate(promptTemplate string, vars map[string]interface{}, baseDir string) (string, error) {
+	// Try simple variable replacement first for promptfoo compatibility
+	result := promptTemplate
+	for varName, varValue := range vars {
+		var strValue string
+		switch v := varValue.(type) {
+		case string:
+			strValue = v
+		case float64:
+			strValue = fmt.Sprintf("%g", v)
+		case int:
+			strValue = fmt.Sprintf("%d", v)
+		case bool:
+			strValue = fmt.Sprintf("%t", v)
+		default:
+			jsonValue, err := json.Marshal(v)
+			if err == nil {
+				strValue = string(jsonValue)
+			} else {
+				strValue = fmt.Sprintf("%v", v)
+			}
+		}
+		
+		placeholder := fmt.Sprintf("{{%s}}", varName)
+		result = strings.ReplaceAll(result, placeholder, strValue)
+	}
+	
+	// Check if there are still template placeholders
+	if strings.Contains(result, "{{") && strings.Contains(result, "}}") {
+		// Need more complex processing, create a template with the base directory
+		tmpl := NewTemplate(promptTemplate, vars)
+		if baseDir != "" {
+			tmpl.SetBaseDir(baseDir)
+		}
+		
+		// Process with full template engine
+		processed, err := tmpl.Process()
+		if err != nil {
+			return "", fmt.Errorf("template processing error: %w", err)
+		}
+		
+		return processed, nil
+	}
+	
+	// Simple replacement worked
+	return result, nil
+}

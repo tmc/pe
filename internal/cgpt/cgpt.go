@@ -45,19 +45,8 @@ func (p *ModelProvider) EvaluatePromptWithOptions(prompt string, vars map[string
 	// Start timing
 	startTime := time.Now()
 	
-	// Get provider string from vars
-	if provider, ok := vars["provider"].(string); ok && provider != "" {
-		// Extract backend from provider if specified (e.g., "anthropic:claude-3" -> "anthropic")
-		parts := strings.Split(provider, ":")
-		if len(parts) > 0 {
-			p.Backend = parts[0]
-		}
-		
-		// Extract model if specified
-		if len(parts) > 1 {
-			p.Model = parts[1]
-		}
-	}
+	// Apply configuration from vars
+	p.ApplyConfigFromVars(vars)
 	
 	// Run cgpt command
 	output, tokens, err := p.runCGPTCommand(processedPrompt, dryRun)
@@ -180,6 +169,50 @@ func estimateCost(tokens tokenCounts) float64 {
 	return promptCost + completionCost
 }
 
+// ApplyConfigFromVars applies configuration settings from a variables map
+// This handles both promptfoo-style provider strings (e.g., "openai:gpt-4")
+// and explicit configuration options in the config section
+func (p *ModelProvider) ApplyConfigFromVars(vars map[string]interface{}) {
+	// Get provider string from vars
+	if provider, ok := vars["provider"].(string); ok && provider != "" {
+		// Extract backend from provider if specified (e.g., "anthropic:claude-3" -> "anthropic")
+		parts := strings.Split(provider, ":")
+		if len(parts) > 0 {
+			p.Backend = parts[0]
+		}
+		
+		// Extract model if specified
+		if len(parts) > 1 {
+			p.Model = parts[1]
+		}
+	}
+	
+	// Check for config map and apply settings
+	if configMap, ok := vars["config"].(map[string]interface{}); ok {
+		// Apply temperature if specified
+		if temp, ok := configMap["temperature"].(float64); ok {
+			p.Temperature = temp
+		}
+		
+		// Apply max_tokens if specified
+		if maxTokens, ok := configMap["max_tokens"].(int); ok {
+			p.MaxTokens = maxTokens
+		} else if maxTokens, ok := configMap["max_tokens"].(float64); ok {
+			p.MaxTokens = int(maxTokens)
+		}
+		
+		// Apply backend if specified
+		if backend, ok := configMap["backend"].(string); ok {
+			p.Backend = backend
+		}
+		
+		// Apply model if specified directly in config
+		if model, ok := configMap["model"].(string); ok {
+			p.Model = model
+		}
+	}
+}
+
 // replaceVariables substitutes template variables in the prompt with actual values
 func replaceVariables(prompt string, vars map[string]interface{}) string {
 	result := prompt
@@ -208,4 +241,39 @@ func replaceVariables(prompt string, vars map[string]interface{}) string {
 	}
 	
 	return result
+}
+
+// Execute runs the specified backend and model on the given prompt and returns the result
+func Execute(backend, model, prompt, systemPrompt string) (string, error) {
+	// Build the command arguments
+	args := []string{"-b", backend, "-m", model}
+	
+	// Add system prompt if provided
+	if systemPrompt != "" {
+		args = append(args, "-s", systemPrompt)
+	}
+	
+	// Add temperature (low temperature for more consistent results)
+	args = append(args, "-T", "0.1")
+	
+	// Add the prompt as input
+	args = append(args, "-i", prompt)
+	
+	// Execute the cgpt command
+	cmd := exec.Command("cgpt", args...)
+	
+	// Capture output
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	
+	if err := cmd.Run(); err != nil {
+		// Return a formatted error message that includes stderr for better debugging
+		errMsg := fmt.Sprintf("CGPT Error (Backend: %s, Model: %s): %v\n%s", 
+			backend, model, err, stderr.String())
+		return "", fmt.Errorf("%s", errMsg)
+	}
+	
+	// Return the output
+	return stdout.String(), nil
 }

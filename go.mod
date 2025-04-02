@@ -1,8 +1,8 @@
 module github.com/tmc/pe
 
-go 1.21
+go 1.24
 
-toolchain go1.24.0
+toolchain go1.24.1
 
 require (
 	github.com/spf13/cobra v1.2.1
@@ -42,6 +42,7 @@ require (
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200222043503-6f7a984d4dc4 // indirect
+	github.com/go-json-experiment/json v0.0.0-20250223041408-d3c622f1b874 // indirect
 	github.com/godbus/dbus/v5 v5.0.4 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
