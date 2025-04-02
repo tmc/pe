@@ -45,7 +45,6 @@ func main() {
 	root.AddCommand(fmtCmd())
 	root.AddCommand(convertCmd())
 	root.AddCommand(benchmarkCmd())
-	root.AddCommand(templateTestCmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Println(err)

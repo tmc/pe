@@ -1,4 +1,4 @@
-// Package cgpt provides utilities for interacting with the Google Cloud Platform's 
+// Package cgpt provides utilities for interacting with the Google Cloud Platform's
 // Vertex AI API for language model completions.
 package cgpt
 
@@ -18,16 +18,16 @@ type ModelProvider struct {
 	Model       string
 	MaxTokens   int
 	Temperature float64
-	Backend     string  // Added backend parameter
+	Backend     string // Added backend parameter
 }
 
 // DefaultProvider returns a default configured model provider
 func DefaultProvider() *ModelProvider {
 	return &ModelProvider{
-		Model:       "gpt-4o",         // Default to OpenAI gpt-4o
+		Model:       "gpt-4o", // Default to OpenAI gpt-4o
 		MaxTokens:   1024,
 		Temperature: 0.2,
-		Backend:     "openai",         // Default to OpenAI backend
+		Backend:     "openai", // Default to OpenAI backend
 	}
 }
 
@@ -41,39 +41,39 @@ func (p *ModelProvider) EvaluatePrompt(prompt string, vars map[string]interface{
 func (p *ModelProvider) EvaluatePromptWithOptions(prompt string, vars map[string]interface{}, dryRun bool) (*promptfoo.ProviderResponse, error) {
 	// Replace any template variables in the prompt
 	processedPrompt := replaceVariables(prompt, vars)
-	
+
 	// Start timing
 	startTime := time.Now()
-	
+
 	// Apply configuration from vars
 	p.ApplyConfigFromVars(vars)
-	
+
 	// Run cgpt command
 	output, tokens, err := p.runCGPTCommand(processedPrompt, dryRun)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Calculate latency
 	latency := time.Since(startTime)
-	
+
 	// Estimate costs (approximate)
 	cost := estimateCost(tokens)
-	
+
 	// Create token usage details
 	tokenUsage := &promptfoo.TokenUsage{
-		Total:      int32(tokens.total),
-		Prompt:     int32(tokens.prompt),
-		Completion: int32(tokens.completion),
-		Cached:     0,
+		Total:       int32(tokens.total),
+		Prompt:      int32(tokens.prompt),
+		Completion:  int32(tokens.completion),
+		Cached:      0,
 		NumRequests: 1,
-		Details:    &promptfoo.CompletionTokenDetails{
+		Details: &promptfoo.CompletionTokenDetails{
 			Reasoning:          0,
 			AcceptedPrediction: int32(tokens.completion),
 			RejectedPrediction: 0,
 		},
 	}
-	
+
 	// Build and return response
 	return &promptfoo.ProviderResponse{
 		Output:     output,
@@ -95,53 +95,53 @@ func (p *ModelProvider) runCGPTCommand(prompt string, dryRun bool) (string, toke
 	// Build the cgpt command with the appropriate parameters
 	tempArg := fmt.Sprintf("%.1f", p.Temperature)
 	maxTokensArg := fmt.Sprintf("%d", p.MaxTokens)
-	
+
 	// Build the cgpt command as described: cgpt -b googleai -m gemini-2.0-flash [prompt]
 	args := []string{
 		"-b", p.Backend,
 		"-m", p.Model,
 	}
-	
+
 	// Only add these flags if not in dry run mode
 	if !dryRun {
 		args = append(args, "--temperature", tempArg, "--max-tokens", maxTokensArg)
 	}
-	
+
 	// Add the prompt as the final argument
 	args = append(args, prompt)
-	
+
 	cmd := exec.Command("cgpt", args...)
-	
+
 	// If dry run, just print the command without executing
 	if dryRun {
 		// Return a mock response for dry run mode
-		return "Dry run - no actual execution", 
+		return "Dry run - no actual execution",
 			tokenCounts{
 				prompt:     estimateTokenCount(prompt),
 				completion: estimateTokenCount("This is a dry run response."),
 				total:      estimateTokenCount(prompt) + estimateTokenCount("This is a dry run response."),
 			}, nil
 	}
-	
+
 	// Execute the command
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	
+
 	if err := cmd.Run(); err != nil {
 		// Return a formatted error message that includes the model information for better debugging
-		errMsg := fmt.Sprintf("Backend: %s, Model: %s - Error: %v\n%s", 
+		errMsg := fmt.Sprintf("Backend: %s, Model: %s - Error: %v\n%s",
 			p.Backend, p.Model, err, stderr.String())
 		return "", tokenCounts{}, fmt.Errorf("error running cgpt command: %s", errMsg)
 	}
-	
+
 	// The output is not JSON, just plain text
 	output := stdout.String()
 
 	// Estimate token counts
 	promptTokens := estimateTokenCount(prompt)
 	completionTokens := estimateTokenCount(output)
-	
+
 	return output, tokenCounts{
 		prompt:     promptTokens,
 		completion: completionTokens,
@@ -162,10 +162,10 @@ func estimateCost(tokens tokenCounts) float64 {
 	// Approximate cost per 1K tokens
 	const promptCostPer1K = 0.0005
 	const completionCostPer1K = 0.0015
-	
+
 	promptCost := float64(tokens.prompt) * promptCostPer1K / 1000
 	completionCost := float64(tokens.completion) * completionCostPer1K / 1000
-	
+
 	return promptCost + completionCost
 }
 
@@ -180,32 +180,32 @@ func (p *ModelProvider) ApplyConfigFromVars(vars map[string]interface{}) {
 		if len(parts) > 0 {
 			p.Backend = parts[0]
 		}
-		
+
 		// Extract model if specified
 		if len(parts) > 1 {
 			p.Model = parts[1]
 		}
 	}
-	
+
 	// Check for config map and apply settings
 	if configMap, ok := vars["config"].(map[string]interface{}); ok {
 		// Apply temperature if specified
 		if temp, ok := configMap["temperature"].(float64); ok {
 			p.Temperature = temp
 		}
-		
+
 		// Apply max_tokens if specified
 		if maxTokens, ok := configMap["max_tokens"].(int); ok {
 			p.MaxTokens = maxTokens
 		} else if maxTokens, ok := configMap["max_tokens"].(float64); ok {
 			p.MaxTokens = int(maxTokens)
 		}
-		
+
 		// Apply backend if specified
 		if backend, ok := configMap["backend"].(string); ok {
 			p.Backend = backend
 		}
-		
+
 		// Apply model if specified directly in config
 		if model, ok := configMap["model"].(string); ok {
 			p.Model = model
@@ -235,45 +235,45 @@ func replaceVariables(prompt string, vars map[string]interface{}) string {
 				strValue = fmt.Sprintf("%v", v)
 			}
 		}
-		
+
 		placeholder := fmt.Sprintf("{{%s}}", key)
 		result = strings.ReplaceAll(result, placeholder, strValue)
 	}
-	
+
 	return result
 }
 
-// Execute runs the specified backend and model on the given prompt and returns the result
-func Execute(backend, model, prompt, systemPrompt string) (string, error) {
-	// Build the command arguments
-	args := []string{"-b", backend, "-m", model}
-	
-	// Add system prompt if provided
-	if systemPrompt != "" {
-		args = append(args, "-s", systemPrompt)
-	}
-	
-	// Add temperature (low temperature for more consistent results)
-	args = append(args, "-T", "0.1")
-	
-	// Add the prompt as input
-	args = append(args, "-i", prompt)
-	
-	// Execute the cgpt command
-	cmd := exec.Command("cgpt", args...)
-	
-	// Capture output
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	
-	if err := cmd.Run(); err != nil {
-		// Return a formatted error message that includes stderr for better debugging
-		errMsg := fmt.Sprintf("CGPT Error (Backend: %s, Model: %s): %v\n%s", 
-			backend, model, err, stderr.String())
-		return "", fmt.Errorf("%s", errMsg)
-	}
-	
-	// Return the output
-	return stdout.String(), nil
-}
+// // Execute runs the specified backend and model on the given prompt and returns the result
+// func Execute(backend, model, prompt, systemPrompt string) (string, error) {
+// 	// Build the command arguments
+// 	args := []string{"-b", backend, "-m", model}
+
+// 	// Add system prompt if provided
+// 	if systemPrompt != "" {
+// 		args = append(args, "-s", systemPrompt)
+// 	}
+
+// 	// Add temperature (low temperature for more consistent results)
+// 	args = append(args, "-T", "0.1")
+
+// 	// Add the prompt as input
+// 	args = append(args, "-i", prompt)
+
+// 	// Execute the cgpt command
+// 	cmd := exec.Command("cgpt", args...)
+
+// 	// Capture output
+// 	var stdout, stderr bytes.Buffer
+// 	cmd.Stdout = &stdout
+// 	cmd.Stderr = &stderr
+
+// 	if err := cmd.Run(); err != nil {
+// 		// Return a formatted error message that includes stderr for better debugging
+// 		errMsg := fmt.Sprintf("CGPT Error (Backend: %s, Model: %s): %v\n%s",
+// 			backend, model, err, stderr.String())
+// 		return "", fmt.Errorf("%s", errMsg)
+// 	}
+
+// 	// Return the output
+// 	return stdout.String(), nil
+// }
