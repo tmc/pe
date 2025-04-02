@@ -28,6 +28,12 @@ go test -v ./tests/basic_tests
 
 # Validate configuration file
 ./pe vet config.yaml
+
+# Evaluate prompts against live LLM providers
+./pe eval ./example/getting-started/promptfooconfig.yaml --save-db
+
+# View evaluation results in browser
+./pe view <eval-id>
 ```
 
 ## Code Style Guidelines
@@ -52,6 +58,42 @@ go test -v ./tests/basic_tests
 - **internal/assertutil/**: Assertion utilities for testing
 - **tests/basic_tests/**: Core functionality unit tests
 
+## Command Usage
+
+### Evaluation
+The `pe eval` command runs evaluations against LLM providers using the provided configuration:
+
+```bash
+# Basic usage
+pe eval config.yaml
+
+# Save results to database for later viewing
+pe eval config.yaml --save-db
+```
+
+### Viewing Results
+The `pe view` command provides a browser-based UI for viewing evaluation results:
+
+```bash
+# List available evaluations
+pe view
+
+# View a specific evaluation by ID
+pe view <eval-id>
+
+# View results from a specific file
+pe view -f <path-to-results.json>
+
+# Specify a custom port for the HTTP server
+pe view <eval-id> -p 8888
+```
+
+The viewer provides a rich UI for exploring test results, including:
+- Statistics on pass/fail rates and token usage
+- Navigation of test cases by input and language
+- Detailed views of LLM responses
+- Assertion results and success status
+
 ## Provider Integration
 When implementing a new LLM provider:
 1. Create a new file in `internal/llm/providers/`
@@ -60,3 +102,22 @@ When implementing a new LLM provider:
 4. Add the provider to the example configuration
 
 Follow Go best practices and maintain consistency with the existing codebase.
+
+## CGPT Integration
+The toolkit integrates with CGPT for LLM provider access. It supports:
+
+- Running evaluations with multiple LLM providers concurrently
+- Handling provider-specific configurations (model, temperature, max tokens)
+- Parallelizing evaluations for efficiency
+- Evaluating assertions against model outputs
+- Token usage tracking and cost estimation
+
+CGPT providers are specified in configuration files using the format:
+```yaml
+providers:
+  - googleai:gemini-2.0-flash
+  - openai:gpt-4o
+  - anthropic:claude-3-5-haiku-latest
+```
+
+The PE tool automatically sets up appropriate backends for each provider when running tests.

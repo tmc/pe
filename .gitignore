@@ -1,23 +1,2 @@
-# Temporary files
-x
-x.txt
-x_new
-eval_cgpt.go.new
-test_script.sh
-results.json
-
-# Experimental test directories that aren't ready yet
-tests/evaluator_test.go
-tests/evaluator_txtar_test.go
-tests/scripttest/
-tests/simple_script/
-tests/template_txtar_test.go
-tests/testdata/
-
-# Build artifacts
-pe
-pe_test
-
-# History files
 .claude-history.txtar
 .h-*
