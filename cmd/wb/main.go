@@ -40,4 +40,8 @@ func init() {
 	rootCmd.AddCommand(testCmd)
 	rootCmd.AddCommand(statCmd)
 	rootCmd.AddCommand(searchCmd)
+	rootCmd.AddCommand(promptfooCmd)
+
+	// Add flags to the promptfoo command
+	promptfooCmd.Flags().StringP("format", "f", "text", "Output format (text, json, yaml)")
 }
