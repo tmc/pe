@@ -27,9 +27,6 @@ type Provider interface {
     
     // Complete sends a completion request to the provider
     Complete(ctx context.Context, req *CompletionRequest) (*CompletionResponse, error)
-    
-    // CompleteStream sends a streaming completion request to the provider
-    CompleteStream(ctx context.Context, req *CompletionRequest) (CompletionStream, error)
 }
 ```
 
@@ -77,10 +74,6 @@ func (p *NewProvider) GetModel(name string) (llm.Model, error) {
 func (p *NewProvider) Complete(ctx context.Context, req *llm.CompletionRequest) (*llm.CompletionResponse, error) {
     // Implementation for completing a prompt
 }
-
-func (p *NewProvider) CompleteStream(ctx context.Context, req *llm.CompletionRequest) (llm.CompletionStream, error) {
-    // Implementation for streaming completions
-}
 ```
 
 3. Register your provider in `internal/llm/providers/providers.go`:
@@ -93,34 +86,6 @@ func init() {
     })
 }
 ```
-
-4. Update documentation and examples to include your new provider
-
-## Testing
-
-When adding a new provider, you should add tests to ensure it works correctly:
-
-1. Create unit tests for your provider implementation:
-
-```go
-func TestNewProvider(t *testing.T) {
-    provider := NewNewProvider("test-api-key")
-    
-    // Test provider functionality
-    t.Run("Models", func(t *testing.T) {
-        models := provider.Models()
-        if len(models) == 0 {
-            t.Errorf("expected at least one model")
-        }
-    })
-    
-    // Additional test cases...
-}
-```
-
-2. Add an integration test if possible (these can be skipped if API keys aren't available)
-
-3. Update the example configurations to include your provider
 
 ## Handling API Keys
 

@@ -1,14 +1,13 @@
 # PE: Prompt Engineering Toolkit
 
-PE is a command-line utility for testing, evaluating, and optimizing prompts for large language models (LLMs) like GPT-4, Claude, and Gemini.
+PE is a command-line utility for testing and evaluating prompts for large language models (LLMs).
 
 ## Features
 
-- **Template-based prompts:** Use variables in your prompts to test multiple variations
-- **Multiple provider support:** Test across different LLM providers (OpenAI, Anthropic, Google AI)  
-- **Assertion-based testing:** Verify that model outputs meet expected criteria
+- **Template-based prompts:** Use variables in your prompts to test variations
+- **Multiple provider support:** Test across different LLM providers  
+- **Assertion-based testing:** Verify model outputs meet expected criteria
 - **Dry run mode:** Preview commands without making API calls
-- **Extensible architecture:** Easy to add new providers and assertion types
 
 ## Installation
 
@@ -29,7 +28,7 @@ prompts:
 providers:
   - "openai:gpt-4"
   - "anthropic:claude-3-haiku"
-  - "googleai:gemini-2.0-flash"
+  - "googleai:gemini-pro"
 
 tests:
   - vars:
@@ -60,17 +59,15 @@ chmod +x commands.sh
 
 ## Configuration Format
 
-The PE configuration uses a YAML format with these key sections:
+PE configuration uses YAML format with these key sections:
 
 - `prompts`: List of prompt templates
 - `providers`: List of LLM providers to test with
 - `tests`: Test cases with variables and assertions
 
-For complete documentation on the configuration format, see [Configuration Guide](docs/configuration.md).
-
 ## Assertion Types
 
-PE supports various assertion types to validate model outputs:
+PE supports these assertion types:
 
 - `contains`: Output includes the specified text
 - `not-contains`: Output does not include the specified text
@@ -86,10 +83,6 @@ PE supports various assertion types to validate model outputs:
   - `--format, -f`: Output format (json, yaml, text)
   - `--dry-run`: Show commands without executing them
   - `--timeout, -t`: Set timeout for the evaluation
-
-## Contributing
-
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## License
 
