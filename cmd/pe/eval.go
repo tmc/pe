@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/evaluator"
+	"github.com/tmc/pe/internal/promptfoo"
 	"sigs.k8s.io/yaml"
 )
 
@@ -28,17 +29,17 @@ func evalCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "eval [config_file]",
 		Short: "Evaluate prompt configurations",
-		Long:  `Evaluate prompt configurations against LLM providers.
+		Long: `Evaluate prompt configurations against LLM providers.
 
 When used with --save-db flag, results will be saved to the promptfoo database
 and can be viewed later using the 'pe view' command with the evaluation ID.`,
-		Args:  cobra.MaximumNArgs(1),
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Check if config file provided as positional arg
 			if len(args) > 0 {
 				configFile = args[0]
 			}
-			
+
 			// If no config file provided, check for default config files
 			if configFile == "" {
 				defaultConfigPaths := []string{"promptfooconfig.yaml"}
@@ -49,12 +50,12 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 						break
 					}
 				}
-				
+
 				if configFile == "" {
 					return fmt.Errorf("no configuration file provided")
 				}
 			}
-			
+
 			// Parse timeout
 			parsedTimeout, err := time.ParseDuration(timeout)
 			if err != nil {
@@ -68,24 +69,24 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 			}
 
 			// Parse the config
-			var config map[string]interface{}
+			var config promptfoo.Config
 			err = yaml.Unmarshal(data, &config)
 			if err != nil {
 				return fmt.Errorf("error parsing config file: %v", err)
 			}
-			
+
 			// Run the evaluator
 			results, err := evaluator.Evaluate(config, parsedTimeout, dryRun, maxConcurrency, !noProgressBar)
 			if err != nil {
 				return fmt.Errorf("evaluation error: %v", err)
 			}
-			
+
 			// Format results as a table by default for display
 			output, err := evaluator.FormatResults(results, "table")
 			if err != nil {
 				return fmt.Errorf("error formatting results: %v", err)
 			}
-			
+
 			// Write to output file or stdout
 			if outputFile != "" {
 				// Infer output format from file extension
@@ -97,38 +98,36 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 				} else if strings.HasSuffix(outputFile, ".csv") {
 					outputFormat = "csv"
 				}
-				
+
 				// For JSON output, ensure we're getting just the JSON data
 				if outputFormat == "json" {
 					// Re-marshal to ensure clean JSON output and match promptfoo's structure order
-					// Create an ordered map that preserves insertion order for JSON serialization
-					// The order must match: evalId, results, config, [shareableUrl]
-					
+
 					// Use a struct with fields in the correct order to preserve serialization order
 					type OrderedOutput struct {
-						EvalId       interface{} `json:"evalId"`
-						Results      interface{} `json:"results"`
-						Config       interface{} `json:"config"`
-						ShareableUrl string      `json:"shareableUrl,omitempty"`
+						EvalId       string              `json:"evalId"`
+						Results      promptfoo.ResultSet `json:"results"`
+						Config       promptfoo.Config    `json:"config"`
+						ShareableUrl string              `json:"shareableUrl,omitempty"`
 					}
-					
-					evalId := results["evalId"]
-					
+
+					evalId := results.EvalID
+
 					// Create output struct with fields in the desired order
 					output := OrderedOutput{
 						EvalId:  evalId,
-						Results: results["results"],
-						Config:  results["config"],
+						Results: results.Results,
+						Config:  results.Config,
 					}
-					
+
 					// Add shareableUrl if share flag is set
 					if share {
 						output.ShareableUrl = fmt.Sprintf("https://promptfoo.dev/eval/%s", evalId)
 					}
-					
+
 					// Marshal using the standard json package
 					jsonData, err := json.Marshal(output)
-					
+
 					// Format the JSON with indentation for readability
 					var prettyBuf bytes.Buffer
 					err = json.Indent(&prettyBuf, jsonData, "", "  ")
@@ -158,7 +157,7 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 					// Default to table format
 					err = os.WriteFile(outputFile, output, 0644)
 				}
-				
+
 				if err != nil {
 					return fmt.Errorf("error writing output file: %v", err)
 				}
@@ -166,42 +165,42 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 			} else {
 				fmt.Fprint(cmd.OutOrStdout(), string(output))
 			}
-			
+
 			// Save to a file in the .promptfoo directory if requested
 			if saveToDb {
-				evalId, _ := results["evalId"].(string)
-				
+				evalId := results.EvalID
+
 				// Create the .promptfoo directory in the user's home directory
 				homeDir, err := os.UserHomeDir()
 				if err != nil {
 					return fmt.Errorf("error getting user home directory: %v", err)
 				}
-				
+
 				// Create the .promptfoo/evals directory
 				promptfooDir := filepath.Join(homeDir, ".promptfoo", "evals")
 				if err := os.MkdirAll(promptfooDir, 0755); err != nil {
 					return fmt.Errorf("error creating promptfoo directory: %v", err)
 				}
-				
+
 				// Create a file for this evaluation
 				evalFile := filepath.Join(promptfooDir, evalId+".json")
-				
+
 				// Format results as JSON for the storage
 				jsonOutput, err := evaluator.FormatResults(results, "json")
 				if err != nil {
 					return fmt.Errorf("error formatting results as JSON: %v", err)
 				}
-				
+
 				// Write the JSON to the evaluation file
 				if err := os.WriteFile(evalFile, jsonOutput, 0644); err != nil {
 					return fmt.Errorf("error writing to evaluation file: %v", err)
 				}
-				
+
 				fmt.Fprintf(cmd.OutOrStdout(), "Evaluation results saved to: %s\n", evalFile)
 				fmt.Fprintf(cmd.OutOrStdout(), "\nTo view these results, run:\n")
 				fmt.Fprintf(cmd.OutOrStdout(), "pe view -f %s\n", evalFile)
 			}
-			
+
 			return nil
 		},
 	}

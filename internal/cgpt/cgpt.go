@@ -54,32 +54,26 @@ func (p *ModelProvider) EvaluatePromptWithOptions(prompt string, vars map[string
 		return nil, err
 	}
 
-	// Calculate latency
-	latency := time.Since(startTime)
+	// Calculate latency (unused in current implementation)
+	_ = time.Since(startTime)
 
 	// Estimate costs (approximate)
 	cost := estimateCost(tokens)
 
 	// Create token usage details
 	tokenUsage := &promptfoo.TokenUsage{
-		Total:       int32(tokens.total),
-		Prompt:      int32(tokens.prompt),
-		Completion:  int32(tokens.completion),
-		Cached:      0,
-		NumRequests: 1,
-		Details: &promptfoo.CompletionTokenDetails{
-			Reasoning:          0,
-			AcceptedPrediction: int32(tokens.completion),
-			RejectedPrediction: 0,
-		},
+		Total:      int32(tokens.total),
+		Prompt:     int32(tokens.prompt),
+		Completion: int32(tokens.completion),
+		Cached:     0,
 	}
 
 	// Build and return response
 	return &promptfoo.ProviderResponse{
 		Output:     output,
 		TokenUsage: tokenUsage,
-		FinishTime: startTime.Add(latency),
 		Cost:       cost,
+		Cached:     false,
 	}, nil
 }
 

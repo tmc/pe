@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/tmc/pe/internal/promptfoo"
 )
 
 // viewCmd returns a cobra.Command for the 'view' subcommand.
@@ -26,7 +27,7 @@ import (
 func viewCmd() *cobra.Command {
 	var fileName string
 	var port int
-	
+
 	cmd := &cobra.Command{
 		Use:   "view [evalId]",
 		Short: "View evaluation results in browser UI",
@@ -36,26 +37,26 @@ func viewCmd() *cobra.Command {
 			if fileName != "" {
 				return viewFile(fileName, port)
 			}
-			
+
 			// Case 2: Eval ID specified as positional argument
 			if len(args) > 0 {
 				evalId := args[0]
-				
+
 				// Check if the file exists in the standard location
 				homeDir, err := os.UserHomeDir()
 				if err != nil {
 					return fmt.Errorf("error getting user home directory: %v", err)
 				}
-				
+
 				evalFile := filepath.Join(homeDir, ".promptfoo", "evals", evalId+".json")
 				if _, err := os.Stat(evalFile); err == nil {
 					return viewFile(evalFile, port)
 				}
-				
+
 				// If the file doesn't exist, try using promptfoo view with the evalId
 				return runPromptfooView(cmd, args)
 			}
-			
+
 			// Case 3: No arguments, list available evaluations
 			return listEvaluations(cmd)
 		},
@@ -64,7 +65,7 @@ func viewCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&fileName, "file", "f", "", "Path to evaluation results file")
 	cmd.Flags().IntVarP(&port, "port", "p", 8080, "Port to use for local viewer")
 	cmd.Flags().BoolP("yes", "y", false, "Skip confirmation and auto-open the URL (for promptfoo view)")
-	
+
 	return cmd
 }
 
@@ -75,45 +76,45 @@ func viewFile(filePath string, port int) error {
 	if err != nil {
 		return fmt.Errorf("error reading file: %v", err)
 	}
-	
+
 	// Parse the JSON to confirm it's valid
-	var results map[string]interface{}
+	var results promptfoo.EvaluationResult
 	if err := json.Unmarshal(data, &results); err != nil {
 		return fmt.Errorf("error parsing evaluation results: %v", err)
 	}
-	
+
 	// Extract the evaluation ID
-	evalId, _ := results["evalId"].(string)
+	evalId := results.EvalID
 	if evalId == "" {
 		evalId = filepath.Base(filePath)
 	}
-	
+
 	fmt.Printf("Starting viewer for evaluation ID: %s\n", evalId)
 	fmt.Printf("Press Ctrl+C to stop the server\n\n")
-	
+
 	// Create a simple HTTP server to serve the file
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Serve the HTML viewer
 		w.Header().Set("Content-Type", "text/html")
 		io.WriteString(w, generateHtmlViewer(evalId))
 	})
-	
+
 	http.HandleFunc("/data.json", func(w http.ResponseWriter, r *http.Request) {
 		// Serve the JSON data
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(data)
 	})
-	
+
 	// Determine the URL
 	url := fmt.Sprintf("http://localhost:%d", port)
 	fmt.Printf("View results at: %s\n", url)
-	
+
 	// Open the browser
 	go func() {
 		time.Sleep(500 * time.Millisecond) // Give the server a moment to start
 		openBrowser(url)
 	}()
-	
+
 	// Start the server
 	return http.ListenAndServe(":"+strconv.Itoa(port), nil)
 }
@@ -124,26 +125,26 @@ func listEvaluations(cmd *cobra.Command) error {
 	if err != nil {
 		return fmt.Errorf("error getting user home directory: %v", err)
 	}
-	
+
 	evalsDir := filepath.Join(homeDir, ".promptfoo", "evals")
-	
+
 	// Check if the directory exists
 	if _, err := os.Stat(evalsDir); os.IsNotExist(err) {
 		fmt.Fprintln(cmd.OutOrStdout(), "No evaluations found. Run 'pe eval --save-db' to save an evaluation.")
 		return nil
 	}
-	
+
 	// List files in the evals directory
 	files, err := os.ReadDir(evalsDir)
 	if err != nil {
 		return fmt.Errorf("error reading evaluations directory: %v", err)
 	}
-	
+
 	if len(files) == 0 {
 		fmt.Fprintln(cmd.OutOrStdout(), "No evaluations found. Run 'pe eval --save-db' to save an evaluation.")
 		return nil
 	}
-	
+
 	fmt.Fprintln(cmd.OutOrStdout(), "Available evaluations:")
 	for _, file := range files {
 		if !file.IsDir() && filepath.Ext(file.Name()) == ".json" {
@@ -152,11 +153,11 @@ func listEvaluations(cmd *cobra.Command) error {
 			fmt.Fprintf(cmd.OutOrStdout(), "  %s\n", evalId)
 		}
 	}
-	
+
 	fmt.Fprintln(cmd.OutOrStdout(), "\nTo view an evaluation, run:")
 	fmt.Fprintln(cmd.OutOrStdout(), "  pe view <evalId>")
 	fmt.Fprintln(cmd.OutOrStdout(), "  pe view -f <file>")
-	
+
 	return nil
 }
 
@@ -169,23 +170,23 @@ func runPromptfooView(cmd *cobra.Command, args []string) error {
 
 	// Build the command to run promptfoo view
 	promptfooCmd := exec.Command("npx", "promptfoo", "view")
-	
+
 	// Add the eval ID if provided
 	if len(args) > 0 {
 		promptfooCmd.Args = append(promptfooCmd.Args, args[0])
 	}
-	
+
 	// Add the -y flag if specified
 	yes, _ := cmd.Flags().GetBool("yes")
 	if yes {
 		promptfooCmd.Args = append(promptfooCmd.Args, "-y")
 	}
-	
+
 	// Connect the command's stdio to our process
 	promptfooCmd.Stdin = os.Stdin
 	promptfooCmd.Stdout = os.Stdout
 	promptfooCmd.Stderr = os.Stderr
-	
+
 	// Run the command
 	return promptfooCmd.Run()
 }
@@ -193,7 +194,7 @@ func runPromptfooView(cmd *cobra.Command, args []string) error {
 // openBrowser opens the default browser with the provided URL
 func openBrowser(url string) {
 	var err error
-	
+
 	switch os.Getenv("GOOS") {
 	case "darwin":
 		err = exec.Command("open", url).Start()
@@ -202,7 +203,7 @@ func openBrowser(url string) {
 	default: // Linux and others
 		err = exec.Command("xdg-open", url).Start()
 	}
-	
+
 	if err != nil {
 		fmt.Printf("Error opening browser: %v\n", err)
 		fmt.Printf("Please open %s in your browser\n", url)
@@ -574,5 +575,5 @@ func generateHtmlViewer(evalId string) string {
         }
     </script>
 </body>
-</html>`;
+</html>`
 }

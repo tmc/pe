@@ -45,6 +45,8 @@ func main() {
 	root.AddCommand(fmtCmd())
 	root.AddCommand(convertCmd())
 	root.AddCommand(benchmarkCmd())
+	root.AddCommand(initCmd())
+	root.AddCommand(watchCmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Println(err)
