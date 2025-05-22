@@ -13,6 +13,16 @@
 //	fmt         format promptfoo configuration files
 //	convert     convert promptfoo configuration files between formats
 //	benchmark   compare performance metrics of prompts and providers
+//	test        run advanced testing (property-based, regression)
+//	template    manage prompt templates (list, search, apply)
+//	profile     profiling and observability tools (CPU, memory, tracing)
+//	ask         ask a single question to an LLM provider (pipeline-friendly)
+//	stream      process evaluation results as a stream
+//	filter      filter evaluation results based on conditions
+//	analyze     analyze evaluation results with statistics
+//	stats       show quick statistics from evaluation results
+//	diff        compare two evaluation results
+//	interactive start interactive REPL mode for prompt development
 //
 // Examples:
 //
@@ -23,6 +33,12 @@
 //	pe fmt config.yaml --output yaml
 //	pe convert config.yaml config.json --output json
 //	pe benchmark benchmark-config.yaml --iterations 5 --concurrency 2 --format text
+//	
+//	# Pipeline-friendly commands for Unix composability:
+//	echo "What is AI?" | pe ask --provider openai:gpt-4
+//	pe eval config.yaml | pe filter --success | pe stats
+//	pe eval config.yaml | pe stream --select response,latency | pe analyze --metric latency
+//	pe interactive --provider anthropic:claude-3-haiku
 package main
 
 import (
@@ -47,6 +63,18 @@ func main() {
 	root.AddCommand(benchmarkCmd())
 	root.AddCommand(initCmd())
 	root.AddCommand(watchCmd())
+	root.AddCommand(testCmd())
+	root.AddCommand(templateCmd())
+	root.AddCommand(profileCmd())
+	
+	// Pipeline-friendly commands for Unix composability
+	root.AddCommand(askCmd())
+	root.AddCommand(streamCmd())
+	root.AddCommand(filterCmd())
+	root.AddCommand(analyzeCmd())
+	root.AddCommand(statsCmd())
+	root.AddCommand(diffCmd())
+	root.AddCommand(interactiveCmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Println(err)
