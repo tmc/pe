@@ -17,6 +17,8 @@ type Config struct {
 	Iterations    int
 	Temperature   float64
 	MaxTokens     int
+	UseTextGrad   bool // Enable TextGrad-style optimization
+	Method        string // "standard", "textgrad", "hybrid"
 }
 
 // OptimizationResult contains the results of prompt optimization
@@ -41,18 +43,33 @@ type IterationResult struct {
 
 // Optimizer implements prompt optimization using metaprompting techniques
 type Optimizer struct {
-	llm llm.Provider
+	llm         llm.Provider
+	textGrad    *TextGradOptimizer
 }
 
 // NewOptimizer creates a new prompt optimizer
 func NewOptimizer(llmProvider llm.Provider) *Optimizer {
 	return &Optimizer{
-		llm: llmProvider,
+		llm:      llmProvider,
+		textGrad: NewTextGradOptimizer(llmProvider),
 	}
 }
 
 // Optimize runs the prompt optimization process
 func (o *Optimizer) Optimize(ctx context.Context, cfg Config) (*OptimizationResult, error) {
+	// Choose optimization method
+	switch cfg.Method {
+	case "textgrad":
+		return o.textGrad.OptimizeWithTextGrad(ctx, cfg)
+	case "hybrid":
+		return o.optimizeHybrid(ctx, cfg)
+	default:
+		return o.optimizeStandard(ctx, cfg)
+	}
+}
+
+// optimizeStandard runs the standard prompt optimization process
+func (o *Optimizer) optimizeStandard(ctx context.Context, cfg Config) (*OptimizationResult, error) {
 	startTime := time.Now()
 	
 	result := &OptimizationResult{
@@ -95,6 +112,42 @@ func (o *Optimizer) Optimize(ctx context.Context, cfg Config) (*OptimizationResu
 	result.TotalDuration = time.Since(startTime)
 
 	return result, nil
+}
+
+// optimizeHybrid combines standard and TextGrad approaches
+func (o *Optimizer) optimizeHybrid(ctx context.Context, cfg Config) (*OptimizationResult, error) {
+	// Use standard optimization for first half of iterations
+	standardCfg := cfg
+	standardCfg.Iterations = cfg.Iterations / 2
+	standardCfg.Method = "standard"
+	
+	standardResult, err := o.optimizeStandard(ctx, standardCfg)
+	if err != nil {
+		return nil, fmt.Errorf("standard optimization phase failed: %w", err)
+	}
+
+	// Use TextGrad for second half, starting with standard result
+	textgradCfg := cfg
+	textgradCfg.InitialPrompt = standardResult.OptimizedPrompt
+	textgradCfg.Iterations = cfg.Iterations - standardCfg.Iterations
+	textgradCfg.Method = "textgrad"
+	
+	textgradResult, err := o.textGrad.OptimizeWithTextGrad(ctx, textgradCfg)
+	if err != nil {
+		return nil, fmt.Errorf("textgrad optimization phase failed: %w", err)
+	}
+
+	// Combine results
+	combinedResult := &OptimizationResult{
+		OriginalPrompt:   standardResult.OriginalPrompt,
+		OptimizedPrompt:  textgradResult.OptimizedPrompt,
+		Iterations:       append(standardResult.Iterations, textgradResult.Iterations...),
+		ImprovementScore: (standardResult.ImprovementScore + textgradResult.ImprovementScore) / 2,
+		TotalDuration:    standardResult.TotalDuration + textgradResult.TotalDuration,
+		CreatedAt:        standardResult.CreatedAt,
+	}
+
+	return combinedResult, nil
 }
 
 // generateOptimizationSuggestions creates suggestions for improving the prompt
