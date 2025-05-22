@@ -76,6 +76,113 @@ pe gradients --prompt "Current prompt" --objective "Goal" --recommendations
 pe optimize --prompt "Advanced task" --method hybrid --iterations 6 --provider anthropic
 ```
 
+### Next-Generation Metaprompting (2025)
+
+The PE toolkit now incorporates the latest advances in metaprompting research from 2024-2025, extending beyond traditional optimization with revolutionary new approaches:
+
+**Component-Based Prompt Engineering**:
+```bash
+# Automatic prompt composition from verified components
+pe compose context.txt instruction.txt examples.txt --style cot --target gpt-4
+
+# Build and manage component libraries
+pe compose --library-init
+pe compose --add-component context-banking.txt --category context
+
+# Style-specific composition with TextGrad optimization
+pe compose components/ --style few-shot --optimize --coherence
+```
+
+**Evolutionary Prompt Optimization**:
+```bash
+# Population-based prompt evolution with multi-objective optimization
+pe evolve baseline.txt --generations 25 --population 20 --metric accuracy,latency,cost
+
+# Adaptive mutation operators with DSPy integration
+pe evolve prompt.txt --operators rephrase,expand,prune --adaptive-rates
+
+# Pareto frontier exploration for trade-off analysis
+pe evolve prompt.txt --multi-objective --extract-pareto-front
+```
+
+**Multi-Model Consensus Engineering**:
+```bash
+# Consensus optimization across multiple LLM providers
+pe fusion prompt.txt --models gpt-4,claude-3,gemini-pro --consensus weighted
+
+# Reflection-based multi-model analysis
+pe fusion prompt.txt --analyze-consensus --reflection-depth 3
+
+# Dynamic model weighting based on task performance
+pe fusion prompt.txt --adaptive-weights --learning-rate 0.1
+```
+
+**Hybrid Optimization Workflows**:
+```bash
+# Complete pipeline: compose → evolve → fuse → validate
+pe compose context.txt instruction.txt --style cot | \
+pe evolve --generations 15 --metric accuracy | \
+pe fusion --models gpt-4,claude-3 --optimize | \
+pe test property --comprehensive
+
+# Research-grade optimization with full traceability
+pe compose --research-mode | pe evolve --trace-genealogy | pe fusion --consensus-analysis
+```
+
+### Advanced Research Integration
+
+**2025 Cutting-Edge Features**:
+
+1. **TextGrad 2.0 Integration**:
+   - Natural language gradients with attention flow mapping
+   - Semantic drift detection during optimization trajectories
+   - Backward propagation through textual feedback loops
+   - Cross-modal gradient computation for multimodal prompts
+
+2. **DSPy-Inspired Component Architecture**:
+   - Signature-based prompt composition with type safety
+   - Program synthesis for automated prompt construction
+   - Multi-stage optimization with validation checkpoints
+   - Algorithmic parameter optimization using meta-learning
+
+3. **Evolutionary Metaprompting**:
+   - Population-based optimization with genetic algorithms
+   - Multi-objective optimization using NSGA-II variants
+   - Adaptive mutation operators based on prompt structure
+   - Diversity preservation through novel distance metrics
+
+4. **Consensus-Based Multi-Model Optimization**:
+   - Ensemble learning for prompt robustness
+   - Model-specific adaptation with transfer learning
+   - Consensus strategies: voting, averaging, reflection-based
+   - Dynamic model selection based on task characteristics
+
+### Research Validation and Metrics
+
+**Advanced Evaluation Framework**:
+```bash
+# Cross-validation between optimization methods
+pe test cross-validate --methods textgrad,evolve,fusion --folds 5
+
+# Statistical significance testing for improvements
+pe test significance --baseline baseline.json --optimized optimized.json --alpha 0.05
+
+# Robustness testing across model variations
+pe test robustness --prompt optimized.txt --models gpt-4,claude-3,gemini --variations 100
+```
+
+**Performance Profiling and Analysis**:
+```bash
+# Optimization algorithm profiling
+pe profile optimize --method evolve --trace-convergence --visualize
+
+# Gradient strength analysis for TextGrad methods
+pe profile gradients --sessions optimization-logs/ --strength-analysis
+
+# Resource efficiency optimization
+pe profile resources --memory-optimization --parallel-efficiency
+```
+
 ### Technical Architecture
 
 **Core Metaprompting Engine** (`internal/metaprompt/`):
