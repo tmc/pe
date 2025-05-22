@@ -77,6 +77,7 @@ func main() {
 	root.AddCommand(diffCmd())
 	root.AddCommand(interactiveCmd())
 	root.AddCommand(optimizeCmd())
+	root.AddCommand(composeCmd)
 
 	if err := root.Execute(); err != nil {
 		fmt.Println(err)
