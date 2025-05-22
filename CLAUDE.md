@@ -18,6 +18,7 @@ PE is a comprehensive toolkit for prompt engineering that combines traditional e
 
 - `pe eval`: Core evaluation engine with multi-provider support
 - `pe optimize`: **NEW** Metaprompting-based prompt optimization using 2024-2025 research
+- `pe semantic`: **BREAKTHROUGH** Semantic backpropagation and GASO optimization (2025 KAUST/IDSIA research)
 - `pe compose`: **NEW** Component-based prompt engineering with verified libraries and style-specific composition
 - `pe metrics`: **NEW** Advanced evaluation metrics (BLEU, ROUGE, METEOR, BERTScore, G-Eval, UniEval)
 - `pe evolve`: **NEW** Evolutionary optimization using genetic algorithms and multi-objective optimization
@@ -29,7 +30,29 @@ PE is a comprehensive toolkit for prompt engineering that combines traditional e
 
 ## Advanced Metaprompting Implementation
 
-The toolkit implements cutting-edge metaprompting techniques based on the latest 2024 research:
+The toolkit implements cutting-edge metaprompting techniques based on the latest 2024-2025 research, including the revolutionary Semantic Backpropagation and GASO breakthroughs:
+
+### 2025 BREAKTHROUGH: Semantic Backpropagation & GASO
+
+**Semantic Backpropagation Implementation** (KAUST/IDSIA 2025):
+- **Semantic Gradients**: Generalizes mathematical gradients to natural language feedback
+- **Graph-based Optimization**: GASO (Graph-based Agentic System Optimization) for multi-component systems
+- **Directional Semantic Information**: LLM-generated improvement directions with confidence scores
+- **System-Wide Optimization**: Optimizes entire agentic systems rather than individual components
+- **Computational Graph Analysis**: Dependency-aware optimization with semantic flow tracking
+- **Pareto Efficiency**: Multi-objective optimization for complex trade-offs (accuracy/latency/cost)
+
+**Key Commands Implemented**:
+```bash
+# Semantic backpropagation for individual prompts
+pe semantic backprop --prompt "prompt" --target "objective" --iterations 5
+
+# Semantic gradient descent with adaptive learning rates
+pe semantic descent --objective "goal" --learning-rate 0.1 --adaptive --convergence 0.001
+
+# GASO for multi-component system optimization
+pe semantic gaso --system definition.json --objective "performance" --multi-objective
+```
 
 ### 2024-2025 Research Integration
 

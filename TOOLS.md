@@ -1,6 +1,40 @@
 # PE Toolkit Tools
 
-This document describes the comprehensive set of tools available in the PE (Prompt Engineering) toolkit, organized by category and use case. The PE toolkit implements cutting-edge 2025 metaprompting research including TextGrad optimization, component-based composition, and evolutionary prompt engineering.
+This document describes the comprehensive set of tools available in the PE (Prompt Engineering) toolkit, organized by category and use case. The PE toolkit implements cutting-edge 2025 metaprompting research including TextGrad optimization, component-based composition, evolutionary prompt engineering, and the groundbreaking Semantic Backpropagation and GASO (Graph-based Agentic System Optimization) techniques.
+
+## 🧠 Revolutionary Semantic Optimization (2025)
+
+### `pe semantic`
+**BREAKTHROUGH** Implementation of semantic backpropagation and gradient descent based on 2025 KAUST/IDSIA research. Enables optimization of language-based agentic systems using semantic gradients that represent directional improvement information in natural language form.
+
+```bash
+# Semantic backpropagation for prompt optimization
+pe semantic backprop --prompt "Your prompt here" --target "improve clarity and effectiveness" --iterations 5
+
+# Semantic gradient descent with adaptive learning
+pe semantic descent --prompt "Complex prompt" --objective "maximize task performance" --learning-rate 0.1 --adaptive
+
+# Graph-based Agentic System Optimization (GASO)
+pe semantic gaso --system system-definition.json --objective "optimize overall system performance" --multi-objective
+
+# Advanced semantic optimization with convergence tracking
+pe semantic descent --prompt-file prompt.txt --objective "improve reasoning capability" --convergence 0.001 --output results.json
+```
+
+**Semantic Backpropagation Features:**
+- **Natural Language Gradients**: LLM feedback as textual gradients with semantic meaning
+- **Directional Optimization**: Semantic gradients provide specific improvement directions
+- **Iterative Refinement**: Progressive prompt enhancement through backpropagation
+- **Convergence Analysis**: Statistical tracking of optimization progress
+
+**GASO (Graph-based Agentic System Optimization):**
+- **Multi-Component Systems**: Optimize entire AI systems, not just individual prompts
+- **Dependency-Aware**: Considers component relationships and dependencies
+- **Pareto Efficiency**: Multi-objective optimization with trade-off analysis
+- **Computational Graphs**: Visual representation of system optimization flows
+
+**Research Foundation:**
+Based on "How to Correctly do Semantic Backpropagation on Language-based Agentic Systems" (KAUST/IDSIA 2025), this implementation extends traditional backpropagation to semantic domains using LLM-generated gradients for system-wide optimization.
 
 ## 🔬 Advanced Metaprompting Tools (2025)
 
