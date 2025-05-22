@@ -556,67 +556,81 @@ pe plugin list
 pe plugin enable advanced-metrics
 ```
 
-## Next-Generation Metaprompting Tools ⭐ EXPERIMENTAL
+## Next-Generation Metaprompting Tools ⭐ 2024-2025 RESEARCH
 
 ### `pe compose`
-Automatic prompt composition from verified components using TextGrad-based optimization.
+Component-based prompt engineering with verified libraries and TextGrad optimization.
 
 ```bash
-# Basic component composition
-pe compose context.txt instruction.txt examples.txt
+# Initialize component library
+pe compose --library-init
 
-# Style-specific composition
-pe compose context.txt instruction.txt --style cot --target gpt-4
+# Add verified components to library
+pe compose --add-component context-banking.txt --category context
+pe compose --add-component few-shot-examples.txt --category examples
 
-# Advanced composition with constraints
-pe compose base.txt --style few-shot --constraints accuracy.yaml
+# Compose prompt from components
+pe compose context.txt instruction.txt examples.txt --style cot
+
+# Advanced composition with optimization
+pe compose components/ --style few-shot --optimize --coherence
+pe compose base.txt --target gpt-4 --constraints accuracy.yaml
 ```
 
-**Features**:
-- **Component Library**: Curated prompt building blocks
-- **TextGrad Flow Optimization**: Coherence-based component arrangement
-- **Style Templates**: Chain-of-thought, few-shot, zero-shot patterns
-- **Model-Specific Formatting**: Optimized for target LLM architectures
+**2024-2025 Features**:
+- **Verified Component Libraries**: Pre-tested, reusable prompt building blocks
+- **TextGrad Flow Optimization**: Coherence-based component arrangement using natural language gradients
+- **Style Templates**: Chain-of-thought, few-shot, zero-shot, constitutional AI patterns
+- **Model-Specific Formatting**: Architecture-optimized prompts for GPT-4, Claude-3, Gemini, etc.
+- **DSPy-Inspired Composition**: Signature-based prompt construction with type safety
 
 ### `pe evolve`
-Evolutionary prompt optimization using population-based metaheuristics.
+Evolutionary prompt optimization using genetic algorithms and multi-objective optimization.
 
 ```bash
-# Basic evolutionary optimization
-pe evolve prompt.txt --generations 20 --population 15
+# Population-based evolution with NSGA-II
+pe evolve baseline.txt --generations 25 --population 20 --metric accuracy,latency,cost
 
-# Multi-metric optimization
-pe evolve prompt.txt --metric accuracy,latency --fitness weighted
-
-# Advanced evolution with custom operators
+# Adaptive mutation operators
 pe evolve prompt.txt --operators rephrase,expand,prune --adaptive-rates
+
+# Pareto frontier exploration
+pe evolve prompt.txt --multi-objective --extract-pareto-front
+
+# Genealogy tracking for research
+pe evolve prompt.txt --trace-genealogy --research-mode
 ```
 
-**Features**:
-- **DSPy-Based Mutations**: Intelligent prompt variation operators
-- **Multi-Metric Fitness**: Accuracy, latency, coherence evaluation
-- **Adaptive Mutation Rates**: Dynamic optimization parameter tuning
-- **Population Diversity**: Maintains exploration vs exploitation balance
+**2024-2025 Features**:
+- **NSGA-II Multi-Objective Optimization**: Pareto-optimal prompt discovery
+- **Adaptive Mutation Operators**: Dynamic strategy selection based on prompt structure
+- **Population Diversity Preservation**: Novel distance metrics for exploration
+- **Genealogy Tracking**: Full evolutionary lineage with mutation history
+- **Research-Grade Traceability**: Comprehensive optimization audit trails
 
 ### `pe fusion`
-Multi-model consensus optimization for robust prompt engineering.
+Multi-model consensus engineering for robust, ensemble-optimized prompts.
 
 ```bash
-# Basic multi-model fusion
-pe fusion prompt.txt --models gpt-4,claude-3,gemini-pro
+# Multi-model consensus optimization
+pe fusion prompt.txt --models gpt-4,claude-3,gemini-pro --consensus weighted
 
-# Weighted consensus optimization
-pe fusion prompt.txt --models gpt-4,claude-3 --consensus weighted --weights 0.6,0.4
+# Reflection-based multi-model analysis
+pe fusion prompt.txt --analyze-consensus --reflection-depth 3
 
-# Reflection-based consensus
-pe fusion prompt.txt --models gpt-4,claude-3 --consensus reflection --iterations 3
+# Dynamic model weighting with learning
+pe fusion prompt.txt --adaptive-weights --learning-rate 0.1
+
+# Consensus strategy comparison
+pe fusion prompt.txt --strategies voting,reflection,adaptive --compare
 ```
 
-**Features**:
-- **Multi-Model Ensemble**: Leverage diverse LLM strengths
-- **Consensus Strategies**: Weighted voting, majority rule, unanimous agreement
-- **Reflection-Based Analysis**: Deep response pattern examination
-- **Model-Specific Adaptation**: Optimized prompts per LLM architecture
+**2024-2025 Features**:
+- **Ensemble Learning**: Model-specific adaptation with transfer learning
+- **Dynamic Model Selection**: Task-characteristic-based provider weighting
+- **Reflection-Based Consensus**: Deep pattern analysis across model responses
+- **Adaptive Weighting**: Performance-based model importance adjustment
+- **Cross-Model Validation**: Robustness testing across LLM architectures
 
 ## Advanced Metaprompting Workflows
 
@@ -676,23 +690,40 @@ pe test property final.txt --comprehensive
 
 ### 2024-2025 Research Implementation
 
-**TextGrad Integration**:
-- Natural language gradient computation for prompt optimization
-- Attention flow analysis for component coherence
-- Semantic drift detection during evolutionary processes
+**TextGrad 2.0 Integration**:
+- Natural language gradients with attention flow mapping
+- Semantic drift detection during optimization trajectories  
 - Backward propagation through textual feedback loops
+- Cross-modal gradient computation for multimodal prompts
+- Gradient strength analysis for convergence optimization
 
-**DSPy-Inspired Techniques**:
-- Structured prompt generation with signature-based composition
-- Program synthesis for automatic prompt construction  
-- Multi-stage optimization with validation gates
-- Algorithmic prompt parameter optimization
+**DSPy-Inspired Component Architecture**:
+- Signature-based prompt composition with type safety
+- Program synthesis for automated prompt construction
+- Multi-stage optimization with validation checkpoints
+- Algorithmic parameter optimization using meta-learning
+- Component interface definitions for reusability
 
-**Reflection-Based Learning**:
-- Meta-analysis of optimization session patterns
-- Success pattern mining for strategy recommendation
-- Knowledge distillation for prompt engineering principles
-- Continuous improvement through session feedback
+**Evolutionary Metaprompting (Novel 2024)**:
+- Population-based optimization with genetic algorithms
+- Multi-objective optimization using NSGA-II variants
+- Adaptive mutation operators based on prompt structure analysis
+- Diversity preservation through semantic distance metrics
+- Convergence detection with plateau identification
+
+**Consensus-Based Multi-Model Optimization (2025)**:
+- Ensemble learning for prompt robustness across models
+- Model-specific adaptation with transfer learning techniques
+- Consensus strategies: voting, averaging, reflection-based synthesis
+- Dynamic model selection based on task characteristics
+- Cross-validation with statistical significance testing
+
+**Reflection-Based Meta-Learning**:
+- Meta-analysis of optimization session patterns and outcomes
+- Success pattern mining for automated strategy recommendation
+- Knowledge distillation for prompt engineering principle extraction
+- Continuous improvement through reinforcement learning on sessions
+- Team knowledge aggregation and best practice synthesis
 
 ### Advanced Quality Assurance
 
@@ -722,12 +753,14 @@ pe profile resources --optimize-memory --parallel-efficiency
 
 ## Best Practices
 
-### Optimization Strategy Selection
-1. **Simple Tasks**: Use `pe optimize --method standard` for basic refinement
-2. **Complex Tasks**: Start with `pe compose` for structured prompt building
-3. **Performance Critical**: Apply `pe evolve` for multi-objective optimization
-4. **High Reliability**: Use `pe fusion` for consensus-based robustness
-5. **Research/Exploration**: Combine all methods in hybrid workflows
+### 2025 Optimization Strategy Selection
+1. **Simple Tasks**: Use `pe optimize --method textgrad` for gradient-based refinement
+2. **Complex Tasks**: Start with `pe compose` for component-based building
+3. **Performance Critical**: Apply `pe evolve` for multi-objective optimization with Pareto frontiers
+4. **High Reliability**: Use `pe fusion` for multi-model consensus robustness
+5. **Research/Exploration**: Combine all methods in hybrid workflows with full traceability
+6. **Production Systems**: Use `pe fusion --adaptive-weights` for self-improving prompts
+7. **Team Environments**: Leverage `pe reflect` for knowledge sharing and best practice extraction
 
 ### Quality Assurance Workflow
 1. **Component Validation**: Test building blocks before composition
