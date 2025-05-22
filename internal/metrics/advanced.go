@@ -12,6 +12,42 @@ import (
 	"github.com/tmc/pe/internal/llm"
 )
 
+// Package-level convenience functions for backward compatibility
+func CalculateBLEU(generated, reference string, maxN int) *AdvancedMetricResult {
+	am := &AdvancedMetrics{}
+	return am.CalculateBLEU(generated, reference, maxN)
+}
+
+func CalculateROUGE(generated, reference string, rougeType string) *AdvancedMetricResult {
+	am := &AdvancedMetrics{}
+	return am.CalculateROUGE(generated, reference, rougeType)
+}
+
+func CalculateROUGEDetailed(generated, reference string) *AdvancedMetricResult {
+	am := &AdvancedMetrics{}
+	return am.CalculateROUGE(generated, reference, "L")
+}
+
+func CalculateMETEOR(generated, reference string) *AdvancedMetricResult {
+	am := &AdvancedMetrics{}
+	return am.CalculateMETEOR(generated, reference)
+}
+
+func CalculateBERTScoreDetailed(generated, reference string, llmProvider llm.Provider) *AdvancedMetricResult {
+	am := NewAdvancedMetrics(llmProvider)
+	return am.CalculateBERTScore(context.Background(), generated, reference)
+}
+
+func CalculateGEval(generated, reference, criteria string, llmProvider llm.Provider) *AdvancedMetricResult {
+	am := NewAdvancedMetrics(llmProvider)
+	return am.CalculateGEval(context.Background(), generated, reference, criteria)
+}
+
+func CalculateUniEval(generated, reference, taskType string, llmProvider llm.Provider) *AdvancedMetricResult {
+	am := NewAdvancedMetrics(llmProvider)
+	return am.CalculateUniEval(context.Background(), generated, reference, taskType)
+}
+
 // AdvancedMetrics provides state-of-the-art evaluation metrics for prompt engineering
 type AdvancedMetrics struct {
 	llm llm.Provider

@@ -7,6 +7,8 @@ toolchain go1.24.1
 require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/google/go-cmp v0.7.0
+	github.com/gorilla/mux v1.8.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/spf13/cobra v1.2.1
 	sigs.k8s.io/yaml v1.4.0
 )

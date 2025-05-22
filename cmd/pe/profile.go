@@ -28,7 +28,7 @@ system behavior during prompt evaluation and processing.`,
 	cmd.AddCommand(profileStatusCmd())
 	cmd.AddCommand(profileReportCmd())
 	cmd.AddCommand(traceCmd())
-	cmd.AddCommand(metricsCmd())
+	cmd.AddCommand(profileMetricsCmd())
 
 	return cmd
 }
@@ -170,8 +170,8 @@ func traceReportCmd() *cobra.Command {
 	return cmd
 }
 
-// metricsCmd handles metrics collection
-func metricsCmd() *cobra.Command {
+// profileMetricsCmd handles metrics collection
+func profileMetricsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "metrics",
 		Short: "Metrics collection tools",
