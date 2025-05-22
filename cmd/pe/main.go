@@ -23,6 +23,7 @@
 //	stats       show quick statistics from evaluation results
 //	diff        compare two evaluation results
 //	interactive start interactive REPL mode for prompt development
+//	optimize    optimize prompts using metaprompting techniques
 //
 // Examples:
 //
@@ -75,6 +76,7 @@ func main() {
 	root.AddCommand(statsCmd())
 	root.AddCommand(diffCmd())
 	root.AddCommand(interactiveCmd())
+	root.AddCommand(optimizeCmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Println(err)
