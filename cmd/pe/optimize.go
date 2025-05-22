@@ -20,27 +20,32 @@ func optimizeCmd() *cobra.Command {
 		outputFile    string
 		temperature   float64
 		maxTokens     int
+		method        string
 	)
 
 	cmd := &cobra.Command{
 		Use:   "optimize",
 		Short: "Optimize prompts using metaprompting techniques",
 		Long: `Optimize prompts using advanced metaprompting techniques including:
-- Iterative refinement with LLM feedback
+- Standard iterative refinement with LLM feedback
+- TextGrad-style textual gradients optimization
 - DSPy-style structured prompt generation  
 - Reflection and critique mechanisms
-- Automated prompt improvement
+- Hybrid approaches combining multiple methods
 
 The optimize command uses a meta-LLM to analyze and improve your prompts,
-applying the latest research in prompt optimization and engineering.`,
-		Example: `  # Optimize a basic prompt
+applying the latest 2024 research in prompt optimization and engineering.`,
+		Example: `  # Optimize a basic prompt (standard method)
   pe optimize --prompt "Summarize this text" --iterations 3
 
-  # Use specific provider and model
-  pe optimize --prompt "Classify sentiment" --provider anthropic --model claude-3-sonnet
+  # Use TextGrad optimization
+  pe optimize --prompt "Classify sentiment" --method textgrad --iterations 5
 
-  # Save optimization results
-  pe optimize --prompt "Generate code" --output optimized.json`,
+  # Use hybrid approach
+  pe optimize --prompt "Generate code" --method hybrid --iterations 6
+
+  # Use specific provider and save results
+  pe optimize --prompt "Analyze data" --provider anthropic --output optimized.json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if initialPrompt == "" {
 				return fmt.Errorf("initial prompt is required")
@@ -58,12 +63,13 @@ applying the latest research in prompt optimization and engineering.`,
 				Iterations:    iterations,
 				Temperature:   temperature,
 				MaxTokens:     maxTokens,
+				Method:        method,
 			}
 
 			// Create optimizer
 			optimizer := metaprompt.NewOptimizer(llmProvider)
 
-			fmt.Printf("Optimizing prompt with %d iterations...\n", iterations)
+			fmt.Printf("Optimizing prompt with %d iterations using %s method...\n", iterations, method)
 			
 			// Run optimization
 			result, err := optimizer.Optimize(context.Background(), cfg)
@@ -105,6 +111,7 @@ applying the latest research in prompt optimization and engineering.`,
 	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for optimization results (JSON)")
 	cmd.Flags().Float64Var(&temperature, "temperature", 0.3, "Temperature for generation")
 	cmd.Flags().IntVar(&maxTokens, "max-tokens", 1000, "Maximum tokens per generation")
+	cmd.Flags().StringVarP(&method, "method", "m", "standard", "Optimization method (standard, textgrad, hybrid)")
 
 	cmd.MarkFlagRequired("prompt")
 
