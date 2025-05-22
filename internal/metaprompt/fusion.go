@@ -189,7 +189,7 @@ Provide your improvement as JSON with the following structure:
 
 Focus on improving accuracy while maintaining efficiency.`, prompt, objective)
 
-	response, err := provider.Generate(ctx, improvementPrompt, nil)
+	response, err := provider.Generate(ctx, improvementPrompt, llm.GenerateOptions{})
 	if err != nil {
 		return ModelImprovement{}, err
 	}
@@ -297,7 +297,7 @@ Synthesize the best elements from all improvements into a single optimized promp
 }`, objective, string(improvementsJson))
 
 	ctx := context.Background()
-	response, err := f.providers[0].Generate(ctx, reflectionPrompt, nil)
+	response, err := f.providers[0].Generate(ctx, reflectionPrompt, llm.GenerateOptions{})
 	if err != nil {
 		return f.weightedVoting(improvements) // Fallback
 	}

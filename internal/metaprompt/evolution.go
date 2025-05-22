@@ -205,7 +205,7 @@ Create variant %d that:
 
 Respond with only the variant prompt:`, basePrompt, variantIndex)
 
-	response, err := e.provider.Generate(ctx, variantPrompt, nil)
+	response, err := e.provider.Generate(ctx, variantPrompt, llm.GenerateOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -268,7 +268,7 @@ Consider factors like:
 
 Respond with only a number between 0.0 and 1.0:`, objective, prompt)
 
-	response, err := e.provider.Generate(ctx, evaluationPrompt, nil)
+	response, err := e.provider.Generate(ctx, evaluationPrompt, llm.GenerateOptions{})
 	if err != nil {
 		return 0.5, err
 	}
@@ -506,7 +506,7 @@ Create a hybrid that:
 
 Respond with only the new hybrid prompt:`, parent1.Prompt, parent2.Prompt)
 
-	response, err := e.provider.Generate(ctx, crossoverPrompt, nil)
+	response, err := e.provider.Generate(ctx, crossoverPrompt, llm.GenerateOptions{})
 	if err != nil {
 		return parent1, err // Fallback to parent1
 	}
@@ -528,7 +528,7 @@ func (e *EvolutionaryOptimizer) mutate(ctx context.Context, individual Individua
 
 	mutationPrompt := e.createMutationPrompt(individual.Prompt, operator)
 	
-	response, err := e.provider.Generate(ctx, mutationPrompt, nil)
+	response, err := e.provider.Generate(ctx, mutationPrompt, llm.GenerateOptions{})
 	if err != nil {
 		return individual, err // No mutation if failed
 	}
