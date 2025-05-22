@@ -43,8 +43,10 @@ type IterationResult struct {
 
 // Optimizer implements prompt optimization using metaprompting techniques
 type Optimizer struct {
-	llm         llm.Provider
-	textGrad    *TextGradOptimizer
+	llm      llm.Provider
+	textGrad *TextGradOptimizer
+	pe2      *PE2Optimizer
+	apex     *APEXOptimizer
 }
 
 // NewOptimizer creates a new prompt optimizer
@@ -52,6 +54,8 @@ func NewOptimizer(llmProvider llm.Provider) *Optimizer {
 	return &Optimizer{
 		llm:      llmProvider,
 		textGrad: NewTextGradOptimizer(llmProvider),
+		pe2:      NewPE2Optimizer(llmProvider),
+		apex:     NewAPEXOptimizer(llmProvider),
 	}
 }
 
@@ -59,6 +63,10 @@ func NewOptimizer(llmProvider llm.Provider) *Optimizer {
 func (o *Optimizer) Optimize(ctx context.Context, cfg Config) (*OptimizationResult, error) {
 	// Choose optimization method
 	switch cfg.Method {
+	case "pe2":
+		return o.pe2.OptimizeWithPE2(ctx, cfg)
+	case "apex":
+		return o.apex.OptimizeWithAPEX(ctx, cfg)
 	case "textgrad":
 		return o.textGrad.OptimizeWithTextGrad(ctx, cfg)
 	case "hybrid":

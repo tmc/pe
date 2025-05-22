@@ -27,25 +27,28 @@ func optimizeCmd() *cobra.Command {
 		Use:   "optimize",
 		Short: "Optimize prompts using metaprompting techniques",
 		Long: `Optimize prompts using advanced metaprompting techniques including:
-- Standard iterative refinement with LLM feedback
-- TextGrad-style textual gradients optimization
-- DSPy-style structured prompt generation  
-- Reflection and critique mechanisms
-- Hybrid approaches combining multiple methods
+- PE2: Prompt Engineering a Prompt Engineer (2024 breakthrough)
+- APEX: Automated Prompt Engineering Xpert for long prompts
+- TextGrad: Natural language gradients optimization
+- Standard: Enhanced iterative refinement with LLM feedback
+- Hybrid: Combining multiple state-of-the-art methods
 
-The optimize command uses a meta-LLM to analyze and improve your prompts,
-applying the latest 2024 research in prompt optimization and engineering.`,
-		Example: `  # Optimize a basic prompt (standard method)
-  pe optimize --prompt "Summarize this text" --iterations 3
+The optimize command implements cutting-edge 2024-2025 research in
+automated prompt engineering and systematic optimization.`,
+		Example: `  # PE2: Meta-prompt optimization with reasoning templates
+  pe optimize --prompt "Analyze sentiment" --method pe2 --iterations 5
 
-  # Use TextGrad optimization
-  pe optimize --prompt "Classify sentiment" --method textgrad --iterations 5
+  # APEX: Long prompt optimization with beam search
+  pe optimize --prompt-file complex-system.txt --method apex --iterations 8
 
-  # Use hybrid approach
+  # TextGrad: Natural language gradients
+  pe optimize --prompt "Classify text" --method textgrad --iterations 6
+
+  # Hybrid: Best of multiple methods
   pe optimize --prompt "Generate code" --method hybrid --iterations 6
 
-  # Use specific provider and save results
-  pe optimize --prompt "Analyze data" --provider anthropic --output optimized.json`,
+  # Standard with specific provider
+  pe optimize --prompt "Summarize" --provider anthropic --output results.json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if initialPrompt == "" {
 				return fmt.Errorf("initial prompt is required")
@@ -111,7 +114,7 @@ applying the latest 2024 research in prompt optimization and engineering.`,
 	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for optimization results (JSON)")
 	cmd.Flags().Float64Var(&temperature, "temperature", 0.3, "Temperature for generation")
 	cmd.Flags().IntVar(&maxTokens, "max-tokens", 1000, "Maximum tokens per generation")
-	cmd.Flags().StringVarP(&method, "method", "m", "standard", "Optimization method (standard, textgrad, hybrid)")
+	cmd.Flags().StringVarP(&method, "method", "m", "standard", "Optimization method (standard, pe2, apex, textgrad, hybrid)")
 
 	cmd.MarkFlagRequired("prompt")
 
