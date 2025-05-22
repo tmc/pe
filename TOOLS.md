@@ -176,34 +176,183 @@ Features:
 - A/B testing with confidence intervals
 - Custom test property definitions
 
-## Prompt Optimization
+## Prompt Optimization & Metaprompting ⭐ NEW
 
-### `pe optimize` ⭐ NEW
+### `pe optimize` 
 Optimize prompts using advanced metaprompting techniques based on 2024 research.
 
 ```bash
 # Basic optimization
 pe optimize --prompt "Summarize this text" --iterations 3
 
-# With specific provider and model
-pe optimize --prompt "Classify sentiment" --provider anthropic --model claude-3-sonnet
+# TextGrad optimization
+pe optimize --prompt "Classify sentiment" --method textgrad --iterations 5
+
+# Hybrid approach (standard + TextGrad)
+pe optimize --prompt "Generate code" --method hybrid --iterations 6
+
+# Multi-stage optimization
+pe optimize --prompt "Complex task" --method multistage
 
 # Save optimization results
-pe optimize --prompt "Generate code" --output optimized.json --iterations 5
+pe optimize --prompt "Analyze data" --provider anthropic --output optimized.json
 ```
 
-Key features:
-- **Iterative Refinement**: Uses LLM feedback loops for continuous improvement
-- **DSPy-Style Generation**: Structured prompt optimization approach
-- **Reflection Mechanisms**: Self-critique and analysis capabilities
-- **Metaprompting**: Uses meta-LLMs to optimize target prompts
-- **Evaluation Scoring**: Automatic scoring and improvement tracking
+**Optimization Methods**:
+- **standard**: Traditional iterative refinement with LLM feedback
+- **textgrad**: TextGrad-style optimization using natural language gradients  
+- **hybrid**: Combines standard and TextGrad approaches
+- **multistage**: Sequential optimization through Analysis → Refinement → Validation → Polishing
 
-The optimize command implements cutting-edge research including:
-- Meta-prompting with task-agnostic scaffolding
-- Textual gradients for improvement guidance
-- Automated prompt generation and refinement
-- Reflection-based optimization strategies
+### `pe analyze`
+Perform TextGrad-style analysis of prompt-response gradients.
+
+```bash
+# Analyze prompt effectiveness
+pe analyze --prompt "Your prompt" --response "Model response"
+
+# Detailed gradient analysis
+pe analyze --prompt "Test prompt" --response "Test response" --detailed
+
+# Output analysis to file
+pe analyze --prompt "Prompt" --response "Response" --output analysis.json
+```
+
+**Analysis Features**:
+- **Attention Flow Mapping**: Visualizes token relationships
+- **Semantic Drift Detection**: Identifies concept preservation issues
+- **Coherence Scoring**: Evaluates response quality metrics  
+- **Optimization Hints**: Generates specific improvement suggestions
+
+### `pe refine`
+Error-driven prompt refinement based on failure analysis.
+
+```bash
+# Refine problematic prompt
+pe refine --prompt "Problematic prompt" --errors "error1,error2,error3"
+
+# Automated error detection and fixing
+pe refine --prompt "Your prompt" --auto-detect
+
+# Generate regression tests
+pe refine --prompt "Prompt" --generate-tests --output refined.json
+```
+
+**Refinement Features**:
+- **Error Pattern Detection**: Identifies semantic, format, logic issues
+- **Automated Fix Generation**: Context-aware repair suggestions
+- **Regression Testing**: Comprehensive test suite generation
+- **Quality Metrics**: Tracks error reduction and robustness improvements
+
+### `pe gradients`
+Compute optimization trajectories using gradient-based methods.
+
+```bash
+# Compute gradients for optimization
+pe gradients --prompt "Current prompt" --objective "Desired outcome"
+
+# Include optimization history
+pe gradients --prompt "Prompt" --objective "Goal" --history history.json
+
+# Get trajectory recommendations
+pe gradients --prompt "Prompt" --objective "Goal" --recommendations
+```
+
+**Gradient Features**:
+- **Loss Function Calculation**: Semantic, structural, task-specific loss
+- **Step Size Optimization**: Controlled gradient descent
+- **Convergence Tracking**: Real-time optimization progress
+- **Trajectory Planning**: Multi-step optimization path prediction
+
+### `pe reflect`
+Meta-analysis of prompt engineering sessions for learning extraction.
+
+```bash
+# Reflect on optimization sessions
+pe reflect --session-data sessions.json
+
+# Generate strategy recommendations  
+pe reflect --session-data sessions.json --strategies
+
+# Extract knowledge base
+pe reflect --session-data sessions.json --knowledge --output kb.json
+```
+
+**Reflection Features**:
+- **Success Pattern Mining**: Identifies effective techniques
+- **Strategy Recommendations**: Guides tool selection
+- **Knowledge Distillation**: Extracts reusable principles
+- **Workflow Optimization**: Suggests process improvements
+
+## Advanced Metaprompting Techniques
+
+### TextGrad Integration
+Implements the latest 2024 TextGrad research:
+
+```bash
+# Pure TextGrad optimization
+pe optimize --method textgrad --iterations 5
+
+# Analyze textual gradients
+pe analyze --prompt "..." --response "..." --gradients
+```
+
+Key innovations:
+- Natural language gradients for optimization
+- Backward propagation through text
+- Iterative refinement with LLM feedback
+- Attention pattern analysis
+
+### DSPy-Style Optimization
+Structured prompt generation with feedback loops:
+
+```bash
+# DSPy-inspired optimization
+pe optimize --method hybrid --structured
+
+# Multi-stage with validation gates
+pe optimize --method multistage --gates
+```
+
+Features:
+- Structured prompt generation
+- Automatic optimization algorithms  
+- Multi-stage refinement processes
+- Cross-validation between methods
+
+### Error-Driven Refinement
+Systematic failure mode elimination:
+
+```bash
+# Comprehensive error analysis
+pe refine --prompt "..." --comprehensive
+
+# Root cause analysis
+pe refine --prompt "..." --root-cause --detailed
+```
+
+Capabilities:
+- Automated failure mode detection
+- Root cause analysis with triggers
+- Systematic error elimination
+- Regression prevention testing
+
+### Reflection-Based Learning
+Meta-analysis for continuous improvement:
+
+```bash
+# Extract team knowledge
+pe reflect --sessions team-sessions.json --team-knowledge
+
+# Workflow optimization
+pe reflect --sessions sessions.json --workflow-insights
+```
+
+Benefits:
+- Team knowledge building and sharing
+- Process optimization recommendations
+- Best practice extraction
+- Continuous improvement cycles
 
 ## Template Management
 
