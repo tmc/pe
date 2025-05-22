@@ -778,15 +778,153 @@ pe profile resources --optimize-memory --parallel-efficiency
 
 ## Getting Help
 
+## Next-Generation Metaprompting Tools (2025)
+
+### `pe compose`
+**Modular prompt composition tool** that combines and optimizes multiple prompt components using component-based architecture inspired by DSPy research.
+
+```bash
+# Basic component composition
+pe compose spec.yaml -o text
+
+# Composition with optimization
+pe compose spec.yaml --strategy semantic-coherence -o json
+
+# Compose and optimize in pipeline
+pe compose base.yaml --component examples.yaml | pe optimize
+
+# Complex workflow with evolution
+pe compose spec.yaml | pe optimize --metric coherence | pe evolve --generations 5
+```
+
+Key features:
+- Component library management with versioning
+- Automatic compatibility checking and dependency resolution
+- Multiple optimization strategies (semantic, dependency-based, performance)
+- Integration with existing optimization commands
+- Support for templates and custom output formats
+
+### `pe scaffold`
+**Dynamic prompt scaffolding tool** that automatically builds structured prompts using hierarchical decomposition and self-refinement based on latest reasoning frameworks.
+
+```bash
+# Basic scaffolding
+pe scaffold "Write a research paper summary" --framework=cot
+
+# Advanced mode with validation
+pe scaffold "Complex analysis task" --mode=advanced --framework=tot --validate
+
+# Interactive scaffolding
+pe scaffold "Multi-step reasoning" --interactive --refine
+```
+
+Key features:
+- Automatic task decomposition into subtasks
+- Integration with Chain-of-Thought (CoT), Tree-of-Thoughts (ToT), and ReAct frameworks
+- Dynamic template generation and validation loops
+- Self-refinement capabilities using TextGrad techniques
+
+### `pe calibrate`
+**Model calibration tool** for detecting and correcting hallucinations and bias through statistical calibration and uncertainty quantification.
+
+```bash
+# Basic calibration with validation dataset
+pe calibrate "medical diagnosis prompt" --dataset=medical_cases.json
+
+# Bias detection and correction
+pe calibrate prompt.txt --metrics=accuracy,bias --correct
+
+# Uncertainty quantification
+pe calibrate prompt.txt --uncertainty --confidence-intervals
+```
+
+Key features:
+- Automated bias detection using ensemble methods
+- Confidence score calibration and uncertainty quantification
+- Ground truth validation against reference datasets
+- Integration with latest debiasing techniques from 2024 research
+
+### `pe adapt`
+**Context-aware prompt adaptation tool** that automatically adjusts prompts based on user interaction patterns and real-time feedback using TextGrad optimization.
+
+```bash
+# Interactive adaptation mode
+pe adapt "customer service prompt" --mode=interactive --track
+
+# Batch adaptation with A/B testing
+pe adapt prompt.txt --mode=batch --ab-test --metrics=engagement
+
+# Real-time optimization
+pe adapt prompt.txt --realtime --feedback-loop
+```
+
+Key features:
+- Real-time prompt optimization using TextGrad gradients
+- User feedback integration with learning capabilities
+- A/B testing functionality with statistical analysis
+- Performance tracking and adaptation history
+
+### `pe analyze`
+**Advanced prompt analysis tool** that provides deep insights into prompt performance, behavior, and failure modes using explainable AI techniques.
+
+```bash
+# Deep analysis with attention visualization
+pe analyze "complex prompt" --depth=deep --attention
+
+# Token-level performance analysis
+pe analyze prompt.txt --tokens --semantic-roles
+
+# Failure mode detection
+pe analyze prompt.txt --failure-modes --debug
+```
+
+Key features:
+- Token-level analysis with semantic role mapping
+- Attention pattern visualization and interpretation
+- Performance profiling across multiple dimensions
+- Failure mode detection and debugging assistance
+- Integration with latest explainable AI research
+
+## Research Foundation and Integration
+
+These next-generation tools are built upon cutting-edge 2024-2025 research:
+
+- **TextGrad Integration**: Natural language gradients for continuous optimization
+- **DSPy-Inspired Architecture**: Program synthesis and component-based composition
+- **Evolutionary Algorithms**: NSGA-II multi-objective optimization and genetic programming
+- **Ensemble Methods**: Multi-model consensus and adaptive weighting
+- **Calibration Research**: Latest advances in uncertainty quantification and debiasing
+
+### Tool Integration Patterns
+
+```bash
+# Complete metaprompting workflow
+pe compose components/ --optimize | \
+pe scaffold --framework=cot | \
+pe evolve --generations 10 --multi-objective | \
+pe calibrate --dataset=validation.json | \
+pe analyze --deep --report
+
+# Research-grade pipeline
+pe compose --research-mode --experiment-id exp001 | \
+pe evolve --trace-genealogy --statistical-analysis | \
+pe fusion --consensus-analysis --reproducibility-package
+```
+
+## Help and Documentation
+
 Each command supports `--help` for detailed usage information:
 
 ```bash
 pe --help                    # General help
 pe eval --help              # Command-specific help
 pe optimize --help          # Optimization help
+pe compose --help           # Composition help
+pe scaffold --help          # Scaffolding help
 ```
 
 For more information, see:
 - [Getting Started Guide](docs/GETTING_STARTED.md)
 - [CLI Reference](docs/CLI_REFERENCE.md)
+- [Research Foundations](docs/RESEARCH_FOUNDATIONS.md)
 - [Contributing Guide](CONTRIBUTING.md)
