@@ -24,6 +24,7 @@
 //	diff        compare two evaluation results
 //	interactive start interactive REPL mode for prompt development
 //	optimize    optimize prompts using metaprompting techniques
+//	semantic    advanced semantic gradient descent optimization
 //
 // Examples:
 //
@@ -78,6 +79,10 @@ func main() {
 	root.AddCommand(interactiveCmd())
 	root.AddCommand(optimizeCmd())
 	root.AddCommand(composeCmd)
+	root.AddCommand(playgroundCmd())
+	root.AddCommand(metricsCmd())
+	root.AddCommand(semanticCmd())
+	root.AddCommand(securityCmd())
 
 	if err := root.Execute(); err != nil {
 		fmt.Println(err)
