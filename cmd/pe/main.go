@@ -79,6 +79,7 @@ func main() {
 	root.AddCommand(interactiveCmd())
 	root.AddCommand(optimizeCmd())
 	root.AddCommand(composeCmd)
+	root.AddCommand(synthesizeCmd)
 	root.AddCommand(playgroundCmd())
 	root.AddCommand(metricsCmd())
 	root.AddCommand(semanticCmd())
