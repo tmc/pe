@@ -193,14 +193,14 @@ allowing for effective optimization of complex AI system parameters.`,
 
 	cmd.Flags().StringVarP(&prompt, "prompt", "p", "", "Prompt to optimize")
 	cmd.Flags().StringVar(&promptFile, "prompt-file", "", "File containing prompt to optimize")
-	cmd.Flags().StringVarP(&objective, "objective", "obj", "", "Optimization objective")
-	cmd.Flags().Float64VarP(&learningRate, "learning-rate", "lr", 0.1, "Learning rate for gradient descent")
+	cmd.Flags().StringVarP(&objective, "objective", "b", "", "Optimization objective")
+	cmd.Flags().Float64VarP(&learningRate, "learning-rate", "r", 0.1, "Learning rate for gradient descent")
 	cmd.Flags().IntVarP(&iterations, "iterations", "i", 10, "Maximum number of iterations")
 	cmd.Flags().Float64Var(&convergence, "convergence", 0.001, "Convergence threshold")
 	cmd.Flags().BoolVar(&adaptive, "adaptive", false, "Enable adaptive learning rate")
 	cmd.Flags().StringVar(&provider, "provider", "openai", "LLM provider")
 	cmd.Flags().StringVar(&model, "model", "gpt-4", "Model for semantic evaluation")
-	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for results")
+	cmd.Flags().StringVar(&outputFile, "output", "", "Output file for results")
 	cmd.Flags().StringVarP(&format, "format", "f", "json", "Output format (json, yaml, table)")
 
 	cmd.MarkFlagRequired("objective")
@@ -286,7 +286,7 @@ dependency relationships.`,
 	}
 
 	cmd.Flags().StringVarP(&systemFile, "system", "s", "", "System definition file (JSON/YAML)")
-	cmd.Flags().StringVarP(&objective, "objective", "obj", "", "Optimization objective")
+	cmd.Flags().StringVarP(&objective, "objective", "b", "", "Optimization objective")
 	cmd.Flags().IntVarP(&iterations, "iterations", "i", 20, "Number of optimization iterations")
 	cmd.Flags().StringVar(&provider, "provider", "openai", "LLM provider")
 	cmd.Flags().StringVar(&model, "model", "gpt-4", "Model for semantic evaluation")
