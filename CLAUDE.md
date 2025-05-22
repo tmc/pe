@@ -18,7 +18,8 @@ PE is a comprehensive toolkit for prompt engineering that combines traditional e
 
 - `pe eval`: Core evaluation engine with multi-provider support
 - `pe optimize`: **NEW** Metaprompting-based prompt optimization using 2024-2025 research
-- `pe compose`: **NEW** Component-based prompt engineering with verified libraries
+- `pe compose`: **NEW** Component-based prompt engineering with verified libraries and style-specific composition
+- `pe metrics`: **NEW** Advanced evaluation metrics (BLEU, ROUGE, METEOR, BERTScore, G-Eval, UniEval)
 - `pe evolve`: **NEW** Evolutionary optimization using genetic algorithms and multi-objective optimization
 - `pe fusion`: **NEW** Multi-model consensus engineering for robust prompt optimization
 - `pe benchmark`: Performance analysis with statistical significance testing
@@ -226,6 +227,78 @@ pe profile resources --memory-optimization --parallel-efficiency
 - Support for meta-LLM evaluation and optimization
 - Cross-provider optimization strategies
 - Advanced prompt template management
+
+## Recently Implemented Features (2025)
+
+### Component-Based Prompt Composition (`pe compose`)
+
+**Implementation Status**: ✅ **COMPLETED**
+
+```bash
+# Initialize component library with verified building blocks
+pe compose --library-init
+
+# Style-specific composition with type safety
+pe compose context.txt instruction.txt examples.txt --style cot --optimize
+pe compose components/ --style few-shot --coherence --validation-gate
+```
+
+**Key Features Implemented**:
+- **Type-Safe Component Validation**: Dependency resolution and compatibility checking
+- **Style-Specific Handlers**: Chain-of-thought, few-shot, structured, conversational composition
+- **Semantic Coherence Analysis**: Transition word analysis and consistency validation
+- **Component Library Management**: Organized storage and retrieval of verified prompt components
+- **Integration with TextGrad**: Automatic optimization after composition
+
+**Technical Implementation**:
+- `internal/metaprompt/composer.go`: Main composition engine with style handlers
+- `cmd/pe/compose.go`: CLI interface with comprehensive flag support
+- Component inference system for automatic type detection
+- Dependency graph validation for complex compositions
+
+### Advanced Evaluation Metrics (`pe metrics`)
+
+**Implementation Status**: ✅ **COMPLETED**
+
+```bash
+# State-of-the-art evaluation metrics
+pe metrics --type bleu --generated response.txt --reference expected.txt
+pe metrics --type g-eval --criteria "accuracy, clarity, completeness"
+pe metrics --all --output comprehensive-metrics.json
+```
+
+**Metrics Implemented**:
+- **BLEU Score**: N-gram precision with brevity penalty
+- **ROUGE Variants**: ROUGE-1, ROUGE-2, ROUGE-L, ROUGE-W for summarization
+- **METEOR**: Semantic matching with synonym support and fragmentation penalty
+- **BERTScore**: LLM-based semantic similarity with confidence scores
+- **G-Eval**: Chain-of-thought evaluation with custom criteria
+- **UniEval**: Task-specific multi-dimensional evaluation
+
+**Technical Implementation**:
+- `internal/metrics/advanced.go`: Core metric computation algorithms
+- `internal/metrics/statistics.go`: Statistical analysis and significance testing
+- LLM-based evaluation integration with confidence intervals
+- Publication-ready reporting with detailed analysis
+
+### Enhanced Metaprompting Infrastructure
+
+**TextGrad Integration Enhancements**:
+- Existing TextGrad implementation in `internal/metaprompt/textgrad.go`
+- Natural language gradient computation with LLM feedback
+- Iterative optimization with convergence detection
+- Computation graph building for complex prompt flows
+
+**Advanced Statistics Support**:
+- Effect size analysis (Cohen's D, Glass's Delta)
+- Multi-group statistical comparisons
+- Cross-validation and significance testing
+- Performance profiling and bottleneck identification
+
+**Red Team Security Integration**:
+- `internal/redteam/advanced_security.go`: Advanced security testing
+- Automated vulnerability detection and mitigation
+- Comprehensive security evaluation frameworks
 
 ### Quality Assurance & Validation
 

@@ -1,6 +1,86 @@
 # PE Toolkit Tools
 
-This document describes the comprehensive set of tools available in the PE (Prompt Engineering) toolkit, organized by category and use case.
+This document describes the comprehensive set of tools available in the PE (Prompt Engineering) toolkit, organized by category and use case. The PE toolkit implements cutting-edge 2025 metaprompting research including TextGrad optimization, component-based composition, and evolutionary prompt engineering.
+
+## 🔬 Advanced Metaprompting Tools (2025)
+
+### `pe compose`
+**NEW** Component-based prompt composition with type-safe validation and style-specific optimization.
+
+```bash
+# Initialize component library
+pe compose --library-init
+
+# Compose from individual components  
+pe compose context.txt instruction.txt examples.txt --style cot --optimize
+
+# Compose from component directory with coherence validation
+pe compose components/ --style few-shot --coherence --validation-gate
+
+# Advanced composition with TextGrad optimization
+pe compose components/context/ components/instructions/ --style structured --optimize --target gpt-4
+
+# Output to file with metadata
+pe compose components/ --style conversational --output composed-prompt.json
+```
+
+**Composition Styles:**
+- `default`: Basic concatenation
+- `cot`: Chain-of-thought reasoning structure  
+- `few-shot`: Few-shot learning format
+- `structured`: Markdown-structured output format
+- `conversational`: Natural conversational flow
+
+**Features:**
+- Component dependency resolution
+- Type-safe composition validation
+- Semantic coherence analysis
+- Integration with TextGrad optimization
+- Style-specific prompt structuring
+
+### `pe metrics` (Advanced Evaluation)
+**NEW** State-of-the-art evaluation metrics for prompt engineering with LLM-based judges.
+
+```bash
+# BLEU score evaluation
+pe metrics --type bleu --generated response.txt --reference expected.txt
+
+# ROUGE score variants
+pe metrics --type rouge-1 --generated response.txt --reference expected.txt
+pe metrics --type rouge-l --generated response.txt --reference expected.txt
+
+# Semantic similarity with BERTScore (LLM-based)
+pe metrics --type bertscore --generated response.txt --reference expected.txt --provider openai:gpt-4
+
+# G-Eval with custom criteria
+pe metrics --type g-eval --generated response.txt --reference expected.txt \
+  --criteria "Evaluate for accuracy, clarity, and completeness"
+
+# UniEval for specific tasks
+pe metrics --type unieval --generated response.txt --reference expected.txt \
+  --task summarization
+
+# METEOR score for translation evaluation
+pe metrics --type meteor --generated response.txt --reference expected.txt
+
+# Comprehensive evaluation with all metrics
+pe metrics --all --generated response.txt --reference expected.txt --output metrics.json
+```
+
+**Advanced Metrics Available:**
+- **BLEU**: N-gram precision with brevity penalty for translation quality
+- **ROUGE**: Recall-oriented evaluation for summarization (ROUGE-1, ROUGE-2, ROUGE-L, ROUGE-W)
+- **METEOR**: Meaning-based evaluation with synonym matching and fragmentation penalty
+- **BERTScore**: Semantic similarity using LLM embeddings and context understanding
+- **G-Eval**: LLM-based evaluation with chain-of-thought reasoning and custom criteria
+- **UniEval**: Task-specific evaluation across multiple dimensions (coherence, fluency, relevance)
+
+**Features:**
+- LLM-based semantic evaluation with confidence scores
+- Statistical analysis and significance testing
+- Batch evaluation for multiple responses
+- Integration with existing PE evaluation pipelines
+- Publication-ready metric reporting
 
 ## Core Evaluation Tools
 
