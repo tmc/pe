@@ -126,13 +126,23 @@ pe view
 pe interactive --provider openai:gpt-4
 ```
 
-## 📖 Documentation
+## 📖 World-Class Documentation
 
-- **[Complete Documentation](docs/README.md)** - Comprehensive guide with examples
+### 🚀 Get Started Instantly
+- **[Quick Start Guide](docs/GETTING_STARTED.md)** - Get productive in 5 minutes
+- **[Interactive Tutorials](docs/TUTORIALS.md)** - From beginner to expert (30+ examples)
+- **[Examples Library](docs/EXAMPLES_LIBRARY.md)** - 100+ real-world use cases
+
+### 📚 Complete Reference
+- **[API Reference](docs/API_REFERENCE.md)** - Complete CLI, Go API, and REST API docs
 - **[Configuration Guide](docs/README.md#configuration-guide)** - YAML/JSON configuration
-- **[Command Reference](docs/README.md#commands-reference)** - All available commands
-- **[Best Practices](docs/README.md#best-practices)** - Production deployment tips
-- **[Integration Guide](docs/README.md#integration-guide)** - CI/CD setup
+- **[Advanced Features](docs/ADVANCED_FEATURES.md)** - TextGrad, optimization, pipelines
+- **[Research Foundations](docs/RESEARCH_FOUNDATIONS.md)** - 2024 research implementation
+
+### 🛠️ Production Ready
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Comprehensive problem-solving guide
+- **[Best Practices](docs/README.md#best-practices)** - Production deployment patterns
+- **[Integration Guide](docs/README.md#integration-guide)** - CI/CD, Docker, APIs
 
 ## 🛠 Core Commands
 
