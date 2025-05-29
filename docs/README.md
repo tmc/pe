@@ -1,259 +1,148 @@
-# PE Documentation: The World's Most Advanced Prompt Engineering Toolkit
+# PE Documentation
 
-Welcome to the comprehensive documentation for **PE**, the definitive prompt engineering toolkit that implements cutting-edge 2024-2025 research and surpasses all existing tools.
+Welcome to the PE (Go for Prompts) documentation. PE is the unified toolchain for prompt engineering, bringing Go's philosophy of simplicity, composability, and performance to LLM development.
 
-## 🚀 Quick Navigation
+## Quick Links
 
-### 📖 **Getting Started**
-- **[🎯 Quick Start Guide](WORLD_CLASS_GETTING_STARTED.md)** - Get from zero to optimizing prompts in 5 minutes
-- **[📚 Comprehensive Tutorial](TUTORIALS.md)** - Complete learning path with examples
-- **[⚡ Installation & Setup](GETTING_STARTED.md)** - Detailed installation instructions
+- **[Overview](OVERVIEW.md)** - Understand PE's philosophy and capabilities
+- **[Installation](INSTALLATION.md)** - Get PE running on your system
+- **[Tutorial](TUTORIAL.md)** - Step-by-step guide from basics to advanced
+- **[Commands](COMMANDS.md)** - Complete reference for all PE commands
+- **[Architecture](ARCHITECTURE.md)** - Technical deep dive into PE's design
+- **[Plugins](PLUGINS.md)** - Extend PE with custom functionality
 
-### 🔬 **Core Documentation**
-- **[🏆 Best Practices 2025](BEST_PRACTICES_2025.md)** - Industry-leading prompt engineering practices
-- **[🔧 Complete API Reference](API_REFERENCE_COMPLETE.md)** - Full technical documentation
-- **[🆚 Competitive Analysis](COMPETITIVE_ANALYSIS_2025.md)** - Why PE leads the industry
-- **[📊 Research Foundations](RESEARCH_FOUNDATIONS.md)** - 2024-2025 research implementation
+## Getting Started
 
-### 🎯 **Feature Guides**
-- **[🧠 Advanced Optimization](ADVANCED_OPTIMIZATION_GUIDE.md)** - PE2, APEX, TextGrad 2.0, Semantic Backprop
-- **[🛡️ Security Testing](SECURITY_TESTING.md)** - OWASP LLM Top 10 and red-teaming
-- **[📈 Evaluation & Metrics](EVALUATION_METRICS.md)** - BLEU, ROUGE, BERTScore, G-Eval, UniEval
-- **[🔄 Pipeline Processing](PIPELINE_GUIDE.md)** - Revolutionary Unix-style workflows
-
-### 🚀 **Production Ready**
-- **[🏗️ CI/CD Integration](CI_CD_INTEGRATION.md)** - GitHub Actions, GitLab CI, Docker
-- **[🔍 Monitoring & Observability](MONITORING.md)** - Real-time performance tracking
-- **[💰 Cost Optimization](COST_OPTIMIZATION.md)** - Budget management and efficiency
-- **[🔧 Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
-
-## 🏆 Why PE is the Definitive Choice
-
-PE is the **only production toolkit** implementing cutting-edge 2024-2025 research:
-
-### 🧠 **Revolutionary Research Implementation**
-
-#### **Semantic Backpropagation & GASO (2025 KAUST/IDSIA)**
-- **First implementation** of semantic gradients for natural language
-- **Graph-based optimization** for multi-component agentic systems  
-- **Multi-objective optimization** with Pareto efficiency analysis
-
-#### **PE2: Prompt Engineering a Prompt Engineer (World's First)**
-- **Expert personas** with detailed task descriptions
-- **Step-by-step reasoning** templates and frameworks
-- **Context specification** and quality standards
-- **6.3% improvement** over "let's think step by step" on MultiArith
-
-#### **APEX: Long Prompt Optimization (Industry First)**
-- **Beam search algorithms** for complex system prompts
-- **Search history learning** for intelligent mutations
-- **35% length reduction** while preserving effectiveness
-- **9.2% average accuracy** improvement on Big Bench Hard
-
-#### **TextGrad 2.0: Most Advanced Semantic Optimization**
-- **Attention flow mapping** from transformer patterns
-- **Semantic drift detection** during optimization trajectories
-- **Cross-modal gradient computation** for multimodal prompts
-- **Backward propagation** through textual feedback loops
-
-### ⚡ **Unmatched Performance**
-
-| **Metric** | **PE (Go)** | **Best Competitor** | **PE Advantage** |
-|------------|-------------|---------------------|------------------|
-| **Execution Speed** | 🥇 **Fastest** | Node.js/Python | **3-5x faster** |
-| **Memory Usage** | 🥇 **Lowest** | Python tools | **50-70% less** |
-| **Startup Time** | 🥇 **Instant** | 2-5 seconds | **10x faster** |
-| **Feature Completeness** | 🥇 **100%** | 60-85% | **Most comprehensive** |
-
-### 🎯 **Complete Feature Matrix**
-
-| **Capability** | **PE** | **promptfoo** | **LangSmith** | **DSPy** | **Mirascope** |
-|----------------|--------|---------------|---------------|----------|---------------|
-| **🥇 Overall Score** | **100/100** | 78/100 | 75/100 | 85/100 | 70/100 |
-| **2024-2025 Research** | ✅ **Complete** | ❌ None | ❌ None | ✅ DSPy Only | ❌ None |
-| **Advanced Metrics** | ✅ **All** | ❌ Basic | ❌ Basic | ❌ Limited | ❌ None |
-| **Security Testing** | ✅ **OWASP Complete** | ✅ Basic | ✅ Basic | ❌ None | ❌ None |
-| **Statistical Analysis** | ✅ **Research-Grade** | ✅ Basic | ✅ Good | ❌ None | ❌ None |
-| **Optimization Methods** | ✅ **6 Advanced** | ❌ None | ❌ None | ✅ 1 Method | ❌ None |
-| **Pipeline Processing** | ✅ **Revolutionary** | ❌ None | ❌ None | ❌ None | ❌ None |
-
-## 📚 Learning Path
-
-### 🎓 **Beginner (30 minutes)**
-1. **[Install PE](WORLD_CLASS_GETTING_STARTED.md#installation)** - Single binary, no dependencies
-2. **[First Optimization](WORLD_CLASS_GETTING_STARTED.md#your-first-optimization-60-seconds)** - PE2 meta-prompting in 60 seconds
-3. **[First Evaluation](WORLD_CLASS_GETTING_STARTED.md#your-first-evaluation-90-seconds)** - Advanced metrics in 90 seconds
-
-### 🚀 **Intermediate (2 hours)**
-1. **[Advanced Optimization Methods](ADVANCED_OPTIMIZATION_GUIDE.md)** - APEX, TextGrad 2.0, Evolutionary
-2. **[Component Composition](BEST_PRACTICES_2025.md#component-based-architecture)** - DSPy-style building blocks
-3. **[Security Testing](BEST_PRACTICES_2025.md#security-and-safety-best-practices)** - OWASP LLM Top 10
-4. **[Statistical Analysis](BEST_PRACTICES_2025.md#evaluation-and-metrics-strategy)** - A/B testing and significance
-
-### 🏆 **Expert (1 day)**
-1. **[Semantic Backpropagation](API_REFERENCE_COMPLETE.md#pe-semantic---semantic-backpropagation-2025-research)** - 2025 KAUST research
-2. **[Multi-Model Consensus](BEST_PRACTICES_2025.md#when-to-use-multi-model-consensus)** - Cross-provider optimization
-3. **[Production Deployment](BEST_PRACTICES_2025.md#production-deployment-patterns)** - CI/CD and monitoring
-4. **[Unix Pipelines](API_REFERENCE_COMPLETE.md#pipeline-processing)** - Advanced workflow automation
-
-### 🌟 **Master (Ongoing)**
-1. **[Research Applications](RESEARCH_FOUNDATIONS.md)** - Academic and industry research
-2. **[Custom Extensions](API_REFERENCE_COMPLETE.md#go-api-reference)** - Building on PE's Go API
-3. **[Community Contributions](../CONTRIBUTING.md)** - Advancing the field
-
-## 🎯 **Quick Reference**
-
-### **Most Common Commands**
 ```bash
-# Quick optimization
-pe optimize --prompt "Your prompt" --method pe2 --iterations 5
+# Install PE
+go install github.com/tmc/pe/cmd/pe@latest
 
-# Advanced evaluation
-pe eval config.yaml --metrics bleu,rouge,bertscore,g-eval --parallel
+# Initialize a project
+pe init
 
-# Security testing
-pe security test --target prompt.txt --owasp-complete
+# Run your first prompt
+pe run "Hello, PE!"
 
-# Pipeline processing
-pe eval config.yaml --stream | pe filter --success | pe analyze --metric accuracy
+# Explore help
+pe help
 ```
 
-### **Key Concepts**
-- **PE2**: Meta-prompt engineering with expert personas
-- **APEX**: Long prompt optimization with beam search
-- **TextGrad 2.0**: Semantic gradients with attention flow
-- **Semantic Backprop**: 2025 research for graph optimization
-- **Unix Pipelines**: Revolutionary workflow processing
+## Documentation Guide
 
-## 🌍 **Documentation Structure**
+### For New Users
 
-```
-docs/
-├── README.md                          # This file - complete overview
-├── WORLD_CLASS_GETTING_STARTED.md     # 5-minute quick start
-├── BEST_PRACTICES_2025.md             # Industry best practices
-├── COMPETITIVE_ANALYSIS_2025.md       # Why PE leads the market
-├── API_REFERENCE_COMPLETE.md          # Complete technical reference
-├── RESEARCH_FOUNDATIONS.md            # 2024-2025 research background
-├── ADVANCED_OPTIMIZATION_GUIDE.md     # All optimization methods
-├── TUTORIALS.md                       # Step-by-step tutorials
-├── TROUBLESHOOTING.md                 # Common issues and solutions
-├── EXAMPLES_LIBRARY.md                # Real-world examples
-├── CLI_COMPREHENSIVE_GUIDE.md         # Complete CLI reference
-└── WORLD_CLASS_FEATURES.md            # Feature showcase
-```
+1. Start with the **[Overview](OVERVIEW.md)** to understand PE's approach
+2. Follow the **[Installation Guide](INSTALLATION.md)** to set up PE
+3. Work through the **[Tutorial](TUTORIAL.md)** for hands-on learning
+4. Reference the **[Command Reference](COMMANDS.md)** as needed
 
-## 🚀 **Real-World Examples**
+### For Developers
 
-### **Content Generation**
+1. Review the **[Architecture Guide](ARCHITECTURE.md)** for system design
+2. Learn **[Plugin Development](PLUGINS.md)** to extend PE
+3. Check the **[API Reference](../pkg/)** for programmatic usage
+4. See **[Contributing Guidelines](../CONTRIBUTING.md)** to contribute
+
+### For Teams
+
+1. Learn about **[Shared Caching](TUTORIAL.md#part-7-team-collaboration)** for collaboration
+2. Set up **[Style Guides](COMMANDS.md#style--composition-commands)** for consistency
+3. Configure **[Security Policies](INSTALLATION.md#security-model)** for your organization
+4. Implement **[CI/CD Integration](TUTORIAL.md#continuous-integration)** for automation
+
+## Core Concepts
+
+### The PE Toolchain
+
+PE provides a complete toolchain similar to Go:
+
+| PE Command | Go Equivalent | Purpose |
+|------------|---------------|---------|
+| `pe run` | `go run` | Execute prompts immediately |
+| `pe test` | `go test` | Test prompts with assertions |
+| `pe build` | `go build` | Build optimized prompts |
+| `pe install` | `go get` | Install prompt libraries |
+| `pe fmt` | `go fmt` | Format prompt files |
+| `pe mod` | `go mod` | Manage dependencies |
+
+### Key Features
+
+- **🔧 Unified Toolchain**: One tool for all prompt engineering needs
+- **🚀 Performance**: Written in Go for maximum speed and efficiency
+- **🔒 Security First**: macOS sandboxing and trusted execution
+- **🔌 Extensible**: Plugin system for custom providers and tools
+- **📦 Native Formats**: Works with txtar files and GitHub gists
+- **🔄 Version Control**: Git-like branching and history
+- **🧬 Advanced Optimization**: State-of-the-art methods (PE2, TextGrad, APEX)
+- **📊 Comprehensive Testing**: Property-based, A/B, and regression testing
+- **💾 Verifiable Caching**: Cryptographically signed shared caches
+- **📈 Benchmarking**: Performance and cost analysis tools
+
+## Example Workflows
+
+### Basic Development
+
 ```bash
-# Transform basic prompt into expert-crafted content generation
-pe optimize --prompt "Write a blog post about AI" --method pe2 --iterations 5
-# Result: 40% quality improvement, 60% more consistent structure
+# Create and test a prompt
+echo "You are a helpful assistant" > assistant.txt
+pe test assistant.txt --assert "polite"
+
+# Optimize it
+pe optimize assistant.txt --method pe2
+
+# Build for production
+pe build assistant.txt --output prod/
 ```
 
-### **Customer Service**
+### Team Collaboration
+
 ```bash
-# Optimize customer service system prompt
-pe optimize --prompt-file customer-service.txt --method apex --iterations 8
-# Result: 35% customer satisfaction improvement, 20% fewer escalations
+# Share via gist
+pe push gist:team/assistant
+
+# Import and customize
+pe pull gist:team/assistant
+pe fork assistant.txt --name my-variant
+
+# Share cache
+pe cache export --sign > team-cache.tar
 ```
 
-### **Code Review Assistant**
+### Advanced Optimization
+
 ```bash
-# Multi-component optimization for code analysis
-pe compose context/code-review.txt instructions/analysis.txt examples/best-practices.txt \
-  --style analytical --optimize coherence | pe optimize --method apex --beam-width 5
-# Result: 50% more actionable feedback, 30% faster review process
+# Multi-stage optimization
+pe compose components/ | \
+  pe optimize --method textgrad | \
+  pe optimize --method evolve | \
+  pe test --comprehensive
 ```
 
-### **Multi-Language Support**
-```bash
-# Cross-model optimization for robustness
-pe fusion prompt.txt --models gpt-4,claude-3,gemini-pro --consensus reflection
-# Result: 93% consistency across providers, 25% better international performance
-```
+## Community Resources
 
-## 🛠️ **Integration Examples**
+- **GitHub**: [github.com/tmc/pe](https://github.com/tmc/pe)
+- **Discord**: [Join our community](https://discord.gg/pe-prompts)
+- **Examples**: [Example projects](../examples/)
+- **Blog**: [PE Blog](https://pe.dev/blog)
 
-### **GitHub Actions**
-```yaml
-- name: Optimize Prompts
-  run: |
-    pe optimize --prompt-file prompts/system.txt --method pe2 --output optimized/
-    pe test comprehensive prompts/config.yaml --statistical-validation
-```
+## Documentation Versions
 
-### **Docker**
-```dockerfile
-FROM golang:1.21-alpine AS builder
-RUN go install github.com/tmc/pe/cmd/pe@latest
-```
+This documentation is for PE v1.0. For other versions:
 
-### **Python Integration**
-```python
-import subprocess
-result = subprocess.run(['pe', 'optimize', '--prompt', prompt, '--method', 'pe2'], 
-                       capture_output=True, text=True)
-```
+- [Latest](https://docs.pe.dev/latest)
+- [v1.0](https://docs.pe.dev/v1.0) (current)
+- [Development](https://docs.pe.dev/dev)
 
-## 🌟 **Community & Support**
+## Contributing to Docs
 
-### **Getting Help**
-- 🐛 **Issues**: [GitHub Issues](https://github.com/tmc/pe/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/tmc/pe/discussions)
-- 📚 **Documentation**: [docs/](.)
-- 🎓 **Examples**: [example/](../example/)
+We welcome documentation improvements! To contribute:
 
-### **Contributing**
-- 🔬 **Research**: Implement new optimization methods
-- ⚡ **Performance**: Improve speed and memory efficiency
-- 📖 **Documentation**: Enhance guides and examples
-- 🧪 **Testing**: Add test cases and validation
-- 🔌 **Integration**: Build plugins and integrations
+1. Fork the repository
+2. Make your changes in the `docs/` directory
+3. Submit a pull request
 
-### **Roadmap**
-- **Q1 2025**: Vision model support, auto-CoT generation
-- **Q2 2025**: Federated learning, causal analysis
-- **Q3 2025**: Neurosymbolic integration, meta-learning
-- **Q4 2025**: Quantum-inspired algorithms, AI-native programming
+See [Contributing Guidelines](../CONTRIBUTING.md) for details.
 
-## 🏆 **Success Stories**
+## License
 
-### **Enterprise Deployments**
-- **Fortune 500 Company**: 300% faster prompt development, 60% cost reduction
-- **AI Startup**: Reduced prompt engineering time from weeks to hours
-- **Research Institution**: First to implement 2025 semantic optimization research
-
-### **Academic Recognition**
-- **Research Papers**: PE cited in 15+ academic publications
-- **Conferences**: Presented at NeurIPS, ICML, EMNLP
-- **Awards**: Best Open Source Tool 2024 (AI Engineering Awards)
-
-## 🎯 **Next Steps**
-
-1. **🚀 Get Started**: [Install PE](WORLD_CLASS_GETTING_STARTED.md#installation) in 30 seconds
-2. **🎓 Learn**: Follow the [Learning Path](#learning-path) above
-3. **🔬 Explore**: Try [Advanced Features](ADVANCED_OPTIMIZATION_GUIDE.md)
-4. **🚀 Deploy**: Implement [Production Patterns](BEST_PRACTICES_2025.md#production-deployment-patterns)
-5. **🌟 Contribute**: Join the [Community](../CONTRIBUTING.md)
-
----
-
-## 🏆 **The Future of Prompt Engineering Starts Here**
-
-PE represents a paradigm shift from manual prompt crafting to systematic, research-backed optimization. With implementations of 2024-2025 breakthrough research, unmatched performance, and comprehensive feature sets, PE is the definitive choice for serious prompt engineering.
-
-**✅ Research Leadership**: First to implement 2024-2025 breakthroughs  
-**✅ Superior Performance**: Go-based architecture for maximum speed  
-**✅ Complete Solution**: All features needed for prompt engineering  
-**✅ Production Ready**: Enterprise features with open source freedom  
-**✅ Developer Experience**: Unix philosophy and excellent documentation  
-
-**Choose PE. Lead the future of prompt engineering.**
-
----
-
-*Built with ❤️ by the PE team. Leading the prompt engineering revolution.*
-
-**Documentation Version**: 2025.1 | **Last Updated**: January 2025
+PE is open source under the MIT License. See [LICENSE](../LICENSE) for details.

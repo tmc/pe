@@ -1,0 +1,78 @@
+# Test: Optimization method benchmarking
+
+# Create optimization benchmark
+$ cat > opt-benchmark.yaml << EOF
+name: "Optimization Methods Comparison"
+base_prompt: "Summarize the key points"
+methods:
+  - pe2
+  - textgrad
+  - apex
+  - evolve
+settings:
+  iterations: 5
+  population: 20  # for evolve
+  beam_width: 3   # for apex
+evaluation:
+  dataset: validation-set.json
+  metrics:
+    - accuracy
+    - coherence
+    - conciseness
+EOF
+
+# Run optimization benchmark
+$ pe benchmark optimize opt-benchmark.yaml
+Starting Optimization Methods Benchmark...
+
+Testing PE2 method...
+  Iteration 1/5: Score 0.65 → 0.71
+  Iteration 2/5: Score 0.71 → 0.78
+  Iteration 3/5: Score 0.78 → 0.82
+  Iteration 4/5: Score 0.82 → 0.84
+  Iteration 5/5: Score 0.84 → 0.85
+  Final: 0.85 (+30.8%)
+
+Testing TextGrad method...
+  Computing gradients...
+  Iteration 1/5: Score 0.65 → 0.73
+  Iteration 2/5: Score 0.73 → 0.79
+  Iteration 3/5: Score 0.79 → 0.83
+  Iteration 4/5: Score 0.83 → 0.84
+  Iteration 5/5: Score 0.84 → 0.84
+  Final: 0.84 (+29.2%)
+
+Testing APEX method...
+  Beam search width: 3
+  Iteration 1/5: Best score 0.72
+  Iteration 2/5: Best score 0.80
+  Iteration 3/5: Best score 0.86
+  Iteration 4/5: Best score 0.88
+  Iteration 5/5: Best score 0.89
+  Final: 0.89 (+36.9%)
+
+Testing Evolve method...
+  Generation 1/5: Best fitness 0.68
+  Generation 2/5: Best fitness 0.76
+  Generation 3/5: Best fitness 0.83
+  Generation 4/5: Best fitness 0.87
+  Generation 5/5: Best fitness 0.90
+  Final: 0.90 (+38.5%)
+
+Benchmark Results:
+┌────────────┬─────────┬──────────┬──────────┬────────────┐
+│ Method     │ Score   │ Time     │ API Calls│ Improvement│
+├────────────┼─────────┼──────────┼──────────┼────────────┤
+│ baseline   │ 0.65    │ -        │ -        │ -          │
+│ pe2        │ 0.85    │ 45s      │ 15       │ +30.8%     │
+│ textgrad   │ 0.84    │ 52s      │ 20       │ +29.2%     │
+│ apex       │ 0.89    │ 78s      │ 35       │ +36.9%     │
+│ evolve     │ 0.90    │ 120s     │ 100      │ +38.5%     │
+└────────────┴─────────┴──────────┴──────────┴────────────┘
+
+Cost Analysis:
+- Most efficient: PE2 ($0.45, 0.85 score)
+- Best performance: Evolve ($3.00, 0.90 score)
+- Best value: APEX ($1.05, 0.89 score)
+
+Report saved to: optimization-benchmark.json

@@ -1,0 +1,296 @@
+# yaml_embedded.yaml - Example of embedding Starlark in PE YAML configs
+# This shows how to use Starlark for dynamic parts while keeping static config in YAML
+
+name: "Hybrid YAML-Starlark Evaluation"
+description: "Demonstrates embedding Starlark scripts within YAML configuration"
+
+# Static prompt definition
+prompt: |
+  You are a helpful AI assistant specializing in {{domain}}.
+  
+  Please answer the following question:
+  {{question}}
+  
+  Provide a clear, accurate response appropriate for a {{level}} level audience.
+
+# Static provider configuration
+providers:
+  - name: gpt-4
+    temperature: 0.7
+  - name: claude-3
+    temperature: 0.7
+
+# Embed Starlark for dynamic test generation
+tests:
+  # Can mix static and dynamic tests
+  static:
+    - vars:
+        domain: "Python"
+        level: "beginner"
+        question: "What is a list comprehension?"
+      assert:
+        - type: contains
+          value: "example"
+        - type: min_length
+          value: 100
+
+  # Dynamic test generation with Starlark
+  dynamic:
+    starlark: |
+      # Generate tests for multiple programming languages
+      languages = ["Python", "JavaScript", "Go", "Rust"]
+      concepts = {
+          "Python": ["decorators", "generators", "context managers"],
+          "JavaScript": ["promises", "async/await", "closures"],
+          "Go": ["goroutines", "channels", "interfaces"],
+          "Rust": ["ownership", "borrowing", "lifetimes"]
+      }
+      
+      levels = ["beginner", "intermediate", "advanced"]
+      
+      tests = []
+      for lang in languages:
+          for concept in concepts.get(lang, []):
+              for level in levels:
+                  # Create question based on level
+                  if level == "beginner":
+                      question = f"What is {concept} in {lang}?"
+                  elif level == "intermediate":
+                      question = f"How do you use {concept} in {lang}? Provide an example."
+                  else:
+                      question = f"Explain advanced patterns and best practices for {concept} in {lang}."
+                  
+                  # Create test case
+                  test = {
+                      "name": f"{lang}_{concept}_{level}",
+                      "vars": {
+                          "domain": lang,
+                          "level": level,
+                          "question": question
+                      },
+                      "assert": generate_level_assertions(level)
+                  }
+                  tests.append(test)
+      
+      def generate_level_assertions(level):
+          """Generate appropriate assertions for each level"""
+          base = [
+              {"type": "min_length", "value": 50},
+              {"type": "contains_any", "value": ["example", "for instance", "such as"]}
+          ]
+          
+          if level == "beginner":
+              base.append({"type": "max_length", "value": 300})
+              base.append({"type": "readability", "min": 60})  # Easy reading level
+          elif level == "intermediate":
+              base.append({"type": "contains_code", "value": True})
+              base.append({"type": "max_length", "value": 500})
+          else:  # advanced
+              base.append({"type": "contains_all", "value": ["performance", "trade-off", "consider"]})
+              base.append({"type": "min_length", "value": 300})
+          
+          return base
+      
+      # Return the generated tests
+      tests
+
+# Embed Starlark for custom evaluation rubrics
+evaluations:
+  - name: "technical_accuracy"
+    weight: 0.4
+    starlark: |
+      def evaluate(output, context):
+          """Evaluate technical accuracy based on domain and level"""
+          
+          score = 0.0
+          feedback = []
+          
+          # Check for common indicators of accuracy
+          domain = context.get("domain", "")
+          level = context.get("level", "beginner")
+          
+          # Domain-specific checks
+          if domain == "Python":
+              if "Python" in output:
+                  score += 0.2
+              if has_valid_python_syntax(output):
+                  score += 0.3
+                  feedback.append("✓ Valid Python syntax")
+          elif domain == "JavaScript":
+              if any(kw in output for kw in ["async", "await", "promise", "callback"]):
+                  score += 0.3
+                  feedback.append("✓ Mentions JS async concepts")
+          
+          # Level-appropriate depth
+          if level == "advanced":
+              complex_terms = count_technical_terms(output)
+              if complex_terms > 5:
+                  score += 0.3
+                  feedback.append("✓ Appropriate technical depth")
+              else:
+                  feedback.append("⚠️ Could use more technical detail")
+          else:
+              if is_jargon_free(output):
+                  score += 0.2
+                  feedback.append("✓ Accessible language")
+          
+          # General accuracy indicators
+          if has_examples(output):
+              score += 0.2
+              feedback.append("✓ Includes examples")
+          
+          return {
+              "score": min(1.0, score),
+              "feedback": "\n".join(feedback),
+              "pass": score >= 0.6
+          }
+      
+      def has_valid_python_syntax(text):
+          """Check if code blocks contain valid Python"""
+          import re
+          code_blocks = re.findall(r'```python(.*?)```', text, re.DOTALL)
+          if not code_blocks:
+              code_blocks = re.findall(r'```(.*?)```', text, re.DOTALL)
+          
+          for code in code_blocks:
+              try:
+                  # Simple syntax validation (in real implementation would use AST)
+                  compile(code.strip(), '<string>', 'exec')
+                  return True
+              except:
+                  pass
+          return len(code_blocks) > 0  # At least tried to include code
+      
+      def count_technical_terms(text):
+          """Count domain-specific technical terms"""
+          technical_terms = [
+              "algorithm", "complexity", "optimization", "architecture",
+              "pattern", "paradigm", "abstraction", "polymorphism",
+              "concurrency", "async", "performance", "scalability"
+          ]
+          return sum(1 for term in technical_terms if term in text.lower())
+      
+      def is_jargon_free(text):
+          """Check if text avoids excessive jargon"""
+          jargon_terms = [
+              "leverage", "synergy", "paradigm shift", "blockchain",
+              "disruptive", "cutting-edge", "revolutionary"
+          ]
+          jargon_count = sum(1 for term in jargon_terms if term in text.lower())
+          return jargon_count < 2
+      
+      def has_examples(text):
+          """Check if response includes examples"""
+          example_indicators = [
+              "for example", "for instance", "such as",
+              "e.g.", "```", "consider this", "here's"
+          ]
+          return any(indicator in text.lower() for indicator in example_indicators)
+
+  - name: "clarity_and_structure"
+    weight: 0.3
+    starlark: |
+      def evaluate(output, context):
+          """Evaluate clarity and structure of response"""
+          
+          level = context.get("level", "intermediate")
+          metrics = analyze_structure(output)
+          
+          # Calculate score based on level expectations
+          score = 0.0
+          
+          # Paragraph structure
+          if metrics["paragraphs"] > 1:
+              score += 0.2
+          
+          # Appropriate length
+          if level == "beginner" and metrics["words"] < 200:
+              score += 0.3
+          elif level == "intermediate" and 150 <= metrics["words"] <= 400:
+              score += 0.3
+          elif level == "advanced" and metrics["words"] > 300:
+              score += 0.3
+          
+          # Clear sections or structure
+          if metrics["has_sections"]:
+              score += 0.2
+          
+          # Sentence variety
+          if 10 <= metrics["avg_sentence_length"] <= 20:
+              score += 0.3
+          
+          return {
+              "score": min(1.0, score),
+              "metrics": metrics,
+              "pass": score >= 0.5
+          }
+      
+      def analyze_structure(text):
+          """Analyze text structure metrics"""
+          sentences = text.split('.')
+          words = text.split()
+          paragraphs = text.split('\n\n')
+          
+          return {
+              "words": len(words),
+              "sentences": len(sentences),
+              "paragraphs": len(paragraphs),
+              "avg_sentence_length": len(words) / max(1, len(sentences)),
+              "has_sections": any(marker in text for marker in ['#', '##', '1.', '•', '-'])
+          }
+
+  - name: "completeness"
+    weight: 0.3
+    starlark: |
+      def evaluate(output, context):
+          """Check if response fully addresses the question"""
+          
+          question = context.get("question", "").lower()
+          output_lower = output.lower()
+          
+          # Extract key concepts from question
+          key_terms = extract_key_terms(question)
+          addressed = sum(1 for term in key_terms if term in output_lower)
+          
+          coverage = addressed / max(1, len(key_terms))
+          
+          # Bonus points for comprehensive coverage
+          score = coverage
+          if coverage == 1.0:
+              score = 1.0
+          elif coverage > 0.8:
+              score = 0.9
+          elif coverage > 0.6:
+              score = 0.7
+          else:
+              score = coverage * 0.8
+          
+          return {
+              "score": score,
+              "coverage": coverage,
+              "addressed_terms": addressed,
+              "total_terms": len(key_terms),
+              "pass": score >= 0.6
+          }
+      
+      def extract_key_terms(question):
+          """Extract important terms from question"""
+          # Remove common words
+          stop_words = {"what", "is", "how", "do", "you", "the", "a", "an", "in", "explain"}
+          words = question.split()
+          key_terms = [w for w in words if w not in stop_words and len(w) > 2]
+          return key_terms
+
+# Static output configuration
+output:
+  format: json
+  save_intermediates: true
+  include_metadata: true
+
+# Execution settings
+settings:
+  parallel: true
+  max_concurrent: 5
+  timeout: 30
+  retry_on_failure: true
+  cache_responses: true

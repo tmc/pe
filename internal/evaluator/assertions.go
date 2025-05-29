@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/tmc/pe/internal/llm"
+	. "github.com/tmc/pe/internal/metrics"
 )
 
 // AssertionType represents different types of assertions that can be made
@@ -46,6 +47,8 @@ const (
 	AssertionSQL       AssertionType = "sql"
 	AssertionCode      AssertionType = "code"
 	AssertionStructure AssertionType = "structure"
+	AssertionPassAtN   AssertionType = "pass-at-n"
+	AssertionStructuredOutput AssertionType = "structured-output"
 )
 
 // Assertion represents a test assertion with its configuration
@@ -135,6 +138,8 @@ func (ae *AssertionEvaluator) EvaluateAssertion(ctx context.Context, assertion A
 		result = ae.evaluateCode(ctx, assertion, output)
 	case AssertionStructure:
 		result = ae.evaluateStructure(assertion, output)
+	case AssertionPassAtN:
+		result = ae.evaluatePassAtN(ctx, assertion, output, metadata)
 	default:
 		return nil, fmt.Errorf("unsupported assertion type: %s", assertion.Type)
 	}
@@ -791,5 +796,96 @@ func (ae *AssertionEvaluator) evaluateStructure(assertion Assertion, output stri
 		Passed:  true,
 		Score:   1.0,
 		Message: "Structure evaluation not implemented",
+	}
+}
+
+func (ae *AssertionEvaluator) evaluatePassAtN(ctx context.Context, assertion Assertion, output string, metadata map[string]interface{}) *AssertionResult {
+	// Get configuration from assertion
+	n := 1
+	if nVal, ok := assertion.Config["n"].(float64); ok {
+		n = int(nVal)
+	}
+	
+	// Get samples - either from metadata or use the single output
+	var samples []string
+	if samplesVal, ok := metadata["samples"].([]string); ok {
+		samples = samplesVal
+	} else if samplesVal, ok := metadata["samples"].([]interface{}); ok {
+		// Convert interface slice to string slice
+		for _, s := range samplesVal {
+			if str, ok := s.(string); ok {
+				samples = append(samples, str)
+			}
+		}
+	} else {
+		// If no samples provided, use the single output
+		samples = []string{output}
+	}
+	
+	// Get test cases from config
+	testCases, hasTestCases := assertion.Config["test_cases"].([]interface{})
+	
+	// Create advanced metrics instance
+	am := NewAdvancedMetrics(ae.llm)
+	
+	var result *PassAtNResult
+	if hasTestCases {
+		// Convert test cases to proper format
+		var testCasesMaps []map[string]interface{}
+		for _, tc := range testCases {
+			if tcMap, ok := tc.(map[string]interface{}); ok {
+				testCasesMaps = append(testCasesMaps, tcMap)
+			}
+		}
+		result = am.CalculatePassAtNWithTests(ctx, n, samples, testCasesMaps)
+	} else {
+		// Use custom test function if provided
+		testFunc := func(code string) bool {
+			// Default: check if code is non-empty and appears syntactically valid
+			return len(strings.TrimSpace(code)) > 0 && !strings.Contains(code, "error")
+		}
+		
+		// If a custom validation prompt is provided, use LLM-based validation
+		if validationPrompt, ok := assertion.Config["validation_prompt"].(string); ok {
+			testFunc = func(code string) bool {
+				evalPrompt := fmt.Sprintf(validationPrompt, code)
+				response, err := ae.llm.Generate(ctx, evalPrompt, llm.GenerateOptions{
+					Temperature: &[]float64{0.0}[0],
+				})
+				if err != nil {
+					return false
+				}
+				return strings.Contains(strings.ToUpper(response.Text), "YES") ||
+					   strings.Contains(strings.ToUpper(response.Text), "PASS") ||
+					   strings.Contains(strings.ToUpper(response.Text), "TRUE")
+			}
+		}
+		
+		result = am.CalculatePassAtN(n, samples, testFunc)
+	}
+	
+	// Determine if assertion passes based on threshold
+	threshold := 0.5
+	if assertion.Threshold != nil {
+		threshold = *assertion.Threshold
+	}
+	
+	passed := result.PassRate >= threshold
+	
+	return &AssertionResult{
+		Type:    assertion.Type,
+		Passed:  passed,
+		Score:   result.PassRate,
+		Expected: fmt.Sprintf("pass@%d >= %.2f", n, threshold),
+		Actual:  result.PassRate,
+		Message: fmt.Sprintf("Pass@%d rate: %.2f%% (%d/%d samples passed)", n, result.PassRate*100, result.NumPassed, result.NumSamples),
+		Metadata: map[string]interface{}{
+			"n":              n,
+			"pass_rate":      result.PassRate,
+			"num_samples":    result.NumSamples,
+			"num_passed":     result.NumPassed,
+			"threshold":      threshold,
+			"passed_indices": result.Details["passed_indices"],
+		},
 	}
 }

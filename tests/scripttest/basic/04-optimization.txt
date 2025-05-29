@@ -1,0 +1,44 @@
+# Test: Optimization workflows
+
+# Create base prompt
+$ echo "Analyze the sentiment of the text" > prompt.txt
+
+# Optimize with PE2
+$ pe optimize prompt.txt --method pe2 --iterations 3
+Starting PE2 optimization...
+Iteration 1/3: Score 0.72 → 0.78 (+8.3%)
+Iteration 2/3: Score 0.78 → 0.84 (+7.7%)
+Iteration 3/3: Score 0.84 → 0.87 (+3.6%)
+
+Optimization complete! Final score: 0.87 (+20.8% improvement)
+Optimized prompt saved to: prompt_optimized.txt
+
+# View optimized result
+$ cat prompt_optimized.txt
+As a sentiment analysis expert, carefully examine the provided text and classify its emotional tone as positive, negative, or neutral. Consider context, word choice, and implicit meaning. Provide a brief rationale for your classification.
+
+# Optimize with TextGrad
+$ pe optimize prompt.txt --method textgrad --iterations 5
+Starting TextGrad optimization...
+Computing semantic gradients...
+Iteration 1/5: Applied gradient, score: 0.75
+Iteration 2/5: Applied gradient, score: 0.81
+Iteration 3/5: Applied gradient, score: 0.85
+Iteration 4/5: Applied gradient, score: 0.86
+Iteration 5/5: Convergence detected, score: 0.86
+
+TextGrad optimization complete!
+Optimized prompt saved to: prompt_textgrad.txt
+
+# Compare optimization methods
+$ pe compare prompt.txt prompt_optimized.txt prompt_textgrad.txt
+Comparing 3 prompts:
+┌─────────────────┬────────┬───────────┐
+│ Prompt          │ Score  │ Tokens    │
+├─────────────────┼────────┼───────────┤
+│ prompt.txt      │ 0.72   │ 6         │
+│ prompt_opt...   │ 0.87   │ 42        │
+│ prompt_tex...   │ 0.86   │ 38        │
+└─────────────────┴────────┴───────────┘
+
+Best: prompt_optimized.txt (PE2 method)

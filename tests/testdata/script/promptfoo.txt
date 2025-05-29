@@ -1,0 +1,274 @@
+# Test pe promptfoo integration - import/export compatibility
+
+# Import a basic promptfoo config
+pe promptfoo import promptfoo-config.yaml -o pe-config.yaml
+stdout 'Importing promptfoo configuration'
+stdout '✓ Imported configuration'
+stdout '2 prompts'
+stdout '3 tests'
+exists pe-config.yaml
+
+# Check imported config structure
+contains pe-config.yaml 'prompts:'
+contains pe-config.yaml 'tests:'
+contains pe-config.yaml 'description:'
+
+# Import promptfoo results
+pe promptfoo import promptfoo-results.json -o pe-results.json
+stdout 'Detected promptfoo results file'
+stdout '✓ Imported test results'
+exists pe-results.json
+
+# Export PE config to promptfoo format
+pe promptfoo export -c pe-config.yaml -o exported-promptfoo.yaml
+stdout 'Exporting configuration'
+stdout '✓ Exported configuration'
+exists exported-promptfoo.yaml
+
+# Export with JSON format
+pe promptfoo export -c pe-config.yaml -o exported-promptfoo.json -f json
+stdout 'Format: json'
+exists exported-promptfoo.json
+contains exported-promptfoo.json '"prompts"'
+
+# Export test results to promptfoo format
+pe test config.yaml --export pe-native-results.json
+pe promptfoo export -r pe-native-results.json -o promptfoo-output.json
+stdout 'Exporting test results'
+stdout '✓ Exported test results'
+stdout 'Tests: 3'
+exists promptfoo-output.json
+
+# Verify promptfoo output structure
+contains promptfoo-output.json '"version": 2'
+contains promptfoo-output.json '"results"'
+contains promptfoo-output.json '"stats"'
+
+# Convert between formats
+pe promptfoo convert promptfoo-config.yaml -o converted.json
+stdout 'Converting.*to json format'
+stdout '✓ Converted'
+exists converted.json
+
+# Convert back to YAML
+pe promptfoo convert converted.json -o converted-back.yaml -f yaml
+stdout 'Converting.*to yaml format'
+exists converted-back.yaml
+
+# Import with options
+pe promptfoo import complex-promptfoo.yaml -o complex-pe.yaml --preserve-providers --expand-includes
+stdout '✓ Imported configuration'
+stdout '5 providers'
+contains complex-pe.yaml 'providers:'
+
+# Test assertion conversion
+pe promptfoo import with-assertions.yaml -o pe-with-assertions.yaml --convert-assertions
+stdout '✓ Imported configuration'
+contains pe-with-assertions.yaml 'assertions:'
+contains pe-with-assertions.yaml 'type: contains'
+contains pe-with-assertions.yaml 'type: not_contains'
+contains pe-with-assertions.yaml 'type: llm_rubric'
+
+# Round-trip test
+pe promptfoo import original.yaml -o intermediate.yaml
+pe promptfoo export -c intermediate.yaml -o roundtrip.yaml
+# Files should be semantically equivalent
+exists roundtrip.yaml
+
+-- promptfoo-config.yaml --
+description: "Test prompt evaluation"
+prompts:
+  - "You are a helpful assistant. {{question}}"
+  - file://assistant-prompt.txt
+providers:
+  - openai:gpt-4
+  - anthropic:claude-3
+tests:
+  - vars:
+      question: "What is 2+2?"
+    assert:
+      - type: equals
+        value: "4"
+  - vars:
+      question: "Capital of France?"
+    assert:
+      - type: contains
+        value: "Paris"
+  - vars:
+      question: "Explain recursion"
+    assert:
+      - type: llm-rubric
+        value: "Response explains recursion clearly"
+
+-- assistant-prompt.txt --
+You are an expert assistant focused on accuracy.
+
+-- promptfoo-results.json --
+{
+  "version": 2,
+  "createdAt": "2024-01-20T10:00:00Z",
+  "results": {
+    "table": {
+      "head": {
+        "prompts": [
+          {
+            "raw": "You are a helpful assistant",
+            "label": "assistant-v1",
+            "provider": "openai:gpt-4"
+          }
+        ],
+        "vars": ["question"]
+      },
+      "body": [
+        {
+          "test": {
+            "vars": {"question": "What is 2+2?"},
+            "assert": [{"type": "equals", "value": "4"}]
+          },
+          "outputs": [
+            {
+              "text": "4",
+              "pass": true,
+              "tokenUsage": {"total": 50, "prompt": 20, "completion": 30},
+              "latency": 523
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "stats": {
+    "totalPrompts": 1,
+    "totalTests": 1,
+    "totalPass": 1,
+    "totalFail": 0
+  }
+}
+
+-- config.yaml --
+prompts:
+  - name: "test-prompt"
+    content: "Test prompt content"
+tests:
+  - variables:
+      input: "test"
+    assertions:
+      - type: "contains"
+        value: "response"
+  - variables:
+      input: "another test"
+    assertions:
+      - type: "equals"
+        value: "expected"
+  - variables:
+      input: "third test"
+    assertions:
+      - type: "not_contains"
+        value: "error"
+
+-- pe-native-results.json --
+{
+  "prompts": [
+    {
+      "name": "assistant",
+      "content": "You are a helpful assistant",
+      "provider": "openai"
+    }
+  ],
+  "tests": [
+    {
+      "description": "Basic math",
+      "variables": {"question": "What is 2+2?"},
+      "results": [
+        {
+          "output": "2+2 equals 4",
+          "passed": true,
+          "tokens": 15,
+          "latency_ms": 450
+        }
+      ]
+    },
+    {
+      "description": "Geography",
+      "variables": {"question": "Capital of France?"},
+      "results": [
+        {
+          "output": "The capital of France is Paris",
+          "passed": true,
+          "tokens": 20,
+          "latency_ms": 380
+        }
+      ]
+    },
+    {
+      "description": "Concept explanation",
+      "variables": {"question": "Explain recursion"},
+      "results": [
+        {
+          "output": "Recursion is a programming technique where a function calls itself",
+          "passed": true,
+          "tokens": 50,
+          "latency_ms": 620
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "timestamp": "2024-01-20T10:00:00Z",
+    "pe_version": "1.0.0"
+  }
+}
+
+-- complex-promptfoo.yaml --
+description: "Complex configuration with multiple providers"
+providers:
+  - id: gpt4
+    apiProvider: openai
+    apiKey: ${OPENAI_API_KEY}
+    model: gpt-4
+  - id: claude
+    apiProvider: anthropic
+    apiKey: ${ANTHROPIC_API_KEY}
+    model: claude-3
+  - id: local
+    apiProvider: ollama
+    apiBaseUrl: http://localhost:11434
+  - openai:gpt-3.5-turbo
+  - anthropic:claude-instant
+prompts:
+  - file://prompts/main.txt
+  - file://prompts/backup.txt
+tests:
+  - vars:
+      context: "Important context"
+    provider: gpt4
+
+-- with-assertions.yaml --
+prompts:
+  - "Test prompt"
+tests:
+  - vars:
+      input: "test"
+    assert:
+      - type: contains
+        value: "expected"
+      - type: not-contains
+        value: "error"
+      - type: javascript
+        value: "output.length > 10"
+      - type: regex
+        value: "^[A-Z].*\\.$"
+      - type: llm-rubric
+        value: "The output should be professional"
+
+-- original.yaml --
+description: "Original promptfoo config for round-trip test"
+prompts:
+  - "You are a helpful assistant"
+providers:
+  - openai:gpt-4
+tests:
+  - vars:
+      question: "Hello"
+    assert:
+      - contains: "Hi"

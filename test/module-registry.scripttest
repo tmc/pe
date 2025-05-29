@@ -1,0 +1,76 @@
+# Test module registry functionality
+
+# Initial test - should fail since module doesn't exist
+$ pe run tmc/hello@latest
+module tmc/hello@latest not found in registry
+> contains: not found
+
+# Create the module locally
+$ pe mod init tmc/hello --prompt='say hello in a random language'
+Initialized module tmc/hello at .pe/modules/tmc/hello
+> contains: Initialized module tmc/hello
+
+# Check module was created
+$ pe mod get tmc/hello
+Module: tmc/hello
+Version: 0.1.0
+> contains: tmc/hello
+> contains: 0.1.0
+
+# Test the prompt locally
+$ pe vet .pe/modules/tmc/hello/prompt.txt
+=== VET .pe/modules/tmc/hello/prompt.txt
+PASS
+> contains: PASS
+
+# Push to registry (will fail without GITHUB_TOKEN)
+$ pe push tmc/hello
+GITHUB_TOKEN environment variable is required
+> contains: GITHUB_TOKEN
+
+# With token set (mocked)
+$ GITHUB_TOKEN=mock-token pe push tmc/hello
+Created gist: https://gist.github.com/mock-gist-id
+Module tmc/hello pushed successfully!
+Others can now use: pe run tmc/hello@latest
+> contains: pushed successfully
+
+# Now running should work (with mocked registry)
+$ pe run tmc/hello@latest
+Hola!
+> contains_any: [Hello, Hola, Bonjour, Ciao, 你好, こんにちは]
+
+# Test with variables
+$ pe mod init tmc/greet --prompt='say {{.greeting}} to {{.name}} in {{.language}}'
+Initialized module tmc/greet
+> contains: Initialized
+
+# Check defaults were suggested
+$ cat .pe/modules/tmc/greet/prompt.txt
+say {{.greeting}} to {{.name}} in {{.language}}
+
+-- defaults --
+# Add your defaults here
+
+-- evals --
+# Add your tests here
+$ 
+Expected output
+> contains: {{.greeting}}
+> contains: defaults
+> contains: evals
+
+# Edit to add defaults
+$ pe edit .pe/modules/tmc/greet/prompt.txt --set-defaults "greeting=Hello&name=World&language=English"
+> contains: Hello
+
+# Test with defaults
+$ pe run .pe/modules/tmc/greet/prompt.txt
+Hello World
+> contains: Hello World
+
+# List modules (empty registry)
+$ pe mod list
+Available modules:
+  (none - registry not configured)
+> contains: none

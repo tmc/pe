@@ -1,0 +1,116 @@
+# Test pe build command - production optimization
+
+# Basic build
+pe build config.yaml
+stdout 'Building optimized prompt'
+stdout 'Analyzing requirements'
+stdout 'Optimization complete'
+stdout '✓ Built successfully'
+exists prompt_build.txt
+exists prompt_build.json
+
+# Build with specific output
+pe build config.yaml -o production.txt
+stdout 'Building to: production.txt'
+exists production.txt
+! exists prompt_build.txt
+
+# Build with metadata
+pe build config.yaml --with-metadata
+exists prompt_build.txt
+exists prompt_build_metadata.json
+contains prompt_build_metadata.json '"version"'
+contains prompt_build_metadata.json '"checksum"'
+contains prompt_build_metadata.json '"timestamp"'
+
+# Build for specific provider
+pe build config.yaml --target anthropic
+stdout 'Target provider: anthropic'
+stdout 'Applying provider-specific optimizations'
+contains prompt_build.txt 'Human:'
+contains prompt_build.txt 'Assistant:'
+
+# Build with minification
+pe build verbose-prompt.txt --minify
+stdout 'Minifying prompt'
+stdout 'Original tokens: 500'
+stdout 'Minified tokens: 350'
+stdout 'Reduction: 30%'
+
+# Build with validation
+pe build config.yaml --validate
+stdout 'Validation checks:'
+stdout '✓ Grammar check passed'
+stdout '✓ Clarity score: 0.92'
+stdout '✓ No bias detected'
+stdout '✓ Security scan passed'
+
+# Build bundle with dependencies
+pe build project/ --bundle
+stdout 'Creating prompt bundle'
+stdout 'Including 5 components'
+stdout 'Resolving dependencies'
+exists prompt_bundle.tar.gz
+
+# Build with compression
+pe build large-prompt.txt --compress
+stdout 'Compressing prompt'
+exists prompt_build.txt.gz
+stdout 'Compression ratio: 3.2:1'
+
+# Multi-target build
+pe build config.yaml --targets openai,anthropic,google
+stdout 'Building for multiple targets'
+exists builds/openai/prompt.txt
+exists builds/anthropic/prompt.txt
+exists builds/google/prompt.txt
+
+# Build with environment-specific configs
+env PE_ENV=production
+pe build config.yaml
+stdout 'Environment: production'
+stdout 'Loading production settings'
+contains prompt_build.txt 'Production mode'
+
+# Build failure (validation error)
+! pe build invalid-config.yaml
+stderr 'Build failed'
+stderr 'Validation error'
+stdout 'Missing required field: prompt'
+
+-- config.yaml --
+prompt: |
+  You are a helpful AI assistant.
+  Follow these guidelines:
+  - Be concise
+  - Be accurate
+provider: openai
+model: gpt-4
+temperature: 0.7
+
+-- verbose-prompt.txt --
+You are an incredibly helpful, knowledgeable, and friendly AI assistant who always strives to provide the most comprehensive, detailed, and accurate responses possible while maintaining a warm and approachable tone throughout all interactions.
+
+-- invalid-config.yaml --
+# Missing prompt field
+provider: openai
+model: gpt-4
+
+-- large-prompt.txt --
+This is a large prompt with many repeated sections for testing compression.
+This is a large prompt with many repeated sections for testing compression.
+This is a large prompt with many repeated sections for testing compression.
+This pattern continues for many lines...
+
+-- project/pe.mod --
+module project
+
+require (
+  github.com/anthropic/helpful v1.0.0
+)
+
+-- project/main.txt --
+Main prompt incorporating helpful framework
+
+-- project/context.txt --
+Additional context for the prompt

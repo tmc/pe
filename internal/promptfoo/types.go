@@ -4,9 +4,11 @@ package promptfoo
 
 // Config represents the promptfoo configuration structure.
 type Config struct {
-	Prompts   []string   `yaml:"prompts" json:"prompts"`
-	Providers []string   `yaml:"providers" json:"providers"`
-	Tests     []TestCase `yaml:"tests" json:"tests"`
+	Description string         `yaml:"description,omitempty" json:"description,omitempty"`
+	Prompts     []string       `yaml:"prompts" json:"prompts"`
+	Providers   []string       `yaml:"providers" json:"providers"`
+	Tests       []TestCase     `yaml:"tests" json:"tests"`
+	DefaultTest *TestDefaults  `yaml:"defaultTest,omitempty" json:"defaultTest,omitempty"`
 }
 
 // TestCase represents a single test case in the configuration.
@@ -18,10 +20,11 @@ type TestCase struct {
 
 // Assertion represents an assertion to validate provider output.
 type Assertion struct {
-	Type      string      `yaml:"type" json:"type"`
-	Value     interface{} `yaml:"value" json:"value"`
-	Provider  string      `yaml:"provider,omitempty" json:"provider,omitempty"`
-	Threshold float64     `yaml:"threshold,omitempty" json:"threshold,omitempty"`
+	Type      string                 `yaml:"type" json:"type"`
+	Value     interface{}            `yaml:"value" json:"value"`
+	Provider  string                 `yaml:"provider,omitempty" json:"provider,omitempty"`
+	Threshold float64                `yaml:"threshold,omitempty" json:"threshold,omitempty"`
+	Config    map[string]interface{} `yaml:"config,omitempty" json:"config,omitempty"`
 }
 
 // EvaluationResult mirrors promptfoo's output structure.
@@ -128,3 +131,43 @@ type Stats struct {
 	Errors     int        `json:"errors"`
 	TokenUsage TokenUsage `json:"tokenUsage"`
 }
+
+// Additional types for compatibility
+
+// Provider represents a provider configuration
+type Provider struct {
+	ID     string                 `yaml:"id" json:"id"`
+	Config map[string]interface{} `yaml:"config,omitempty" json:"config,omitempty"`
+}
+
+// Prompt represents a prompt configuration
+type Prompt struct {
+	ID       string `yaml:"id" json:"id"`
+	Template string `yaml:"template" json:"template"`
+}
+
+// Test represents a test configuration
+type Test struct {
+	Vars    map[string]interface{} `yaml:"vars" json:"vars"`
+	Assert  []Assertion            `yaml:"assert" json:"assert"`
+	Options map[string]interface{} `yaml:"options,omitempty" json:"options,omitempty"`
+}
+
+// TestDefaults represents default test configuration
+type TestDefaults struct {
+	Assert []Assertion `yaml:"assert,omitempty" json:"assert,omitempty"`
+}
+
+// EvalResults represents evaluation results
+type EvalResults struct {
+	Results []TestResult `json:"results"`
+	Stats   Stats        `json:"stats"`
+}
+
+// BodyRow represents a row in the results table
+type BodyRow struct {
+	Test   TestCase     `json:"test"`
+	Result TestResult   `json:"result"`
+}
+
+// Note: PETestResults is defined in export.go for now

@@ -1,0 +1,124 @@
+# Test pe compose command - component-based prompt engineering
+
+# Initialize component library
+pe compose --library-init
+stdout 'Initialized component library'
+exists .pe/components
+exists .pe/components/registry.json
+
+# Add components to library
+pe compose --add-component context.txt --category context
+stdout 'Added component: context.txt'
+pe compose --add-component instruction.txt --category instruction
+stdout 'Added component: instruction.txt'
+
+# Basic composition
+pe compose context.txt instruction.txt examples.txt --output composed.txt
+stdout 'Composing 3 components'
+stdout 'Style: default'
+stdout 'Composition complete'
+exists composed.txt
+contains composed.txt 'Context:'
+contains composed.txt 'Instructions:'
+
+# Style-specific composition
+pe compose components/ --style cot --output cot-prompt.txt
+stdout 'Chain-of-thought composition'
+stdout 'Added reasoning structure'
+contains cot-prompt.txt "Let's think step by step"
+
+# Few-shot composition
+pe compose base.txt --style few-shot --examples examples.json
+stdout 'Few-shot composition'
+stdout 'Injected 3 examples'
+contains base.txt 'Example 1:'
+
+# Composition with optimization
+pe compose context.txt task.txt --optimize --target gpt-4
+stdout 'Composing with optimization'
+stdout 'Target model: gpt-4'
+stdout 'Optimizing coherence'
+stdout 'TextGrad optimization applied'
+
+# Component validation
+pe compose context.txt incompatible.txt --validate
+! stderr .
+stdout 'Warning: Potential incompatibility detected'
+stdout 'context.txt expects: general knowledge'
+stdout 'incompatible.txt provides: specialized medical'
+
+# List available components
+pe compose --list
+stdout 'Available components:'
+stdout '  context/'
+stdout '    - general.txt'
+stdout '    - technical.txt'
+stdout '  instruction/'
+stdout '    - analyze.txt'
+stdout '  examples/'
+
+# Composition with pe.mod file
+pe compose
+stdout 'Loading pe.mod'
+stdout 'Resolving dependencies'
+stdout 'Downloading github.com/anthropic/helpful-harmless@v1.2.0'
+stdout 'Composing from module requirements'
+
+# Import from URL
+pe compose --import https://example.com/components.txtar
+stdout 'Importing components'
+stdout 'Added 5 components'
+
+# Coherence analysis
+pe compose prompt1.txt prompt2.txt --coherence-check
+stdout 'Coherence analysis:'
+stdout 'Semantic similarity: 0.85'
+stdout 'Style consistency: 0.92'
+stdout 'No conflicts detected'
+
+-- context.txt --
+You are an AI assistant with expertise in software engineering.
+
+-- instruction.txt --
+Please analyze the following code and provide insights.
+
+-- examples.txt --
+Example: When analyzing Python code, consider performance and readability.
+
+-- base.txt --
+Base prompt for few-shot learning.
+
+-- examples.json --
+[
+  {"input": "What is 2+2?", "output": "4"},
+  {"input": "What is 5+5?", "output": "10"},
+  {"input": "What is 3+3?", "output": "6"}
+]
+
+-- incompatible.txt --
+Use specialized medical terminology and diagnosis procedures.
+
+-- pe.mod --
+module myproject
+
+pe 1.0
+
+require (
+	github.com/anthropic/helpful-harmless v1.2.0
+	github.com/openai/best-practices v2.1.0
+	github.com/google/tech-writing v1.0.0
+)
+
+replace github.com/openai/best-practices => ./local-overrides/best-practices
+
+-- pe.sum --
+github.com/anthropic/helpful-harmless v1.2.0 h1:xK2lZat4ZcHrA9kNx2KwXgHfV0g2F0N2ZzQdDO8YtE=
+github.com/anthropic/helpful-harmless v1.2.0/pe.mod h1:QpBohPKJ+5kUgZvkWHBKjU7jYXEqOw6NqTkZ/Yx9VmQ=
+github.com/google/tech-writing v1.0.0 h1:dLEQVhGVR5DmFeXkKxz2KwXgHfV0g2F0N2ZzQdDO8DE=
+github.com/google/tech-writing v1.0.0/pe.mod h1:BKjU7jYXEqOw6NqTkZ/Yx9VGH5kUgZvkWHBKjU7jYX=
+
+-- prompt1.txt --
+Analyze this text for sentiment.
+
+-- prompt2.txt --
+Determine the emotional tone of the provided text.

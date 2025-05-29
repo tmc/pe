@@ -1,0 +1,156 @@
+# Test pe extract command - XML tag extraction from prompt outputs
+
+# Basic XML tag extraction
+pe run prompt.txt | pe extract --tag answer
+stdout 'The capital of France is Paris'
+! stdout '<answer>'
+! stdout '</answer>'
+
+# Extract multiple tags
+pe run multi-output.txt | pe extract --tags result,explanation
+stdout 'Result: 42'
+stdout 'Explanation: The answer to life'
+
+# Extract with specific tag
+echo '<output><name>John</name><age>30</age></output>' | pe extract --tag name
+stdout 'John'
+! stdout '<name>'
+
+# Extract nested tags
+pe run nested.txt | pe extract --tag data --nested
+stdout '<item>First</item>'
+stdout '<item>Second</item>'
+
+# Extract with attribute filtering
+pe run attributed.txt | pe extract --tag response --attr type=final
+stdout 'This is the final answer'
+
+# Extract to JSON format
+pe run structured.txt | pe extract --tag data --json
+stdout '{'
+stdout '"content":'
+stdout '"metadata":'
+
+# Extract with XPath-like selectors
+pe run complex.txt | pe extract --xpath "//answer[@confidence='high']"
+stdout 'Definitely Paris'
+
+# Extract multiple occurrences
+pe run listing.txt | pe extract --tag item --all
+stdout 'Apple'
+stdout 'Banana'
+stdout 'Cherry'
+
+# Extract with transformation
+pe run formatted.txt | pe extract --tag code --transform "pe fmt -"
+stdout 'func main() {'
+stdout '    fmt.Println("Hello")'
+stdout '}'
+
+# Extract and validate
+pe run validated.txt | pe extract --tag solution --validate schema.json
+stdout 'Valid solution extracted'
+
+# Extract with custom delimiters
+pe run custom.txt | pe extract --start "[[RESULT]]" --end "[[/RESULT]]"
+stdout 'Custom delimited content'
+
+# Pipeline with extraction
+pe run prompt.txt | pe extract --tag answer | pe test --inline assertions.yaml
+stdout 'Test passed'
+
+# Extract with error handling
+! pe run invalid.txt | pe extract --tag missing
+stderr 'No tag found: missing'
+
+# Extract and save to file
+pe run prompt.txt | pe extract --tag response --output response.txt
+exists response.txt
+contains response.txt 'Extracted content'
+
+# Extract with streaming
+pe run stream-prompt.txt --stream | pe extract --tag chunk --stream
+stdout 'Chunk 1'
+stdout 'Chunk 2'
+stdout 'Chunk 3'
+
+-- prompt.txt --
+What is the capital of France?
+<answer>The capital of France is Paris</answer>
+
+-- multi-output.txt --
+Calculate the meaning of life.
+<result>42</result>
+<explanation>The answer to life, the universe, and everything</explanation>
+
+-- nested.txt --
+List some items.
+<data>
+  <item>First</item>
+  <item>Second</item>
+</data>
+
+-- attributed.txt --
+Provide analysis.
+<response type="preliminary">Initial thoughts</response>
+<response type="final">This is the final answer</response>
+
+-- structured.txt --
+Generate data.
+<data>
+  <content>Main content here</content>
+  <metadata>
+    <author>AI Assistant</author>
+    <timestamp>2024-01-20</timestamp>
+  </metadata>
+</data>
+
+-- complex.txt --
+What is the capital?
+<answer confidence="low">Maybe London?</answer>
+<answer confidence="high">Definitely Paris</answer>
+
+-- listing.txt --
+List fruits.
+<item>Apple</item>
+<item>Banana</item>
+<item>Cherry</item>
+
+-- formatted.txt --
+Write Go code.
+<code>
+func main() {
+fmt.Println("Hello")
+}
+</code>
+
+-- validated.txt --
+Solve the problem.
+<solution>{"x": 5, "y": 10}</solution>
+
+-- schema.json --
+{
+  "type": "object",
+  "properties": {
+    "x": {"type": "number"},
+    "y": {"type": "number"}
+  }
+}
+
+-- custom.txt --
+Process this.
+[[RESULT]]Custom delimited content[[/RESULT]]
+
+-- assertions.yaml --
+assert:
+  - contains: "Paris"
+  - not_contains: "<answer>"
+
+-- invalid.txt --
+No tags here, just plain text.
+
+-- stream-prompt.txt --
+Stream some chunks.
+<chunk>Chunk 1</chunk>
+<chunk>Chunk 2</chunk>
+<chunk>Chunk 3</chunk>

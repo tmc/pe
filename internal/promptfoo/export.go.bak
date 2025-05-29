@@ -1,0 +1,274 @@
+package promptfoo
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
+	"gopkg.in/yaml.v3"
+)
+
+// Exporter handles conversion of PE formats to promptfoo-compatible outputs
+type Exporter struct {
+	config ExportConfig
+}
+
+// ExportConfig defines options for promptfoo export
+type ExportConfig struct {
+	Format           string // "yaml" or "json"
+	IncludeMetadata  bool
+	ExpandVariables  bool
+	ConvertAssertions bool
+}
+
+// NewExporter creates a new promptfoo exporter
+func NewExporter(config ExportConfig) *Exporter {
+	return &Exporter{config: config}
+}
+
+// ExportConfig converts a PE config to promptfoo config format
+func (e *Exporter) ExportConfig(peConfig interface{}) (*Config, error) {
+	// Convert PE config to promptfoo Config structure
+	pfConfig := &Config{
+		Description: "Exported from PE",
+		Providers:   []Provider{},
+		Prompts:     []Prompt{},
+		Tests:       []Test{},
+		DefaultTest: &TestDefaults{},
+	}
+
+	// TODO: Implement actual conversion logic based on PE config structure
+	// This is a placeholder implementation
+	
+	return pfConfig, nil
+}
+
+// ExportTestResults converts PE test results to promptfoo output format
+func (e *Exporter) ExportTestResults(results *PETestResults) (*EvalResults, error) {
+	evalResults := &EvalResults{
+		Version: 2,
+		Results: Results{
+			Table: Table{
+				Head: Head{
+					Prompts: []PromptInfo{},
+					Vars:    []string{},
+				},
+				Body: []BodyRow{},
+			},
+		},
+		Stats: Stats{
+			TotalPrompts: len(results.Prompts),
+			TotalTests:   len(results.Tests),
+		},
+	}
+
+	// Convert prompts
+	for _, prompt := range results.Prompts {
+		evalResults.Results.Table.Head.Prompts = append(
+			evalResults.Results.Table.Head.Prompts,
+			PromptInfo{
+				Raw:      prompt.Content,
+				Label:    prompt.Name,
+				Provider: prompt.Provider,
+			},
+		)
+	}
+
+	// Convert test cases to table rows
+	for _, test := range results.Tests {
+		row := BodyRow{
+			Test: TestCase{
+				Vars:        test.Variables,
+				Assert:      e.convertAssertions(test.Assertions),
+				Description: test.Description,
+			},
+			Outputs: []Output{},
+			VarValues: []string{},
+		}
+
+		// Add outputs for each prompt
+		for _, result := range test.Results {
+			output := Output{
+				Text:       result.Output,
+				TokenUsage: TokenUsage{
+					Total:      result.Tokens,
+					Prompt:     result.PromptTokens,
+					Completion: result.CompletionTokens,
+				},
+				Latency: int(result.LatencyMs),
+				Pass:    result.Passed,
+				Cost:    result.Cost,
+			}
+			
+			if !result.Passed {
+				output.FailReasons = result.FailureReasons
+			}
+			
+			row.Outputs = append(row.Outputs, output)
+		}
+
+		evalResults.Results.Table.Body = append(evalResults.Results.Table.Body, row)
+	}
+
+	// Calculate stats
+	evalResults.Stats.TotalPass = e.countPasses(evalResults.Results.Table.Body)
+	evalResults.Stats.TotalFail = evalResults.Stats.TotalTests - evalResults.Stats.TotalPass
+
+	return evalResults, nil
+}
+
+// ExportToFile writes the export to a file
+func (e *Exporter) ExportToFile(data interface{}, filename string) error {
+	// Ensure directory exists
+	dir := filepath.Dir(filename)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("creating directory: %w", err)
+	}
+
+	// Marshal based on format
+	var content []byte
+	var err error
+
+	switch e.config.Format {
+	case "yaml":
+		content, err = yaml.Marshal(data)
+	case "json":
+		content, err = json.MarshalIndent(data, "", "  ")
+	default:
+		return fmt.Errorf("unsupported format: %s", e.config.Format)
+	}
+
+	if err != nil {
+		return fmt.Errorf("marshaling data: %w", err)
+	}
+
+	// Write to file
+	if err := os.WriteFile(filename, content, 0644); err != nil {
+		return fmt.Errorf("writing file: %w", err)
+	}
+
+	return nil
+}
+
+// convertAssertions converts PE assertions to promptfoo format
+func (e *Exporter) convertAssertions(peAssertions []PEAssertion) []Assertion {
+	if !e.config.ConvertAssertions {
+		return nil
+	}
+
+	assertions := []Assertion{}
+	for _, pa := range peAssertions {
+		var assert Assertion
+		
+		switch pa.Type {
+		case "contains":
+			assert = Assertion{
+				Type:  "contains",
+				Value: pa.Value,
+			}
+		case "not_contains":
+			assert = Assertion{
+				Type:  "not-contains",
+				Value: pa.Value,
+			}
+		case "equals":
+			assert = Assertion{
+				Type:  "equals",
+				Value: pa.Value,
+			}
+		case "regex":
+			assert = Assertion{
+				Type:  "regex",
+				Value: pa.Pattern,
+			}
+		case "length_range":
+			assert = Assertion{
+				Type:  "javascript",
+				Value: fmt.Sprintf("output.length >= %d && output.length <= %d", pa.Min, pa.Max),
+			}
+		case "llm_rubric":
+			assert = Assertion{
+				Type:  "llm-rubric",
+				Value: pa.Rubric,
+			}
+		default:
+			// Custom assertion
+			assert = Assertion{
+				Type:  "javascript",
+				Value: pa.CustomJS,
+			}
+		}
+		
+		assertions = append(assertions, assert)
+	}
+	
+	return assertions
+}
+
+// countPasses counts passing test results
+func (e *Exporter) countPasses(rows []BodyRow) int {
+	count := 0
+	for _, row := range rows {
+		for _, output := range row.Outputs {
+			if output.Pass {
+				count++
+			}
+		}
+	}
+	return count
+}
+
+// PETestResults represents PE test results structure
+type PETestResults struct {
+	Prompts []PEPrompt     `json:"prompts"`
+	Tests   []PETestCase   `json:"tests"`
+	Meta    PETestMetadata `json:"metadata"`
+}
+
+// PEPrompt represents a PE prompt
+type PEPrompt struct {
+	Name     string `json:"name"`
+	Content  string `json:"content"`
+	Provider string `json:"provider"`
+	Model    string `json:"model"`
+}
+
+// PETestCase represents a PE test case
+type PETestCase struct {
+	Description string                 `json:"description"`
+	Variables   map[string]interface{} `json:"variables"`
+	Assertions  []PEAssertion          `json:"assertions"`
+	Results     []PETestResult         `json:"results"`
+}
+
+// PEAssertion represents a PE assertion
+type PEAssertion struct {
+	Type     string `json:"type"`
+	Value    string `json:"value,omitempty"`
+	Pattern  string `json:"pattern,omitempty"`
+	Min      int    `json:"min,omitempty"`
+	Max      int    `json:"max,omitempty"`
+	Rubric   string `json:"rubric,omitempty"`
+	CustomJS string `json:"custom_js,omitempty"`
+}
+
+// PETestResult represents a single test result
+type PETestResult struct {
+	Output           string   `json:"output"`
+	Passed           bool     `json:"passed"`
+	FailureReasons   []string `json:"failure_reasons,omitempty"`
+	Tokens           int      `json:"tokens"`
+	PromptTokens     int      `json:"prompt_tokens"`
+	CompletionTokens int      `json:"completion_tokens"`
+	LatencyMs        int64    `json:"latency_ms"`
+	Cost             float64  `json:"cost"`
+}
+
+// PETestMetadata represents test metadata
+type PETestMetadata struct {
+	Timestamp   time.Time `json:"timestamp"`
+	PEVersion   string    `json:"pe_version"`
+	Environment string    `json:"environment"`
+}

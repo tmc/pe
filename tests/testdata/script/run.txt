@@ -1,0 +1,77 @@
+# Test pe run command - basic execution
+
+# Simple prompt execution
+pe run 'What is 2+2?'
+stdout '4'
+! stderr .
+
+# Run from stdin
+stdin 'Explain what a pointer is in one sentence.'
+pe run -
+stdout 'pointer'
+stdout 'memory address'
+
+# Run from file
+pe run prompt.txt
+stdout 'assistant'
+
+# Run with variables
+pe run 'Translate {{.Text}} to {{.Language}}' --var Text=Hello --var Language=Spanish
+stdout 'Hola'
+
+# Run with provider selection
+pe run 'Test prompt' --provider openai --model gpt-4
+stdout .
+! stderr 'error'
+
+# Run with temperature setting
+pe run 'Generate a random number' --temperature 0.9
+stdout .
+
+# Run with max tokens
+pe run 'Tell me a story' --max-tokens 50
+stdout .
+
+# Error: no prompt provided
+! pe run
+stderr 'error: run requires a prompt'
+
+# Error: invalid provider
+! pe run 'test' --provider invalid-provider
+stderr 'unknown provider'
+
+# Run from txtar file
+pe run example.txtar
+stdout 'processed'
+exists .pe/cache
+
+# Run from gist (mock)
+pe run gist:example/hello
+stdout 'Hello from gist'
+
+# Run with streaming output
+pe run 'Count to 5' --stream
+stdout '1'
+stdout '2'
+stdout '3'
+stdout '4'
+stdout '5'
+
+# Run with JSON output
+pe run 'What is 2+2?' --json
+stdout '"response"'
+stdout '"model"'
+stdout '"tokens"'
+
+-- prompt.txt --
+You are a helpful assistant. Explain the concept of recursion.
+
+-- example.txtar --
+-- prompt.txt --
+Process this input: {{.Input}}
+
+-- config.yaml --
+provider: openai
+model: gpt-4
+variables:
+  Input: "test data"

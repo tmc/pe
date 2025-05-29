@@ -1,0 +1,33 @@
+# Test pe init command
+
+# Initialize in clean directory
+pe init
+stdout 'Initialized PE repository'
+exists .pe
+exists .pe/config
+exists .pe/history
+
+# Initialize with custom directory
+mkdir myproject
+cd myproject
+pe init
+exists .pe
+cd ..
+
+# Re-initialize should fail
+! pe init
+stderr 'already initialized'
+
+# Initialize with --force
+pe init --force
+stdout 'Re-initialized PE repository'
+
+# Check default configuration
+pe config list
+stdout 'provider:'
+stdout 'model:'
+
+-- expected_config --
+provider: openai
+model: gpt-4
+temperature: 0.7

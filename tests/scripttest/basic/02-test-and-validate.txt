@@ -1,0 +1,50 @@
+# Test: Testing and validation workflows
+
+# Create a test configuration
+$ cat > test-config.yaml << EOF
+provider: mock
+tests:
+  - prompt: "What is the capital of France?"
+    assert:
+      - type: contains
+        value: "Paris"
+  - prompt: "What is 2+2?"
+    assert:
+      - type: equals
+        value: "4"
+EOF
+
+# Run tests
+$ pe test test-config.yaml
+Running 2 tests...
+✓ Test 1: What is the capital of France?
+✓ Test 2: What is 2+2?
+
+All tests passed! (2/2)
+
+# Test with coverage
+$ pe test test-config.yaml --coverage
+Running 2 tests with coverage...
+✓ Test 1: What is the capital of France?
+✓ Test 2: What is 2+2?
+
+Coverage: 100% (2/2 assertions passed)
+
+# Create a style guide
+$ cat > style.txtar << EOF
+-- rules.yaml --
+name: concise
+rules:
+  - id: brevity
+    description: "Keep responses under 50 words"
+    weight: 1.0
+-- validator.sh --
+#!/bin/bash
+[ $(wc -w < "$1") -lt 50 ]
+EOF
+
+# Validate against style
+$ echo "This is a very long response that goes on and on..." > response.txt
+$ pe validate response.txt --style style.txtar
+✗ Style validation failed:
+  - brevity: Response exceeds 50 words (found 52)

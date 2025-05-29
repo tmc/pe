@@ -1,0 +1,27 @@
+# Test: Basic initialization and running prompts
+
+# Initialize a PE project
+pe init
+stdout 'Initialized PE repository'
+
+# Run a simple prompt  
+pe run 'What is 2+2?'
+stdout '^4$'
+
+# Run a prompt from a file
+echo 'Explain what a pointer is in one sentence.' > prompt.txt
+pe run prompt.txt
+stdout 'pointer.*variable.*memory address'
+
+# Run with variables
+pe run 'Translate {{.Text}} to {{.Language}}' --var Text=Hello --var Language=Spanish
+stdout '^Hola$'
+
+# Run from a gist (mock)
+pe run gist:example/hello.txtar
+stdout 'Hello, World!'
+
+# Check history - simplified for mock
+pe history
+stdout 'pe init'
+stdout 'pe run'

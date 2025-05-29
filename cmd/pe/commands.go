@@ -13,20 +13,42 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+// Vet command flags
+var (
+	vetProvider   string
+	vetQuiet      bool
+	vetVerbose    bool
+	vetStopOnFail bool
+)
+
 // vetCmd returns a cobra.Command for the 'vet' subcommand.
 //
-// vet validates promptfoo configuration files.
+// vet validates prompt files and runs their embedded evaluations.
+// This is the default command for testing prompts.
 //
 // Usage:
 //
-//	cat config.yaml | pe vet
-//	pe vet [file...]
+//	pe vet [file...]  # Validate and test prompt files
+//	pe vet            # Vet all .txt files in current directory
 func vetCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "vet [file...]",
-		Short: "Validate promptfoo configuration files",
-		RunE:  runVet,
+		Short: "Validate prompt files and run their evals",
+		Long: `Vet examines prompt files and runs their embedded evaluations.
+
+If a prompt file contains an -- evals -- section, vet will automatically
+run those evaluations. Otherwise, it performs basic validation.
+
+This is the default command for testing prompts, similar to 'go vet'.`,
+		RunE: runVetPrompts,
 	}
+
+	cmd.Flags().StringVar(&vetProvider, "provider", "", "LLM provider to use for evals")
+	cmd.Flags().BoolVarP(&vetQuiet, "quiet", "q", false, "Only show failures")
+	cmd.Flags().BoolVarP(&vetVerbose, "verbose", "v", false, "Show detailed output")
+	cmd.Flags().BoolVar(&vetStopOnFail, "stop-on-fail", false, "Stop on first failure")
+
+	return cmd
 }
 
 // fmtCmd returns a cobra.Command for the 'fmt' subcommand.
@@ -128,7 +150,8 @@ func watchCmd() *cobra.Command {
 	return cmd
 }
 
-func runVet(cmd *cobra.Command, args []string) error {
+func runVetConfig(cmd *cobra.Command, args []string) error {
+	// Original vet for YAML config files
 	for _, file := range args {
 		data, err := os.ReadFile(file)
 		if err != nil {
@@ -147,6 +170,57 @@ func runVet(cmd *cobra.Command, args []string) error {
 		}
 
 		fmt.Fprintf(cmd.OutOrStdout(), "%s: OK\n", file)
+	}
+	return nil
+}
+
+func runVetPrompts(cmd *cobra.Command, args []string) error {
+	// Simple implementation that calls eval-prompt for each file with evals
+	if len(args) == 0 {
+		// Default to all .txt files
+		matches, err := filepath.Glob("*.txt")
+		if err == nil && len(matches) > 0 {
+			args = matches
+		}
+	}
+
+	hasFailures := false
+	for _, file := range args {
+		// Check if it's a YAML/JSON config file
+		if strings.HasSuffix(file, ".yaml") || strings.HasSuffix(file, ".yml") || strings.HasSuffix(file, ".json") {
+			// Use old config vet
+			if err := runVetConfig(cmd, []string{file}); err != nil {
+				hasFailures = true
+			}
+			continue
+		}
+
+		// For prompt files, run eval-prompt if they have evals
+		if !vetQuiet {
+			fmt.Printf("=== VET %s\n", file)
+		}
+
+		// Use eval-prompt command to run the evals
+		evalArgs := []string{file}
+		if vetProvider != "" {
+			evalArgs = append(evalArgs, "--provider", vetProvider)
+		}
+		
+		evalCmd := evalPromptCmd
+		evalCmd.SetArgs(evalArgs)
+		
+		if err := evalCmd.Execute(); err != nil {
+			if !vetQuiet {
+				fmt.Printf("FAIL: %v\n", err)
+			}
+			hasFailures = true
+		} else if !vetQuiet {
+			fmt.Printf("PASS\n")
+		}
+	}
+
+	if hasFailures {
+		return fmt.Errorf("some files failed validation")
 	}
 	return nil
 }

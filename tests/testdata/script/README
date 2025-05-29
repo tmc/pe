@@ -1,0 +1,164 @@
+This directory contains PE's script-based tests, following the Go toolchain's testing patterns.
+
+Test files are written in txtar format. Each test is a text archive
+containing a script of commands to run, expected output, and files
+to create in the test's temporary directory.
+
+The script format is a subset of the Go toolchain's script test format:
+
+Scripts are executedsequentially. Each line beginning with a command
+is executed, and output is checked against expectations.
+
+Commands:
+
+  # comment
+    A line beginning with # is a comment.
+
+  ! command args...
+    Run the command and expect it to fail (non-zero exit status).
+
+  ? command args...
+    Run the command and ignore its exit status.
+
+  [condition] command args...
+  [!condition] command args...
+    Run the command only if the condition is satisfied.
+    Available conditions:
+      - short: the -short test flag is set
+      - darwin, linux, windows: the target OS
+      - go1.21: the Go version is at least 1.21
+      - race: the race detector is supported
+
+  env KEY=value
+    Set an environment variable.
+
+  cd dir
+    Change to a directory (relative to the test's working directory).
+
+  exec command args...
+    Run an external command.
+
+  pe args...
+    Run the pe command with the given arguments.
+
+  exists [-readonly] file...
+    Check that the named files exist.
+
+  ! exists file...
+    Check that the named files do not exist.
+
+  contains file pattern
+    Check that the file contains the pattern.
+
+  ! contains file pattern
+    Check that the file does not contain the pattern.
+
+  grep [-count=N] pattern file
+    Check that the file contains lines matching the pattern.
+
+  stdout pattern
+    Check that the last command's stdout contains the pattern.
+
+  ! stdout pattern
+    Check that the last command's stdout does not contain the pattern.
+
+  stderr pattern
+    Check that the last command's stderr contains the pattern.
+
+  ! stderr pattern
+    Check that the last command's stderr does not contain the pattern.
+
+  cmp [-trim] file1 file2
+    Compare two files for equality.
+
+  cp src... dst
+    Copy files to a destination.
+
+  mkdir [-p] dir...
+    Create directories.
+
+  rm [-rf] file...
+    Remove files or directories.
+
+  sleep duration
+    Sleep for a duration (e.g., 100ms, 1s).
+
+  stop [message]
+    Stop execution of the script.
+
+  skip [message]
+    Skip the rest of the script.
+
+  concurrent command...
+    Run multiple commands concurrently.
+
+  count file pattern n
+    Check that pattern occurs exactly n times in file.
+
+  json file [query]
+    Parse JSON file and optionally query it.
+
+  yaml file [query]
+    Parse YAML file and optionally query it.
+
+Environment variables:
+
+  $WORK
+    The temporary work directory for the test.
+
+  $HOME
+    Set to $WORK/home, isolated from the user's real home directory.
+
+  $PE_HOME
+    The PE configuration directory, set to $WORK/.pe.
+
+  $PE_TEST_MODE
+    Set to "true" to indicate test mode.
+
+  $PE_MOCK_MODE
+    Set to "true" to use mock LLM responses.
+
+  PATH
+    Includes the directory containing the test pe binary.
+
+Examples:
+
+  # Create and run a simple prompt
+  pe run 'What is 2+2?'
+  stdout '4'
+
+  # Test file operations
+  env CONTENT='Explain pointers'
+  exec echo $CONTENT
+  stdout 'Explain pointers'
+  pe run -
+  stdout 'pointer'
+
+  # Test error handling
+  ! pe run
+  stderr 'error: run requires a prompt'
+
+  # Platform-specific tests
+  [darwin] pe trust list
+  [!windows] pe sandbox status
+
+  # File comparison
+  pe optimize prompt.txt --output optimized.txt
+  exists optimized.txt
+  ! cmp prompt.txt optimized.txt
+
+The -- marker introduces a file to be created in the test's working directory:
+
+  -- go.mod --
+  module example.com/test
+  go 1.21
+
+  -- main.go --
+  package main
+  func main() {}
+
+  -- prompt.txt --
+  Explain this concept clearly.
+
+Tests should be focused, testing one specific behavior. Use descriptive
+filenames that indicate what is being tested.

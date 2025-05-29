@@ -48,6 +48,11 @@ func CalculateUniEval(generated, reference, taskType string, llmProvider llm.Pro
 	return am.CalculateUniEval(context.Background(), generated, reference, taskType)
 }
 
+func CalculatePassAtNDetailed(n int, samples []string, testFunc func(string) bool) *PassAtNResult {
+	am := &AdvancedMetrics{}
+	return am.CalculatePassAtN(n, samples, testFunc)
+}
+
 // AdvancedMetrics provides state-of-the-art evaluation metrics for prompt engineering
 type AdvancedMetrics struct {
 	llm llm.Provider
@@ -760,4 +765,155 @@ func sum(m map[string]int) int {
 		total += v
 	}
 	return total
+}
+
+// PassAtNResult represents the result of a pass@n metric evaluation
+type PassAtNResult struct {
+	N            int                    `json:"n"`
+	PassRate     float64                `json:"pass_rate"`
+	NumSamples   int                    `json:"num_samples"`
+	NumPassed    int                    `json:"num_passed"`
+	Details      map[string]interface{} `json:"details,omitempty"`
+	Duration     time.Duration          `json:"duration"`
+}
+
+// CalculatePassAtN evaluates the pass@n metric for code generation tasks
+// n: number of attempts to consider
+// samples: generated code samples
+// testFunc: function that tests if a code sample passes (returns true if passes)
+func (am *AdvancedMetrics) CalculatePassAtN(n int, samples []string, testFunc func(string) bool) *PassAtNResult {
+	start := time.Now()
+	
+	if n <= 0 {
+		n = 1
+	}
+	
+	numSamples := len(samples)
+	if numSamples == 0 {
+		return &PassAtNResult{
+			N:          n,
+			PassRate:   0.0,
+			NumSamples: 0,
+			NumPassed:  0,
+			Duration:   time.Since(start),
+		}
+	}
+	
+	// Test each sample
+	numPassed := 0
+	passedIndices := []int{}
+	for i, sample := range samples {
+		if testFunc(sample) {
+			numPassed++
+			passedIndices = append(passedIndices, i)
+		}
+	}
+	
+	// Calculate pass@n using the standard formula
+	passRate := am.calculatePassAtNRate(numSamples, numPassed, n)
+	
+	return &PassAtNResult{
+		N:          n,
+		PassRate:   passRate,
+		NumSamples: numSamples,
+		NumPassed:  numPassed,
+		Details: map[string]interface{}{
+			"passed_indices": passedIndices,
+			"formula": "1 - C(numSamples-numPassed, n) / C(numSamples, n)",
+		},
+		Duration: time.Since(start),
+	}
+}
+
+// CalculatePassAtNWithTests evaluates pass@n metric using test cases
+// n: number of attempts to consider
+// samples: generated code samples  
+// testCases: array of test inputs and expected outputs
+func (am *AdvancedMetrics) CalculatePassAtNWithTests(ctx context.Context, n int, samples []string, testCases []map[string]interface{}) *PassAtNResult {
+	_ = time.Now() // start
+	
+	testFunc := func(code string) bool {
+		// Test the code against all test cases
+		for _, testCase := range testCases {
+			input, _ := testCase["input"].(string)
+			expected, _ := testCase["expected"].(string)
+			
+			// Use LLM to evaluate if the code produces the expected output
+			evalPrompt := fmt.Sprintf(`Execute the following code with the given input and determine if it produces the expected output.
+
+CODE:
+%s
+
+INPUT:
+%s
+
+EXPECTED OUTPUT:
+%s
+
+Does the code produce the expected output? Reply with only "YES" or "NO".`, code, input, expected)
+			
+			response, err := am.llm.Generate(ctx, evalPrompt, llm.GenerateOptions{
+				Temperature: &[]float64{0.0}[0],
+			})
+			
+			if err != nil || !strings.Contains(strings.ToUpper(response.Text), "YES") {
+				return false
+			}
+		}
+		return true
+	}
+	
+	result := am.CalculatePassAtN(n, samples, testFunc)
+	result.Details["test_cases"] = len(testCases)
+	return result
+}
+
+// calculatePassAtNRate computes the pass@n rate using the standard formula
+// Formula: pass@n = 1 - C(numSamples-numPassed, n) / C(numSamples, n)
+func (am *AdvancedMetrics) calculatePassAtNRate(numSamples, numPassed, n int) float64 {
+	if n > numSamples {
+		n = numSamples
+	}
+	
+	if numPassed == numSamples {
+		return 1.0
+	}
+	
+	if numPassed == 0 {
+		return 0.0
+	}
+	
+	// Calculate using the standard pass@n formula
+	// This avoids the bias from simply taking the top n samples
+	numerator := binomialCoeff(numSamples-numPassed, n)
+	denominator := binomialCoeff(numSamples, n)
+	
+	if denominator == 0 {
+		return 0.0
+	}
+	
+	return 1.0 - (float64(numerator) / float64(denominator))
+}
+
+// binomialCoeff calculates the binomial coefficient C(n, k)
+func binomialCoeff(n, k int) int64 {
+	if k > n || k < 0 {
+		return 0
+	}
+	
+	if k == 0 || k == n {
+		return 1
+	}
+	
+	// Optimize by using the smaller value
+	if k > n-k {
+		k = n - k
+	}
+	
+	result := int64(1)
+	for i := 0; i < k; i++ {
+		result = result * int64(n-i) / int64(i+1)
+	}
+	
+	return result
 }

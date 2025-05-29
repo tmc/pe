@@ -1,0 +1,85 @@
+# Test: Advanced pipeline workflows
+
+# Create a complex pipeline for prompt development
+$ echo "Explain quantum computing" > base.txt
+
+# Pipeline: optimize → test → branch → deploy
+$ pe optimize base.txt --method pe2 --iterations 3 | \
+  pe test --inline --assert "contains:qubit" | \
+  pe branch create feature/quantum --auto-commit | \
+  pe build --output quantum.prod
+Starting optimization pipeline...
+✓ PE2 optimization complete (score: 0.72 → 0.88)
+✓ Test passed: contains 'qubit'
+✓ Created branch: feature/quantum
+✓ Built production prompt: quantum.prod
+
+# Multi-stage optimization pipeline
+$ pe compose context.txt instruction.txt examples.txt | \
+  pe optimize --method textgrad --iterations 5 | \
+  pe optimize --method evolve --generations 3 | \
+  pe metrics --type g-eval --criteria "clarity,accuracy"
+Composing prompt components...
+✓ Composed 3 components
+Running TextGrad optimization...
+✓ TextGrad complete (score: 0.75 → 0.86)
+Running evolutionary optimization...
+✓ Evolution complete (score: 0.86 → 0.91)
+Evaluating with G-Eval...
+┌──────────┬────────┐
+│ Metric   │ Score  │
+├──────────┼────────┤
+│ Clarity  │ 0.93   │
+│ Accuracy │ 0.89   │
+│ Overall  │ 0.91   │
+└──────────┴────────┘
+
+# Parallel evaluation pipeline
+$ cat > prompts.txt << EOF
+prompt1.txt
+prompt2.txt
+prompt3.txt
+EOF
+
+$ cat prompts.txt | \
+  xargs -P 3 -I {} pe eval {} --provider gpt-4 | \
+  pe stats --aggregate
+Running parallel evaluations...
+✓ prompt1.txt: score 0.84
+✓ prompt2.txt: score 0.91
+✓ prompt3.txt: score 0.78
+
+Aggregate Statistics:
+- Mean: 0.84
+- Std Dev: 0.065
+- Best: prompt2.txt (0.91)
+- Worst: prompt3.txt (0.78)
+
+# Cache-aware optimization pipeline
+$ pe cache export --filter "model:gpt-4" | \
+  pe optimize base.txt --method pe2 --use-cache | \
+  pe cache import --merge
+Exported 247 cache entries
+Optimizing with cache...
+✓ Cache hits: 82/100 (82%)
+✓ Optimization complete (reduced cost by 82%)
+✓ Merged 18 new entries into cache
+
+# A/B testing pipeline with statistical analysis
+$ pe fork assistant.txt --variants 3 | \
+  pe ab-test --duration 30m --traffic-split 33,33,34 | \
+  pe analyze --statistical --confidence 0.95
+Created 3 variants
+Running A/B test for 30 minutes...
+
+Results:
+┌──────────┬────────┬────────┬────────────┐
+│ Variant  │ Score  │ N      │ p-value    │
+├──────────┼────────┼────────┼────────────┤
+│ Original │ 0.72   │ 412    │ -          │
+│ Variant1 │ 0.78   │ 409    │ 0.023 *    │
+│ Variant2 │ 0.81   │ 415    │ 0.008 **   │
+│ Variant3 │ 0.74   │ 414    │ 0.451      │
+└──────────┴────────┴────────┴────────────┘
+
+Winner: Variant2 (statistically significant)

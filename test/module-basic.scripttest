@@ -1,0 +1,28 @@
+# Basic module functionality test
+
+# Test that run with module reference fails initially
+$ pe run tmc/hello@latest
+> contains: not found
+
+# Create a module
+$ pe mod init tmc/hello --prompt='Hello, world!'
+> contains: Initialized module tmc/hello
+
+# Verify module files were created
+$ test -f .pe/modules/tmc/hello/module.json && echo "Module metadata exists"
+Module metadata exists
+
+$ test -f .pe/modules/tmc/hello/prompt.txt && echo "Prompt file exists"  
+Prompt file exists
+
+# Check module info
+$ pe mod get tmc/hello
+> contains: tmc/hello
+> contains: Version: 0.1.0
+
+# Run the prompt directly
+$ pe run .pe/modules/tmc/hello/prompt.txt
+> contains: Hello
+
+# Clean up
+$ rm -rf .pe/modules/tmc

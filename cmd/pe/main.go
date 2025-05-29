@@ -51,21 +51,40 @@ import (
 )
 
 func main() {
+	// Handle plugin execution first
+	HandlePluginExecution()
+
 	root := &cobra.Command{
 		Use:   "pe",
-		Short: "Toolkit for prompt engineering",
-		Long:  `pe is a collection of tools for working with prompt engineering concepts, files, and tools.`,
+		Short: "PE - Go for Prompts",
+		Long: `PE is the unified toolchain for prompt engineering, bringing Go's 
+philosophy of simplicity, composability, and performance to LLM development.
+
+Just as Go revolutionized systems programming with its elegant toolchain, 
+PE revolutionizes prompt engineering with a comprehensive set of tools that 
+work together seamlessly.`,
 	}
 
+	// Core commands (like go toolchain)
+	root.AddCommand(runCmd())      // go run for prompts
+	root.AddCommand(testCmd())     // go test for prompts
+	root.AddCommand(initCmd())     // go mod init for prompts
+	root.AddCommand(modCmd)        // go mod for prompt modules
+	root.AddCommand(pushCmd)       // push modules to registry
+	root.AddCommand(editCmd)       // go mod edit for prompts
+	root.AddCommand(getCmd)        // pe get for extracting prompt info
+	root.AddCommand(evalPromptCmd) // pe eval-prompt for running evals from prompt files
+	root.AddCommand(workCmd)       // go work for prompts
+	root.AddCommand(attestCmd)     // cryptographic attestations
+	
+	// Existing commands
 	root.AddCommand(evalCmd())
 	root.AddCommand(viewCmd())
 	root.AddCommand(vetCmd())
 	root.AddCommand(fmtCmd())
 	root.AddCommand(convertCmd())
 	root.AddCommand(benchmarkCmd())
-	root.AddCommand(initCmd())
 	root.AddCommand(watchCmd())
-	root.AddCommand(testCmd())
 	root.AddCommand(templateCmd())
 	root.AddCommand(profileCmd())
 	
@@ -84,6 +103,12 @@ func main() {
 	root.AddCommand(metricsCmd())
 	root.AddCommand(semanticCmd())
 	root.AddCommand(securityCmd())
+
+	// Plugin command
+	root.AddCommand(pluginCmd())
+
+	// Discover and add plugin commands dynamically
+	dynamicPluginCommands(root)
 
 	if err := root.Execute(); err != nil {
 		fmt.Println(err)

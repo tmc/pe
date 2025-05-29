@@ -20,6 +20,7 @@ type MetricsResult struct {
 	BERTScore  *BERTScoreResult `json:"bertscore,omitempty"`
 	GEval      *GEvalResult     `json:"g_eval,omitempty"`
 	UniEval    *UniEvalResult   `json:"uni_eval,omitempty"`
+	PassAtN    *PassAtNScore    `json:"pass_at_n,omitempty"`
 	Statistics *metrics.ComparisonResult `json:"statistics,omitempty"`
 }
 
@@ -71,6 +72,15 @@ type UniEvalResult struct {
 	TaskType     string             `json:"task_type"`
 }
 
+// PassAtNScore represents pass@n metric result
+type PassAtNScore struct {
+	N           int     `json:"n"`
+	PassRate    float64 `json:"pass_rate"`
+	NumSamples  int     `json:"num_samples"`
+	NumPassed   int     `json:"num_passed"`
+	PassedRates map[int]float64 `json:"passed_rates,omitempty"` // Pass rates for different n values
+}
+
 // metricsCmd returns a cobra.Command for advanced evaluation metrics
 func metricsCmd() *cobra.Command {
 	var (
@@ -87,6 +97,10 @@ func metricsCmd() *cobra.Command {
 		bootstrap      int
 		provider       string
 		model          string
+		// Pass@n specific flags
+		n              int
+		testCasesFile  string
+		samplesFile    string
 	)
 
 	cmd := &cobra.Command{
@@ -108,6 +122,11 @@ LLM-Based Evaluation:
 • UniEval - Multi-dimensional task-specific evaluation
 • Custom LLM judges with configurable criteria
 
+Code Generation Metrics:
+• Pass@n - Success rate for code generation with n attempts
+• Functional correctness evaluation
+• Test case validation
+
 Statistical Analysis:
 • Significance testing (t-test, Mann-Whitney U, Wilcoxon)
 • Effect size analysis (Cohen's D, Glass's Delta)
@@ -125,6 +144,9 @@ Statistical Analysis:
   # All metrics with statistical analysis
   pe metrics --all --generated-file outputs.txt --reference-file references.txt --statistical
 
+  # Pass@n evaluation for code generation
+  pe metrics --type pass-at-n --generated-file "code_samples.txt" --n 10 --test-cases "tests.json"
+
   # Export comprehensive analysis
   pe metrics --all --generated-file data.txt --reference-file refs.txt --output analysis.json --format json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -141,11 +163,11 @@ Statistical Analysis:
 
 			// Handle --all flag
 			if all, _ := cmd.Flags().GetBool("all"); all {
-				metricTypes = []string{"bleu", "rouge", "meteor", "bertscore", "g-eval", "uni-eval"}
+				metricTypes = []string{"bleu", "rouge", "meteor", "bertscore", "g-eval", "uni-eval", "pass-at-n"}
 			}
 
 			// Calculate metrics
-			result, err := calculateMetrics(generated, reference, metricTypes, criteria, provider, model)
+			result, err := calculateMetrics(generated, reference, metricTypes, criteria, provider, model, n, testCasesFile, samplesFile)
 			if err != nil {
 				return fmt.Errorf("failed to calculate metrics: %v", err)
 			}
@@ -179,6 +201,11 @@ Statistical Analysis:
 	cmd.Flags().IntVar(&bootstrap, "bootstrap", 1000, "Number of bootstrap samples")
 	cmd.Flags().StringVar(&provider, "provider", "openai", "LLM provider for G-Eval and UniEval")
 	cmd.Flags().StringVar(&model, "model", "gpt-4", "Model for LLM-based evaluation")
+	
+	// Pass@n specific flags
+	cmd.Flags().IntVar(&n, "n", 1, "Number of attempts for pass@n metric")
+	cmd.Flags().StringVar(&testCasesFile, "test-cases", "", "JSON file with test cases for pass@n evaluation")
+	cmd.Flags().StringVar(&samplesFile, "samples-file", "", "File containing multiple code samples (one per line)")
 
 	return cmd
 }
@@ -215,7 +242,7 @@ func loadTextData(generatedText, referenceText, generatedFile, referenceFile str
 }
 
 // calculateMetrics computes the requested metrics
-func calculateMetrics(generated, reference string, metricTypes, criteria []string, provider, model string) (*MetricsResult, error) {
+func calculateMetrics(generated, reference string, metricTypes, criteria []string, provider, model string, n int, testCasesFile, samplesFile string) (*MetricsResult, error) {
 	result := &MetricsResult{}
 	ctx := context.Background()
 
@@ -340,12 +367,95 @@ func calculateMetrics(generated, reference string, metricTypes, criteria []strin
 				TaskType:     "general",
 			}
 
+		case "pass-at-n", "pass_at_n", "passat":
+			// Load samples and test cases
+			var samples []string
+			if samplesFile != "" {
+				data, err := os.ReadFile(samplesFile)
+				if err != nil {
+					return nil, fmt.Errorf("failed to read samples file: %v", err)
+				}
+				samples = strings.Split(string(data), "\n")
+			} else {
+				// Use generated text as single sample
+				samples = []string{generated}
+			}
+			
+			// Filter empty samples
+			var validSamples []string
+			for _, s := range samples {
+				if strings.TrimSpace(s) != "" {
+					validSamples = append(validSamples, s)
+				}
+			}
+			
+			// Load test cases if provided
+			var testCases []map[string]interface{}
+			if testCasesFile != "" {
+				data, err := os.ReadFile(testCasesFile)
+				if err != nil {
+					return nil, fmt.Errorf("failed to read test cases file: %v", err)
+				}
+				if err := json.Unmarshal(data, &testCases); err != nil {
+					return nil, fmt.Errorf("failed to parse test cases: %v", err)
+				}
+			}
+			
+			// Create LLM provider if needed
+			llmProvider, err := llm.GetProvider(provider)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create LLM provider: %v", err)
+			}
+			
+			// Calculate pass@n
+			advancedMetrics := metrics.NewAdvancedMetrics(llmProvider)
+			var passResult *metrics.PassAtNResult
+			
+			if len(testCases) > 0 {
+				passResult = advancedMetrics.CalculatePassAtNWithTests(ctx, n, validSamples, testCases)
+			} else {
+				// Use default test function
+				testFunc := func(code string) bool {
+					// Basic validation - check if code is non-empty and doesn't contain obvious errors
+					return len(strings.TrimSpace(code)) > 10 && 
+						   !strings.Contains(strings.ToLower(code), "error") &&
+						   !strings.Contains(strings.ToLower(code), "exception")
+				}
+				passResult = advancedMetrics.CalculatePassAtN(n, validSamples, testFunc)
+			}
+			
+			// Calculate pass rates for different n values
+			passedRates := make(map[int]float64)
+			for i := 1; i <= min(10, len(validSamples)); i++ {
+				rate := advancedMetrics.CalculatePassAtN(i, validSamples, func(code string) bool {
+					return len(strings.TrimSpace(code)) > 10 && 
+						   !strings.Contains(strings.ToLower(code), "error")
+				})
+				passedRates[i] = rate.PassRate
+			}
+			
+			result.PassAtN = &PassAtNScore{
+				N:           n,
+				PassRate:    passResult.PassRate,
+				NumSamples:  passResult.NumSamples,
+				NumPassed:   passResult.NumPassed,
+				PassedRates: passedRates,
+			}
+
 		default:
 			return nil, fmt.Errorf("unknown metric type: %s", metricType)
 		}
 	}
 
 	return result, nil
+}
+
+// min returns the minimum of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // performStatisticalAnalysis conducts comprehensive statistical analysis
@@ -452,6 +562,22 @@ func formatMetricsTable(result *MetricsResult) string {
 		sb.WriteString("\n")
 	}
 
+	if result.PassAtN != nil {
+		sb.WriteString("Pass@N Results:\n")
+		sb.WriteString(fmt.Sprintf("  Pass@%d: %.2f%% (%d/%d samples)\n", 
+			result.PassAtN.N, result.PassAtN.PassRate*100, 
+			result.PassAtN.NumPassed, result.PassAtN.NumSamples))
+		if len(result.PassAtN.PassedRates) > 0 {
+			sb.WriteString("  Pass rates by N:\n")
+			for n := 1; n <= 10; n++ {
+				if rate, ok := result.PassAtN.PassedRates[n]; ok {
+					sb.WriteString(fmt.Sprintf("    Pass@%d: %.2f%%\n", n, rate*100))
+				}
+			}
+		}
+		sb.WriteString("\n")
+	}
+
 	if result.Statistics != nil {
 		sb.WriteString("Statistical Analysis:\n")
 		sb.WriteString(fmt.Sprintf("  Sample Size: %d\n", result.Statistics.Group1Summary.Count))
@@ -492,6 +618,12 @@ func formatMetricsCSV(result *MetricsResult) string {
 		sb.WriteString(fmt.Sprintf("BERTScore-P,%.4f,\n", result.BERTScore.Precision))
 		sb.WriteString(fmt.Sprintf("BERTScore-R,%.4f,\n", result.BERTScore.Recall))
 		sb.WriteString(fmt.Sprintf("BERTScore-F1,%.4f,\n", result.BERTScore.F1))
+	}
+
+	if result.PassAtN != nil {
+		sb.WriteString(fmt.Sprintf("Pass@%d,%.4f,samples=%d passed=%d\n", 
+			result.PassAtN.N, result.PassAtN.PassRate, 
+			result.PassAtN.NumSamples, result.PassAtN.NumPassed))
 	}
 
 	return sb.String()

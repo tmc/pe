@@ -18,6 +18,7 @@ Global options:
 
 | Command | Purpose | Example |
 |---------|---------|---------|
+| [`run`](#run) | Execute prompt immediately | `pe run "What is AI?"` |
 | [`eval`](#eval) | Run prompt evaluations | `pe eval config.yaml` |
 | [`view`](#view) | View results in browser | `pe view` |
 | [`interactive`](#interactive) | Start REPL mode | `pe interactive` |
@@ -33,6 +34,78 @@ Global options:
 | [`vet`](#vet) | Validate configs | `pe vet config.yaml` |
 | [`convert`](#convert) | Convert formats | `pe convert config.yaml config.json` |
 | [`init`](#init) | Create config template | `pe init new-config.yaml` |
+| [`plugin`](#plugin) | Manage plugins | `pe plugin list` |
+
+---
+
+## run
+
+Execute a prompt immediately using the inference API.
+
+### Synopsis
+
+```bash
+pe run [prompt or file] [flags]
+```
+
+### Description
+
+The `run` command executes prompts directly without needing a configuration file. It's designed for quick testing and iteration, similar to `go run` for Go programs. Supports both direct prompt strings and prompt files.
+
+### Arguments
+
+- `prompt or file`: Either a prompt string or path to a file containing the prompt
+
+### Flags
+
+```bash
+-p, --provider string        Inference provider to use (default "cgpt")
+-m, --model string           Model to use (e.g., gpt-4, claude-3)
+-t, --temperature float32    Temperature for randomness (0.0-1.0) (default 0.7)
+    --max-tokens int         Maximum tokens in response
+-s, --system string          System prompt
+    --stream                 Stream the response
+    --var stringToString     Template variables (can be repeated)
+```
+
+### Examples
+
+```bash
+# Simple prompt
+pe run "What is 2+2?"
+
+# From file
+pe run prompt.txt
+
+# With variables
+pe run "Translate {{.Text}} to {{.Language}}" \
+  --var Text="Hello world" \
+  --var Language="French"
+
+# With specific model and temperature
+pe run "Write a haiku about coding" \
+  --temperature 0.9 \
+  --model gpt-4
+
+# Streaming mode
+pe run "Tell me a story about a robot" \
+  --stream \
+  --max-tokens 200
+
+# With system prompt
+pe run "Explain recursion" \
+  --system "You are a computer science teacher. Use simple examples."
+
+# From stdin
+echo "What are the benefits of Go?" | pe run -
+```
+
+### Template Variables
+
+The run command supports Go template syntax for variables:
+- Use `{{.VarName}}` in your prompt
+- Pass values with `--var VarName=value`
+- Multiple variables can be specified
 
 ---
 
@@ -808,6 +881,107 @@ PE uses these exit codes:
 - `4`: Evaluation failure
 - `5`: File not found
 - `6`: Permission denied
+
+---
+
+## plugin
+
+Manage PE plugins and extensions.
+
+### Synopsis
+
+```bash
+pe plugin [subcommand] [flags]
+```
+
+### Description
+
+The `plugin` command manages PE plugins. Plugins are discovered as `pe-*` executables in your PATH and can extend PE's functionality.
+
+### Subcommands
+
+#### plugin list
+
+List all discovered plugins.
+
+```bash
+pe plugin list
+```
+
+Example output:
+```
+Installed plugins:
+  promptfoo - Promptfoo compatibility layer for PE
+    Version: 0.1.0
+```
+
+#### plugin run
+
+Run a plugin command explicitly.
+
+```bash
+pe plugin run <plugin-name> [args...]
+```
+
+Example:
+```bash
+pe plugin run promptfoo import config.yaml
+```
+
+### Plugin Discovery
+
+Plugins are automatically discovered as executables with the pattern `pe-*` in your PATH:
+- `pe-promptfoo` → available as `pe promptfoo`
+- `pe-custom` → available as `pe custom`
+
+### Direct Plugin Invocation
+
+Once discovered, plugins can be invoked directly:
+
+```bash
+# These are equivalent:
+pe plugin run promptfoo import config.yaml
+pe promptfoo import config.yaml
+```
+
+### Creating Plugins
+
+To create a PE plugin:
+
+1. Create an executable named `pe-yourplugin`
+2. Place it in your PATH
+3. Implement `--pe-plugin-info` flag that returns JSON metadata:
+
+```json
+{
+  "description": "Your plugin description",
+  "version": "1.0.0",
+  "commands": [
+    {
+      "name": "command",
+      "description": "What it does",
+      "usage": "pe yourplugin command [args]"
+    }
+  ]
+}
+```
+
+### Available Plugins
+
+#### promptfoo
+
+The promptfoo compatibility plugin provides import/export functionality:
+
+```bash
+# Import promptfoo configuration
+pe promptfoo import promptfoo-config.yaml -o pe-config.yaml
+
+# Export to promptfoo format
+pe promptfoo export pe-config.yaml -o promptfoo-config.yaml
+
+# Convert between formats
+pe promptfoo convert input.yaml output.json
+```
 
 ---
 

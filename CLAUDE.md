@@ -4,7 +4,7 @@ prompt engineering tools modeled after the go toolchain
 
 ## Project Overview
 
-PE is a comprehensive toolkit for prompt engineering that combines traditional evaluation capabilities with cutting-edge metaprompting techniques. The toolkit follows Unix philosophy with composable, pipeline-friendly commands and implements the latest 2024 research in prompt optimization.
+PE is a comprehensive toolkit for prompt engineering that combines traditional evaluation capabilities with cutting-edge metaprompting techniques. The toolkit follows Unix philosophy with composable, pipeline-friendly commands and implements the latest 2024-2025 research in prompt optimization.
 
 ### Core Architecture
 
@@ -16,21 +16,88 @@ PE is a comprehensive toolkit for prompt engineering that combines traditional e
 
 ### Key Commands
 
-- `pe eval`: Core evaluation engine with multi-provider support
-- `pe optimize`: **NEW** Metaprompting-based prompt optimization using 2024-2025 research
+- `pe eval`: Core evaluation engine with multi-provider support, pass@n metrics, and structured output validation
+- `pe optimize`: Metaprompting-based prompt optimization using 2024-2025 research
 - `pe semantic`: **BREAKTHROUGH** Semantic backpropagation and GASO optimization (2025 KAUST/IDSIA research)
-- `pe compose`: **NEW** Component-based prompt engineering with verified libraries and style-specific composition
-- `pe metrics`: **NEW** Advanced evaluation metrics (BLEU, ROUGE, METEOR, BERTScore, G-Eval, UniEval)
-- `pe evolve`: **NEW** Evolutionary optimization using genetic algorithms and multi-objective optimization
-- `pe fusion`: **NEW** Multi-model consensus engineering for robust prompt optimization
+- `pe compose`: Component-based prompt engineering with verified libraries and style-specific composition
+- `pe metrics`: Advanced evaluation metrics (BLEU, ROUGE, METEOR, BERTScore, G-Eval, UniEval)
 - `pe benchmark`: Performance analysis with statistical significance testing
 - `pe test`: Advanced testing (property-based, regression, A/B)
 - `pe profile`: Real-time observability and performance profiling
+- `pe run`: Execute prompts immediately with inference API
 - Pipeline commands: `ask`, `stream`, `filter`, `analyze` for Unix composability
+
+## Advanced Evaluation Features
+
+The `pe eval` command includes sophisticated assertion types beyond simple string matching:
+
+### Pass@N Evaluation
+
+Pass@n measures how often a model generates a correct solution within n attempts, crucial for code generation:
+
+```yaml
+# In eval config.yaml:
+tests:
+  - vars:
+      task: "Write a binary search function"
+    assert:
+      - type: pass-at-n
+        config:
+          n: 1              # Calculate pass@1
+          samples: 20       # Generate 20 samples
+          temperature: 0.8  # Higher temp for diversity
+          test_cases:
+            - input: "binary_search([1,3,5,7], 5)"
+              expected: "2"
+            - input: "binary_search([1,3,5,7], 6)"
+              expected: "-1"
+        threshold: 0.8      # Expect 80% pass rate
+```
+
+**Implementation**: 
+- Located in `internal/evaluator/assertions.go` as `AssertionPassAtN`
+- Uses `internal/metrics/advanced.go` for pass@n calculation
+- Supports test cases, LLM validation, and pattern matching
+
+### Structured Output Validation
+
+Ensures LLM outputs conform to specific schemas:
+
+```yaml
+assert:
+  - type: structured-output
+    config:
+      format: json
+      schema:
+        type: object
+        properties:
+          sentiment:
+            type: string
+            enum: ["positive", "negative", "neutral"]
+          score:
+            type: number
+            minimum: -1
+            maximum: 1
+        required: ["sentiment", "score"]
+```
+
+**Go Struct Integration**:
+```go
+type ExpectedOutput struct {
+    Summary    string  `json:"summary" minLength:"50" maxLength:"200"`
+    Keywords   []string `json:"keywords" minItems:"3"`
+    Confidence float64  `json:"confidence" min:"0" max:"1"`
+}
+```
+
+**Implementation**:
+- `internal/structured/` package provides schema validation and format conversion
+- `internal/structured/go_structs.go` enables Go struct to schema conversion
+- Supports JSON Schema, TypeScript, Pydantic, and custom formats via plugins
 
 ## Advanced Metaprompting Implementation
 
-The toolkit implements cutting-edge metaprompting techniques based on the latest 2024-2025 research, including the revolutionary Semantic Backpropagation and GASO breakthroughs:
+The toolkit implements cutting-edge metaprompting techniques based on the latest 2024-2025 research:
 
 ### 2025 BREAKTHROUGH: Semantic Backpropagation & GASO
 
@@ -44,13 +111,8 @@ The toolkit implements cutting-edge metaprompting techniques based on the latest
 
 **Key Commands Implemented**:
 ```bash
-# Semantic backpropagation for individual prompts
 pe semantic backprop --prompt "prompt" --target "objective" --iterations 5
-
-# Semantic gradient descent with adaptive learning rates
 pe semantic descent --objective "goal" --learning-rate 0.1 --adaptive --convergence 0.001
-
-# GASO for multi-component system optimization
 pe semantic gaso --system definition.json --objective "performance" --multi-objective
 ```
 
@@ -58,437 +120,107 @@ pe semantic gaso --system definition.json --objective "performance" --multi-obje
 - **93.2% accuracy** on GSM8K mathematical problems (surpassing TextGrad's 78.2%)
 - **82.5% accuracy** on BIG-Bench Hard NLP tasks
 - **85.6% accuracy** on algorithmic tasks
-- Outperforms OptoPrime, COPRO, and other state-of-the-art baselines
 
-### 2024-2025 Research Integration
+### TextGrad 2.0 Implementation
 
-**TextGrad 2.0 Implementation**:
-- **Natural Language Gradients**: LLM feedback as textual gradients with attention flow mapping
-- **Semantic Drift Detection**: Real-time concept preservation monitoring during optimization
-- **Backward Propagation Through Text**: Advanced gradient descent for natural language optimization
-- **Cross-Modal Gradient Computation**: Support for multimodal prompts with vision/text gradients
+Located in `internal/metaprompt/textgrad.go`:
+- Natural language gradients with attention flow mapping
+- Semantic drift detection during optimization
+- Backward propagation through textual feedback
+- Cross-modal gradient computation support
 
-**DSPy MIPROv2 Integration (2025)**:
-- **Data-Aware Instruction Generation**: Instructions generated based on program code, data, and execution traces
-- **Demonstration-Aware Optimization**: Few-shot examples selected through Bayesian optimization
-- **Three-Stage Process**: Bootstrapping → Grounded Proposal → Discrete Search for optimal instruction/demonstration combinations
-- **Composable Optimizers**: Multiple optimization rounds and ensemble methods for enhanced performance
-- **Signature-Based Composition**: Type-safe prompt construction with interface definitions
-- **Program Synthesis**: Automated prompt construction using meta-learning techniques
-- **Multi-Stage Optimization**: Progressive refinement with validation checkpoints and quality gates
-- **Cost-Effective Optimization**: Typical optimization runs cost ~$2 USD and take ~20 minutes
+### Component-Based Engineering
 
-**Evolutionary Multi-Objective Optimization (2025)**:
-- **EMO-Prompts Framework**: Evolutionary multi-objective approach using NSGA-II and SMS-EMOA algorithms
-- **Conflicting Objectives**: Demonstrated effectiveness in balancing competing sentiments and performance metrics
-- **Population-Based Optimization**: Genetic algorithms with NSGA-II multi-objective optimization
-- **Adaptive Mutation Operators**: Dynamic strategy selection based on prompt structure analysis
-- **Pareto Frontier Exploration**: Multi-objective trade-off analysis for accuracy/latency/cost
-- **Research Integration**: Integration with machine learning methods for enhanced scheduling and optimization
-- **Genealogy Tracking**: Complete evolutionary lineage with mutation history for research
+`pe compose` command (`internal/metaprompt/composer.go`):
+- Type-safe prompt composition with dependency resolution
+- Style-specific handlers (chain-of-thought, few-shot, structured)
+- Semantic coherence validation
+- Integration with TextGrad optimization
 
-**Consensus-Based Multi-Model Optimization (2025)**:
-- **Ensemble Learning**: Model-specific adaptation with transfer learning across LLM architectures
-- **Dynamic Model Selection**: Task-characteristic-based provider weighting and selection
-- **Reflection-Based Consensus**: Deep pattern analysis and synthesis across model responses
-- **Adaptive Weighting**: Performance-based model importance adjustment with learning rates
+### Advanced Metrics
 
-**Error-Driven Refinement with AI**:
-- **Automated Failure Mode Detection**: ML-based identification of prompt weaknesses and failure patterns
-- **Root Cause Analysis with LLMs**: Deep investigation of optimization bottlenecks using meta-analysis
-- **Regression Testing Generation**: Comprehensive test suite creation with property-based testing
-- **Quality Gate Enforcement**: Statistical significance testing and performance gating
+`internal/metrics/advanced.go` implements:
+- BLEU, ROUGE, METEOR for text generation
+- BERTScore using LLM-based semantic similarity
+- G-Eval with chain-of-thought evaluation
+- UniEval for task-specific multi-dimensional evaluation
+- Pass@N with proper statistical calculation
 
-**Reflection-Based Meta-Learning**:
-- **Success Pattern Mining**: Extracts effective techniques from optimization history
-- **Meta-Analysis**: Studies optimization processes to improve workflows
-- **Knowledge Distillation**: Builds reusable prompt engineering principles
-- **Strategy Recommendation**: Guides tool selection based on accumulated wisdom
+## Technical Architecture
 
-### Advanced Usage Patterns
-
-```bash
-# TextGrad optimization with gradient analysis
-pe optimize --prompt "Summarize this text" --method textgrad --iterations 5
-pe analyze --prompt "Your prompt" --response "Response" --gradients
-
-# Multi-stage optimization with quality gates
-pe optimize --prompt "Complex task" --method multistage --gates
-
-# Error-driven refinement with automated testing
-pe refine --prompt "Problematic prompt" --auto-detect --generate-tests
-
-# Reflection-based learning from optimization sessions
-pe reflect --session-data sessions.json --strategies --knowledge
-
-# Gradient computation for trajectory planning
-pe gradients --prompt "Current prompt" --objective "Goal" --recommendations
-
-# Hybrid approach combining multiple methods
-pe optimize --prompt "Advanced task" --method hybrid --iterations 6 --provider anthropic
-```
-
-### Next-Generation Metaprompting (2025)
-
-The PE toolkit incorporates cutting-edge advances in metaprompting research from 2024-2025, implementing revolutionary optimization approaches based on the latest academic and industry research:
-
-**Component-Based Prompt Engineering with Verified Libraries**:
-```bash
-# Initialize and manage component libraries
-pe compose --library-init
-pe compose --add-component context-banking.txt --category context --verify
-
-# Automatic composition with TextGrad flow optimization
-pe compose context.txt instruction.txt examples.txt --style cot --target gpt-4 --optimize
-
-# Style-specific composition with coherence validation
-pe compose components/ --style few-shot --coherence --validation-gate
-```
-
-**Evolutionary Prompt Optimization with NSGA-II**:
-```bash
-# Population-based evolution with multi-objective optimization
-pe evolve baseline.txt --generations 25 --population 20 --nsga-ii
-
-# Adaptive mutation operators with structure analysis
-pe evolve prompt.txt --operators rephrase,expand,prune --adaptive-rates --structure-aware
-
-# Pareto frontier exploration with trade-off visualization
-pe evolve prompt.txt --multi-objective accuracy,latency,cost --pareto-analysis --visualize
-```
-
-**Multi-Model Consensus Engineering with Learning**:
-```bash
-# Ensemble optimization with transfer learning
-pe fusion prompt.txt --models gpt-4,claude-3,gemini-pro --ensemble-learning
-
-# Reflection-based consensus with deep pattern analysis
-pe fusion prompt.txt --consensus reflection --depth 3 --pattern-analysis
-
-# Adaptive weighting with reinforcement learning
-pe fusion prompt.txt --adaptive-weights --rl-optimization --learning-rate 0.1
-```
-
-**Research-Grade Hybrid Optimization Workflows**:
-```bash
-# Complete pipeline with full traceability
-pe compose context.txt instruction.txt --research-mode | \
-pe evolve --generations 15 --trace-genealogy --statistical-validation | \
-pe fusion --models gpt-4,claude-3 --consensus-analysis --cross-validation | \
-pe test property --comprehensive --significance-testing
-
-# Academic research workflow with publication-ready outputs
-pe compose --research-mode --experiment-id exp001 | \
-pe evolve --trace-genealogy --statistical-analysis | \
-pe fusion --consensus-analysis --reproducibility-package
-```
-
-### Advanced Research Integration
-
-**2025 Cutting-Edge Features Based on Latest Research**:
-
-1. **TextGrad 2.0 Integration** (Stanford HAI 2024):
-   - Natural language gradients with transformer attention flow mapping
-   - Real-time semantic drift detection during optimization trajectories
-   - Backward propagation through textual feedback loops with gradient accumulation
-   - Cross-modal gradient computation for vision-language and multimodal prompts
-   - Gradient strength analysis for convergence optimization and plateau detection
-
-2. **DSPy-Inspired Component Architecture** (Stanford NLP 2024):
-   - Signature-based prompt composition with full type safety and interface validation
-   - Program synthesis for automated prompt construction using neural program induction
-   - Multi-stage optimization with validation checkpoints and statistical quality gates
-   - Algorithmic parameter optimization using meta-learning and hyperparameter search
-   - Component interface definitions for reusability and version control
-
-3. **Evolutionary Metaprompting** (Novel PE Research 2024):
-   - Population-based optimization with advanced genetic algorithms (NSGA-II, SPEA2)
-   - Multi-objective optimization exploring accuracy/latency/cost/robustness trade-offs
-   - Adaptive mutation operators with prompt structure analysis and semantic understanding
-   - Diversity preservation through novel semantic distance metrics and niching
-   - Convergence detection with plateau identification and early stopping
-
-4. **Consensus-Based Multi-Model Optimization** (Ensemble Research 2025):
-   - Ensemble learning for prompt robustness across diverse LLM architectures
-   - Model-specific adaptation with transfer learning and architecture-aware optimization
-   - Advanced consensus strategies: weighted voting, Bayesian model averaging, reflection synthesis
-   - Dynamic model selection based on task characteristics and performance history
-   - Cross-validation with statistical significance testing and confidence intervals
-
-### Research Validation and Metrics
-
-**Advanced Evaluation Framework**:
-```bash
-# Cross-validation between optimization methods
-pe test cross-validate --methods textgrad,evolve,fusion --folds 5
-
-# Statistical significance testing for improvements
-pe test significance --baseline baseline.json --optimized optimized.json --alpha 0.05
-
-# Robustness testing across model variations
-pe test robustness --prompt optimized.txt --models gpt-4,claude-3,gemini --variations 100
-```
-
-**Performance Profiling and Analysis**:
-```bash
-# Optimization algorithm profiling
-pe profile optimize --method evolve --trace-convergence --visualize
-
-# Gradient strength analysis for TextGrad methods
-pe profile gradients --sessions optimization-logs/ --strength-analysis
-
-# Resource efficiency optimization
-pe profile resources --memory-optimization --parallel-efficiency
-```
-
-### Technical Architecture
-
-**Core Metaprompting Engine** (`internal/metaprompt/`):
-- `analyzer.go`: TextGrad-style gradient analysis and attention mapping
-- `gradient_computer.go`: Numerical optimization with textual gradients
-- `multistage.go`: Sequential optimization orchestration with quality gates
-- `error_refiner.go`: Automated error detection and systematic fixing
+### Core Metaprompting Engine (`internal/metaprompt/`)
+- `optimizer.go`: Unified optimization interface
+- `textgrad.go`: Natural language gradient computation
+- `semantic.go`: Semantic backpropagation implementation
+- `gradient_computer.go`: Gradient analysis and application
+- `multistage.go`: Multi-stage optimization with quality gates
+- `error_refiner.go`: Automated error detection and fixing
 - `reflection.go`: Meta-analysis and knowledge extraction
-- `textgrad.go`: Natural language gradient computation and application
-- `optimizer.go`: Unified optimization interface with method selection
+- `composer.go`: Component-based prompt composition
+- `gaso.go`: Graph-based system optimization
 
-**Command Integration** (`cmd/pe/`):
-- Enhanced `optimize.go` with multi-method support
-- New commands: `analyze`, `refine`, `gradients`, `reflect`
-- Pipeline-friendly JSON output for automation
-- Integration with existing evaluation and profiling infrastructure
+### Evaluation System (`internal/evaluator/`)
+- `evaluator.go`: Core evaluation engine
+- `assertions.go`: Comprehensive assertion types including pass@n and structured output
+- Supports 20+ assertion types for quality, performance, and correctness
 
-**Provider Interface Extensions**:
-- Enhanced `internal/llm` provider abstraction for meta-operations
-- Support for meta-LLM evaluation and optimization
-- Cross-provider optimization strategies
-- Advanced prompt template management
+### Structured Output (`internal/structured/`)
+- `structured.go`: Core schema validation and formatting
+- `go_structs.go`: Go struct to schema conversion
+- `prompt_builder.go`: Structured prompt generation
+- Plugin system for custom formats
 
-## Recently Implemented Features (2025)
+### Inference API (`internal/inference/`)
+- `inference.go`: Provider abstraction for LLM calls
+- `providers/cgpt/`: cgpt CLI wrapper implementation
+- Extensible for additional providers
 
-### Component-Based Prompt Composition (`pe compose`)
+## Plugin System
 
-**Implementation Status**: ✅ **COMPLETED**
+PE supports runtime plugin discovery:
+- Plugins are `pe-*` executables in PATH
+- Example: `pe-promptfoo` provides promptfoo compatibility
+- Plugin interface defined in `internal/plugin/plugin.go`
 
-```bash
-# Initialize component library with verified building blocks
-pe compose --library-init
+## Recently Implemented Features
 
-# Style-specific composition with type safety
-pe compose context.txt instruction.txt examples.txt --style cot --optimize
-pe compose components/ --style few-shot --coherence --validation-gate
-```
+### Pass@N in Evaluation (✅ COMPLETED)
+- Integrated as assertion type in `pe eval`
+- Supports test cases, LLM validation, pattern matching
+- Statistical pass@n calculation with proper sampling
 
-**Key Features Implemented**:
-- **Type-Safe Component Validation**: Dependency resolution and compatibility checking
-- **Style-Specific Handlers**: Chain-of-thought, few-shot, structured, conversational composition
-- **Semantic Coherence Analysis**: Transition word analysis and consistency validation
-- **Component Library Management**: Organized storage and retrieval of verified prompt components
-- **Integration with TextGrad**: Automatic optimization after composition
+### Structured Output Support (✅ COMPLETED)
+- Schema validation for JSON, YAML, and other formats
+- Go struct integration with tags for validation
+- Format conversion between JSON Schema, TypeScript, Pydantic
+- Plugin system for custom formats
 
-**Technical Implementation**:
-- `internal/metaprompt/composer.go`: Main composition engine with style handlers
-- `cmd/pe/compose.go`: CLI interface with comprehensive flag support
-- Component inference system for automatic type detection
-- Dependency graph validation for complex compositions
+### Inference API (✅ COMPLETED)
+- Generic provider interface in `internal/inference/`
+- cgpt provider implementation
+- Integration with `pe run` command
 
-### Advanced Evaluation Metrics (`pe metrics`)
+### Component-Based Prompt Composition (✅ COMPLETED)
+- `pe compose` command with style handlers
+- Dependency resolution and type safety
+- Semantic coherence validation
 
-**Implementation Status**: ✅ **COMPLETED**
+### Advanced Metrics (✅ COMPLETED)
+- BLEU, ROUGE, METEOR implementations
+- LLM-based metrics (BERTScore, G-Eval, UniEval)
+- Integration with evaluation pipeline
 
-```bash
-# State-of-the-art evaluation metrics
-pe metrics --type bleu --generated response.txt --reference expected.txt
-pe metrics --type g-eval --criteria "accuracy, clarity, completeness"
-pe metrics --all --output comprehensive-metrics.json
-```
+## Code Quality Guidelines
 
-**Metrics Implemented**:
-- **BLEU Score**: N-gram precision with brevity penalty
-- **ROUGE Variants**: ROUGE-1, ROUGE-2, ROUGE-L, ROUGE-W for summarization
-- **METEOR**: Semantic matching with synonym support and fragmentation penalty
-- **BERTScore**: LLM-based semantic similarity with confidence scores
-- **G-Eval**: Chain-of-thought evaluation with custom criteria
-- **UniEval**: Task-specific multi-dimensional evaluation
+1. **Import Management**: Maintain imports automatically based on code usage
+2. **Error Handling**: Always wrap errors with context using `fmt.Errorf`
+3. **Testing**: Write table-driven tests for new functionality
+4. **Documentation**: Update command help text and examples
 
-**Technical Implementation**:
-- `internal/metrics/advanced.go`: Core metric computation algorithms
-- `internal/metrics/statistics.go`: Statistical analysis and significance testing
-- LLM-based evaluation integration with confidence intervals
-- Publication-ready reporting with detailed analysis
+## Future Roadmap
 
-### Enhanced Metaprompting Infrastructure
-
-**TextGrad Integration Enhancements**:
-- Existing TextGrad implementation in `internal/metaprompt/textgrad.go`
-- Natural language gradient computation with LLM feedback
-- Iterative optimization with convergence detection
-- Computation graph building for complex prompt flows
-
-**Advanced Statistics Support**:
-- Effect size analysis (Cohen's D, Glass's Delta)
-- Multi-group statistical comparisons
-- Cross-validation and significance testing
-- Performance profiling and bottleneck identification
-
-**Red Team Security Integration**:
-- `internal/redteam/advanced_security.go`: Advanced security testing
-- Automated vulnerability detection and mitigation
-- Comprehensive security evaluation frameworks
-
-### Quality Assurance & Validation
-
-**Automated Testing Framework**:
-- Property-based testing for prompt reliability
-- Regression testing with statistical significance
-- A/B testing with confidence intervals
-- Continuous integration with quality gates
-
-**Performance Monitoring**:
-- Real-time optimization metrics
-- Gradient strength and convergence tracking
-- Error pattern frequency analysis
-- Effectiveness measurement across optimization methods
-
-**Observability Integration**:
-- Distributed tracing for optimization workflows
-- Performance profiling with bottleneck identification
-- Resource usage optimization
-- Quality metrics dashboards
-
-## Latest Metaprompting Research Integration (2024-2025)
-
-### Academic Research Implementation
-
-The PE toolkit implements the most recent advances in metaprompting research:
-
-**Core Research Papers Implemented**:
-- **TextGrad: AutoGrad for Text** (Stanford HAI 2024): Natural language gradient computation
-- **DSPy: Programming Language Models** (Stanford NLP 2024): Structured prompt composition
-- **MIPRO v2**: Multi-stage instruction and prompt optimization with sub-prompt decomposition
-- **Bayesian Prompt Search**: Iterative prompt variation identification and optimization
-- **Bootstrap Demonstrations**: Dynamic few-shot example generation and curation
-
-**Industry Best Practices Integrated**:
-- **Sammo Framework**: Metaprompting with minibatching and optimization (2024 update)
-- **ChatGPT Desktop Integration**: Native app development with Flask + HTMX patterns
-- **LM Studio Optimization**: Local model optimization and prompt engineering workflows
-- **Prompt Like a Data Scientist**: Auto prompt optimization and testing methodologies
-
-### Technical Innovation Areas
-
-**Natural Language Gradient Computation**:
-- Implements textual gradients as LLM feedback for iterative optimization
-- Attention pattern analysis for prompt component effectiveness measurement
-- Semantic coherence tracking throughout optimization processes
-- Gradient accumulation for stable convergence in prompt optimization
-
-**Multi-Objective Prompt Optimization**:
-- Pareto frontier analysis for accuracy/latency/cost trade-offs
-- NSGA-II implementation for prompt population evolution
-- Statistical significance testing for optimization validation
-- Cross-validation between optimization methods and providers
-
-**Ensemble Prompt Engineering**:
-- Multi-model consensus with weighted voting and reflection-based synthesis
-- Model-specific prompt adaptation with transfer learning
-- Dynamic provider selection based on task characteristics
-- Robustness testing across diverse LLM architectures
-
-### Revolutionary 2025 Research Advances
-
-The PE toolkit integrates groundbreaking research developments from late 2024 and early 2025:
-
-**Component-Based Prompt Engineering (DSPy Evolution)**:
-- **Program Synthesis for Prompts**: Automated generation of prompt programs using neural synthesis
-- **Type-Safe Composition**: Interface definitions for reliable component interaction
-- **Multi-Stage Optimization**: Progressive refinement with statistical quality gates
-- **Algorithmic Parameter Tuning**: AI-driven hyperparameter optimization for prompt methods
-
-**TextGrad 2.0 Breakthrough Features**:
-- **Cross-Modal Gradients**: Support for vision-language and multimodal prompt optimization
-- **Attention Flow Mapping**: Transformer attention pattern analysis for gradient computation
-- **Semantic Drift Detection**: Real-time monitoring of concept preservation during optimization
-- **Gradient Accumulation**: Advanced techniques for stable convergence in complex optimization
-
-**Evolutionary Metaprompting (Genetic Algorithm Integration)**:
-- **NSGA-II Multi-Objective**: Pareto frontier exploration for accuracy/latency/cost trade-offs
-- **Adaptive Mutation Operators**: Dynamic strategy selection based on prompt structure analysis
-- **Genealogy Tracking**: Complete evolutionary lineage with mutation history for research
-- **Diversity Preservation**: Novel semantic distance metrics and niching strategies
-
-**Ensemble Learning for Prompt Robustness**:
-- **Model-Specific Adaptation**: Transfer learning across diverse LLM architectures
-- **Dynamic Provider Selection**: Task-characteristic-based model weighting
-- **Reflection-Based Consensus**: Deep pattern synthesis across model responses
-- **Reinforcement Learning Integration**: Adaptive weighting with performance-based learning
-
-### Next-Generation Tool Implementations
-
-**Advanced Prompt Composition (`pe compose`)**:
-```bash
-# Research-grade modular composition with optimization
-pe compose --library-init --research-mode
-pe compose context.txt instruction.txt examples.txt --style cot --target gpt-4 --optimize
-
-# Component dependency resolution with semantic analysis
-pe compose components/ --strategy dependency-ordered --semantic-coherence --validation-gate
-```
-
-**Dynamic Prompt Scaffolding (`pe scaffold`)**:
-```bash
-# Hierarchical task decomposition with reasoning frameworks
-pe scaffold "Complex research analysis" --framework=tot --decompose --validate
-
-# Self-refinement with TextGrad integration
-pe scaffold "Multi-stage reasoning" --refinement-loops 3 --textgrad-optimization
-```
-
-**Model Calibration and Bias Detection (`pe calibrate`)**:
-```bash
-# Statistical calibration with uncertainty quantification
-pe calibrate prompt.txt --dataset=validation.json --uncertainty --confidence-intervals
-
-# Automated bias detection and correction
-pe calibrate "sensitive prompt" --bias-detection --debiasing-strategies --ethical-validation
-```
-
-**Context-Aware Adaptation (`pe adapt`)**:
-```bash
-# Real-time optimization with user feedback loops
-pe adapt prompt.txt --realtime --feedback-integration --learning-rate 0.1
-
-# A/B testing with statistical significance validation
-pe adapt prompt.txt --ab-test --statistical-power 0.8 --effect-size 0.2
-```
-
-**Advanced Prompt Analysis (`pe analyze`)**:
-```bash
-# Deep analysis with attention visualization and failure mode detection
-pe analyze prompt.txt --depth=deep --attention --failure-modes --debug
-
-# Token-level semantic analysis with interpretability
-pe analyze prompt.txt --tokens --semantic-roles --interpretability --visualize
-```
-
-### Research Validation Framework
-
-The PE toolkit includes comprehensive validation and testing capabilities for research-grade prompt engineering:
-
-```bash
-# Cross-validation between optimization methods with statistical significance
-pe test cross-validate --methods textgrad,evolve,fusion,compose --folds 5 --significance-test
-
-# Robustness testing across diverse model architectures and configurations
-pe test robustness --prompt optimized.txt --models gpt-4,claude-3,gemini-pro --variations 1000
-
-# Reproducibility package generation for academic research
-pe test reproducibility --experiment-id exp001 --package-artifacts --statistical-analysis
-```
-
-## Important Code Editing Guidelines
-
-### Go Code Editing Rules
-
-1. **Import Management**:
-   - Always maintain import statements automatically to reflect code changes
+See ROADMAP.md for planned features including:
+- Additional provider implementations
+- Advanced caching strategies
+- Distributed evaluation support
+- Visual prompt engineering tools

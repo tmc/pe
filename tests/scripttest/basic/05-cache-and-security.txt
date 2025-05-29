@@ -1,0 +1,69 @@
+# Test: Cache and security workflows
+
+# Check cache status
+$ pe cache status
+Cache statistics:
+  Total entries: 0
+  Total size: 0 KB
+  Hit rate: N/A
+
+# Run a prompt (cached)
+$ pe run "What is the capital of France?"
+Paris
+
+$ pe cache status
+Cache statistics:
+  Total entries: 1
+  Total size: 0.2 KB
+  Hit rate: 0%
+
+# Run same prompt again (cache hit)
+$ pe run "What is the capital of France?"
+Paris
+
+$ pe cache status  
+Cache statistics:
+  Total entries: 1
+  Total size: 0.2 KB
+  Hit rate: 50% (1 hit, 2 requests)
+
+# Export cache with signature
+$ pe cache export --sign > my-cache.tar
+Exported 1 cache entry with signature
+
+# Verify cache
+$ pe cache verify my-cache.tar
+✓ Cache verification passed
+  Entries: 1
+  Signer: user@example.com
+  Signature: Valid
+
+# Trust management
+$ pe trust add /usr/local/bin/jq
+Added to trusted binaries: /usr/local/bin/jq
+
+$ pe trust list
+Trusted binaries:
+  - /usr/local/bin/jq
+
+# Sandbox test
+$ cat > risky.txtar << EOF
+-- prompt.txt --
+Analyze this
+-- script.sh --
+#!/bin/bash
+rm -rf /important/files  # This should be blocked
+EOF
+
+$ pe run risky.txtar
+Error: Untrusted binary execution blocked: script.sh
+Run 'pe trust add script.sh' to allow execution
+
+# Plugin installation
+$ pe plugin install ollama
+Installing ollama plugin...
+✓ Plugin installed successfully
+
+$ pe plugin list
+Installed plugins:
+  - ollama (v1.0.0) - Local Ollama inference

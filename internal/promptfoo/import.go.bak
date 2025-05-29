@@ -1,0 +1,430 @@
+package promptfoo
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"gopkg.in/yaml.v3"
+)
+
+// Importer handles importing promptfoo configurations to PE format
+type Importer struct {
+	config ImportConfig
+}
+
+// ImportConfig defines options for promptfoo import
+type ImportConfig struct {
+	PreserveProviders bool
+	ConvertAssertions bool
+	ExpandIncludes    bool
+	WorkingDir        string
+}
+
+// NewImporter creates a new promptfoo importer
+func NewImporter(config ImportConfig) *Importer {
+	return &Importer{config: config}
+}
+
+// ImportConfig imports a promptfoo configuration file
+func (i *Importer) ImportConfig(filename string) (*PEConfig, error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("reading file: %w", err)
+	}
+
+	// Detect format
+	var pfConfig Config
+	if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
+		if err := yaml.Unmarshal(data, &pfConfig); err != nil {
+			return nil, fmt.Errorf("parsing YAML: %w", err)
+		}
+	} else if strings.HasSuffix(filename, ".json") {
+		if err := json.Unmarshal(data, &pfConfig); err != nil {
+			return nil, fmt.Errorf("parsing JSON: %w", err)
+		}
+	} else {
+		// Try YAML first, then JSON
+		if err := yaml.Unmarshal(data, &pfConfig); err != nil {
+			if err := json.Unmarshal(data, &pfConfig); err != nil {
+				return nil, fmt.Errorf("unable to parse as YAML or JSON")
+			}
+		}
+	}
+
+	// Convert to PE config
+	return i.convertToPEConfig(&pfConfig)
+}
+
+// ImportResults imports promptfoo evaluation results
+func (i *Importer) ImportResults(filename string) (*PETestResults, error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("reading file: %w", err)
+	}
+
+	var results EvalResults
+	if err := json.Unmarshal(data, &results); err != nil {
+		return nil, fmt.Errorf("parsing results: %w", err)
+	}
+
+	return i.convertToPEResults(&results)
+}
+
+// convertToPEConfig converts promptfoo config to PE format
+func (i *Importer) convertToPEConfig(pf *Config) (*PEConfig, error) {
+	pe := &PEConfig{
+		Description: pf.Description,
+		Prompts:     []PEPromptConfig{},
+		Tests:       []PETestConfig{},
+		Providers:   []PEProviderConfig{},
+	}
+
+	// Convert providers
+	if i.config.PreserveProviders {
+		for _, provider := range pf.Providers {
+			peProvider := i.convertProvider(provider)
+			pe.Providers = append(pe.Providers, peProvider)
+		}
+	}
+
+	// Convert prompts
+	for _, prompt := range pf.Prompts {
+		pePrompt, err := i.convertPrompt(prompt)
+		if err != nil {
+			return nil, fmt.Errorf("converting prompt: %w", err)
+		}
+		pe.Prompts = append(pe.Prompts, pePrompt)
+	}
+
+	// Convert tests
+	for _, test := range pf.Tests {
+		peTest := i.convertTest(test)
+		pe.Tests = append(pe.Tests, peTest)
+	}
+
+	// Handle default test settings
+	if pf.DefaultTest != nil {
+		pe.DefaultTest = &PETestDefaults{
+			Provider: pf.DefaultTest.Provider,
+			Assert:   i.convertAssertions(pf.DefaultTest.Assert),
+		}
+	}
+
+	return pe, nil
+}
+
+// convertProvider converts a promptfoo provider to PE format
+func (i *Importer) convertProvider(pf interface{}) PEProviderConfig {
+	// Handle different provider formats
+	switch v := pf.(type) {
+	case string:
+		// Simple string provider
+		parts := strings.Split(v, ":")
+		if len(parts) >= 2 {
+			return PEProviderConfig{
+				Type:  parts[0],
+				Model: parts[1],
+			}
+		}
+		return PEProviderConfig{
+			Type: v,
+		}
+	case map[string]interface{}:
+		// Complex provider config
+		provider := PEProviderConfig{
+			Config: make(map[string]interface{}),
+		}
+		
+		if id, ok := v["id"].(string); ok {
+			provider.ID = id
+		}
+		
+		// Extract provider type from various fields
+		if providerType, ok := v["provider"].(string); ok {
+			provider.Type = providerType
+		} else if apiProvider, ok := v["apiProvider"].(string); ok {
+			provider.Type = apiProvider
+		}
+		
+		// Copy all config
+		for k, val := range v {
+			if k != "id" && k != "provider" && k != "apiProvider" {
+				provider.Config[k] = val
+			}
+		}
+		
+		return provider
+	default:
+		return PEProviderConfig{
+			Type: "unknown",
+		}
+	}
+}
+
+// convertPrompt converts a promptfoo prompt to PE format
+func (i *Importer) convertPrompt(pf interface{}) (PEPromptConfig, error) {
+	switch v := pf.(type) {
+	case string:
+		// Simple string prompt
+		return PEPromptConfig{
+			Content: v,
+		}, nil
+	case map[string]interface{}:
+		// Complex prompt with metadata
+		prompt := PEPromptConfig{}
+		
+		if content, ok := v["content"].(string); ok {
+			prompt.Content = content
+		} else if raw, ok := v["raw"].(string); ok {
+			prompt.Content = raw
+		}
+		
+		if label, ok := v["label"].(string); ok {
+			prompt.Name = label
+		}
+		
+		if file, ok := v["file"].(string); ok {
+			// Handle file reference
+			if i.config.ExpandIncludes {
+				content, err := i.readPromptFile(file)
+				if err != nil {
+					return prompt, err
+				}
+				prompt.Content = content
+			} else {
+				prompt.File = file
+			}
+		}
+		
+		return prompt, nil
+	default:
+		return PEPromptConfig{}, fmt.Errorf("unsupported prompt type: %T", v)
+	}
+}
+
+// convertTest converts a promptfoo test to PE format
+func (i *Importer) convertTest(pf Test) PETestConfig {
+	test := PETestConfig{
+		Description: pf.Description,
+		Variables:   pf.Vars,
+	}
+
+	if i.config.ConvertAssertions {
+		test.Assertions = i.convertAssertions(pf.Assert)
+	}
+
+	// Handle metadata
+	if pf.Metadata != nil {
+		test.Metadata = pf.Metadata
+	}
+
+	return test
+}
+
+// convertAssertions converts promptfoo assertions to PE format
+func (i *Importer) convertAssertions(assertions []interface{}) []PEAssertionConfig {
+	if !i.config.ConvertAssertions {
+		return nil
+	}
+
+	peAssertions := []PEAssertionConfig{}
+	
+	for _, assertion := range assertions {
+		switch v := assertion.(type) {
+		case string:
+			// Simple string assertion (contains)
+			peAssertions = append(peAssertions, PEAssertionConfig{
+				Type:  "contains",
+				Value: v,
+			})
+		case map[string]interface{}:
+			// Complex assertion
+			pa := PEAssertionConfig{}
+			
+			if assertType, ok := v["type"].(string); ok {
+				// Map promptfoo types to PE types
+				switch assertType {
+				case "contains":
+					pa.Type = "contains"
+				case "not-contains":
+					pa.Type = "not_contains"
+				case "equals":
+					pa.Type = "equals"
+				case "regex":
+					pa.Type = "regex"
+				case "llm-rubric":
+					pa.Type = "llm_rubric"
+				case "javascript":
+					pa.Type = "custom"
+				default:
+					pa.Type = assertType
+				}
+			}
+			
+			if value, ok := v["value"]; ok {
+				pa.Value = fmt.Sprintf("%v", value)
+			}
+			
+			if threshold, ok := v["threshold"].(float64); ok {
+				pa.Threshold = threshold
+			}
+			
+			peAssertions = append(peAssertions, pa)
+		}
+	}
+	
+	return peAssertions
+}
+
+// convertToPEResults converts promptfoo results to PE format
+func (i *Importer) convertToPEResults(pf *EvalResults) (*PETestResults, error) {
+	results := &PETestResults{
+		Prompts: []PEPrompt{},
+		Tests:   []PETestCase{},
+		Meta: PETestMetadata{
+			Timestamp: pf.CreatedAt,
+		},
+	}
+
+	// Extract prompts from head
+	for _, prompt := range pf.Results.Table.Head.Prompts {
+		results.Prompts = append(results.Prompts, PEPrompt{
+			Name:     prompt.Label,
+			Content:  prompt.Raw,
+			Provider: prompt.Provider,
+			Model:    prompt.Model,
+		})
+	}
+
+	// Convert test results
+	for _, row := range pf.Results.Table.Body {
+		testCase := PETestCase{
+			Description: row.Test.Description,
+			Variables:   row.Test.Vars,
+			Results:     []PETestResult{},
+		}
+
+		// Convert assertions if present
+		if i.config.ConvertAssertions && row.Test.Assert != nil {
+			testCase.Assertions = i.convertTestAssertions(row.Test.Assert)
+		}
+
+		// Convert outputs to results
+		for _, output := range row.Outputs {
+			result := PETestResult{
+				Output:           output.Text,
+				Passed:           output.Pass,
+				FailureReasons:   output.FailReasons,
+				Tokens:           output.TokenUsage.Total,
+				PromptTokens:     output.TokenUsage.Prompt,
+				CompletionTokens: output.TokenUsage.Completion,
+				LatencyMs:        int64(output.Latency),
+				Cost:             output.Cost,
+			}
+			testCase.Results = append(testCase.Results, result)
+		}
+
+		results.Tests = append(results.Tests, testCase)
+	}
+
+	return results, nil
+}
+
+// convertTestAssertions converts assertions from test results
+func (i *Importer) convertTestAssertions(assertions []Assertion) []PEAssertion {
+	peAssertions := []PEAssertion{}
+	
+	for _, a := range assertions {
+		pa := PEAssertion{
+			Type: a.Type,
+		}
+		
+		// Convert assertion value based on type
+		switch v := a.Value.(type) {
+		case string:
+			pa.Value = v
+		case map[string]interface{}:
+			// Complex assertion value
+			if pattern, ok := v["pattern"].(string); ok {
+				pa.Pattern = pattern
+			}
+			if rubric, ok := v["rubric"].(string); ok {
+				pa.Rubric = rubric
+			}
+		default:
+			pa.Value = fmt.Sprintf("%v", v)
+		}
+		
+		peAssertions = append(peAssertions, pa)
+	}
+	
+	return peAssertions
+}
+
+// readPromptFile reads a prompt from file
+func (i *Importer) readPromptFile(filename string) (string, error) {
+	path := filename
+	if !filepath.IsAbs(path) && i.config.WorkingDir != "" {
+		path = filepath.Join(i.config.WorkingDir, filename)
+	}
+	
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("reading prompt file: %w", err)
+	}
+	
+	return string(data), nil
+}
+
+// PE Config structures
+
+// PEConfig represents a PE configuration
+type PEConfig struct {
+	Description  string               `yaml:"description,omitempty"`
+	Prompts      []PEPromptConfig     `yaml:"prompts"`
+	Tests        []PETestConfig       `yaml:"tests"`
+	Providers    []PEProviderConfig   `yaml:"providers,omitempty"`
+	DefaultTest  *PETestDefaults      `yaml:"default_test,omitempty"`
+}
+
+// PEPromptConfig represents a PE prompt configuration
+type PEPromptConfig struct {
+	Name     string `yaml:"name,omitempty"`
+	Content  string `yaml:"content,omitempty"`
+	File     string `yaml:"file,omitempty"`
+	Template string `yaml:"template,omitempty"`
+}
+
+// PETestConfig represents a PE test configuration
+type PETestConfig struct {
+	Description string                 `yaml:"description,omitempty"`
+	Variables   map[string]interface{} `yaml:"variables"`
+	Assertions  []PEAssertionConfig    `yaml:"assertions,omitempty"`
+	Metadata    map[string]interface{} `yaml:"metadata,omitempty"`
+}
+
+// PEAssertionConfig represents a PE assertion configuration
+type PEAssertionConfig struct {
+	Type      string  `yaml:"type"`
+	Value     string  `yaml:"value,omitempty"`
+	Threshold float64 `yaml:"threshold,omitempty"`
+	Custom    string  `yaml:"custom,omitempty"`
+}
+
+// PEProviderConfig represents a PE provider configuration
+type PEProviderConfig struct {
+	ID     string                 `yaml:"id,omitempty"`
+	Type   string                 `yaml:"type"`
+	Model  string                 `yaml:"model,omitempty"`
+	Config map[string]interface{} `yaml:"config,omitempty"`
+}
+
+// PETestDefaults represents default test settings
+type PETestDefaults struct {
+	Provider string                `yaml:"provider,omitempty"`
+	Assert   []PEAssertionConfig   `yaml:"assert,omitempty"`
+}

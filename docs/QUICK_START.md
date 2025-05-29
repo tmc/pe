@@ -23,8 +23,8 @@ pe init demo.yaml
 # Run your first evaluation
 pe eval demo.yaml
 
-# Try interactive mode
-pe interactive --provider openai:gpt-4
+# Try running a prompt directly
+pe run "What is 2+2?"
 
 # Optimize a prompt with cutting-edge TextGrad
 pe optimize --prompt "Summarize this text clearly" --method textgrad --iterations 3
@@ -58,7 +58,7 @@ prompts:
 
 providers:
   - "openai:gpt-4"
-  - "anthropic:claude-3-haiku"
+  - "openai:gpt-3.5-turbo"
 
 tests:
   - vars:
@@ -102,10 +102,10 @@ pe optimize \
   --iterations 5 \
   --output optimization-results.json
 
-# Try hybrid optimization (best of both worlds)
+# Try multi-stage optimization
 pe optimize \
   --prompt "Analyze the sentiment of this text: {{text}}" \
-  --method hybrid \
+  --method multistage \
   --iterations 6
 ```
 
@@ -133,19 +133,15 @@ pe eval advanced-demo.yaml | \
 
 ## 🎪 Interactive Development
 
-### REPL Mode (Fastest Development)
+### Interactive Mode
 
 ```bash
 # Start interactive session
-pe interactive --provider openai:gpt-4
+pe interactive
 
-# Available commands in REPL:
-# /optimize "your prompt" - Optimize current prompt
-# /eval - Evaluate against test cases
-# /providers - List available providers
-# /save session.json - Save current session
-# /load session.json - Load previous session
-# /help - Show all commands
+# Or use the run command for quick prompts
+pe run "Your prompt here"
+pe run prompt.txt --stream
 ```
 
 ### Watch Mode (Auto-reload)
@@ -212,16 +208,14 @@ pe diff baseline-results.json current-results.json \
   --metric score
 ```
 
-### Security and Red-teaming
+### Security Testing
 
 ```bash
-# Built-in security testing (coming soon)
-pe redteam advanced-demo.yaml \
-  --categories harmful,biased,hallucination,privacy \
-  --output security-report.json
+# Built-in security testing
+pe security test --owasp --target advanced-demo.yaml
 
-# Toxicity evaluation
-pe eval advanced-demo.yaml --assertions toxicity-tests.yaml
+# Advanced red-teaming
+pe security redteam --comprehensive --target advanced-demo.yaml
 ```
 
 ## 🛠️ Development Workflow
@@ -229,13 +223,14 @@ pe eval advanced-demo.yaml --assertions toxicity-tests.yaml
 ### 1. Rapid Prototyping
 
 ```bash
-# Start with interactive mode for quick iteration
-pe interactive --provider anthropic:claude-3-sonnet
+# Use run command for quick iteration
+pe run "Your prompt here" --provider cgpt
 
-# Test ideas quickly
-> Your prompt here
-> /optimize
-> /eval
+# Test with streaming
+pe run "Tell me a story" --stream
+
+# Test with variables
+pe run "Translate {{text}} to {{language}}" --var text="Hello" --var language="Spanish"
 ```
 
 ### 2. Structured Development
@@ -255,9 +250,9 @@ pe eval production-config.yaml --save-db
 
 ```bash
 # Try different optimization methods
-pe optimize --prompt "Your prompt" --method standard --iterations 3
 pe optimize --prompt "Your prompt" --method textgrad --iterations 5  
-pe optimize --prompt "Your prompt" --method hybrid --iterations 8
+pe optimize --prompt "Your prompt" --method multistage --iterations 3
+pe optimize --prompt "Your prompt" --method reflection --iterations 4
 ```
 
 ### 4. Production Testing
@@ -267,7 +262,8 @@ pe optimize --prompt "Your prompt" --method hybrid --iterations 8
 pe benchmark production-config.yaml --iterations 100
 
 # Performance profiling
-pe profile --cpu --memory eval production-config.yaml
+pe profile cpu --duration 30s
+pe profile memory
 
 # Regression testing
 pe diff baseline.json current.json --threshold 0.05
@@ -323,8 +319,7 @@ prompts:
 
 providers:
   - "openai:gpt-4"           # High quality, expensive
-  - "openai:gpt-3.5-turbo"   # Good quality, cheaper  
-  - "anthropic:claude-3-haiku"  # Fast, cost-effective
+  - "openai:gpt-3.5-turbo"   # Good quality, cheaper
 
 tests:
   - vars: {}
@@ -346,24 +341,18 @@ tests:
 
 ### Learn Advanced Features
 
-```bash
-# Read comprehensive guides
-cat docs/ADVANCED_FEATURES.md
-cat docs/COMPARISON.md
+- **Optimization Methods**: See [docs/ADVANCED_OPTIMIZATION_GUIDE.md](ADVANCED_OPTIMIZATION_GUIDE.md)
+- **API Reference**: See [docs/API_REFERENCE.md](API_REFERENCE.md)
+- **Examples**: Explore the [example/](../example/) directory
 
-# Explore examples
-ls example/
-pe eval example/getting-started/config.yaml
-```
-
-### Integration
+### Plugin System
 
 ```bash
-# CI/CD setup
-cat docs/CI_CD_INTEGRATION.md
+# List available plugins
+pe plugin list
 
-# Custom providers
-cat docs/EXTENSIBILITY.md
+# Use the promptfoo plugin for compatibility
+pe promptfoo import legacy-config.yaml
 ```
 
 ### Community and Support
@@ -375,12 +364,13 @@ cat docs/EXTENSIBILITY.md
 
 ## 💡 Pro Tips
 
-1. **Start with REPL**: Use interactive mode for fastest development
-2. **Use TextGrad**: For complex prompts, TextGrad often outperforms standard methods
+1. **Start Simple**: Use `pe run` for quick prompt testing
+2. **Use TextGrad**: For complex prompts, TextGrad optimization is highly effective
 3. **Pipeline Everything**: Leverage Unix-style pipes for powerful data processing
 4. **Watch Mode**: Enable auto-reload during development for immediate feedback
 5. **Comprehensive Testing**: Use multiple assertion types for robust evaluation
 6. **Benchmark Regularly**: Compare providers and track performance over time
+7. **Try Semantic Backprop**: For challenging optimization tasks, use `pe semantic`
 
 ---
 

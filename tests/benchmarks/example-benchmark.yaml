@@ -1,0 +1,117 @@
+# Example benchmark definition for PE
+# This shows how benchmarks can be described declaratively
+
+name: "Multi-Model Prompt Performance Benchmark"
+description: "Compare prompt performance across different models and optimization methods"
+
+# Test scenarios
+scenarios:
+  - id: sentiment_analysis
+    name: "Sentiment Analysis"
+    base_prompt: "Analyze the sentiment of the following text"
+    test_cases:
+      - input: "I love this product! It exceeded my expectations."
+        expected: "positive"
+      - input: "This is terrible, worst purchase ever."
+        expected: "negative"
+      - input: "It's okay, nothing special."
+        expected: "neutral"
+    
+  - id: summarization
+    name: "Text Summarization"
+    base_prompt: "Summarize the following text in 2-3 sentences"
+    test_cases:
+      - input: "Long article about climate change..."
+        max_tokens: 100
+        
+  - id: code_review
+    name: "Code Review"
+    base_prompt: "Review this code for potential issues"
+    test_cases:
+      - input: |
+          def factorial(n):
+              if n == 0:
+                  return 1
+              return n * factorial(n-1)
+        expected_issues: ["no input validation", "no recursion limit"]
+
+# Optimization methods to test
+optimization_methods:
+  - method: baseline
+    description: "No optimization"
+  - method: pe2
+    iterations: 5
+  - method: textgrad
+    iterations: 8
+    learning_rate: 0.1
+  - method: apex
+    beam_width: 3
+    iterations: 5
+  - method: evolve
+    generations: 10
+    population: 20
+
+# Models to test
+providers:
+  - name: gpt-4
+    temperature: 0.7
+    max_tokens: 500
+  - name: gpt-3.5-turbo
+    temperature: 0.7
+    max_tokens: 500
+  - name: claude-3-opus
+    temperature: 0.7
+    max_tokens: 500
+  - name: claude-3-sonnet
+    temperature: 0.7
+    max_tokens: 500
+  - name: ollama:llama2-7b
+    temperature: 0.7
+    max_tokens: 500
+
+# Metrics to collect
+metrics:
+  primary:
+    - accuracy      # Task-specific accuracy
+    - latency      # Response time in ms
+    - cost         # API cost in USD
+  secondary:
+    - tokens       # Total tokens used
+    - coherence    # Semantic coherence score
+    - consistency  # Cross-run consistency
+
+# Benchmark configuration
+configuration:
+  iterations: 10          # Runs per configuration
+  warmup_runs: 3         # Warmup before timing
+  parallel_jobs: 4       # Parallel execution
+  timeout: 30s           # Per-request timeout
+  cache_results: true    # Cache for reproducibility
+  
+# Analysis options
+analysis:
+  statistical_tests:
+    - t_test           # Pairwise comparisons
+    - anova            # Multi-group comparison
+    - effect_size      # Cohen's d
+  visualizations:
+    - latency_heatmap
+    - accuracy_by_method
+    - cost_efficiency_frontier
+    - pareto_frontier
+  
+# Success criteria
+success_criteria:
+  min_accuracy: 0.80
+  max_latency: 5000  # ms
+  max_cost_per_1k: 0.10  # USD
+
+# Export options
+export:
+  formats:
+    - json
+    - csv
+    - markdown
+    - latex
+  include_raw_data: true
+  include_statistics: true

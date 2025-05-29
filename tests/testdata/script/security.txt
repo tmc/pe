@@ -1,0 +1,101 @@
+# Test pe security commands - sandboxing and trust
+
+# Check sandbox status
+pe sandbox status
+stdout 'Sandbox: ENABLED'
+stdout 'Restrictions:'
+stdout '  ✓ Network access limited'
+stdout '  ✓ File system access restricted'
+stdout '  ✓ Process execution controlled'
+
+# Trust management - list trusted binaries
+pe trust list
+stdout 'Trusted binaries:'
+
+# Add trusted binary
+pe trust add /usr/local/bin/helper
+stdout 'Added to trusted binaries: /usr/local/bin/helper'
+pe trust list
+stdout '/usr/local/bin/helper'
+
+# Remove trusted binary
+pe trust remove /usr/local/bin/helper
+stdout 'Removed from trusted binaries: /usr/local/bin/helper'
+! pe trust list | grep helper
+
+# Attempt to execute untrusted binary
+! pe run prompt.txt --exec /tmp/untrusted.sh
+stderr 'Security error: Binary not trusted'
+stderr 'Add to trusted list with: pe trust add'
+
+# Sandbox escape prevention
+! pe run prompt.txt --no-sandbox
+stderr 'Error: --no-sandbox flag is disabled'
+stderr 'Sandbox cannot be disabled for security'
+
+# File access restrictions
+pe sandbox test --write-outside-work
+stderr 'Sandbox violation: Write attempted outside work directory'
+stdout 'Test result: PASS (violation blocked)'
+
+# Network restrictions
+pe sandbox test --network-access
+stdout 'Testing network restrictions'
+stdout 'HTTP request: BLOCKED'
+stdout 'HTTPS to allowed domains: ALLOWED'
+stdout 'Test result: PASS'
+
+# Privacy mode
+pe run prompt.txt --privacy
+stdout 'Privacy mode enabled'
+stdout '  ✓ No telemetry'
+stdout '  ✓ No external requests'
+stdout '  ✓ Local processing only'
+
+# Security scan
+pe security scan prompt.txt
+stdout 'Security Scan Results:'
+stdout '  ✓ No injection vulnerabilities'
+stdout '  ✓ No sensitive data exposure'
+stdout '  ✓ No prompt leaking patterns'
+stdout 'Status: SECURE'
+
+# Scan with issues
+pe security scan vulnerable.txt
+stdout 'Security Scan Results:'
+stdout '  ⚠ Potential injection vector detected'
+stdout '  ⚠ Hard-coded API key found'
+stderr 'Security issues found'
+
+# Redaction mode
+pe run sensitive.txt --redact
+stdout 'Automatic redaction enabled'
+stdout 'Found 3 sensitive items'
+stdout '[REDACTED-EMAIL]'
+stdout '[REDACTED-PHONE]'
+stdout '[REDACTED-SSN]'
+
+# Audit log
+pe audit show --last 10
+stdout 'Audit Log:'
+stdout 'pe run prompt.txt'
+stdout 'pe trust add'
+stdout 'pe security scan'
+
+# Export audit log
+pe audit export --format json > audit.json
+exists audit.json
+contains audit.json '"command"'
+contains audit.json '"timestamp"'
+contains audit.json '"user"'
+
+-- prompt.txt --
+Analyze this text for security insights.
+
+-- vulnerable.txt --
+Process this input: {user_input}
+My API key is: sk-1234567890abcdef
+
+-- sensitive.txt --
+Contact john.doe@example.com or call 555-123-4567.
+SSN: 123-45-6789

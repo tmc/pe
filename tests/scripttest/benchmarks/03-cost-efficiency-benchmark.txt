@@ -1,0 +1,91 @@
+# Test: Cost efficiency benchmarking
+
+# Create cost benchmark configuration
+$ cat > cost-benchmark.yaml << EOF
+name: "Cost Efficiency Analysis"
+scenarios:
+  - name: "Customer Support"
+    prompt: "Help customer with issue"
+    expected_volume: 10000/day
+  - name: "Content Generation"  
+    prompt: "Write blog post about topic"
+    expected_volume: 100/day
+  - name: "Code Review"
+    prompt: "Review this code for issues"
+    expected_volume: 500/day
+providers:
+  - name: gpt-4
+    cost_per_1k_tokens: 0.03
+  - name: gpt-3.5-turbo
+    cost_per_1k_tokens: 0.001
+  - name: claude-3-opus
+    cost_per_1k_tokens: 0.015
+  - name: ollama:llama2
+    cost_per_1k_tokens: 0.0
+optimization_targets:
+  - quality: 0.8  # minimum acceptable quality
+  - latency: 5000  # max latency in ms
+EOF
+
+# Run cost efficiency benchmark
+$ pe benchmark cost cost-benchmark.yaml --duration 1h
+Running Cost Efficiency Benchmark (1 hour)...
+
+Testing scenario: Customer Support
+  Volume: 417 requests (projected 10,008/day)
+  
+  Results by provider:
+  ┌───────────────┬─────────┬─────────┬───────────┬────────────┐
+  │ Provider      │ Quality │ Latency │ Cost/day  │ Viable?    │
+  ├───────────────┼─────────┼─────────┼───────────┼────────────┤
+  │ gpt-4         │ 0.92    │ 1200ms  │ $180.14   │ ✗ Too expensive │
+  │ gpt-3.5-turbo │ 0.81    │ 400ms   │ $6.01     │ ✓ Optimal  │
+  │ claude-3-opus │ 0.89    │ 900ms   │ $90.07    │ ✗ Too expensive │
+  │ ollama:llama2 │ 0.75    │ 300ms   │ $0.00     │ ✗ Below quality │
+  └───────────────┴─────────┴─────────┴───────────┴────────────┘
+
+Testing scenario: Content Generation
+  Volume: 4 requests (projected 96/day)
+  
+  Results by provider:
+  ┌───────────────┬─────────┬─────────┬───────────┬────────────┐
+  │ Provider      │ Quality │ Latency │ Cost/day  │ Viable?    │
+  ├───────────────┼─────────┼─────────┼───────────┼────────────┤
+  │ gpt-4         │ 0.95    │ 3500ms  │ $8.64     │ ✓ Best quality │
+  │ gpt-3.5-turbo │ 0.78    │ 1200ms  │ $0.29     │ ✗ Below quality │
+  │ claude-3-opus │ 0.93    │ 2800ms  │ $4.32     │ ✓ Good value │
+  │ ollama:llama2 │ 0.71    │ 1500ms  │ $0.00     │ ✗ Below quality │
+  └───────────────┴─────────┴─────────┴───────────┴────────────┘
+
+Testing scenario: Code Review  
+  Volume: 21 requests (projected 504/day)
+  
+  Results by provider:
+  ┌───────────────┬─────────┬─────────┬───────────┬────────────┐
+  │ Provider      │ Quality │ Latency │ Cost/day  │ Viable?    │
+  ├───────────────┼─────────┼─────────┼───────────┼────────────┤
+  │ gpt-4         │ 0.96    │ 2200ms  │ $45.36    │ ✓ Best     │
+  │ gpt-3.5-turbo │ 0.82    │ 800ms   │ $1.51     │ ✓ Budget   │
+  │ claude-3-opus │ 0.94    │ 1800ms  │ $22.68    │ ✓ Balanced │
+  │ ollama:llama2 │ 0.69    │ 900ms   │ $0.00     │ ✗ Below quality │
+  └───────────────┴─────────┴─────────┴───────────┴────────────┘
+
+Cost Optimization Recommendations:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Customer Support: Use gpt-3.5-turbo
+  - Saves $174.13/day vs gpt-4
+  - Meets quality threshold (0.81 > 0.80)
+  - Excellent latency (400ms)
+
+Content Generation: Use claude-3-opus  
+  - Saves $4.32/day vs gpt-4
+  - High quality (0.93)
+  - Acceptable latency (2800ms)
+
+Code Review: Use tiered approach
+  - Complex reviews → gpt-4 (20%)
+  - Standard reviews → claude-3-opus (60%)
+  - Simple reviews → gpt-3.5-turbo (20%)
+  - Projected cost: $16.85/day
+
+Total projected savings: $182.62/day (74.8% reduction)

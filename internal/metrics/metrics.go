@@ -22,6 +22,7 @@ const (
 	MetricTypeScript  MetricType = "script"
 	MetricTypeLLM     MetricType = "llm-graded"
 	MetricTypeRegex   MetricType = "regex"
+	MetricTypePassAtN MetricType = "pass-at-n"
 )
 
 // MetricConfig defines a custom metric configuration
@@ -97,6 +98,8 @@ func (m *MetricEvaluator) evaluateMetric(ctx context.Context, config MetricConfi
 		return m.evaluateLLMMetric(ctx, config, prompt, response, metadata)
 	case MetricTypeRegex:
 		return m.evaluateRegexMetric(config, prompt, response)
+	case MetricTypePassAtN:
+		return m.evaluatePassAtNMetric(ctx, config, prompt, response, metadata)
 	default:
 		return MetricResult{}, fmt.Errorf("unsupported metric type: %s", config.Type)
 	}
@@ -121,6 +124,9 @@ func (m *MetricEvaluator) evaluateBuiltinMetric(config MetricConfig, prompt, res
 		return m.evaluateCoherenceMetric(config, response, time.Since(start))
 	case "relevance":
 		return m.evaluateRelevanceMetric(config, prompt, response, time.Since(start))
+	case "pass-at-n", "pass_at_n":
+		// Delegate to the pass@n metric evaluator
+		return m.evaluatePassAtNMetric(context.Background(), config, prompt, response, metadata)
 	default:
 		return MetricResult{}, fmt.Errorf("unknown builtin metric: %s", config.Name)
 	}
@@ -675,4 +681,97 @@ func extractKeywords(text string) map[string]bool {
 	}
 	
 	return keywords
+}
+
+// evaluatePassAtNMetric evaluates pass@n metric for code generation tasks
+func (m *MetricEvaluator) evaluatePassAtNMetric(ctx context.Context, config MetricConfig, prompt, response string, metadata map[string]interface{}) (MetricResult, error) {
+	_ = time.Now() // start
+	
+	// Get configuration parameters
+	n := 1
+	if nVal, ok := config.Config["n"].(float64); ok {
+		n = int(nVal)
+	}
+	
+	// Get test cases from config
+	testCases, hasTestCases := config.Config["test_cases"].([]interface{})
+	
+	// Get samples - either from metadata or generate multiple samples
+	var samples []string
+	if samplesVal, ok := metadata["samples"].([]string); ok {
+		samples = samplesVal
+	} else if samplesVal, ok := metadata["samples"].([]interface{}); ok {
+		// Convert interface slice to string slice
+		for _, s := range samplesVal {
+			if str, ok := s.(string); ok {
+				samples = append(samples, str)
+			}
+		}
+	} else {
+		// If no samples provided, use the single response
+		samples = []string{response}
+	}
+	
+	// Create advanced metrics instance
+	am := NewAdvancedMetrics(m.providers[config.Config["provider"].(string)])
+	
+	var result *PassAtNResult
+	if hasTestCases {
+		// Convert test cases to proper format
+		var testCasesMaps []map[string]interface{}
+		for _, tc := range testCases {
+			if tcMap, ok := tc.(map[string]interface{}); ok {
+				testCasesMaps = append(testCasesMaps, tcMap)
+			}
+		}
+		result = am.CalculatePassAtNWithTests(ctx, n, samples, testCasesMaps)
+	} else {
+		// Use custom test function if provided
+		testFunc := func(code string) bool {
+			// Default: check if code is non-empty and appears syntactically valid
+			return len(strings.TrimSpace(code)) > 0 && !strings.Contains(code, "error")
+		}
+		
+		// If a custom validation prompt is provided, use LLM-based validation
+		if validationPrompt, ok := config.Config["validation_prompt"].(string); ok {
+			testFunc = func(code string) bool {
+				evalPrompt := fmt.Sprintf(validationPrompt, code)
+				response, err := m.providers[config.Config["provider"].(string)].Generate(ctx, evalPrompt, llm.GenerateOptions{
+					Temperature: &[]float64{0.0}[0],
+				})
+				if err != nil {
+					return false
+				}
+				return strings.Contains(strings.ToUpper(response.Text), "YES") ||
+					   strings.Contains(strings.ToUpper(response.Text), "PASS") ||
+					   strings.Contains(strings.ToUpper(response.Text), "TRUE")
+			}
+		}
+		
+		result = am.CalculatePassAtN(n, samples, testFunc)
+	}
+	
+	// Determine if metric passes based on threshold
+	threshold := 0.5
+	if config.Threshold > 0 {
+		threshold = config.Threshold
+	}
+	
+	pass := result.PassRate >= threshold
+	
+	return MetricResult{
+		Name:    config.Name,
+		Score:   result.PassRate,
+		Pass:    pass,
+		Reason:  fmt.Sprintf("Pass@%d rate: %.2f%% (%d/%d samples passed)", n, result.PassRate*100, result.NumPassed, result.NumSamples),
+		Latency: result.Duration,
+		Details: map[string]interface{}{
+			"n":              n,
+			"pass_rate":      result.PassRate,
+			"num_samples":    result.NumSamples,
+			"num_passed":     result.NumPassed,
+			"threshold":      threshold,
+			"passed_indices": result.Details["passed_indices"],
+		},
+	}, nil
 }

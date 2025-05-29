@@ -1,0 +1,60 @@
+# Test: Version control workflows
+
+# Initialize repository
+$ pe init
+Initialized PE repository in .pe/
+
+# Create initial prompt
+$ echo "You are a helpful assistant." > base.txt
+$ pe commit -m "Initial prompt"
+[main abc1234] Initial prompt
+ 1 file changed, 1 insertion(+)
+
+# Create a branch
+$ pe branch create feature/friendly
+Branch 'feature/friendly' created
+
+$ pe checkout feature/friendly
+Switched to branch 'feature/friendly'
+
+# Modify prompt on branch
+$ echo "You are a friendly and helpful assistant." > base.txt
+$ pe commit -m "Add friendly tone"
+[feature/friendly def5678] Add friendly tone
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+# Show diff
+$ pe diff main feature/friendly
+--- a/base.txt
++++ b/base.txt
+@@ -1 +1 @@
+-You are a helpful assistant.
++You are a friendly and helpful assistant.
+
+# Merge branch
+$ pe checkout main
+Switched to branch 'main'
+
+$ pe merge feature/friendly
+Merge successful: feature/friendly -> main
+Updated 1 file
+
+# Fork for variants
+$ pe fork base.txt --name formal
+Created fork: base.txt -> formal.txt
+
+$ pe fork base.txt --name casual  
+Created fork: base.txt -> casual.txt
+
+# List variants
+$ pe variants base.txt
+Variants of base.txt:
+  - formal.txt
+  - casual.txt
+
+# Tag a release
+$ pe tag v1.0 -m "First stable version"
+Created tag 'v1.0'
+
+$ pe tag list
+v1.0 - First stable version

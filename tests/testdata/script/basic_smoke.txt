@@ -1,0 +1,39 @@
+# Basic smoke test to verify scripttest framework
+
+# Test basic command execution
+exec echo "Hello, World!"
+stdout 'Hello, World!'
+
+# Test environment variables
+env TEST_VAR=test123
+exec echo $TEST_VAR
+stdout 'test123'
+
+# Test file operations
+exec echo "test content" > test.txt
+exists test.txt
+contains test.txt 'test content'
+
+# Test working directory
+exec pwd
+stdout $WORK
+
+# Test negation
+! exec false
+! exists nonexistent.txt
+
+# Test stderr matching
+exec sh -c 'echo "error message" >&2'
+stderr 'error message'
+
+# Test conditional execution
+[!windows] exec ls
+[!windows] stdout test.txt
+
+# Create files with -- marker
+exec cat sample.txt
+stdout 'Sample file content'
+exists sample.txt
+
+-- sample.txt --
+Sample file content

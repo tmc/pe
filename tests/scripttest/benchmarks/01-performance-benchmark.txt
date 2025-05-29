@@ -1,0 +1,68 @@
+# Test: Performance benchmarking
+
+# Create benchmark configuration
+$ cat > benchmark.yaml << EOF
+name: "Sentiment Analysis Benchmark"
+iterations: 10
+prompts:
+  - id: baseline
+    text: "Analyze sentiment"
+  - id: optimized
+    text: "As a sentiment expert, analyze the emotional tone"
+  - id: cot
+    text: "Think step by step to analyze sentiment"
+providers:
+  - name: gpt-4
+  - name: claude-3
+  - name: ollama:llama2
+metrics:
+  - latency
+  - tokens
+  - accuracy
+EOF
+
+# Run benchmark
+$ pe benchmark benchmark.yaml
+Running Sentiment Analysis Benchmark...
+
+Warmup phase (3 iterations)... done
+
+Running 10 iterations per configuration...
+Progress: [████████████████████████████████] 100%
+
+Results:
+┌────────────┬──────────┬─────────┬────────┬──────────┐
+│ Prompt     │ Provider │ Latency │ Tokens │ Accuracy │
+├────────────┼──────────┼─────────┼────────┼──────────┤
+│ baseline   │ gpt-4    │ 1.2s    │ 45     │ 0.72     │
+│ baseline   │ claude-3 │ 0.9s    │ 38     │ 0.74     │
+│ baseline   │ ollama   │ 0.3s    │ 42     │ 0.68     │
+├────────────┼──────────┼─────────┼────────┼──────────┤
+│ optimized  │ gpt-4    │ 1.5s    │ 67     │ 0.87     │
+│ optimized  │ claude-3 │ 1.1s    │ 58     │ 0.89     │
+│ optimized  │ ollama   │ 0.4s    │ 62     │ 0.81     │
+├────────────┼──────────┼─────────┼────────┼──────────┤
+│ cot        │ gpt-4    │ 2.1s    │ 124    │ 0.91     │
+│ cot        │ claude-3 │ 1.8s    │ 115    │ 0.93     │
+│ cot        │ ollama   │ 0.7s    │ 118    │ 0.84     │
+└────────────┴──────────┴─────────┴────────┴──────────┘
+
+Statistical Analysis:
+- Best accuracy: claude-3 + cot (0.93 ± 0.02)
+- Best latency: ollama + baseline (0.3s ± 0.05s)
+- Best efficiency: claude-3 + optimized (score: 0.81)
+
+Full report saved to: benchmark-results.json
+
+# Compare specific metrics
+$ pe benchmark analyze benchmark-results.json --metric accuracy
+Accuracy Analysis:
+┌────────────┬─────────┬──────────┬──────────┐
+│ Prompt     │ Mean    │ Std Dev  │ p-value  │
+├────────────┼─────────┼──────────┼──────────┤
+│ baseline   │ 0.71    │ 0.03     │ -        │
+│ optimized  │ 0.86    │ 0.04     │ <0.001   │
+│ cot        │ 0.89    │ 0.05     │ <0.001   │
+└────────────┴─────────┴──────────┴──────────┘
+
+Significant improvement: cot > optimized > baseline

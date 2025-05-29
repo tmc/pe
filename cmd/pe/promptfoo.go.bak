@@ -1,0 +1,309 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/spf13/cobra"
+	"github.com/tmc/pe/internal/promptfoo"
+	"gopkg.in/yaml.v3"
+)
+
+var promptfooCmd = &cobra.Command{
+	Use:   "promptfoo",
+	Short: "Import/export promptfoo configurations",
+	Long: `Import and export promptfoo configurations and test results.
+
+PE provides bidirectional compatibility with promptfoo, allowing you to:
+- Import existing promptfoo configurations
+- Export PE test results in promptfoo format
+- Convert between formats
+- Preserve assertions and provider configurations`,
+	Example: `  # Import a promptfoo config
+  pe promptfoo import config.yaml -o pe-config.yaml
+
+  # Export test results to promptfoo format
+  pe test config.yaml --export promptfoo -o results.json
+
+  # Export PE config as promptfoo YAML
+  pe promptfoo export -c pe-config.yaml -o promptfooconfig.yaml
+
+  # Convert promptfoo JSON to YAML
+  pe promptfoo convert input.json -o output.yaml`,
+}
+
+var promptfooImportCmd = &cobra.Command{
+	Use:   "import <file>",
+	Short: "Import promptfoo configuration",
+	Long:  "Import a promptfoo configuration file and convert it to PE format",
+	Args:  cobra.ExactArgs(1),
+	RunE:  runPromptfooImport,
+}
+
+var promptfooExportCmd = &cobra.Command{
+	Use:   "export",
+	Short: "Export to promptfoo format",
+	Long:  "Export PE configuration or test results to promptfoo format",
+	RunE:  runPromptfooExport,
+}
+
+var promptfooConvertCmd = &cobra.Command{
+	Use:   "convert <file>",
+	Short: "Convert between promptfoo formats",
+	Long:  "Convert promptfoo files between JSON and YAML formats",
+	Args:  cobra.ExactArgs(1),
+	RunE:  runPromptfooConvert,
+}
+
+var (
+	// Import flags
+	importOutput          string
+	importPreserveProviders bool
+	importExpandIncludes  bool
+	importConvertAssertions bool
+
+	// Export flags
+	exportConfig   string
+	exportResults  string
+	exportOutput   string
+	exportFormat   string
+
+	// Convert flags
+	convertOutput string
+	convertFormat string
+)
+
+func init() {
+	// Add subcommands
+	promptfooCmd.AddCommand(promptfooImportCmd)
+	promptfooCmd.AddCommand(promptfooExportCmd)
+	promptfooCmd.AddCommand(promptfooConvertCmd)
+
+	// Import flags
+	promptfooImportCmd.Flags().StringVarP(&importOutput, "output", "o", "", "Output file (required)")
+	promptfooImportCmd.Flags().BoolVar(&importPreserveProviders, "preserve-providers", false, "Preserve original provider configurations")
+	promptfooImportCmd.Flags().BoolVar(&importExpandIncludes, "expand-includes", true, "Expand file includes")
+	promptfooImportCmd.Flags().BoolVar(&importConvertAssertions, "convert-assertions", true, "Convert assertions to PE format")
+	promptfooImportCmd.MarkFlagRequired("output")
+
+	// Export flags
+	promptfooExportCmd.Flags().StringVarP(&exportConfig, "config", "c", "", "PE config file to export")
+	promptfooExportCmd.Flags().StringVarP(&exportResults, "results", "r", "", "PE test results to export")
+	promptfooExportCmd.Flags().StringVarP(&exportOutput, "output", "o", "", "Output file (required)")
+	promptfooExportCmd.Flags().StringVarP(&exportFormat, "format", "f", "yaml", "Output format: yaml, json")
+	promptfooExportCmd.MarkFlagRequired("output")
+
+	// Convert flags
+	promptfooConvertCmd.Flags().StringVarP(&convertOutput, "output", "o", "", "Output file (required)")
+	promptfooConvertCmd.Flags().StringVarP(&convertFormat, "format", "f", "", "Output format: yaml, json (auto-detected if not specified)")
+	promptfooConvertCmd.MarkFlagRequired("output")
+
+	// Command now moved to plugin - not added to root
+}
+
+func runPromptfooImport(cmd *cobra.Command, args []string) error {
+	inputFile := args[0]
+
+	fmt.Printf("Importing promptfoo configuration from %s...\n", inputFile)
+
+	importer := promptfoo.NewImporter(promptfoo.ImportConfig{
+		PreserveProviders: importPreserveProviders,
+		ConvertAssertions: importConvertAssertions,
+		ExpandIncludes:    importExpandIncludes,
+		WorkingDir:        filepath.Dir(inputFile),
+	})
+
+	// Try to detect file type
+	data, err := os.ReadFile(inputFile)
+	if err != nil {
+		return fmt.Errorf("reading input file: %w", err)
+	}
+
+	// Check if it's a results file or config
+	var testData map[string]interface{}
+	if err := json.Unmarshal(data, &testData); err == nil {
+		if _, hasResults := testData["results"]; hasResults {
+			// Import results
+			fmt.Println("Detected promptfoo results file")
+			results, err := importer.ImportResults(inputFile)
+			if err != nil {
+				return fmt.Errorf("importing results: %w", err)
+			}
+
+			// Write as JSON
+			output, err := json.MarshalIndent(results, "", "  ")
+			if err != nil {
+				return fmt.Errorf("marshaling results: %w", err)
+			}
+
+			if err := os.WriteFile(importOutput, output, 0644); err != nil {
+				return fmt.Errorf("writing output: %w", err)
+			}
+
+			fmt.Printf("✓ Imported test results to %s\n", importOutput)
+			return nil
+		}
+	}
+
+	// Import as config
+	config, err := importer.ImportConfig(inputFile)
+	if err != nil {
+		return fmt.Errorf("importing config: %w", err)
+	}
+
+	// Write output based on extension
+	var output []byte
+	if filepath.Ext(importOutput) == ".json" {
+		output, err = json.MarshalIndent(config, "", "  ")
+	} else {
+		output, err = yaml.Marshal(config)
+	}
+	if err != nil {
+		return fmt.Errorf("marshaling config: %w", err)
+	}
+
+	if err := os.WriteFile(importOutput, output, 0644); err != nil {
+		return fmt.Errorf("writing output: %w", err)
+	}
+
+	fmt.Printf("✓ Imported configuration to %s\n", importOutput)
+	fmt.Printf("  - %d prompts\n", len(config.Prompts))
+	fmt.Printf("  - %d tests\n", len(config.Tests))
+	if importPreserveProviders {
+		fmt.Printf("  - %d providers\n", len(config.Providers))
+	}
+
+	return nil
+}
+
+func runPromptfooExport(cmd *cobra.Command, args []string) error {
+	if exportConfig == "" && exportResults == "" {
+		return fmt.Errorf("either --config or --results must be specified")
+	}
+
+	exporter := promptfoo.NewExporter(promptfoo.ExportConfig{
+		Format:            exportFormat,
+		IncludeMetadata:   true,
+		ExpandVariables:   true,
+		ConvertAssertions: true,
+	})
+
+	if exportResults != "" {
+		fmt.Printf("Exporting test results from %s...\n", exportResults)
+
+		// Load PE results
+		data, err := os.ReadFile(exportResults)
+		if err != nil {
+			return fmt.Errorf("reading results file: %w", err)
+		}
+
+		var results promptfoo.PETestResults
+		if err := json.Unmarshal(data, &results); err != nil {
+			return fmt.Errorf("parsing results: %w", err)
+		}
+
+		// Convert to promptfoo format
+		pfResults, err := exporter.ExportTestResults(&results)
+		if err != nil {
+			return fmt.Errorf("exporting results: %w", err)
+		}
+
+		// Write output
+		if err := exporter.ExportToFile(pfResults, exportOutput); err != nil {
+			return fmt.Errorf("writing output: %w", err)
+		}
+
+		fmt.Printf("✓ Exported test results to %s\n", exportOutput)
+		fmt.Printf("  - Format: %s\n", exportFormat)
+		fmt.Printf("  - Tests: %d\n", len(results.Tests))
+		fmt.Printf("  - Prompts: %d\n", len(results.Prompts))
+		
+		return nil
+	}
+
+	// Export config
+	fmt.Printf("Exporting configuration from %s...\n", exportConfig)
+
+	// This is simplified - in real implementation would properly convert PE config
+	data, err := os.ReadFile(exportConfig)
+	if err != nil {
+		return fmt.Errorf("reading config file: %w", err)
+	}
+
+	// Parse config
+	var config interface{}
+	ext := filepath.Ext(exportConfig)
+	if ext == ".json" {
+		if err := json.Unmarshal(data, &config); err != nil {
+			return fmt.Errorf("parsing JSON config: %w", err)
+		}
+	} else {
+		if err := yaml.Unmarshal(data, &config); err != nil {
+			return fmt.Errorf("parsing YAML config: %w", err)
+		}
+	}
+
+	// Export in desired format
+	if err := exporter.ExportToFile(config, exportOutput); err != nil {
+		return fmt.Errorf("writing output: %w", err)
+	}
+
+	fmt.Printf("✓ Exported configuration to %s\n", exportOutput)
+	return nil
+}
+
+func runPromptfooConvert(cmd *cobra.Command, args []string) error {
+	inputFile := args[0]
+
+	// Auto-detect format if not specified
+	if convertFormat == "" {
+		ext := filepath.Ext(convertOutput)
+		switch ext {
+		case ".json":
+			convertFormat = "json"
+		case ".yaml", ".yml":
+			convertFormat = "yaml"
+		default:
+			// Opposite of input
+			if filepath.Ext(inputFile) == ".json" {
+				convertFormat = "yaml"
+			} else {
+				convertFormat = "json"
+			}
+		}
+	}
+
+	fmt.Printf("Converting %s to %s format...\n", inputFile, convertFormat)
+
+	// Read input
+	data, err := os.ReadFile(inputFile)
+	if err != nil {
+		return fmt.Errorf("reading input: %w", err)
+	}
+
+	// Parse input
+	var content interface{}
+	if filepath.Ext(inputFile) == ".json" {
+		if err := json.Unmarshal(data, &content); err != nil {
+			return fmt.Errorf("parsing JSON: %w", err)
+		}
+	} else {
+		if err := yaml.Unmarshal(data, &content); err != nil {
+			return fmt.Errorf("parsing YAML: %w", err)
+		}
+	}
+
+	// Export in new format
+	exporter := promptfoo.NewExporter(promptfoo.ExportConfig{
+		Format: convertFormat,
+	})
+
+	if err := exporter.ExportToFile(content, convertOutput); err != nil {
+		return fmt.Errorf("writing output: %w", err)
+	}
+
+	fmt.Printf("✓ Converted to %s\n", convertOutput)
+	return nil
+}
