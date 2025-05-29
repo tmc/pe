@@ -97,7 +97,7 @@ work together seamlessly.`,
 	root.AddCommand(diffCmd())
 	root.AddCommand(interactiveCmd())
 	root.AddCommand(optimizeCmd())
-	root.AddCommand(evolveCmd)
+	root.AddCommand(evolveCmd())
 	root.AddCommand(composeCmd)
 	root.AddCommand(synthesizeCmd)
 	root.AddCommand(playgroundCmd())

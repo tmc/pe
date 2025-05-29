@@ -581,55 +581,43 @@ func parseScore(response string) (float64, error) {
 		return normalizeScore(score), nil
 	}
 	
-	// Look for patterns like "0.8", "0.75/1.0", "8/10", "80%"
-	patterns := []struct {
-		regex   string
-		extract func(string) (float64, error)
-	}{
-		// Direct decimal
-		{`\b(0?\.\d+)\b`, func(s string) (float64, error) {
-			return strconv.ParseFloat(s, 64)
-		}},
-		// Fraction out of 1
-		{`\b(\d*\.?\d+)\s*/\s*1(?:\.0+)?\b`, func(s string) (float64, error) {
-			parts := strings.Split(s, "/")
-			if len(parts) != 2 {
-				return 0, fmt.Errorf("invalid fraction")
-			}
-			num, err := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
-			return num, err
-		}},
-		// Fraction out of 10
-		{`\b(\d*\.?\d+)\s*/\s*10\b`, func(s string) (float64, error) {
-			parts := strings.Split(s, "/")
-			if len(parts) != 2 {
-				return 0, fmt.Errorf("invalid fraction")
-			}
-			num, err := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
-			return num / 10.0, err
-		}},
-		// Percentage
-		{`\b(\d+(?:\.\d+)?)\s*%`, func(s string) (float64, error) {
-			s = strings.TrimSuffix(s, "%")
-			num, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
-			return num / 100.0, err
-		}},
+	// Look for decimal points in the response
+	if idx := strings.Index(response, "."); idx != -1 {
+		// Extract substring around decimal point
+		start := idx - 1
+		end := idx + 3
+		if start < 0 {
+			start = 0
+		}
+		if end > len(response) {
+			end = len(response)
+		}
+		if num, err := strconv.ParseFloat(response[start:end], 64); err == nil {
+			return normalizeScore(num), nil
+		}
 	}
 	
-	// Try patterns
-	for _, pattern := range patterns {
-		if idx := strings.Index(response, "."); idx != -1 {
-			// Extract substring around decimal point
+	// Look for fractions like "8/10"
+	if strings.Contains(response, "/10") {
+		parts := strings.Split(response, "/")
+		if len(parts) == 2 {
+			if num, err := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64); err == nil {
+				return normalizeScore(num / 10.0), nil
+			}
+		}
+	}
+	
+	// Look for percentages
+	if strings.Contains(response, "%") {
+		idx := strings.Index(response, "%")
+		if idx > 0 {
+			// Extract number before %
 			start := idx - 1
-			end := idx + 3
-			if start < 0 {
-				start = 0
+			for start > 0 && (response[start-1] >= '0' && response[start-1] <= '9' || response[start-1] == '.') {
+				start--
 			}
-			if end > len(response) {
-				end = len(response)
-			}
-			if num, err := strconv.ParseFloat(response[start:end], 64); err == nil {
-				return normalizeScore(num), nil
+			if num, err := strconv.ParseFloat(response[start:idx], 64); err == nil {
+				return normalizeScore(num / 100.0), nil
 			}
 		}
 	}

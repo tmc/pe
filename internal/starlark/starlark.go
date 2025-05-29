@@ -7,6 +7,7 @@ import (
 
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
+	"go.starlark.net/syntax"
 )
 
 // Interpreter wraps a Starlark interpreter for PE assertions
@@ -99,7 +100,7 @@ func (i *Interpreter) Eval(expr string, vars map[string]interface{}) (bool, erro
 		return false, nil
 	default:
 		// Truthy evaluation: non-zero numbers, non-empty strings/collections are true
-		return result.Truth(), nil
+		return bool(result.Truth()), nil
 	}
 }
 
@@ -161,7 +162,11 @@ func equals(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, 
 	if len(args) != 2 {
 		return nil, fmt.Errorf("%s: want 2 arguments, got %d", fn.Name(), len(args))
 	}
-	return starlark.Bool(starlark.Equal(args[0], args[1])), nil
+	eq, err := starlark.Equal(args[0], args[1])
+	if err != nil {
+		return nil, err
+	}
+	return starlark.Bool(eq), nil
 }
 
 func minLength(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
@@ -214,7 +219,7 @@ func greaterThan(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tu
 	}
 	
 	// Use Starlark's comparison
-	result, err := starlark.Compare(starlark.GT, args[0], args[1])
+	result, err := starlark.Compare(syntax.GT, args[0], args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +231,7 @@ func lessThan(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple
 		return nil, fmt.Errorf("%s: want 2 arguments, got %d", fn.Name(), len(args))
 	}
 	
-	result, err := starlark.Compare(starlark.LT, args[0], args[1])
+	result, err := starlark.Compare(syntax.LT, args[0], args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -239,13 +244,13 @@ func between(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple,
 	}
 	
 	// Check value >= min
-	geMin, err := starlark.Compare(starlark.GE, args[0], args[1])
+	geMin, err := starlark.Compare(syntax.GE, args[0], args[1])
 	if err != nil {
 		return nil, err
 	}
 	
 	// Check value <= max
-	leMax, err := starlark.Compare(starlark.LE, args[0], args[2])
+	leMax, err := starlark.Compare(syntax.LE, args[0], args[2])
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +296,11 @@ func isSubset(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple
 		found := false
 		subElem := subset.Index(i)
 		for j := 0; j < superset.Len(); j++ {
-			if starlark.Equal(subElem, superset.Index(j)) {
+			eq, err := starlark.Equal(subElem, superset.Index(j))
+			if err != nil {
+				return nil, err
+			}
+			if eq {
 				found = true
 				break
 			}
