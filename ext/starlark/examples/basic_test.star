@@ -32,16 +32,16 @@ def test_comprehensive(response):
     for term, points in content_checks:
         if contains(response, term):
             score += points
-            reasons.append(f"Contains '{term}' (+{points} points)")
+            reasons.append("Contains '" + term + "' (+" + str(points) + " points)")
         else:
-            reasons.append(f"Missing '{term}' (-{points} points)")
+            reasons.append("Missing '" + term + "' (-" + str(points) + " points)")
     
     # Return detailed result
     final_score = score / 100.0
     return {
         "pass": final_score >= 0.7,
         "score": final_score,
-        "reason": f"Score: {score}/100 ({final_score:.1%})",
+        "reason": "Score: " + str(score) + "/100 (" + str(int(final_score * 100)) + "%)",
         "details": {
             "breakdown": reasons,
             "raw_score": score,
@@ -56,19 +56,19 @@ def test_word_count_range(response):
     if count < 20:
         return {
             "pass": False,
-            "reason": f"Too few words: {count} (need 20-200)",
+            "reason": "Too few words: " + str(count) + " (need 20-200)",
             "word_count": count
         }
     elif count > 200:
         return {
             "pass": False, 
-            "reason": f"Too many words: {count} (need 20-200)",
+            "reason": "Too many words: " + str(count) + " (need 20-200)",
             "word_count": count
         }
     else:
         return {
             "pass": True,
-            "reason": f"Good word count: {count}",
+            "reason": "Good word count: " + str(count),
             "word_count": count
         }
 
@@ -104,12 +104,15 @@ def test_quality_rubric(response):
     
     # Calculate weighted overall score
     weights = {"clarity": 0.4, "completeness": 0.4, "relevance": 0.2}
-    overall = sum(dimensions[dim] * weights[dim] for dim in dimensions) / 100
+    weighted_sum = 0
+    for dim in dimensions:
+        weighted_sum += dimensions[dim] * weights[dim]
+    overall = weighted_sum / 100
     
     return {
         "pass": overall >= 0.75,
         "score": overall,
-        "reason": f"Quality assessment: {overall:.1%}",
+        "reason": "Quality assessment: " + str(int(overall * 100)) + "%",
         "dimensions": dimensions,
         "weights": weights,
         "threshold": 0.75

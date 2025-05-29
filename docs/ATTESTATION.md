@@ -136,8 +136,8 @@ Manage signing keys:
 # Show current public key
 pe attest key
 
-# TODO: Key rotation
-pe attest key rotate
+# Generate new key pair (key rotation)
+pe attest key --generate
 ```
 
 ## Security Properties
@@ -241,8 +241,9 @@ att, _ := service.AttestRun(input, output)
 ### Storage
 - **Location**: `.pe/attestations/`
 - **Chain file**: `chain.jsonl` (append-only)
-- **Individual files**: `{id}.json`
-- **Keys**: `signing.key` (private), `signing.pub` (public)
+- **Key Storage**:
+  - **macOS**: Keychain (secure, hardware-backed when available)
+  - **Other OS**: Encrypted file with PBKDF2 + AES-GCM
 
 ### Performance
 - Minimal overhead (~1-2ms per attestation)
@@ -272,6 +273,26 @@ att, _ := service.AttestRun(input, output)
 - Archive old attestations
 
 ### Key Management
-- Backup keys securely
-- Plan for key rotation
-- Use HSM for high security
+
+#### macOS Keychain Storage
+- Keys automatically stored in macOS Keychain
+- Access requires user authentication
+- Hardware encryption when available (T2/Apple Silicon)
+- View in Keychain Access app: search for 'com.github.tmc.pe'
+
+#### Other Platforms
+- Keys encrypted with passphrase
+- PBKDF2 with 100,000 iterations
+- AES-256-GCM encryption
+- Passphrase prompted on first use
+
+#### Key Operations
+```bash
+# View current public key
+pe attest key
+
+# Generate new key pair
+pe attest key --generate
+
+# Keys are automatically migrated from old file format
+```

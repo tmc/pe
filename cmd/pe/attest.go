@@ -75,12 +75,13 @@ var attestKeyCmd = &cobra.Command{
 
 // Flags
 var (
-	attestFormat   string
-	attestOutput   string
-	attestLimit    int
-	attestSince    string
-	attestProvider string
-	attestVerbose  bool
+	attestFormat     string
+	attestOutput     string
+	attestLimit      int
+	attestSince      string
+	attestProvider   string
+	attestVerbose    bool
+	attestKeyGenerate bool
 )
 
 func init() {
@@ -92,6 +93,8 @@ func init() {
 	attestExportCmd.Flags().StringVar(&attestOutput, "output", "", "Output file (default: stdout)")
 	
 	attestVerifyCmd.Flags().BoolVar(&attestVerbose, "verbose", false, "Show detailed verification info")
+	
+	attestKeyCmd.Flags().BoolVar(&attestKeyGenerate, "generate", false, "Generate new key pair")
 }
 
 func runAttestList(cmd *cobra.Command, args []string) error {
@@ -263,15 +266,27 @@ func runAttestExport(cmd *cobra.Command, args []string) error {
 
 func runAttestKey(cmd *cobra.Command, args []string) error {
 	dataDir := getDataDir()
-	pubKeyFile := filepath.Join(dataDir, "attestations", "signing.pub")
 	
-	pubKey, err := os.ReadFile(pubKeyFile)
-	if err != nil {
-		return fmt.Errorf("reading public key: %w", err)
+	// Check if --generate flag is set
+	if attestKeyGenerate {
+		service, err := attestation.NewAttestationService(dataDir)
+		if err != nil {
+			return fmt.Errorf("initializing attestation service: %w", err)
+		}
+		
+		return service.GenerateNewKeyPair()
 	}
 	
-	fmt.Printf("Public Key: %x\n", pubKey)
-	fmt.Printf("Key Location: %s\n", filepath.Join(dataDir, "attestations"))
+	// Otherwise show current public key
+	service, err := attestation.NewAttestationService(dataDir)
+	if err != nil {
+		return fmt.Errorf("initializing attestation service: %w", err)
+	}
+	
+	pubKeyStr := service.GetPublicKeyString()
+	
+	fmt.Printf("Public Key: %s\n", pubKeyStr)
+	fmt.Printf("Key Storage: Secure (macOS Keychain or encrypted file)\n")
 	
 	// TODO: Add key rotation functionality
 	
