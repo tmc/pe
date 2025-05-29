@@ -13,12 +13,15 @@ import (
 
 // Config contains configuration for prompt optimization
 type Config struct {
-	InitialPrompt string
-	Iterations    int
-	Temperature   float64
-	MaxTokens     int
-	UseTextGrad   bool // Enable TextGrad-style optimization
-	Method        string // "standard", "textgrad", "hybrid"
+	InitialPrompt        string
+	Iterations           int
+	MaxIterations        int     // Maximum iterations for methods that use it
+	Temperature          float64
+	MaxTokens            int
+	UseTextGrad          bool    // Enable TextGrad-style optimization
+	Method               string  // "standard", "textgrad", "hybrid"
+	Objective            string  // Optimization objective
+	ConvergenceThreshold float64 // Threshold for convergence
 }
 
 // OptimizationResult contains the results of prompt optimization
@@ -39,6 +42,8 @@ type IterationResult struct {
 	Feedback      string        `json:"feedback"`
 	Suggestions   []string      `json:"suggestions"`
 	Duration      time.Duration `json:"duration"`
+	Changes       []string      `json:"changes,omitempty"`
+	Timestamp     time.Time     `json:"timestamp,omitempty"`
 }
 
 // Optimizer implements prompt optimization using metaprompting techniques

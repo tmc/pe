@@ -98,6 +98,7 @@ work together seamlessly.`,
 	root.AddCommand(interactiveCmd())
 	root.AddCommand(optimizeCmd())
 	root.AddCommand(evolveCmd())
+	root.AddCommand(fusionCmd)
 	root.AddCommand(composeCmd)
 	root.AddCommand(synthesizeCmd)
 	root.AddCommand(playgroundCmd())
