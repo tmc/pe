@@ -334,8 +334,32 @@ func runStream(cmd *cobra.Command, selectFields, format, filter string) error {
 			output, _ := json.Marshal(result)
 			fmt.Fprintln(cmd.OutOrStdout(), string(output))
 		case "csv", "tsv":
-			// TODO: Implement CSV/TSV output
-			fmt.Fprintln(cmd.OutOrStdout(), "CSV/TSV output not yet implemented")
+			separator := ","
+			if format == "tsv" {
+				separator = "\t"
+			}
+			// First result - print headers
+			if len(fields) == 0 {
+				// Use all keys as fields
+				fields = make([]string, 0, len(result))
+				for k := range result {
+					fields = append(fields, k)
+				}
+				sort.Strings(fields)
+			}
+			// Print headers on first row
+			fmt.Fprintln(cmd.OutOrStdout(), strings.Join(fields, separator))
+			
+			// Print values
+			values := make([]string, len(fields))
+			for i, field := range fields {
+				if v, exists := result[field]; exists {
+					values[i] = fmt.Sprintf("%v", v)
+				} else {
+					values[i] = ""
+				}
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), strings.Join(values, separator))
 		default:
 			return fmt.Errorf("unsupported format: %s", format)
 		}
@@ -506,9 +530,129 @@ func runStats(cmd *cobra.Command, format string) error {
 }
 
 func runDiff(cmd *cobra.Command, args []string, metric string, threshold float64) error {
-	// TODO: Implement diff functionality
-	fmt.Fprintln(cmd.OutOrStdout(), "Diff functionality not yet implemented")
+	var baseline, current []map[string]interface{}
+	
+	// Read baseline file
+	if len(args) > 0 {
+		data, err := os.ReadFile(args[0])
+		if err != nil {
+			return fmt.Errorf("error reading baseline file: %v", err)
+		}
+		if err := json.Unmarshal(data, &baseline); err != nil {
+			return fmt.Errorf("error parsing baseline file: %v", err)
+		}
+	} else {
+		return fmt.Errorf("baseline file required")
+	}
+	
+	// Read current results from file or stdin
+	if len(args) > 1 {
+		data, err := os.ReadFile(args[1])
+		if err != nil {
+			return fmt.Errorf("error reading current file: %v", err)
+		}
+		if err := json.Unmarshal(data, &current); err != nil {
+			return fmt.Errorf("error parsing current file: %v", err)
+		}
+	} else {
+		// Read from stdin
+		decoder := json.NewDecoder(os.Stdin)
+		for {
+			var result map[string]interface{}
+			if err := decoder.Decode(&result); err != nil {
+				if err == io.EOF {
+					break
+				}
+				return fmt.Errorf("error decoding JSON: %v", err)
+			}
+			current = append(current, result)
+		}
+	}
+	
+	// Calculate statistics for both sets
+	baselineStats := calculateStats(baseline, metric)
+	currentStats := calculateStats(current, metric)
+	
+	// Calculate differences
+	diff := map[string]interface{}{
+		"metric": metric,
+		"baseline": map[string]interface{}{
+			"count": len(baseline),
+			"mean":  baselineStats["mean"],
+			"min":   baselineStats["min"],
+			"max":   baselineStats["max"],
+		},
+		"current": map[string]interface{}{
+			"count": len(current),
+			"mean":  currentStats["mean"],
+			"min":   currentStats["min"],
+			"max":   currentStats["max"],
+		},
+	}
+	
+	// Calculate change
+	baselineMean := baselineStats["mean"].(float64)
+	currentMean := currentStats["mean"].(float64)
+	
+	if baselineMean != 0 {
+		changePercent := ((currentMean - baselineMean) / baselineMean) * 100
+		diff["change_percent"] = changePercent
+		diff["regression"] = changePercent < -threshold*100
+		diff["improvement"] = changePercent > threshold*100
+		
+		// Pretty print
+		fmt.Fprintf(cmd.OutOrStdout(), "=== Evaluation Diff Report ===\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "Metric: %s\n\n", metric)
+		
+		fmt.Fprintf(cmd.OutOrStdout(), "Baseline:\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "  Count: %d\n", len(baseline))
+		fmt.Fprintf(cmd.OutOrStdout(), "  Mean:  %.3f\n", baselineMean)
+		fmt.Fprintf(cmd.OutOrStdout(), "  Min:   %.3f\n", baselineStats["min"])
+		fmt.Fprintf(cmd.OutOrStdout(), "  Max:   %.3f\n\n", baselineStats["max"])
+		
+		fmt.Fprintf(cmd.OutOrStdout(), "Current:\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "  Count: %d\n", len(current))
+		fmt.Fprintf(cmd.OutOrStdout(), "  Mean:  %.3f\n", currentMean)
+		fmt.Fprintf(cmd.OutOrStdout(), "  Min:   %.3f\n", currentStats["min"])
+		fmt.Fprintf(cmd.OutOrStdout(), "  Max:   %.3f\n\n", currentStats["max"])
+		
+		fmt.Fprintf(cmd.OutOrStdout(), "Change: %.2f%%\n", changePercent)
+		
+		if changePercent < -threshold*100 {
+			fmt.Fprintf(cmd.OutOrStdout(), "⚠️  REGRESSION DETECTED (threshold: %.1f%%)\n", threshold*100)
+		} else if changePercent > threshold*100 {
+			fmt.Fprintf(cmd.OutOrStdout(), "✅ IMPROVEMENT DETECTED (threshold: %.1f%%)\n", threshold*100)
+		} else {
+			fmt.Fprintf(cmd.OutOrStdout(), "No significant change\n")
+		}
+	}
+	
 	return nil
+}
+
+func calculateStats(results []map[string]interface{}, metric string) map[string]interface{} {
+	var values []float64
+	
+	for _, result := range results {
+		value := getFloatValue(result, metric)
+		values = append(values, value)
+	}
+	
+	if len(values) == 0 {
+		return map[string]interface{}{
+			"mean": 0.0,
+			"min":  0.0,
+			"max":  0.0,
+		}
+	}
+	
+	sort.Float64s(values)
+	
+	return map[string]interface{}{
+		"mean": mean(values),
+		"min":  values[0],
+		"max":  values[len(values)-1],
+	}
 }
 
 func runInteractive(cmd *cobra.Command, provider, configFile string, temperature float64) error {
