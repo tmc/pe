@@ -2,7 +2,11 @@ package metaprompt
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"math"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/tmc/pe/internal/llm"
@@ -343,21 +347,27 @@ Response format:
   "confidence": 0.9
 }`, system.Description, objective, component.ID, component.Name, component.Type, component.Content, gaso.formatDependencies(component.ID, system))
 
-	_, err := gaso.llm.Generate(ctx, gradientPrompt, llm.GenerateOptions{
+	response, err := gaso.llm.Generate(ctx, gradientPrompt, llm.GenerateOptions{
 		Temperature: &[]float64{0.2}[0],
 	})
 	if err != nil {
 		return SemanticGradient{}, fmt.Errorf("failed to generate component gradient: %v", err)
 	}
 
-	// Parse gradient (placeholder implementation)
-	return SemanticGradient{
-		Component:  "content optimization",
-		Direction:  "improve clarity and effectiveness",
-		Magnitude:  0.7,
-		Reasoning:  "Component needs optimization for system coherence",
-		Confidence: 0.8,
-	}, nil
+	// Parse gradient from response
+	gradient, err := parseComponentGradient(response.Text)
+	if err != nil {
+		// Fallback gradient
+		return SemanticGradient{
+			Component:  "content optimization",
+			Direction:  "improve clarity and effectiveness",
+			Magnitude:  0.7,
+			Reasoning:  "Component needs optimization for system coherence",
+			Confidence: 0.8,
+		}, nil
+	}
+	
+	return gradient, nil
 }
 
 // applySystemGradients applies gradients to optimize the entire system
@@ -365,8 +375,10 @@ func (gaso *GASOOptimizer) applySystemGradients(ctx context.Context, system *Sys
 	optimizedSystem := *system // Copy system
 	changes := make([]ComponentChange, 0)
 	
-	// Sort gradients by priority
-	// TODO: Implement proper sorting
+	// Sort gradients by priority (highest first)
+	sort.Slice(gradients, func(i, j int) bool {
+		return gradients[i].Priority > gradients[j].Priority
+	})
 	
 	// Apply gradients to components
 	for _, sysGrad := range gradients {
@@ -448,28 +460,98 @@ Rate the system's overall effectiveness on a scale of 0.0 to 1.0, considering:
 Provide only a numeric score between 0.0 and 1.0.`, 
 		system.Description, objective, gaso.formatComponents(system.Components), gaso.formatAllDependencies(system))
 
-	_, err := gaso.llm.Generate(ctx, evaluationPrompt, llm.GenerateOptions{
+	response, err := gaso.llm.Generate(ctx, evaluationPrompt, llm.GenerateOptions{
 		Temperature: &[]float64{0.0}[0],
 	})
 	if err != nil {
 		return 0, fmt.Errorf("failed to evaluate system: %v", err)
 	}
 
-	// Parse score (placeholder implementation)
-	return 0.8, nil
+	// Parse score from response
+	score, err := parseScore(response.Text)
+	if err != nil {
+		return 0.5, nil // Default fallback
+	}
+	
+	return score, nil
 }
 
 // evaluateObjective evaluates a specific system objective
 func (gaso *GASOOptimizer) evaluateObjective(ctx context.Context, system *SystemDefinition, objective SystemObjective) (float64, error) {
-	// Placeholder implementation
-	return 0.75, nil
+	evaluationPrompt := fmt.Sprintf(`Evaluate this multi-component system against a specific objective:
+
+SYSTEM: %s
+
+OBJECTIVE: %s
+Type: %s (Target: %.2f)
+
+COMPONENTS:
+%s
+
+Rate how well the system meets this objective on a scale of 0.0 to 1.0.
+Provide only a numeric score.`, 
+		system.Description, objective.Description, objective.Type, objective.Target,
+		gaso.formatComponents(system.Components))
+
+	response, err := gaso.llm.Generate(ctx, evaluationPrompt, llm.GenerateOptions{
+		Temperature: &[]float64{0.0}[0],
+	})
+	if err != nil {
+		return 0, fmt.Errorf("failed to evaluate objective %s: %v", objective.Name, err)
+	}
+
+	score, err := parseScore(response.Text)
+	if err != nil {
+		return 0.5, nil // Default fallback
+	}
+	
+	return score, nil
 }
 
 // Helper functions
 func (gaso *GASOOptimizer) calculateComponentPriority(component SystemComponent, system *SystemDefinition) float64 {
 	// Calculate priority based on component dependencies and system structure
-	// Placeholder implementation
-	return 0.5
+	priority := 0.5 // Base priority
+	
+	// Increase priority for components with many outgoing dependencies
+	outgoingCount := 0
+	incomingCount := 0
+	totalWeight := 0.0
+	
+	for _, dep := range system.Dependencies {
+		if dep.From == component.ID {
+			outgoingCount++
+			totalWeight += dep.Weight
+		}
+		if dep.To == component.ID {
+			incomingCount++
+			totalWeight += dep.Weight
+		}
+	}
+	
+	// Components that affect many others have higher priority
+	priority += float64(outgoingCount) * 0.1
+	
+	// Components that are central to the system have higher priority
+	priority += float64(incomingCount) * 0.05
+	
+	// Weight-based priority adjustment
+	priority += totalWeight * 0.1
+	
+	// Component type-based priority
+	switch component.Type {
+	case "agent":
+		priority += 0.2
+	case "workflow":
+		priority += 0.15
+	case "prompt":
+		priority += 0.1
+	case "tool":
+		priority += 0.05
+	}
+	
+	// Normalize to [0, 1]
+	return math.Min(1.0, math.Max(0.0, priority))
 }
 
 func (gaso *GASOOptimizer) formatDependencies(componentID string, system *SystemDefinition) string {
@@ -499,16 +581,122 @@ func (gaso *GASOOptimizer) formatAllDependencies(system *SystemDefinition) strin
 }
 
 func (gaso *GASOOptimizer) analyzeConvergence(history []GASOIteration) *ConvergenceAnalysis {
-	// Placeholder implementation
+	if len(history) < 2 {
+		return &ConvergenceAnalysis{
+			Converged:       false,
+			ConvergenceRate: 0.0,
+			FinalGradient:   1.0,
+			StabilityMetric: 0.0,
+		}
+	}
+	
+	// Calculate convergence metrics
+	lastN := 5
+	if len(history) < lastN {
+		lastN = len(history)
+	}
+	
+	// Check if improvements are decreasing (convergence indicator)
+	improvements := make([]float64, 0, lastN)
+	for i := len(history) - lastN; i < len(history); i++ {
+		improvements = append(improvements, math.Abs(history[i].Improvement))
+	}
+	
+	// Calculate average improvement over last N iterations
+	avgImprovement := 0.0
+	for _, imp := range improvements {
+		avgImprovement += imp
+	}
+	avgImprovement /= float64(len(improvements))
+	
+	// Calculate stability (variance of improvements)
+	variance := 0.0
+	for _, imp := range improvements {
+		variance += math.Pow(imp-avgImprovement, 2)
+	}
+	variance /= float64(len(improvements))
+	stability := 1.0 - math.Min(1.0, math.Sqrt(variance))
+	
+	// Determine convergence
+	converged := avgImprovement < 0.01 && stability > 0.8
+	
+	// Calculate convergence rate (how fast we're approaching optimum)
+	convergenceRate := 0.0
+	if len(history) > 1 {
+		initialPerf := history[0].Performance
+		finalPerf := history[len(history)-1].Performance
+		if finalPerf > initialPerf {
+			convergenceRate = (finalPerf - initialPerf) / float64(len(history))
+		}
+	}
+	
 	return &ConvergenceAnalysis{
-		Converged:       true,
-		ConvergenceRate: 0.95,
-		FinalGradient:   0.01,
-		StabilityMetric: 0.9,
+		Converged:       converged,
+		ConvergenceRate: convergenceRate,
+		FinalGradient:   avgImprovement,
+		StabilityMetric: stability,
 	}
 }
 
 func (gaso *GASOOptimizer) checkParetoEfficiency(scores map[string]float64, objectives []SystemObjective) bool {
-	// Placeholder implementation for Pareto efficiency check
-	return true
+	// A solution is Pareto efficient if no other solution dominates it
+	// For multi-objective optimization, check if all objectives meet their targets
+	
+	paretoEfficient := true
+	
+	for _, obj := range objectives {
+		score, exists := scores[obj.Name]
+		if !exists {
+			continue
+		}
+		
+		switch obj.Type {
+		case "maximize":
+			if score < obj.Target {
+				paretoEfficient = false
+			}
+		case "minimize":
+			if score > obj.Target {
+				paretoEfficient = false
+			}
+		case "target":
+			tolerance := 0.1 // 10% tolerance
+			if math.Abs(score-obj.Target) > tolerance {
+				paretoEfficient = false
+			}
+		}
+	}
+	
+	return paretoEfficient
+}
+
+// parseComponentGradient parses a semantic gradient from LLM response
+func parseComponentGradient(response string) (SemanticGradient, error) {
+	// Try to extract JSON from response
+	start := strings.Index(response, "{")
+	end := strings.LastIndex(response, "}")
+	if start == -1 || end == -1 || start > end {
+		return SemanticGradient{}, fmt.Errorf("no JSON found in response")
+	}
+	
+	jsonStr := response[start : end+1]
+	
+	var gradient SemanticGradient
+	if err := json.Unmarshal([]byte(jsonStr), &gradient); err != nil {
+		return SemanticGradient{}, fmt.Errorf("failed to parse gradient JSON: %v", err)
+	}
+	
+	// Validate and normalize
+	if gradient.Magnitude < 0 {
+		gradient.Magnitude = 0
+	} else if gradient.Magnitude > 1 {
+		gradient.Magnitude = 1
+	}
+	if gradient.Confidence < 0 {
+		gradient.Confidence = 0
+	} else if gradient.Confidence > 1 {
+		gradient.Confidence = 1
+	}
+	
+	return gradient, nil
 }
