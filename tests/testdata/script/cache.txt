@@ -8,13 +8,13 @@ stdout 'Entries: 0'
 stdout 'Hit rate: N/A'
 
 # Run with caching
-exec pe run "What is 2+2?" --cache
+exec pe run 'What is 2+2?' --cache
 stdout '4'
 exec pe cache status
 stdout 'Entries: 1'
 
 # Cache hit
-exec pe run "What is 2+2?" --cache
+exec pe run 'What is 2+2?' --cache
 stdout '4'
 stdout '(cached)'
 exec pe cache status
@@ -73,10 +73,10 @@ exec pe cache status
 stdout 'Entries: 0'
 
 # Cache with TTL
-exec pe run "Current time?" --cache --ttl 60s
+exec pe run 'Current time?' --cache --ttl 60s
 stdout 'The current time is'
 sleep 61s
-exec pe run "Current time?" --cache --ttl 60s
+exec pe run 'Current time?' --cache --ttl 60s
 stdout 'The current time is'
 ! stdout '(cached)'
 
@@ -95,7 +95,7 @@ stdout 'Space saved: $12.30'
 stdout 'Time saved: 4m 32s'
 
 # Privacy-preserving cache
-exec pe run "Sensitive query" --cache --private
+exec pe run 'Sensitive query' --cache --private
 stdout 'Response'
 exec pe cache list
 stdout 'sha256:.*<private>.*<private>'

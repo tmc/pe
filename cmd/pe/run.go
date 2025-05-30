@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/attestation"
+	"github.com/tmc/pe/internal/distributed"
 	"github.com/tmc/pe/internal/inference"
 	"github.com/tmc/pe/internal/inference/providers/cgpt"
 )
@@ -27,6 +30,9 @@ var (
 	runAttest        bool
 	runVerify        bool
 	runJSON          bool
+	runCache         bool
+	runCacheTTL      time.Duration
+	runCachePrivate  bool
 )
 
 // Use the types from mod.go - they're in the same package
@@ -56,6 +62,9 @@ Examples:
 	cmd.Flags().BoolVar(&runAttest, "attest", false, "Create cryptographic attestation of this run")
 	cmd.Flags().BoolVar(&runVerify, "verify", false, "Verify attestations before running")
 	cmd.Flags().BoolVar(&runJSON, "json", false, "Output in JSON format")
+	cmd.Flags().BoolVar(&runCache, "cache", false, "Enable caching for this request")
+	cmd.Flags().DurationVar(&runCacheTTL, "ttl", 0, "Cache time-to-live")
+	cmd.Flags().BoolVar(&runCachePrivate, "private", false, "Use privacy-preserving cache")
 
 	return cmd
 }
@@ -178,12 +187,64 @@ func completeResponse(ctx context.Context, client *inference.Client, req inferen
 		fmt.Fprintln(os.Stderr, "✓ Attestation chain verified")
 	}
 	
+	var cache *distributed.DistributedCache
+	var cacheKey string
+	
+	// Initialize cache if requested
+	if runCache {
+		// Ensure cache directory exists
+		if err := os.MkdirAll(".pe/cache", 0755); err != nil {
+			return fmt.Errorf("failed to create cache directory: %w", err)
+		}
+		
+		var err error
+		cache, err = distributed.NewDistributedCache(".pe/cache")
+		if err != nil {
+			return fmt.Errorf("failed to initialize cache: %w", err)
+		}
+		
+		// Generate cache key from request
+		h := sha256.New()
+		h.Write([]byte(req.Prompt))
+		h.Write([]byte(req.SystemPrompt))
+		h.Write([]byte(req.Model))
+		h.Write([]byte(fmt.Sprintf("%.2f", req.Temperature)))
+		cacheKey = hex.EncodeToString(h.Sum(nil))
+		
+		// Check cache
+		if entry, err := cache.Get(cacheKey); err == nil && entry != nil {
+			// Cache hit
+			if runJSON {
+				fmt.Println(string(entry.Data))
+			} else {
+				fmt.Println(string(entry.Data))
+				fmt.Fprintln(os.Stderr, "(cached)")
+			}
+			return nil
+		}
+	}
+	
 	startTime := time.Now()
 	resp, err := client.Complete(ctx, req)
 	if err != nil {
 		return fmt.Errorf("inference failed: %w", err)
 	}
 	latency := time.Since(startTime)
+	
+	// Store in cache if enabled
+	if cache != nil {
+		cacheEntry := &distributed.CacheEntryDetail{
+			Hash:      cacheKey,
+			Type:      "inference",
+			Data:      []byte(resp.Content),
+			CreatedAt: time.Now(),
+			TTL:       runCacheTTL,
+		}
+		
+		if err := cache.Set(cacheKey, cacheEntry); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to cache response: %v\n", err)
+		}
+	}
 
 	// Handle JSON output
 	if runJSON {
