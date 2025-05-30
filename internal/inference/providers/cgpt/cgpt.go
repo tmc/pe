@@ -292,6 +292,7 @@ func (p *Provider) mockResponse(req inference.Request) *inference.Response {
 		"Tell me a story": "Once upon a time...",
 		"Count to 5": "1 2 3 4 5",
 		"Current time?": "The current time is 3:00 PM",
+		"You are a helpful assistant. Explain the concept of recursion.": "As a helpful assistant, I'll explain recursion: a function that calls itself to solve a problem by breaking it down into smaller instances.",
 	}
 	
 	// Check if prompt ends with expected pattern for file reads
@@ -300,15 +301,20 @@ func (p *Provider) mockResponse(req inference.Request) *inference.Response {
 	// Strip trailing newline for comparison
 	promptCompare := strings.TrimSpace(req.Prompt)
 	
+	// Debug output for testing
+	if os.Getenv("PE_DEBUG") == "true" {
+		fmt.Fprintf(os.Stderr, "DEBUG: Mock received prompt: %q\n", promptCompare)
+	}
+	
 	// Check for exact matches first
 	if resp, ok := responses[promptCompare]; ok {
 		content = resp
 	} else if resp, ok := responses[req.Prompt]; ok {
 		content = resp
-	} else if strings.Contains(req.Prompt, "helpful assistant") && strings.Contains(req.Prompt, "recursion") {
-		content = "You are a helpful assistant. I'll explain recursion: a function that calls itself."
-	} else if strings.Contains(req.Prompt, "Process this input") && strings.Contains(req.Prompt, "{{") {
+	} else if strings.Contains(promptCompare, "Process this input") && strings.Contains(promptCompare, "{{") {
 		content = "Processed input successfully"
+	} else if strings.Contains(promptCompare, "helpful assistant") || strings.Contains(promptCompare, "recursion") {
+		content = "As a helpful assistant, I'll explain recursion: a function that calls itself to solve a problem by breaking it down into smaller instances."
 	} else if strings.Contains(req.Prompt, "{{") && strings.Contains(req.Prompt, "}}") {
 		// Handle template processing - already done by pe run
 		content = "Mock response for templated prompt"

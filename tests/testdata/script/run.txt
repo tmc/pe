@@ -66,9 +66,6 @@ stdout '"response"'
 stdout '"model"'
 stdout '"tokens"'
 
--- prompt.txt --
-You are a helpful assistant. Explain the concept of recursion.
-
 -- example.txtar --
 -- prompt.txt --
 Process this input: {{.Input}}
@@ -78,3 +75,6 @@ provider: openai
 model: gpt-4
 variables:
   Input: "test data"
+
+-- prompt.txt --
+You are a helpful assistant. Explain the concept of recursion.

@@ -10,9 +10,10 @@ exec echo $TEST_VAR
 stdout 'test123'
 
 # Test file operations
-exec echo "test content" > test.txt
+exec sh -c 'echo "test content" > test.txt'
 exists test.txt
-contains test.txt 'test content'
+exec cat test.txt
+stdout 'test content'
 
 # Test working directory
 exec pwd
@@ -27,8 +28,8 @@ exec sh -c 'echo "error message" >&2'
 stderr 'error message'
 
 # Test conditional execution
-[!windows] exec ls
-[!windows] stdout test.txt
+exec ls
+stdout test.txt
 
 # Create files with -- marker
 exec cat sample.txt
