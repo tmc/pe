@@ -22,7 +22,7 @@ exec pe cache list
 stdout 'Cache entries:'
 
 # Clear cache
-exec pe cache clear
+exec pe cache clear --force
 stdout 'Cache cleared'
 
 # Show cache stats
