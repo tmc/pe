@@ -96,32 +96,33 @@ func (am *AdvancedMetrics) CalculateBLEU(generated, reference string, maxN int) 
 		}
 	}
 	
-	// Calculate n-gram precisions
+	// Calculate n-gram precisions with smoothing
 	precisions := make([]float64, maxN)
-	totalScore := 0.0
+	smoothing := 1.0 // Add-one smoothing
 	
 	for n := 1; n <= maxN; n++ {
 		precision := am.calculateNGramPrecision(generatedTokens, referenceTokens, n)
+		// Apply smoothing for higher order n-grams
+		if n > 1 && precision == 0 {
+			// Add smoothing only if we have enough tokens
+			if len(generatedTokens) >= n {
+				precision = smoothing / float64(len(generatedTokens) - n + 1)
+			}
+		}
 		precisions[n-1] = precision
-		totalScore += precision
 	}
 	
 	// Geometric mean of precisions
 	geometricMean := 1.0
-	hasZero := false
-	for _, p := range precisions {
-		if p > 0 {
-			geometricMean *= p
-		} else {
-			hasZero = true
-			break
+	for i, p := range precisions {
+		// Use modified precision for geometric mean
+		// This prevents zero scores when higher n-grams don't match
+		weight := 1.0 / float64(maxN)
+		if p == 0 && i > 0 {
+			// For higher order n-grams that don't match, use a small value
+			p = 0.01
 		}
-	}
-	
-	if !hasZero && geometricMean > 0 {
-		geometricMean = math.Pow(geometricMean, 1.0/float64(maxN))
-	} else {
-		geometricMean = 0.0
+		geometricMean *= math.Pow(p, weight)
 	}
 	
 	// Brevity penalty
@@ -153,14 +154,14 @@ func (am *AdvancedMetrics) CalculateROUGE(generated, reference string, rougeType
 	var score float64
 	var details map[string]interface{}
 	
-	switch rougeType {
-	case "ROUGE-1":
+	switch strings.ToUpper(rougeType) {
+	case "ROUGE-1", "1":
 		score, details = am.calculateROUGE1(generatedTokens, referenceTokens)
-	case "ROUGE-2":
+	case "ROUGE-2", "2":
 		score, details = am.calculateROUGE2(generatedTokens, referenceTokens)
-	case "ROUGE-L":
+	case "ROUGE-L", "L":
 		score, details = am.calculateROUGEL(generatedTokens, referenceTokens)
-	case "ROUGE-W":
+	case "ROUGE-W", "W":
 		score, details = am.calculateROUGEW(generatedTokens, referenceTokens)
 	default:
 		return &AdvancedMetricResult{
@@ -172,7 +173,7 @@ func (am *AdvancedMetrics) CalculateROUGE(generated, reference string, rougeType
 	}
 	
 	return &AdvancedMetricResult{
-		MetricName: fmt.Sprintf("ROUGE-%s", rougeType),
+		MetricName: fmt.Sprintf("ROUGE-%s", strings.ToUpper(rougeType)),
 		Score:      score,
 		Duration:   time.Since(start),
 		Details:    details,
@@ -211,7 +212,10 @@ func (am *AdvancedMetrics) CalculateMETEOR(generated, reference string) *Advance
 	
 	// Fragmentation penalty (simplified version)
 	chunks := am.countChunks(generatedTokens, referenceTokens)
-	fragPenalty := 0.5 * math.Pow(float64(chunks)/float64(matches), 3)
+	fragPenalty := 0.0
+	if matches > 0 {
+		fragPenalty = 0.5 * math.Pow(float64(chunks)/float64(matches), 3)
+	}
 	
 	meteorScore := fMean * (1 - fragPenalty)
 	
@@ -631,12 +635,23 @@ func (am *AdvancedMetrics) findMatches(generated, reference []string) int {
 }
 
 func (am *AdvancedMetrics) countChunks(generated, reference []string) int {
-	// Simplified chunk counting - counts consecutive matching sequences
+	// Count matching chunks - consecutive sequences of matching tokens
+	if len(generated) == 0 || len(reference) == 0 {
+		return 0
+	}
+	
+	// Create a map of reference tokens for quick lookup
+	refMap := make(map[string]bool)
+	for _, token := range reference {
+		refMap[token] = true
+	}
+	
+	// Count chunks of consecutive matching tokens
 	chunks := 0
 	inChunk := false
 	
-	for i, token := range generated {
-		if i < len(reference) && token == reference[i] {
+	for _, token := range generated {
+		if refMap[token] {
 			if !inChunk {
 				chunks++
 				inChunk = true
@@ -644,6 +659,11 @@ func (am *AdvancedMetrics) countChunks(generated, reference []string) int {
 		} else {
 			inChunk = false
 		}
+	}
+	
+	// Ensure at least 1 chunk if there are any matches
+	if chunks == 0 && am.findMatches(generated, reference) > 0 {
+		chunks = 1
 	}
 	
 	return chunks
