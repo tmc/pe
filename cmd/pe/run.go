@@ -16,7 +16,9 @@ import (
 	"github.com/tmc/pe/internal/attestation"
 	"github.com/tmc/pe/internal/distributed"
 	"github.com/tmc/pe/internal/inference"
+	"github.com/tmc/pe/internal/inference/providers/anthropic"
 	"github.com/tmc/pe/internal/inference/providers/cgpt"
+	"github.com/tmc/pe/internal/inference/providers/openai"
 	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/providers"
 )
@@ -81,9 +83,9 @@ func runPrompt(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 	
 	// Get the prompt
-	prompt, err := resolvePrompt(args[0])
-	if err != nil {
-		return fmt.Errorf("failed to resolve prompt: %w", err)
+	prompt, perr := resolvePrompt(args[0])
+	if perr != nil {
+		return fmt.Errorf("failed to resolve prompt: %w", perr)
 	}
 
 	// Process template variables if any
@@ -100,21 +102,39 @@ func runPrompt(cmd *cobra.Command, args []string) error {
 	client := inference.NewClient()
 	
 	// Register providers
+	var provider inference.Provider
+	var err error
+	
 	switch runProvider {
 	case "cgpt":
-		client.Register("cgpt", cgpt.New())
+		provider = cgpt.New()
+	case "openai":
+		provider, err = openai.Factory(nil)
+		if err != nil {
+			return fmt.Errorf("failed to create openai provider: %w", err)
+		}
+	case "anthropic":
+		provider, err = anthropic.Factory(nil)
+		if err != nil {
+			return fmt.Errorf("failed to create anthropic provider: %w", err)
+		}
 	case "mock":
 		// In test mode, use mock provider
 		if os.Getenv("PE_TEST_MODE") == "true" || os.Getenv("PE_MOCK_PROVIDER") == "true" {
 			// Create a mock inference provider that wraps the LLM mock provider
-			provider := &mockInferenceProvider{}
-			client.Register("mock", provider)
+			provider = &mockInferenceProvider{}
 		} else {
 			return fmt.Errorf("mock provider only available in test mode")
 		}
 	default:
-		return fmt.Errorf("unknown provider: %s", runProvider)
+		// Try to create provider from registry
+		provider, err = inference.NewProvider(runProvider, nil)
+		if err != nil {
+			return fmt.Errorf("unknown provider %q: %w", runProvider, err)
+		}
 	}
+	
+	client.Register(runProvider, provider)
 
 	// Set up the request
 	req := inference.Request{
