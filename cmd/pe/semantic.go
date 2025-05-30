@@ -63,10 +63,9 @@ optimization for language-based agentic systems.`,
 				return fmt.Errorf("failed to load prompt: %v", err)
 			}
 
-			// Create LLM provider
-			llmProvider, err := providers.CreateProvider(provider, map[string]interface{}{
-				"model": model,
-			})
+			// Create LLM provider with proper format
+			providerSpec := fmt.Sprintf("%s:%s", provider, model)
+			llmProvider, err := providers.CreateProvider(providerSpec, map[string]interface{}{})
 			if err != nil {
 				return fmt.Errorf("failed to create provider: %v", err)
 			}
@@ -148,10 +147,9 @@ allowing for effective optimization of complex AI system parameters.`,
 				return fmt.Errorf("failed to load prompt: %v", err)
 			}
 
-			// Create LLM provider
-			llmProvider, err := providers.CreateProvider(provider, map[string]interface{}{
-				"model": model,
-			})
+			// Create LLM provider with proper format
+			providerSpec := fmt.Sprintf("%s:%s", provider, model)
+			llmProvider, err := providers.CreateProvider(providerSpec, map[string]interface{}{})
 			if err != nil {
 				return fmt.Errorf("failed to create provider: %v", err)
 			}
@@ -242,10 +240,9 @@ dependency relationships.`,
 				return fmt.Errorf("failed to load system definition: %v", err)
 			}
 
-			// Create LLM provider
-			llmProvider, err := providers.CreateProvider(provider, map[string]interface{}{
-				"model": model,
-			})
+			// Create LLM provider with proper format
+			providerSpec := fmt.Sprintf("%s:%s", provider, model)
+			llmProvider, err := providers.CreateProvider(providerSpec, map[string]interface{}{})
 			if err != nil {
 				return fmt.Errorf("failed to create provider: %v", err)
 			}

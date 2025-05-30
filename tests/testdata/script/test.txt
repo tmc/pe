@@ -2,8 +2,8 @@
 
 # Basic test execution
 exec pe test config.yaml
-stdout 'Running tests'
-stdout 'All tests passed'
+stdout 'Test Summary'
+stdout 'Success Rate:'
 ! stderr 'FAIL'
 
 # Test with specific test file

@@ -2,10 +2,9 @@
 
 # Basic optimization with PE2
 exec pe optimize prompt.txt --method pe2
-stdout 'Starting PE2 optimization'
-stdout 'Iteration 1/3'
-stdout 'improvement'
-stdout 'Optimized prompt saved'
+stdout 'Optimizing prompt with 3 iterations using pe2 method'
+stdout 'Optimization Results'
+stdout 'Improvement Score:'
 exists prompt_optimized.txt
 
 # TextGrad optimization

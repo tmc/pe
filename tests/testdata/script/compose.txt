@@ -2,9 +2,10 @@
 
 # Initialize component library
 exec pe compose --library-init
-stdout 'Initialized component library'
-exists .pe/components
-exists .pe/components/registry.json
+stdout 'Component library initialized successfully!'
+stdout 'Created directories:'
+exists components
+exists components/context
 
 # Add components to library
 exec pe compose --add-component context.txt --category context

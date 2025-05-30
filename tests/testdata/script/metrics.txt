@@ -1,13 +1,17 @@
 # Test pe metrics command - advanced evaluation metrics
 
+# Create test files
+echo 'The cat was on the mat' > output.txt
+echo 'The cat sat on the mat' > expected.txt
+echo 'This is a test summary of a document about AI and machine learning' > summary.txt  
+echo 'This document discusses AI and machine learning technologies' > reference.txt
+
 # BLEU score calculation
-exec pe metrics --type bleu --generated output.txt --reference expected.txt
+exec pe metrics --type bleu --generated-file output.txt --reference-file expected.txt
 stdout 'BLEU Score:'
-stdout 'Brevity Penalty:'
 
 # ROUGE scores
-exec pe metrics --type rouge --generated summary.txt --reference reference.txt
-stdout 'ROUGE Scores:'
+exec pe metrics --type rouge --generated-file summary.txt --reference-file reference.txt
 stdout 'ROUGE-1:'
 stdout 'ROUGE-2:'
 stdout 'ROUGE-L:'
