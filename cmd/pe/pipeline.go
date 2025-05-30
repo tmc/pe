@@ -825,29 +825,4 @@ func mean(values []float64) float64 {
 	return total / float64(len(values))
 }
 
-func percentile(sortedData []float64, p float64) float64 {
-	if len(sortedData) == 0 {
-		return 0
-	}
-
-	if len(sortedData) == 1 {
-		return sortedData[0]
-	}
-
-	// Calculate the position
-	position := (p / 100.0) * float64(len(sortedData)-1)
-
-	// Get the integer and fractional parts
-	positionInt, positionFrac := int(position), position-float64(int(position))
-
-	// If it's an exact position
-	if positionFrac == 0 {
-		return sortedData[positionInt]
-	}
-
-	// Interpolate between the two nearest values
-	lower := sortedData[positionInt]
-	upper := sortedData[positionInt+1]
-	return lower + (upper-lower)*positionFrac
-}
 
