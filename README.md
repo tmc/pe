@@ -5,33 +5,21 @@
 [![Documentation](https://img.shields.io/badge/docs-comprehensive-blue)](docs/)
 [![Research](https://img.shields.io/badge/research-2024--2025-green)](docs/RESEARCH_FOUNDATIONS.md)
 
-**PE is the Go toolchain for prompt engineering**—a comprehensive toolkit that brings Go's philosophy of simplicity, composability, and performance to the world of LLM development. Just as Go revolutionized systems programming, PE revolutionizes prompt engineering with a unified toolchain for developing, testing, optimizing, and deploying prompts.
+**PE is a Go-based toolkit for prompt engineering** that implements cutting-edge 2024-2025 research in prompt optimization. Built with Go's philosophy of simplicity and performance, PE provides tools for developing, testing, and optimizing prompts using state-of-the-art metaprompting techniques.
 
-Built on Go's performance and Unix philosophy, PE implements cutting-edge 2024-2025 research while maintaining the simplicity and power that developers expect from Go tools.
+## 🚀 Key Features (Implemented)
 
-## 🔧 The Go Toolchain Philosophy for Prompts
+### Research-Based Optimization
+PE implements breakthrough research from 2024-2025:
+- **Semantic Backpropagation & GASO** (KAUST/IDSIA 2025): Natural language gradients for prompt optimization
+- **TextGrad Implementation**: Gradient-based optimization through textual feedback
+- **Multiple Optimization Methods**: PE2, APEX, multistage, reflection, and evolutionary approaches
 
-Like the Go toolchain transformed programming with `go build`, `go test`, `go fmt`, and `go mod`, PE brings the same unified experience to prompt engineering:
-
-```bash
-pe run "Analyze this text"              # go run for prompts - execute immediately
-pe test prompts/                        # go test for prompt validation
-pe eval config.yaml                     # evaluate prompts with providers
-pe optimize --prompt "Your task"        # optimize prompts using AI
-pe fmt prompts/                         # format prompt configurations
-pe init myproject                       # initialize new prompt project
-```
-
-### 🚀 World's First Implementation of 2024-2025 Research
-
-PE implements cutting-edge metaprompting research from 2024-2025:
-
-- **🧠 Semantic Backpropagation & GASO**: Revolutionary gradient-based optimization for prompts
-- **⚡ TextGrad 2.0**: Natural language gradients with attention flow mapping
-- **🔍 DSPy MIPROv2**: Multi-stage instruction and prompt optimization
-- **🧬 Evolutionary Optimization**: Population-based genetic algorithms
-- **🤝 Multi-Model Consensus**: Cross-provider optimization
-- **🏗️ Component-Based Engineering**: Reusable prompt components
+### Core Capabilities
+- **Multi-Provider Support**: Currently supports cgpt CLI with extensible provider interface
+- **Advanced Evaluation**: Pass@N metrics, structured output validation, comprehensive assertions
+- **Unix Pipeline Philosophy**: Composable commands for streaming prompt processing
+- **Performance**: Native Go implementation for speed and efficiency
 
 ## 🎯 Quick Start
 
@@ -41,236 +29,97 @@ PE implements cutting-edge metaprompting research from 2024-2025:
 go install github.com/tmc/pe/cmd/pe@latest
 ```
 
-### Minimal Prompt Format
-
-PE introduces a minimal, text-first prompt format inspired by Go's simplicity:
-
-```
-Summarize this: {{.text}}
-
--- defaults --
-text=Hello world
-
--- evals --
-$ text="The quick brown fox"
-A fox story.
-```
-
-Test your prompts with the default eval command:
+### Basic Usage
 
 ```bash
-pe vet                    # Test all .txt files (default)
-pe vet summarize.txt      # Test specific file
-```
+# Execute a prompt
+pe run "Summarize this: {{.text}}" --var text="Long article..."
 
-### Core Commands (Implemented)
+# Evaluate prompts
+pe eval config.yaml -o results.json
 
-```bash
-# pe run - Execute a prompt immediately (like go run)
-pe run "Summarize this article: {{.Article}}" --var Article="Long text..."
-pe run prompt.txt                          # Run from file
-pe run "What is AI?" --provider cgpt      # Use specific provider
-
-# pe test - Test your prompts comprehensively
-pe test config.yaml                        # Run comprehensive tests
-pe test config.yaml --property             # Property-based testing
-pe test config.yaml --regression           # Regression testing
-
-# pe eval - Evaluate prompts against providers
-pe eval config.yaml                        # Run evaluation
-pe eval config.yaml -o results.json        # Save results
-pe eval config.yaml --stream               # Stream results
-
-# pe optimize - Optimize prompts using metaprompting
+# Optimize prompts using metaprompting
 pe optimize --prompt "Write code" --method textgrad
-pe optimize --prompt "Analyze data" --method multistage
-pe optimize --prompt "Complex task" --method reflection
 
-# pe semantic - Semantic backpropagation (2025 breakthrough)
+# Semantic optimization (2025 research)
 pe semantic backprop --prompt "task" --objective "goal"
-pe semantic descent --objective "improve accuracy"
-pe semantic gaso --system config.json      # Graph-based optimization
-
-# pe compose - Component-based prompt engineering
-pe compose context.txt instruction.txt --style cot
-pe compose components/ --optimize
-
-# pe metrics - Advanced evaluation metrics
-pe metrics --type bleu --generated out.txt --reference ref.txt
-pe metrics --type bertscore --all
-pe metrics --type g-eval --criteria "accuracy,clarity"
-
-# pe eval - Advanced evaluation with pass@n and structured output
-pe eval config.yaml                        # Supports pass@n and structured assertions
-pe eval code-gen.yaml --assert pass-at-n  # Focus on code generation metrics
-pe eval extract.yaml --assert structured   # Validate structured outputs
-
-# pe security - Security testing
-pe security test --owasp --target prompt.txt
-pe security redteam --comprehensive
-
-# pe run - Execute prompts with minimal syntax
-echo "text" | pe run summarize              # Simplest form
-pe run analyze.prompt --variant academic    # With variants
-./summarize.prompt                          # Direct execution
-
-# pe edit - Programmatic prompt editing (like go mod edit)
-pe edit prompt.txt --set-prompt "Analyze this"
-pe edit prompt.txt --add-variant pirate --variant-cmd "extend-system-prompt 'Arr!'"
-
-# pe work - Manage prompt workspaces (like go work)
-pe work init ./prompts ./shared-prompts
-pe work list
-
-# pe benchmark - Performance benchmarking
-pe benchmark config.yaml --iterations 10
-pe benchmark config.yaml --compare baseline.yaml
-
-# pe profile - Performance profiling
-pe profile cpu --duration 30s
-pe profile memory
-pe profile trace
-
-# Other useful commands
-pe init                                    # Initialize new project
-pe fmt config.yaml                         # Format configuration
-pe vet                                     # Default: validate & test all prompts
-pe vet prompts/*.txt                       # Test specific prompt files  
-pe vet config.yaml                         # Validate YAML configuration
-pe convert input.yaml output.json          # Convert formats
-pe watch config.yaml                       # Watch and re-run
-pe view                                    # View results in browser
-pe playground                              # Interactive playground
-pe template list                           # Manage templates
 ```
 
-### Plugin System
+## 📋 Available Commands
 
-```bash
-# Plugin management
-pe plugin list                             # List installed plugins
-pe plugin run promptfoo import config.yaml # Run plugin command
+### Core Commands (✅ Implemented)
+- `pe run` - Execute prompts with variable substitution
+- `pe eval` - Comprehensive prompt evaluation with assertions
+- `pe optimize` - Metaprompting-based optimization
+- `pe semantic` - Semantic backpropagation and GASO
+- `pe test` - Test prompts with property-based and regression testing
+- `pe benchmark` - Performance benchmarking
+- `pe metrics` - Calculate BLEU, ROUGE, BERTScore metrics
+- `pe profile` - Performance profiling and analysis
+- `pe playground` - Interactive prompt development
+- `pe security` - Basic security analysis
 
-# Promptfoo compatibility (via plugin)
-pe promptfoo import config.yaml            # Import promptfoo config
-pe promptfoo export pe-config.yaml         # Export to promptfoo
-pe promptfoo convert input.yaml output.json # Convert formats
+### Pipeline Commands (✅ Implemented)
+- `pe ask` - Ask a question via pipeline
+- `pe stream` - Stream processing
+- `pe filter` - Filter outputs
+- `pe analyze` - Analyze results
+- `pe stats` - Statistical analysis
 
-# Plugin discovery
-# Plugins are discovered as pe-* executables in PATH
-# Example: pe-promptfoo becomes available as 'pe promptfoo'
-```
+### Planned Features (🚧 Roadmap)
+- Native OpenAI/Anthropic providers (currently only cgpt CLI)
+- Module system with registry (`pe mod`, `pe push`)
+- Web dashboard and API
+- Distributed execution at scale
+- Version control for prompts
+- IDE integrations
 
-### Pipeline Processing (Unix Philosophy)
+## 🧪 Evaluation Configuration
 
-```bash
-# Stream processing pipeline
-pe eval config.yaml --stream | \
-  pe filter --success --min-score 0.8 | \
-  pe analyze --metric latency | \
-  pe stats --format table
-
-# Ask questions interactively
-echo "What is AI?" | pe ask --provider cgpt
-
-# Diff evaluation results
-pe diff results1.json results2.json
-
-# Interactive REPL
-pe interactive --provider cgpt
-```
-
-### Advanced Optimization
-
-```bash
-# TextGrad optimization
-pe optimize --prompt "Summarize text" --method textgrad --iterations 5
-
-# Multi-stage optimization
-pe optimize --prompt "Complex analysis" --method multistage
-
-# Reflection-based optimization
-pe optimize --prompt "Write a story" --method reflection
-
-# Semantic backpropagation (2025 breakthrough)
-pe semantic backprop --prompt "current" --target "goal" --iterations 10
-pe semantic descent --objective "minimize errors" --learning-rate 0.1
-pe semantic gaso --system multi-agent.json --multi-objective
-```
-
-## 🧠 Implemented Optimization Methods
-
-### Semantic Backpropagation & GASO (2025 KAUST/IDSIA Breakthrough)
-
-```bash
-pe semantic backprop --prompt "Classify text" --target "99% accuracy"
-pe semantic gaso --system agent-system.json --objective performance
-```
-
-**Features**:
-- 🎯 Semantic gradients generalize mathematical gradients to natural language
-- 🔄 Graph-based optimization for multi-component systems
-- 📊 Multi-objective optimization with Pareto efficiency
-- ✅ **93.2% accuracy** on GSM8K (surpassing TextGrad's 78.2%)
-
-### TextGrad 2.0 Implementation
-
-```bash
-pe optimize --prompt "Analyze sentiment" --method textgrad --iterations 6
-```
-
-**Features**:
-- 🌊 Natural language gradients with attention flow mapping
-- 🔍 Semantic drift detection during optimization
-- 🧠 Backward propagation through textual feedback
-- ✅ Cross-modal gradient computation support
-
-### Multi-Stage Optimization (DSPy MIPROv2)
-
-```bash
-pe optimize --prompt "Complex task" --method multistage --gates
-```
-
-**Features**:
-- 📋 Data-aware instruction generation
-- 🎯 Demonstration-aware optimization
-- 🔄 Three-stage process with quality gates
-- ✅ Typical optimization cost: ~$2 USD, ~20 minutes
-
-### Component-Based Engineering
-
-## 📊 Advanced Evaluation Features
-
-PE's `eval` command includes sophisticated assertion types for comprehensive testing:
-
-### Pass@N Evaluation
-
-Measure success rates across multiple attempts - crucial for code generation:
+PE uses YAML configuration for comprehensive prompt evaluation:
 
 ```yaml
-# In your eval config:
+prompts:
+  - file: "summarize.txt"
+    id: "summarizer"
+
+providers:
+  - id: "cgpt"
+
 tests:
-  - vars:
-      task: "Write a fibonacci function"
+  - prompt: "summarizer"
+    providers: ["cgpt"]
+    vars:
+      text: "Long article about AI..."
     assert:
-      - type: pass-at-n
-        config:
-          n: 1              # Calculate pass@1
-          samples: 20       # Generate 20 samples
-          test_cases:       # Test each sample
-            - input: "fib(5)"
-              expected: "5"
-            - input: "fib(10)"  
-              expected: "55"
-        threshold: 0.8      # Expect 80% pass rate
+      - type: contains
+        value: "AI"
+      - type: max-length
+        value: 200
+      - type: llm-rubric
+        value: "Summary should be concise and capture main points"
 ```
 
-### Structured Output Validation
+### Advanced Assertions
 
-Ensure LLM outputs follow specific schemas:
+PE supports sophisticated evaluation beyond simple string matching:
 
+#### Pass@N Evaluation
 ```yaml
-# In your eval config:
+assert:
+  - type: pass-at-n
+    config:
+      n: 1
+      samples: 20
+      temperature: 0.8
+      test_cases:
+        - input: "binary_search([1,3,5,7], 5)"
+          expected: "2"
+    threshold: 0.8
+```
+
+#### Structured Output Validation
+```yaml
 assert:
   - type: structured-output
     config:
@@ -278,204 +127,56 @@ assert:
       schema:
         type: object
         properties:
-          sentiment:
+          sentiment: 
             type: string
             enum: ["positive", "negative", "neutral"]
-          score:
-            type: number
-            minimum: -1
-            maximum: 1
-          keywords:
-            type: array
-            items:
-              type: string
-        required: ["sentiment", "score"]
+        required: ["sentiment"]
 ```
 
-### Using with Go Structs
+## 🔬 Optimization Methods
 
-Define expected outputs as Go structs:
-
-```go
-type CodeOutput struct {
-    Language string   `json:"language" enum:"python|javascript|go"`
-    Code     string   `json:"code" minLength:"1"`
-    Tests    []string `json:"tests" minItems:"2"`
-}
-```
-
-**Features**:
-- 📈 Industry-standard pass@n metrics
-- 🧪 Test case validation for code
-- 📐 JSON Schema validation
-- 🔷 Go struct integration
-- 📊 Multiple assertion types
-- 🔌 Extensible validation system
-
-## 🛠️ Minimal Prompt Format
-
-PE uses a txtar-inspired format where prompts are just text with optional structure:
+PE implements multiple state-of-the-art optimization techniques:
 
 ```bash
-# Simplest form - just text
-echo "long text" | pe run summarize
+# TextGrad - Natural language gradients
+pe optimize --prompt "task" --method textgrad --iterations 5
 
-# Executable prompt file
-#!/usr/bin/env pe run --max-tokens=500
-Analyze this text:
-{{input}}
+# Semantic Backpropagation (2025 research)
+pe semantic backprop --prompt "prompt.txt" --target "accuracy"
 
--- system-prompt --
-You are an expert analyst.
+# PE2 - Prompt Engineering Squared
+pe optimize --prompt "task" --method pe2 --budget 50
 
--- variants/academic --
-extend-system-prompt 'Use academic language'
-extend-prompt 'Include citations'
-
--- tests/simple --
-input: "Sample text"
-expect-contains: "analysis"
+# Multi-stage optimization
+pe optimize --prompt "task" --method multistage --stages 3
 ```
 
-Usage:
-```bash
-# Direct execution
-chmod +x analyze.prompt
-cat article.txt | ./analyze.prompt
+## 🏗️ Architecture
 
-# With variants
-pe run analyze.prompt --variant academic
+PE is built with a modular architecture:
 
-# Edit programmatically
-pe edit analyze.prompt --add-variant business \
-  --variant-cmd "set-flag temperature 0.5"
+- `internal/metaprompt/` - Optimization algorithms
+- `internal/evaluator/` - Evaluation engine
+- `internal/metrics/` - Advanced metrics
+- `internal/providers/` - LLM provider abstraction
+- `internal/structured/` - Structured output support
+- `internal/distributed/` - Distributed execution (experimental)
 
-# Manage collections
-pe work init ./prompts
-pe work list
-```
+## 🤝 Contributing
 
-**Features**:
-- 📄 Prompts are just text files
-- 🚀 Minimal syntax inspired by txtar
-- 🔧 Progressive enhancement (add structure only when needed)
-- 🎯 Variants for different modes/styles
-- ✏️ Programmatic editing (like go mod edit)
-- 📁 Workspace management (like go work)
-
-### Component-Based Engineering
-
-```bash
-pe compose context.txt instruction.txt examples.txt --style cot --optimize
-```
-
-**Features**:
-- 🏗️ Verified component libraries
-- 📚 Style-specific composition (CoT, few-shot, etc.)
-- 🔧 Automatic coherence validation
-- ✅ TextGrad flow optimization
-
-## 🔬 Advanced Evaluation & Metrics
-
-### State-of-the-Art Metrics (Implemented)
-```bash
-# All major metrics implemented
-pe metrics --type bleu --generated output.txt --reference expected.txt
-pe metrics --type rouge --all-variants
-pe metrics --type meteor --synonyms
-pe metrics --type bertscore --model bert-base
-pe metrics --type g-eval --criteria "coherence,fluency"
-pe metrics --type unieval --dimensions all
-```
-
-### Statistical Analysis
-```bash
-# Comprehensive statistical testing
-pe test significance baseline.json optimized.json
-pe test cross-validate --methods textgrad,multistage --folds 5
-pe analyze results.json --distribution --outliers
-```
-
-## 🛡️ Enterprise Security Testing
-
-### OWASP LLM Top 10 Assessment
-```bash
-pe security test --owasp --target prompt.txt
-pe security redteam --comprehensive --target system.txt
-pe security scan --categories prompt_injection,data_leakage
-```
-
-## 🏗️ Architecture & Performance
-
-PE is built with Go for maximum performance:
-
-- ⚡ **Native Performance**: 3-5x faster than Python/Node.js alternatives
-- 🔧 **Single Binary**: No dependencies, instant startup
-- 🌊 **Stream Processing**: Real-time pipeline processing
-- 🔄 **Concurrent Evaluation**: Native goroutine support
-
-## 🔌 Inference Provider Support
-
-PE supports multiple inference providers through a plugin architecture:
-
-### Built-in Provider: cgpt
-```bash
-# Uses github.com/tmc/cgpt for inference
-pe run "What is AI?" --provider cgpt
-pe run "Count to 5" --stream
-pe run "Explain X" --max-tokens 100 --temperature 0.7
-```
-
-### Plugin Architecture
-The inference system is extensible - new providers can be added as plugins:
-- Clean provider interface for easy integration
-- Support for streaming and non-streaming inference
-- Automatic provider detection and configuration
+PE is under active development. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## 📚 Documentation
 
-### Getting Started
-- **[Quick Start Guide](docs/QUICK_START.md)** - Get up and running in 5 minutes
-- **[CLI Reference](docs/CLI_REFERENCE.md)** - Complete command documentation
-- **[Examples](example/)** - Working examples and use cases
+- [Getting Started](docs/GETTING_STARTED.md)
+- [API Reference](docs/API_REFERENCE.md)
+- [Research Foundations](docs/RESEARCH_FOUNDATIONS.md)
+- [Examples](example/)
 
-### Advanced Topics
-- **[Optimization Guide](docs/ADVANCED_OPTIMIZATION_GUIDE.md)** - All optimization methods
-- **[API Reference](docs/API_REFERENCE.md)** - Go API documentation
-- **[Architecture](docs/ARCHITECTURE.md)** - System design and internals
+## 🎯 Project Status
 
-### Research & Comparisons
-- **[Research Foundations](docs/RESEARCH_FOUNDATIONS.md)** - 2024-2025 research papers
-- **[Competitive Analysis](docs/COMPETITIVE_ANALYSIS.md)** - Comparison with other tools
-- **[Best Practices](docs/BEST_PRACTICES_2025.md)** - Production recommendations
-
-## 🌟 Community & Contributing
-
-PE is open source and welcomes contributions:
-
-- 🌟 **Star the repo** to show support
-- 🐛 **Report issues** to help improve PE
-- 💡 **Request features** for the roadmap
-- 🤝 **Contribute code** to advance the field
-
-### Development
-
-```bash
-git clone https://github.com/tmc/pe.git
-cd pe
-go mod tidy
-go test ./...
-go build -o pe cmd/pe/main.go
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+PE is a research implementation focusing on cutting-edge prompt optimization techniques. While core features are functional, some advanced capabilities are still in development. See [ROADMAP.md](ROADMAP.md) for planned features.
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file
-
----
-
-**Built with ❤️ by the PE team. Leading the prompt engineering revolution.**
-
-**PE: Go for Prompts. The unified toolchain for the LLM era.**
+MIT License - see [LICENSE](LICENSE) for details.

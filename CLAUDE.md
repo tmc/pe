@@ -4,28 +4,37 @@ prompt engineering tools modeled after the go toolchain
 
 ## Project Overview
 
-PE is a comprehensive toolkit for prompt engineering that combines traditional evaluation capabilities with cutting-edge metaprompting techniques. The toolkit follows Unix philosophy with composable, pipeline-friendly commands and implements the latest 2024-2025 research in prompt optimization.
+PE is a Go-based toolkit for prompt engineering that implements cutting-edge 2024-2025 research in prompt optimization. The toolkit follows Unix philosophy with composable, pipeline-friendly commands and focuses on metaprompting techniques for advanced prompt optimization.
 
-### Core Architecture
+### Current Implementation Status
 
-- **Provider Interface**: Unified LLM provider abstraction supporting OpenAI, Anthropic, and other providers
-- **Pipeline Processing**: Unix-style composable commands for streaming evaluation and analysis  
-- **Metaprompting Engine**: Advanced prompt optimization using meta-LLMs and iterative refinement
-- **Observability Suite**: Comprehensive profiling, metrics, and tracing capabilities
-- **Testing Framework**: Property-based and regression testing for prompt reliability
+**✅ Implemented Core Features:**
+- **Provider Interface**: Extensible LLM provider abstraction (currently cgpt CLI wrapper)
+- **Pipeline Processing**: Unix-style composable commands for streaming evaluation  
+- **Metaprompting Engine**: Advanced prompt optimization using multiple research-based methods
+- **Evaluation System**: Comprehensive evaluation with pass@n metrics and assertion types
+- **Testing Framework**: Property-based and regression testing support
 
-### Key Commands
+**🚧 In Development:**
+- Native OpenAI/Anthropic providers (currently only cgpt CLI)
+- Distributed execution at scale
+- Web dashboard and REST API
+- Module system with registry
+- Advanced caching strategies
 
-- `pe eval`: Core evaluation engine with multi-provider support, pass@n metrics, and structured output validation
+### Key Commands (Implemented)
+
+- `pe eval`: Core evaluation engine with pass@n metrics and multiple assertion types
 - `pe optimize`: Metaprompting-based prompt optimization using 2024-2025 research
-- `pe semantic`: **BREAKTHROUGH** Semantic backpropagation and GASO optimization (2025 KAUST/IDSIA research)
-- `pe compose`: Component-based prompt engineering with verified libraries and style-specific composition
-- `pe metrics`: Advanced evaluation metrics (BLEU, ROUGE, METEOR, BERTScore, G-Eval, UniEval)
-- `pe benchmark`: Performance analysis with statistical significance testing
-- `pe test`: Advanced testing (property-based, regression, A/B)
-- `pe profile`: Real-time observability and performance profiling
-- `pe run`: Execute prompts immediately with inference API
+- `pe semantic`: Semantic backpropagation and GASO optimization (2025 KAUST/IDSIA research)
+- `pe metrics`: Evaluation metrics (BLEU, ROUGE, BERTScore, G-Eval)
+- `pe benchmark`: Performance benchmarking and analysis
+- `pe test`: Testing with property-based and regression approaches
+- `pe profile`: Performance profiling and analysis
+- `pe run`: Execute prompts immediately via providers
 - Pipeline commands: `ask`, `stream`, `filter`, `analyze` for Unix composability
+
+**Note**: The `pe compose` command is not yet implemented despite being documented. Module-related commands (`pe mod`, `pe push`) are also pending implementation.
 
 ## Advanced Evaluation Features
 
@@ -116,10 +125,12 @@ pe semantic descent --objective "goal" --learning-rate 0.1 --adaptive --converge
 pe semantic gaso --system definition.json --objective "performance" --multi-objective
 ```
 
-**Performance Achievements (2025):**
-- **93.2% accuracy** on GSM8K mathematical problems (surpassing TextGrad's 78.2%)
-- **82.5% accuracy** on BIG-Bench Hard NLP tasks
-- **85.6% accuracy** on algorithmic tasks
+**Target Performance Goals:**
+- Aiming for >90% accuracy on GSM8K mathematical problems
+- Target >80% accuracy on BIG-Bench Hard NLP tasks
+- Goal of >85% accuracy on algorithmic tasks
+
+*Note: These are research targets based on the 2025 paper. Actual benchmarking against these datasets is pending.*
 
 ### TextGrad 2.0 Implementation
 
@@ -129,13 +140,15 @@ Located in `internal/metaprompt/textgrad.go`:
 - Backward propagation through textual feedback
 - Cross-modal gradient computation support
 
-### Component-Based Engineering
+### Component-Based Engineering (Planned)
 
-`pe compose` command (`internal/metaprompt/composer.go`):
+The `pe compose` command is designed but not yet implemented. When complete, it will provide:
 - Type-safe prompt composition with dependency resolution
 - Style-specific handlers (chain-of-thought, few-shot, structured)
 - Semantic coherence validation
 - Integration with TextGrad optimization
+
+*Note: The composer.go file exists but the command is not yet integrated.*
 
 ### Advanced Metrics
 
@@ -189,21 +202,21 @@ PE supports runtime plugin discovery:
 - Supports test cases, LLM validation, pattern matching
 - Statistical pass@n calculation with proper sampling
 
-### Structured Output Support (✅ COMPLETED)
-- Schema validation for JSON, YAML, and other formats
-- Go struct integration with tags for validation
-- Format conversion between JSON Schema, TypeScript, Pydantic
-- Plugin system for custom formats
+### Structured Output Support (⚠️ PARTIAL)
+- Schema validation interface defined in assertions.go
+- Go struct to schema conversion implemented
+- Basic JSON schema validation support
+- *Note: Full structured output validation in evaluator is not yet complete*
 
 ### Inference API (✅ COMPLETED)
 - Generic provider interface in `internal/inference/`
 - cgpt provider implementation
 - Integration with `pe run` command
 
-### Component-Based Prompt Composition (✅ COMPLETED)
-- `pe compose` command with style handlers
-- Dependency resolution and type safety
-- Semantic coherence validation
+### Component-Based Prompt Composition (❌ NOT IMPLEMENTED)
+- Internal composer.go exists but `pe compose` command not integrated
+- Design includes style handlers and dependency resolution
+- Pending full implementation
 
 ### Advanced Metrics (✅ COMPLETED)
 - BLEU, ROUGE, METEOR implementations
