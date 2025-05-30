@@ -19,20 +19,20 @@ stdout 'Composing 3 components'
 stdout 'Style: default'
 stdout 'Composition complete'
 exists composed.txt
-contains composed.txt 'Context:'
-contains composed.txt 'Instructions:'
+exec grep 'Context:' composed.txt
+exec grep 'Instructions:' composed.txt
 
 # Style-specific composition
 exec pe compose components/ --style cot --output cot-prompt.txt
 stdout 'Chain-of-thought composition'
 stdout 'Added reasoning structure'
-contains cot-prompt.txt "Let's think step by step"
+exec grep 'step by step' cot-prompt.txt
 
 # Few-shot composition
-exec pe compose base.txt --style few-shot --examples examples.json
+exec pe compose base.txt --style few-shot --examples examples.json --output few-shot.txt
 stdout 'Few-shot composition'
 stdout 'Injected 3 examples'
-contains base.txt 'Example 1:'
+exec grep 'Example 1:' few-shot.txt
 
 # Composition with optimization
 exec pe compose context.txt task.txt --optimize --target gpt-4
@@ -54,7 +54,7 @@ stdout 'Available components:'
 stdout '  context/'
 stdout '    - general.txt'
 stdout '    - technical.txt'
-stdout '  instruction/'
+stdout '  instructions/'
 stdout '    - analyze.txt'
 stdout '  examples/'
 
@@ -98,6 +98,9 @@ Base prompt for few-shot learning.
 
 -- incompatible.txt --
 Use specialized medical terminology and diagnosis procedures.
+
+-- task.txt --
+Analyze the given data and provide actionable insights.
 
 -- pe.mod --
 module myproject

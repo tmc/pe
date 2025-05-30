@@ -283,11 +283,24 @@ func (d *DefaultStyleHandler) Compose(ctx context.Context, components []interfac
 	
 	for _, comp := range components {
 		if component, ok := comp.(PromptComponent); ok {
-			parts = append(parts, component.Content)
+			// Add section headers based on component type
+			switch component.Type {
+			case "context":
+				parts = append(parts, "Context:")
+				parts = append(parts, component.Content)
+			case "instruction":
+				parts = append(parts, "Instructions:")
+				parts = append(parts, component.Content)
+			case "example":
+				parts = append(parts, "Example:")
+				parts = append(parts, component.Content)
+			default:
+				parts = append(parts, component.Content)
+			}
 		}
 	}
 
-	composedPrompt := strings.Join(parts, "\n\n")
+	composedPrompt := strings.Join(parts, "\n")
 	
 	return &ComposeResult{
 		ComposedPrompt: composedPrompt,
