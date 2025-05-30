@@ -89,7 +89,11 @@ func GetProvider(backend string) (Provider, error) {
 		// Use the providers package to create a mock provider
 		// Note: This requires importing the providers package
 		return CreateNativeProvider(backend, nil)
-	case "cgpt", "openai", "anthropic", "gemini", "googleai":
+	case "openai", "anthropic":
+		// Use native providers for OpenAI and Anthropic
+		return CreateNativeProvider(backend, nil)
+	case "cgpt", "gemini", "googleai":
+		// Still use CGPT for providers not yet migrated
 		return &CGPTProvider{
 			Backend: provider,
 			model:   model,
@@ -102,10 +106,30 @@ func GetProvider(backend string) (Provider, error) {
 // CreateNativeProvider creates a native provider using the providers package
 // This function will be used to transition away from CGPT dependency
 func CreateNativeProvider(providerSpec string, options map[string]interface{}) (Provider, error) {
-	// For now, just support mock provider to avoid circular dependencies
+	// For now, we'll need to avoid circular dependencies
+	// The providers package should be used through a different approach
+	// For mock provider, use the local proxy
 	if providerSpec == "mock" || strings.HasPrefix(providerSpec, "mock:") {
 		return &MockProviderProxy{}, nil
 	}
+	
+	// For OpenAI and Anthropic, we still need to use CGPT for now
+	// to avoid circular dependencies. The proper solution is to refactor
+	// the architecture to have providers at a lower level.
+	provider := providerSpec
+	model := ""
+	if idx := strings.IndexByte(providerSpec, ':'); idx != -1 {
+		provider = providerSpec[:idx]
+		model = providerSpec[idx+1:]
+	}
+	
+	if provider == "openai" || provider == "anthropic" {
+		return &CGPTProvider{
+			Backend: provider,
+			model:   model,
+		}, nil
+	}
+	
 	return nil, fmt.Errorf("native provider %s not yet integrated - use GetProvider", providerSpec)
 }
 
