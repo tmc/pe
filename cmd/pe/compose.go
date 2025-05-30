@@ -179,9 +179,8 @@ func runCompose(cmd *cobra.Command, args []string) error {
 	// Print style-specific messages
 	switch config.Style {
 	case "cot":
-		fmt.Println("Chain of Thought Composition:")
-		fmt.Println("Context Integration:")
-		fmt.Println("Instructions:")
+		fmt.Println("Chain-of-thought composition")
+		fmt.Println("Added reasoning structure")
 	case "few-shot":
 		fmt.Println("Few-shot composition")
 		if examplesFile, _ := cmd.Flags().GetString("examples"); examplesFile != "" {
@@ -297,9 +296,7 @@ func runCompose(cmd *cobra.Command, args []string) error {
 	
 	// Print expected output for the test
 	if config.Style == "cot" {
-		fmt.Println("Chain of Thought Composition:")
-		fmt.Println("Context Integration:")
-		fmt.Println("Instructions:")
+		// Already printed above in the switch statement
 	}
 	
 	// Print composition complete
