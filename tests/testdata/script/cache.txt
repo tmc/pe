@@ -20,7 +20,7 @@ exec pe cache list
 stdout 'Cache entries:'
 
 # Clear cache
-exec pe cache clear
+exec pe cache clear --force
 stdout 'Cache cleared'
 
 # Verify cache is empty
@@ -36,17 +36,17 @@ stdout 'Total entries: 0'
 env PE_TEST_MODE=true
 exec pe run 'Test prompt' --cache --provider mock
 stdout 'Mock response'
-exec pe cache export -o cache-export.tar.gz
-stdout 'Exported'
+exec pe cache export cache-export.tar.gz
+stdout 'Exported cache bundle'
 exists cache-export.tar.gz
 
 # Import cache
-exec pe cache clear
+exec pe cache clear --force
 stdout 'Cache cleared'
 exec pe cache import cache-export.tar.gz
 stdout 'Imported'
 
 # Verify cache
 exec pe cache verify
-stdout 'Cache verification'
-stdout 'Valid entries:'
+stdout 'Cache Verification Results:'
+stdout 'Valid:'
