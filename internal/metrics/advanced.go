@@ -108,13 +108,20 @@ func (am *AdvancedMetrics) CalculateBLEU(generated, reference string, maxN int) 
 	
 	// Geometric mean of precisions
 	geometricMean := 1.0
+	hasZero := false
 	for _, p := range precisions {
 		if p > 0 {
-			geometricMean *= math.Pow(p, 1.0/float64(maxN))
+			geometricMean *= p
 		} else {
-			geometricMean = 0.0
+			hasZero = true
 			break
 		}
+	}
+	
+	if !hasZero && geometricMean > 0 {
+		geometricMean = math.Pow(geometricMean, 1.0/float64(maxN))
+	} else {
+		geometricMean = 0.0
 	}
 	
 	// Brevity penalty
@@ -419,7 +426,8 @@ func (am *AdvancedMetrics) calculateNGramPrecision(generated, reference []string
 	generatedNGrams := extractNGrams(generated, n)
 	referenceNGrams := extractNGrams(reference, n)
 	
-	if len(generatedNGrams) == 0 {
+	totalGenerated := sum(generatedNGrams)
+	if totalGenerated == 0 {
 		return 0.0
 	}
 	
@@ -430,7 +438,7 @@ func (am *AdvancedMetrics) calculateNGramPrecision(generated, reference []string
 		}
 	}
 	
-	return float64(matches) / float64(len(generatedNGrams))
+	return float64(matches) / float64(totalGenerated)
 }
 
 func (am *AdvancedMetrics) calculateBrevityPenalty(genLen, refLen int) float64 {
