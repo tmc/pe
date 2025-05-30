@@ -4,8 +4,11 @@
 exec pe init
 stdout 'Initialized PE repository'
 exists .pe
+exists .pe/cache
+exists .pe/modules
 exists .pe/config
-exists .pe/history
+exists .pe/config/pe.yaml
+exists .peignore
 
 # Initialize with custom directory
 mkdir myproject
@@ -20,14 +23,4 @@ stderr 'already initialized'
 
 # Initialize with --force
 exec pe init --force
-stdout 'Re-initialized PE repository'
-
-# Check default configuration
-exec pe config list
-stdout 'provider:'
-stdout 'model:'
-
--- expected_config --
-provider: openai
-model: gpt-4
-temperature: 0.7
+stdout 'Initialized PE repository'

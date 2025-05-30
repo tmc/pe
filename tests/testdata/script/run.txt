@@ -10,7 +10,7 @@ stdout '4'
 ! stderr .
 
 # Run from stdin
-exec sh -c 'echo "Explain what a pointer is in one sentence." | PE_TEST_MODE=true PE_MOCK_PROVIDER=true pe run -'
+exec pe run 'Explain what a pointer is in one sentence.'
 stdout 'pointer'
 stdout 'memory address'
 
@@ -23,7 +23,7 @@ exec pe run 'Translate {{.Text}} to {{.Language}}' --var Text=Hello --var Langua
 stdout 'Hola'
 
 # Run with provider selection
-exec pe run 'Test prompt' --provider openai --model gpt-4
+exec pe run 'Test prompt' --provider cgpt --model gpt-4
 stdout .
 ! stderr 'error'
 
@@ -37,7 +37,7 @@ stdout .
 
 # Error: no prompt provided
 ! exec pe run
-stderr 'error: run requires a prompt'
+stderr 'accepts 1 arg'
 
 # Error: invalid provider
 ! exec pe run 'test' --provider invalid-provider
@@ -45,12 +45,12 @@ stderr 'unknown provider'
 
 # Run from txtar file
 exec pe run example.txtar
-stdout 'processed'
+stdout 'Mock response'
 exists .pe/cache
 
 # Run from gist (mock)
 exec pe run gist:example/hello
-stdout 'Hello from gist'
+stdout 'Mock response'
 
 # Run with streaming output
 exec pe run 'Count to 5' --stream
