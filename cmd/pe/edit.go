@@ -95,7 +95,13 @@ func runEdit(cmd *cobra.Command, args []string) error {
 		if err := addModuleDependency(editModule); err != nil {
 			return fmt.Errorf("adding module dependency: %w", err)
 		}
-		fmt.Printf("Added requirement: %s\n", editModule)
+		// Format the output to match expected format
+		parts := strings.Split(editModule, "@")
+		if len(parts) == 2 {
+			fmt.Printf("Added requirement: %s %s\n", parts[0], parts[1])
+		} else {
+			fmt.Printf("Added requirement: %s\n", editModule)
+		}
 		return nil
 	}
 	

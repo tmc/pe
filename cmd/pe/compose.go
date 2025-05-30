@@ -179,8 +179,9 @@ func runCompose(cmd *cobra.Command, args []string) error {
 	// Print style-specific messages
 	switch config.Style {
 	case "cot":
-		fmt.Println("Chain-of-thought composition")
-		fmt.Println("Added reasoning structure")
+		fmt.Println("Chain of Thought Composition:")
+		fmt.Println("Context Integration:")
+		fmt.Println("Instructions:")
 	case "few-shot":
 		fmt.Println("Few-shot composition")
 		if examplesFile, _ := cmd.Flags().GetString("examples"); examplesFile != "" {
