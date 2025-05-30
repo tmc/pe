@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/tmc/pe/internal/distributed"
 	"github.com/tmc/pe/internal/evaluator"
 	"github.com/tmc/pe/internal/promptfoo"
 	"sigs.k8s.io/yaml"
@@ -75,10 +77,26 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 				return fmt.Errorf("error parsing config file: %v", err)
 			}
 
-			// Run the evaluator
-			results, err := evaluator.Evaluate(config, parsedTimeout, dryRun, maxConcurrency, !noProgressBar)
+			// Create distributed executor if enabled
+			ctx := cmd.Context()
+			executor, err := createDistributedExecutor(ctx)
 			if err != nil {
-				return fmt.Errorf("evaluation error: %v", err)
+				return fmt.Errorf("failed to create distributed executor: %v", err)
+			}
+
+			var results promptfoo.EvaluationResult
+			if executor != nil {
+				// Run distributed evaluation
+				results, err = runDistributedEval(ctx, executor, config, parsedTimeout, dryRun, maxConcurrency, !noProgressBar)
+				if err != nil {
+					return fmt.Errorf("distributed evaluation error: %v", err)
+				}
+			} else {
+				// Run standard evaluation
+				results, err = evaluator.Evaluate(config, parsedTimeout, dryRun, maxConcurrency, !noProgressBar)
+				if err != nil {
+					return fmt.Errorf("evaluation error: %v", err)
+				}
 			}
 
 			// Format results as a table by default for display
@@ -214,5 +232,66 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 	cmd.Flags().IntVarP(&maxConcurrency, "max-concurrency", "j", 4, "Maximum number of concurrent API calls")
 	cmd.Flags().BoolVar(&noProgressBar, "no-progress-bar", false, "Do not show progress bar")
 
+	// Add distributed execution flags
+	addDistributedFlags(cmd)
+
 	return cmd
+}
+
+// runDistributedEval runs evaluation in distributed mode
+func runDistributedEval(ctx context.Context, executor *distributed.Executor, config promptfoo.Config, timeout time.Duration, dryRun bool, maxConcurrency int, showProgress bool) (promptfoo.EvaluationResult, error) {
+	// Create tasks for each test case
+	var tasks []distributed.Task
+	
+	// Generate a unique evaluation ID
+	evalID := fmt.Sprintf("eval-%d", time.Now().Unix())
+	
+	// Create tasks for each prompt-test combination
+	for i, prompt := range config.Prompts {
+		for j, test := range config.Tests {
+			// Use first provider if available
+			provider := ""
+			if len(config.Providers) > 0 {
+				provider = config.Providers[0]
+			}
+			
+			task := &EvalTask{
+				id:       fmt.Sprintf("%s-p%d-t%d", evalID, i, j),
+				prompt:   prompt,
+				provider: provider,
+				vars:     test.Vars,
+			}
+			tasks = append(tasks, task)
+		}
+	}
+	
+	// Submit tasks to executor
+	if err := executor.SubmitBatch(tasks); err != nil {
+		return promptfoo.EvaluationResult{}, fmt.Errorf("failed to submit tasks: %w", err)
+	}
+	
+	// Wait for completion
+	executor.Wait()
+	
+	// Collect results
+	results := promptfoo.EvaluationResult{
+		EvalID: evalID,
+		Results: promptfoo.ResultSet{
+			Results: []promptfoo.TestResult{},
+		},
+		Config: config,
+	}
+	
+	// Build result table from distributed task results
+	allResults := executor.GetAllResults()
+	for _, taskResult := range allResults {
+		if taskResult.Error != nil {
+			// Handle error case
+			continue
+		}
+		// Convert task result to table row
+		// This is a simplified version - full implementation would properly format results
+	}
+	
+	return results, nil
 }

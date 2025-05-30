@@ -110,6 +110,7 @@ work together seamlessly.`,
 
 	// Distributed system commands
 	root.AddCommand(cacheCmd)
+	root.AddCommand(distributedCmd())
 
 	// Discover and add plugin commands dynamically
 	dynamicPluginCommands(root)

@@ -246,6 +246,12 @@ PE supports runtime plugin discovery:
 - Secure key storage with OS keychain integration
 - Export formats: JSON, JSONL, CSV, proof bundles
 
+### Distributed System Integration (🚧 IN PROGRESS)
+- Created distributed CLI commands: `pe distributed start/join/status/stop`
+- Integrated distributed execution flags with `pe eval` command
+- Basic P2P networking and task distribution framework
+- *Note: Full distributed evaluation functionality still being implemented*
+
 ### Test Coverage Improvements
 - Fixed multiple test failures in pipeline, workflow, and extract commands
 - Added multiline XML extraction support
