@@ -26,7 +26,7 @@ stdout 'ROUGE-L:'
 # exec pe metrics --type unieval --generated summary.txt --reference article.txt
 
 # Test specific metrics that don't require LLM
-exec pe metrics --type bleu,rouge,meteor --generated output.txt --reference expected.txt --output report.json
+exec pe metrics --type bleu,rouge,meteor --generated-file output.txt --reference-file expected.txt --output report.json
 stdout 'BLEU Score:'
 stdout 'ROUGE Scores:'
 stdout 'METEOR Score:'

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -112,6 +113,23 @@ automated prompt engineering and systematic optimization.`,
 				}
 				fmt.Printf("\nResults saved to: %s\n", outputFile)
 			}
+			
+			// Always save the optimized prompt to a default file based on method
+			defaultFilename := fmt.Sprintf("prompt_%s.txt", method)
+			if len(args) > 0 && args[0] != "" {
+				// If input was from a file, use that as base
+				base := args[0]
+				if strings.HasSuffix(base, ".txt") {
+					base = base[:len(base)-4]
+				}
+				defaultFilename = fmt.Sprintf("%s_optimized.txt", base)
+			}
+			
+			// Save just the optimized prompt text
+			if err := os.WriteFile(defaultFilename, []byte(result.OptimizedPrompt), 0644); err != nil {
+				return fmt.Errorf("failed to save optimized prompt: %w", err)
+			}
+			fmt.Printf("\nOptimized prompt saved to: %s\n", defaultFilename)
 
 			return nil
 		},

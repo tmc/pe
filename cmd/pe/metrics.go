@@ -502,7 +502,12 @@ func outputMetricsResult(result *MetricsResult, outputFile, format string) error
 	}
 
 	if outputFile != "" {
-		return os.WriteFile(outputFile, output, 0644)
+		if err := os.WriteFile(outputFile, output, 0644); err != nil {
+			return err
+		}
+		// Also print to stdout when writing to file (for scripting/testing)
+		fmt.Print(string(output))
+		return nil
 	}
 
 	fmt.Print(string(output))
