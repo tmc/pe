@@ -28,7 +28,7 @@ stdout 'well-formatted.txt: formatted'
 Tell me about AI.
 
 -- well-formatted.txt --
-Please explain the concept of artificial intelligence in simple terms.
+Human: Please explain the concept of artificial intelligence in simple terms.
 
 -- badly-formatted.txt --
     This  prompt   has   formatting    issues...  

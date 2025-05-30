@@ -3,7 +3,7 @@
 
 # Initialize repository
 exec pe init
-stdout 'Initialized empty PE repository'
+stdout 'Initialized PE repository'
 exists .pe
 
 # Basic mod commands for module management

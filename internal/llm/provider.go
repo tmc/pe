@@ -69,10 +69,11 @@ type BatchProvider interface {
 func GetProvider(backend string) (Provider, error) {
 	// Check if we should use mock provider in test mode
 	if os.Getenv("PE_TEST_MODE") == "true" || os.Getenv("PE_MOCK_PROVIDER") == "true" {
-		// Import providers package to get the mock provider
-		// This is a hack to avoid circular dependency - in production we'd refactor
-		// to have the providers package register with llm package
-		return &MockProviderProxy{}, nil
+		// Use the registered mock provider from providers package
+		// This avoids duplication and uses the proper mock implementation
+		if backend == "" || backend == "mock" {
+			backend = "mock"
+		}
 	}
 	
 	// Parse provider:model format
@@ -84,6 +85,10 @@ func GetProvider(backend string) (Provider, error) {
 	}
 	
 	switch provider {
+	case "mock":
+		// Use the providers package to create a mock provider
+		// Note: This requires importing the providers package
+		return CreateNativeProvider(backend, nil)
 	case "cgpt", "openai", "anthropic", "gemini", "googleai":
 		return &CGPTProvider{
 			Backend: provider,
@@ -97,9 +102,11 @@ func GetProvider(backend string) (Provider, error) {
 // CreateNativeProvider creates a native provider using the providers package
 // This function will be used to transition away from CGPT dependency
 func CreateNativeProvider(providerSpec string, options map[string]interface{}) (Provider, error) {
-	// Import providers package dynamically to avoid circular dependencies
-	// This is a placeholder - in real implementation we'd use the registry
-	return nil, fmt.Errorf("native providers integration in progress - use GetProvider for now")
+	// For now, just support mock provider to avoid circular dependencies
+	if providerSpec == "mock" || strings.HasPrefix(providerSpec, "mock:") {
+		return &MockProviderProxy{}, nil
+	}
+	return nil, fmt.Errorf("native provider %s not yet integrated - use GetProvider", providerSpec)
 }
 
 // CGPTProvider implements Provider using the CGPT client
@@ -206,6 +213,13 @@ func (p *CGPTProvider) EvaluatePrompt(ctx context.Context, prompt string, vars m
 // MockProviderProxy is a simple mock provider for testing
 type MockProviderProxy struct{}
 
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 // Name returns the provider name
 func (p *MockProviderProxy) Name() string {
 	return "mock"
@@ -224,30 +238,45 @@ func (p *MockProviderProxy) Generate(ctx context.Context, prompt string, options
 	// Generate mock response based on prompt content
 	responseText := "Mock response for: " + prompt
 	
+	// Debug output in test mode
+	if os.Getenv("PE_DEBUG") == "true" {
+		fmt.Fprintf(os.Stderr, "MOCK DEBUG: Received prompt (first 200 chars): %s\n", prompt[:min(200, len(prompt))])
+	}
+	
 	// For optimization tests, return appropriate scores
-	if strings.Contains(prompt, "Rate") && strings.Contains(prompt, "scale of 0.0 to 1.0") {
+	if (strings.Contains(prompt, "Rate") && strings.Contains(prompt, "scale of 0.0 to 1.0")) || 
+	   (strings.Contains(prompt, "Evaluate this prompt") && strings.Contains(prompt, "scale from 0.0 to 1.0")) {
 		// Return improving scores over iterations
-		if strings.Contains(prompt, "Optimized prompt content") {
+		if strings.Contains(prompt, "Analyze the sentiment of the provided text. Classify as positive") {
+			responseText = "0.92" // Improved score after optimization
+		} else if strings.Contains(prompt, "Optimized prompt content") {
 			responseText = "0.97" // Improved score after optimization
 		} else {
 			responseText = "0.85" // Default score for semantic evaluation
 		}
-	} else if strings.Contains(prompt, "semantic gradient") {
-		// Return mock gradient response
+	} else if strings.Contains(prompt, "semantic gradient") || strings.Contains(prompt, "Compute semantic gradients") || strings.Contains(prompt, "textual gradients") {
+		// Return mock gradient response in the format expected by textgrad
 		responseText = `{
 			"gradients": [
 				{
 					"component": "overall clarity",
-					"direction": "improve specificity and structure", 
+					"feedback": "The prompt lacks specificity and clear output requirements",
+					"suggestions": ["Specify the sentiment categories (positive/negative/neutral)", "Add output format instructions"],
+					"confidence": 0.8,
+					"priority": 0.9,
+					"gradient": "add structure and specificity",
 					"magnitude": 0.7,
-					"reasoning": "General improvement needed",
-					"confidence": 0.6
+					"direction": "improve"
 				}
 			]
 		}`
-	} else if strings.Contains(prompt, "Apply the following semantic gradients") {
-		// Return optimized prompt
-		responseText = "Optimized prompt content"
+	} else if strings.Contains(prompt, "Apply the following semantic gradients") || strings.Contains(prompt, "Improve this prompt based on the following textual gradients") {
+		// Return optimized prompt based on the gradients
+		if strings.Contains(prompt, "Analyze the sentiment") {
+			responseText = "Analyze the sentiment of the provided text. Classify as positive, negative, or neutral. Include confidence score and key phrases supporting the classification."
+		} else {
+			responseText = "Optimized prompt content with improvements applied"
+		}
 	} else if strings.Contains(prompt, "Generate a better version") {
 		// PE2 optimization response
 		responseText = "Analyze the sentiment of the given text with improved clarity and specificity."
