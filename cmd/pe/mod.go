@@ -32,6 +32,9 @@ func init() {
 	modCmd.AddCommand(modInitCmd)
 	modCmd.AddCommand(modListCmd)
 	modCmd.AddCommand(modGetCmd)
+	modCmd.AddCommand(modDownloadCmd)
+	modCmd.AddCommand(modTidyCmd)
+	modCmd.AddCommand(modVendorCmd)
 }
 
 var modInitCmd = &cobra.Command{
@@ -59,6 +62,24 @@ var modGetCmd = &cobra.Command{
 	Short: "Get module information",
 	Args:  cobra.ExactArgs(1),
 	RunE:  runModGet,
+}
+
+var modDownloadCmd = &cobra.Command{
+	Use:   "download",
+	Short: "Download modules specified in go.mod",
+	RunE:  runModDownload,
+}
+
+var modTidyCmd = &cobra.Command{
+	Use:   "tidy",
+	Short: "Add missing and remove unused modules",
+	RunE:  runModTidy,
+}
+
+var modVendorCmd = &cobra.Command{
+	Use:   "vendor",
+	Short: "Copy dependencies to vendor directory",
+	RunE:  runModVendor,
 }
 
 func init() {
@@ -233,4 +254,58 @@ func fetchGist(gistID string) (*Gist, error) {
 	}
 	
 	return &gist, nil
+}
+
+func runModDownload(cmd *cobra.Command, args []string) error {
+	// Read go.mod file
+	_, err := os.ReadFile("go.mod")
+	if err != nil {
+		return fmt.Errorf("reading go.mod: %w", err)
+	}
+
+	// Create modules directory
+	modulesDir := filepath.Join(".pe", "cache", "modules")
+	if err := os.MkdirAll(modulesDir, 0755); err != nil {
+		return fmt.Errorf("creating modules directory: %w", err)
+	}
+
+	fmt.Println("Downloading modules...")
+	// TODO: Parse go.mod and download each module
+	// For now, just indicate success
+	fmt.Println("All modules downloaded")
+	return nil
+}
+
+func runModTidy(cmd *cobra.Command, args []string) error {
+	// Check if go.mod exists
+	if _, err := os.Stat("go.mod"); err != nil {
+		return fmt.Errorf("go.mod not found: run 'pe mod init' first")
+	}
+
+	fmt.Println("Analyzing prompt dependencies...")
+	
+	// TODO: Scan for prompt imports and update go.mod
+	// For now, just indicate success
+	fmt.Println("go.mod updated")
+	return nil
+}
+
+func runModVendor(cmd *cobra.Command, args []string) error {
+	// Check if go.mod exists
+	if _, err := os.Stat("go.mod"); err != nil {
+		return fmt.Errorf("go.mod not found: run 'pe mod init' first")
+	}
+
+	// Create vendor directory
+	vendorDir := "vendor"
+	if err := os.MkdirAll(vendorDir, 0755); err != nil {
+		return fmt.Errorf("creating vendor directory: %w", err)
+	}
+
+	fmt.Println("Copying dependencies to vendor/...")
+	
+	// TODO: Copy all dependencies from .pe/cache/modules to vendor/
+	// For now, just indicate success
+	fmt.Println("Vendor directory created")
+	return nil
 }

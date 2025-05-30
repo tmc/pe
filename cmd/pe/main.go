@@ -90,10 +90,7 @@ work together seamlessly.`,
 	root.AddCommand(profileCmd())
 	
 	// Pipeline-friendly commands for Unix composability
-	root.AddCommand(askCmd())
-	root.AddCommand(streamCmd())
-	root.AddCommand(filterCmd())
-	root.AddCommand(analyzeCmd())
+	addPipelineCommands(root)
 	root.AddCommand(statsCmd())
 	root.AddCommand(diffCmd())
 	root.AddCommand(interactiveCmd())

@@ -22,11 +22,19 @@ an immutable audit trail of all executions.`,
 }
 
 func init() {
+	attestCmd.AddCommand(attestInitCmd)
 	attestCmd.AddCommand(attestListCmd)
 	attestCmd.AddCommand(attestVerifyCmd)
 	attestCmd.AddCommand(attestShowCmd)
 	attestCmd.AddCommand(attestExportCmd)
 	attestCmd.AddCommand(attestKeyCmd)
+}
+
+var attestInitCmd = &cobra.Command{
+	Use:   "init",
+	Short: "Initialize attestation store",
+	Long:  `Initialize the attestation store with signing keys and configuration.`,
+	RunE:  runAttestInit,
 }
 
 var attestListCmd = &cobra.Command{
@@ -95,6 +103,43 @@ func init() {
 	attestVerifyCmd.Flags().BoolVar(&attestVerbose, "verbose", false, "Show detailed verification info")
 	
 	attestKeyCmd.Flags().BoolVar(&attestKeyGenerate, "generate", false, "Generate new key pair")
+}
+
+func runAttestInit(cmd *cobra.Command, args []string) error {
+	dataDir := getDataDir()
+	
+	// Create attestations directory
+	attestDir := filepath.Join(dataDir, "attestations")
+	if err := os.MkdirAll(attestDir, 0755); err != nil {
+		return fmt.Errorf("creating attestations directory: %w", err)
+	}
+	
+	// Create config.json
+	config := map[string]interface{}{
+		"version": "1.0",
+		"algorithm": "ed25519",
+		"chain_type": "linear",
+		"created": time.Now().UTC().Format(time.RFC3339),
+	}
+	
+	configData, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshaling config: %w", err)
+	}
+	
+	configPath := filepath.Join(attestDir, "config.json")
+	if err := os.WriteFile(configPath, configData, 0644); err != nil {
+		return fmt.Errorf("writing config: %w", err)
+	}
+	
+	// Initialize attestation service to generate keys
+	_, err = attestation.NewAttestationService(dataDir)
+	if err != nil {
+		return fmt.Errorf("initializing attestation service: %w", err)
+	}
+	
+	fmt.Println("Attestation store initialized")
+	return nil
 }
 
 func runAttestList(cmd *cobra.Command, args []string) error {
