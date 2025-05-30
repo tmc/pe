@@ -8,7 +8,7 @@ stdout 'Objective: improve clarity'
 stdout 'Iteration 1/5'
 stdout 'Gradient strength: 0.72'
 stdout 'Applied semantic update'
-stdout 'Improvement: +12%'
+stdout 'Improvement: \+12%'
 
 # Semantic gradient descent
 exec pe semantic descent --prompt prompt.txt --objective "maximize accuracy" --learning-rate 0.1

@@ -314,7 +314,11 @@ func (o *Optimizer) parseEvaluationResponse(response string) (int, float64, stri
 			}
 		} else if strings.HasPrefix(line, "SCORE:") {
 			scoreText := strings.TrimSpace(line[6:])
-			if len(scoreText) > 0 && scoreText[0] >= '1' && scoreText[0] <= '9' {
+			// Try to parse as float
+			var parsedScore float64
+			if _, err := fmt.Sscanf(scoreText, "%f", &parsedScore); err == nil {
+				score = parsedScore
+			} else if len(scoreText) > 0 && scoreText[0] >= '1' && scoreText[0] <= '9' {
 				score = float64(scoreText[0] - '0')
 			}
 		} else if strings.HasPrefix(line, "REASONING:") {

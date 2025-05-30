@@ -123,7 +123,7 @@ optimization for language-based agentic systems.`,
 					fmt.Printf("Gradient strength: %.2f\n", strength)
 					fmt.Println("Applied semantic update")
 					if i == 0 {
-						fmt.Println("Improvement: +12%")
+						fmt.Printf("Improvement: +%d%%\n", 12)
 					}
 				}
 			}
