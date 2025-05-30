@@ -17,6 +17,8 @@ import (
 	"github.com/tmc/pe/internal/distributed"
 	"github.com/tmc/pe/internal/inference"
 	"github.com/tmc/pe/internal/inference/providers/cgpt"
+	"github.com/tmc/pe/internal/llm"
+	"github.com/tmc/pe/internal/providers"
 )
 
 var (
@@ -97,10 +99,19 @@ func runPrompt(cmd *cobra.Command, args []string) error {
 	// Create inference client
 	client := inference.NewClient()
 	
-	// Register providers (for now just cgpt)
+	// Register providers
 	switch runProvider {
 	case "cgpt":
 		client.Register("cgpt", cgpt.New())
+	case "mock":
+		// In test mode, use mock provider
+		if os.Getenv("PE_TEST_MODE") == "true" || os.Getenv("PE_MOCK_PROVIDER") == "true" {
+			// Create a mock inference provider that wraps the LLM mock provider
+			provider := &mockInferenceProvider{}
+			client.Register("mock", provider)
+		} else {
+			return fmt.Errorf("mock provider only available in test mode")
+		}
 	default:
 		return fmt.Errorf("unknown provider: %s", runProvider)
 	}
@@ -424,3 +435,85 @@ func createAttestation(req inference.Request, resp *inference.Response, latency 
 }
 
 // getDataDir is already defined in attest.go, using that one
+
+// mockInferenceProvider implements the inference.Provider interface for testing
+type mockInferenceProvider struct{}
+
+func (m *mockInferenceProvider) Name() string {
+	return "mock"
+}
+
+func (m *mockInferenceProvider) Complete(ctx context.Context, req inference.Request) (*inference.Response, error) {
+	// Use the mock provider from the providers package
+	mockLLM, err := providers.CreateProvider("mock:test", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create mock LLM provider: %w", err)
+	}
+	
+	// Create LLM request
+	temp := float64(req.Temperature)
+	maxTok := req.MaxTokens
+	llmReq := llm.GenerateOptions{
+		Temperature: &temp,
+		MaxTokens:   &maxTok,
+	}
+	
+	// Combine system prompt with user prompt if provided
+	prompt := req.Prompt
+	if req.SystemPrompt != "" {
+		prompt = fmt.Sprintf("System: %s\n\nUser: %s", req.SystemPrompt, req.Prompt)
+	}
+	
+	// Generate response
+	llmResp, err := mockLLM.Generate(ctx, prompt, llmReq)
+	if err != nil {
+		return nil, err
+	}
+	
+	return &inference.Response{
+		Content: llmResp.Text,
+		Model:   llmResp.Model,
+		TokensUsed: inference.TokenUsage{
+			PromptTokens:     llmResp.PromptTokens,
+			CompletionTokens: llmResp.CompletionTokens,
+			TotalTokens:      llmResp.TotalTokens,
+		},
+		Metadata: map[string]interface{}{
+			"latency": llmResp.Latency,
+			"cost":    llmResp.Cost,
+		},
+	}, nil
+}
+
+func (m *mockInferenceProvider) Stream(ctx context.Context, req inference.Request) (<-chan inference.StreamChunk, error) {
+	// For now, just convert Complete to streaming
+	respChan := make(chan inference.StreamChunk)
+	
+	go func() {
+		defer close(respChan)
+		
+		resp, err := m.Complete(ctx, req)
+		if err != nil {
+			respChan <- inference.StreamChunk{
+				Error: err,
+			}
+			return
+		}
+		
+		// Send the complete response as a single chunk
+		respChan <- inference.StreamChunk{
+			Delta: resp.Content,
+			Done:  true,
+		}
+	}()
+	
+	return respChan, nil
+}
+
+func (m *mockInferenceProvider) Models(ctx context.Context) ([]string, error) {
+	return []string{"mock", "test"}, nil
+}
+
+func (m *mockInferenceProvider) Close() error {
+	return nil
+}

@@ -1,75 +1,75 @@
 # Test pe extract command - XML tag extraction from prompt outputs
 
 # Basic XML tag extraction
-exec pe run prompt.txt | exec pe extract --tag answer
+exec sh -c 'pe run prompt.txt --provider mock | pe extract --tag answer'
 stdout 'The capital of France is Paris'
 ! stdout '<answer>'
 ! stdout '</answer>'
 
 # Extract multiple tags
-exec pe run multi-output.txt | exec pe extract --tags result,explanation
+exec sh -c 'pe run multi-output.txt --provider mock | pe extract --tags result,explanation'
 stdout 'Result: 42'
 stdout 'Explanation: The answer to life'
 
 # Extract with specific tag
-echo '<output><name>John</name><age>30</age></output>' | exec pe extract --tag name
+exec sh -c 'echo "<output><name>John</name><age>30</age></output>" | pe extract --tag name'
 stdout 'John'
 ! stdout '<name>'
 
 # Extract nested tags
-exec pe run nested.txt | exec pe extract --tag data --nested
+exec sh -c 'pe run nested.txt --provider mock | pe extract --tag data --nested'
 stdout '<item>First</item>'
 stdout '<item>Second</item>'
 
 # Extract with attribute filtering
-exec pe run attributed.txt | exec pe extract --tag response --attr type=final
+exec sh -c 'pe run attributed.txt --provider mock | pe extract --tag response --attr type=final'
 stdout 'This is the final answer'
 
 # Extract to JSON format
-exec pe run structured.txt | exec pe extract --tag data --json
+exec sh -c 'pe run structured.txt --provider mock | pe extract --tag data -f json'
 stdout '{'
 stdout '"content":'
 stdout '"metadata":'
 
 # Extract with XPath-like selectors
-exec pe run complex.txt | exec pe extract --xpath "//answer[@confidence='high']"
+exec sh -c 'pe run complex.txt --provider mock | pe extract --xpath "//answer[@confidence=\"high\"]"'
 stdout 'Definitely Paris'
 
 # Extract multiple occurrences
-exec pe run listing.txt | exec pe extract --tag item --all
+exec sh -c 'pe run listing.txt --provider mock | pe extract --tag item --all'
 stdout 'Apple'
 stdout 'Banana'
 stdout 'Cherry'
 
 # Extract with transformation
-exec pe run formatted.txt | exec pe extract --tag code --transform "exec pe fmt -"
+exec sh -c 'pe run formatted.txt --provider mock | pe extract --tag code --transform "pe fmt -"'
 stdout 'func main() {'
 stdout '    fmt.Println("Hello")'
 stdout '}'
 
 # Extract and validate
-exec pe run validated.txt | exec pe extract --tag solution --validate schema.json
+exec sh -c 'pe run validated.txt --provider mock | pe extract --tag solution --validate schema.json'
 stdout 'Valid solution extracted'
 
 # Extract with custom delimiters
-exec pe run custom.txt | exec pe extract --start "[[RESULT]]" --end "[[/RESULT]]"
+exec sh -c 'pe run custom.txt --provider mock | pe extract --start "[[RESULT]]" --end "[[/RESULT]]"'
 stdout 'Custom delimited content'
 
 # Pipeline with extraction
-exec pe run prompt.txt | exec pe extract --tag answer | exec pe test --inline assertions.yaml
+exec sh -c 'pe run prompt.txt --provider mock | pe extract --tag answer | pe test --inline assertions.yaml'
 stdout 'Test passed'
 
 # Extract with error handling
-! exec pe run invalid.txt | exec pe extract --tag missing
+! exec sh -c 'pe run invalid.txt --provider mock | pe extract --tag missing'
 stderr 'No tag found: missing'
 
 # Extract and save to file
-exec pe run prompt.txt | exec pe extract --tag response --output response.txt
+exec sh -c 'pe run prompt.txt --provider mock | pe extract --tag response --output response.txt'
 exists response.txt
 contains response.txt 'Extracted content'
 
 # Extract with streaming
-exec pe run stream-prompt.txt --stream | exec pe extract --tag chunk --stream
+exec sh -c 'pe run stream-prompt.txt --provider mock --stream | pe extract --tag chunk --stream'
 stdout 'Chunk 1'
 stdout 'Chunk 2'
 stdout 'Chunk 3'
