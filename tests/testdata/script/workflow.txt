@@ -64,6 +64,12 @@ exec pe eval config.yaml --provider mock
 stdout 'Running 1 test'
 stdout 'Test passed:'
 
+-- context.txt --
+You are a helpful AI assistant focused on providing accurate and useful information.
+
+-- instruction.txt --
+Please analyze the given input and provide a comprehensive response.
+
 -- research-prompt.txt --
 Summarize the key findings of the paper: {{.Paper}}
 

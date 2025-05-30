@@ -68,6 +68,19 @@ Can output in different formats and validate against schemas.`,
 			}
 			
 			if err != nil {
+				// For JSON format, output default structure instead of error
+				if format == "json" && strings.Contains(err.Error(), "not found") {
+					defaultResult := map[string]interface{}{
+						"content": "",
+						"metadata": map[string]interface{}{
+							"extracted": false,
+							"tag": tag,
+						},
+					}
+					jsonBytes, _ := json.MarshalIndent(defaultResult, "", "  ")
+					fmt.Fprint(cmd.OutOrStdout(), string(jsonBytes))
+					return nil
+				}
 				return err
 			}
 
@@ -90,21 +103,6 @@ Can output in different formats and validate against schemas.`,
 			}
 
 			// Format output
-			// For JSON format, create a default structure if no results
-			if format == "json" && len(result) == 0 {
-				// Create a default structure with content and metadata
-				defaultResult := map[string]interface{}{
-					"content": "",
-					"metadata": map[string]interface{}{
-						"extracted": false,
-						"tag": tag,
-					},
-				}
-				jsonBytes, _ := json.MarshalIndent(defaultResult, "", "  ")
-				fmt.Fprint(cmd.OutOrStdout(), string(jsonBytes))
-				return nil
-			}
-			
 			outputStr, err := formatExtracted(result, format)
 			if err != nil {
 				return err
@@ -168,11 +166,8 @@ func extractTags(content, tag string, all bool, xpath string, nested bool, attrF
 				regexp.QuoteMeta(tag), regexp.QuoteMeta(attrName), regexp.QuoteMeta(attrValue), regexp.QuoteMeta(tag))
 		}
 	} else {
-		pattern = fmt.Sprintf(`<%s(?:\s+[^>]*)?>(.+?)</%s>`, regexp.QuoteMeta(tag), regexp.QuoteMeta(tag))
-		if nested {
-			// Use non-greedy multiline matching for nested content
-			pattern = fmt.Sprintf(`(?s)<%s(?:\s+[^>]*)?>(.+?)</%s>`, regexp.QuoteMeta(tag), regexp.QuoteMeta(tag))
-		}
+		// Always use multiline matching for tags that may span lines
+		pattern = fmt.Sprintf(`(?s)<%s(?:\s+[^>]*)?>(.+?)</%s>`, regexp.QuoteMeta(tag), regexp.QuoteMeta(tag))
 	}
 
 	re, err := regexp.Compile(pattern)
