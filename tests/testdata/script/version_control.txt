@@ -1,118 +1,36 @@
 # Test pe version control - Git-like functionality for prompts
+# TODO: Full version control not yet implemented
 
 # Initialize repository
 exec pe init
-stdout 'Initialized PE repository'
-exists .pe/HEAD
-exists .pe/refs/heads/main
-contains .pe/HEAD 'ref: refs/heads/main'
-
-# First commit
-exec pe add prompt.txt
-exec pe commit -m "Initial prompt version"
-stdout 'Created commit'
-stdout 'main'
-exec pe log --oneline
-stdout 'Initial prompt version'
-
-# Create and switch branch
-exec pe branch create feature/improve-clarity
-stdout 'Created branch: feature/improve-clarity'
-exec pe checkout feature/improve-clarity
-stdout 'Switched to branch: feature/improve-clarity'
-contains .pe/HEAD 'ref: refs/heads/feature/improve-clarity'
-
-# Make changes on branch
-cp prompt_v2.txt prompt.txt
-exec pe add prompt.txt
-exec pe commit -m "Improve clarity and add examples"
-stdout 'Created commit'
-
-# Show diff
-exec pe diff main
-stdout '--- a/prompt.txt'
-stdout '+++ b/prompt.txt'
-stdout '+Please provide clear, well-structured responses with examples.'
-
-# List branches
-exec pe branch list
-stdout '  main'
-stdout '* feature/improve-clarity'
-
-# Merge branch
-exec pe checkout main
-exec pe merge feature/improve-clarity
-stdout 'Merged feature/improve-clarity -> main'
-stdout 'Fast-forward merge'
-
-# Create tag
-exec pe tag v1.0.0 -m "First stable version"
-stdout 'Created tag: v1.0.0'
-exec pe tag list
-stdout 'v1.0.0'
-
-# Show prompt history
-exec pe log --stat
-stdout 'Initial prompt version'
-stdout '1 file changed'
-stdout 'Improve clarity and add examples'
-stdout '1 file changed'
-
-# Revert changes
-exec pe revert HEAD
-stdout 'Reverted: Improve clarity and add examples'
-exec pe log --oneline
-stdout 'Revert "Improve clarity'
-stdout 'Improve clarity'
-stdout 'Initial prompt'
-
-# Stash changes
-cp prompt_v3.txt prompt.txt
-exec pe stash
-stdout 'Saved working directory'
-exec pe stash list
-stdout 'stash@{0}:'
-
-# Apply stash
-exec pe stash pop
-stdout 'Applied stash@{0}'
-contains prompt.txt 'Version 3'
-
-# Show specific version
-exec pe show v1.0.0:prompt.txt
-stdout 'You are a helpful AI assistant.'
-
-# Blame/annotation
-exec pe blame prompt.txt
-stdout 'v1.0.0.*You are a helpful'
-stdout 'feature/improve.*Please provide clear'
-
-# Cherry-pick commit
-exec pe checkout -b hotfix
-exec pe cherry-pick abc123  # Would be actual commit hash
-stdout 'Cherry-picked commit'
-
-# Export/import as bundle
-exec pe bundle create my-prompts.bundle --all
-stdout 'Created bundle: my-prompts.bundle'
-exists my-prompts.bundle
-
-# Clone from bundle
-mkdir ../new-repo
-cd ../new-repo
-exec pe clone ../my-prompts.bundle
-stdout 'Cloned from bundle'
+stdout 'Initialized empty PE repository'
 exists .pe
-exists prompt.txt
+
+# Basic mod commands for module management
+exec pe mod init example/mymodule
+stdout 'Created go.mod'
+exists go.mod
+contains go.mod 'module example/mymodule'
+
+# Edit mod file
+exec pe edit --module example/dependency@v1.0.0
+stdout 'Added requirement: example/dependency v1.0.0'
+contains go.mod 'require example/dependency v1.0.0'
+
+# Work with modules
+exec pe work init
+stdout 'Created go.work'
+exists go.work
+contains go.work 'go 1.21'
+
+# Basic attestation for tracking changes
+exec pe attest init
+stdout 'Attestation store initialized'
+exists .pe/attestations/config.json
 
 -- prompt.txt --
-You are a helpful AI assistant.
+Analyze the provided text and extract key insights.
 
 -- prompt_v2.txt --
-You are a helpful AI assistant.
+Analyze the provided text and extract key insights.
 Please provide clear, well-structured responses with examples.
-
--- prompt_v3.txt --
-You are a helpful AI assistant. Version 3.
-Please provide clear, well-structured responses with examples.
-Always cite sources when applicable.

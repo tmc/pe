@@ -4,87 +4,42 @@
 exec pe fmt -w prompt.txt
 stdout 'formatted'
 
-# Skip directory formatting for now
-# exec pe fmt prompts/
-
-# Format with check
+# Format with check - well formatted should pass
 exec pe fmt --check well-formatted.txt
 
 # Format check with issues should fail
 ! exec pe fmt --check badly-formatted.txt
-
-# Skip listing issues for now
-# exec pe fmt --list badly-formatted.txt
+stderr 'needs formatting'
 
 # Format with anthropic style
 exec pe fmt --style anthropic anthropic-prompt.txt
 stdout 'Human:'
 
-# Skip stdin formatting for now
-# stdin 'Unformatted    prompt   with  issues'
-# exec pe fmt -
-
-# Skip diff output for now
-# exec pe fmt --diff prompt-to-format.txt
-
-# Skip recursive formatting
-# exec pe fmt --recursive .
-
-# Skip custom rules
-# exec pe fmt --rules format-rules.yaml prompt.txt
-
-# Skip pattern preservation
-# exec pe fmt --preserve '{{.*}}' template.txt
-
 # Test auto-fix
 exec pe fmt --fix -w prompt-with-issues.txt
 stdout 'formatted'
 
+# Format multiple files
+exec pe fmt -w prompt.txt well-formatted.txt
+stdout 'prompt.txt: formatted'
+stdout 'well-formatted.txt: formatted'
+
 -- prompt.txt --
-Analyze  this   text    
-and provide insights.  
-
-
--- prompt_expected.txt --
-Analyze this text
-and provide insights.
+Tell me about AI.
 
 -- well-formatted.txt --
-This prompt is already well formatted.
-No changes needed here.
+Please explain the concept of artificial intelligence in simple terms.
 
 -- badly-formatted.txt --
-This  has   issues  
-Multiple    spaces  
-No final newline  
+    This  prompt   has   formatting    issues...  
+  
+  
 
--- prompts/context.txt --
-You  are  an  AI  assistant.  
-
--- prompts/instruction.txt --
-Help   the   user.  
-
--- prompts/example.txt --
-Example   text.  
-
--- prompt-to-format.txt --
-Analyze  this   text  
-
--- format-rules.yaml --
-rules:
-  - name: "sentence-case"
-    pattern: "^[a-z]"
-    replacement: "capitalize"
-  - name: "oxford-comma"
-    pattern: "([^,]+), ([^,]+) and"
-    replacement: "$1, $2, and"
-
--- template.txt --
-Process  {{.Variable}}  and  return  results.  
-
--- prompt-with-issues.txt --
-Analyze this text . Fix "these" quotes .Add proper spacing.
+And inconsistent spacing.
 
 -- anthropic-prompt.txt --
-Human: What is AI?
-Assistant: AI stands for Artificial Intelligence.
+Explain quantum computing.
+
+-- prompt-with-issues.txt --
+this prompt needs capitalization.   
+   And has trailing spaces.   

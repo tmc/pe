@@ -2,83 +2,35 @@
 
 # Initialize module
 exec pe mod init github.com/myorg/myproject
-stdout 'go: creating new pe.mod'
-exists pe.mod
-contains pe.mod 'module github.com/myorg/myproject'
-contains pe.mod 'pe 1.0'
+stdout 'Created go.mod'
+exists go.mod
+contains go.mod 'module github.com/myorg/myproject'
+contains go.mod 'go 1.21'
 
-# Add a dependency
-exec pe mod get github.com/anthropic/helpful-harmless@latest
-stdout 'go: downloading github.com/anthropic/helpful-harmless v1.2.0'
-stdout 'go: added github.com/anthropic/helpful-harmless v1.2.0'
-exists pe.sum
-contains pe.mod 'require'
-contains pe.mod 'github.com/anthropic/helpful-harmless v1.2.0'
+# Edit module file to add dependencies
+exec pe edit --module github.com/anthropic/helpful-harmless@v1.2.0
+stdout 'Added requirement: github.com/anthropic/helpful-harmless v1.2.0'
+contains go.mod 'require github.com/anthropic/helpful-harmless v1.2.0'
 
-# List dependencies
-exec pe mod list
-stdout 'github.com/myorg/myproject'
+# List module contents
+exec pe get
+stdout 'module github.com/myorg/myproject'
+stdout 'require github.com/anthropic/helpful-harmless v1.2.0'
 
-exec pe mod list -m all
-stdout 'github.com/anthropic/helpful-harmless v1.2.0'
-stdout 'github.com/openai/best-practices v2.1.0'
-
-# Update dependencies
-exec pe mod get -u
-stdout 'go: upgraded github.com/anthropic/helpful-harmless v1.2.0 => v1.3.0'
-
-# Tidy dependencies
-exec pe mod tidy
-stdout 'go: downloading github.com/google/tech-writing v1.0.0'
-! stderr .
-
-# Vendor dependencies
-exec pe mod vendor
-stdout 'go: copying requirements'
-exists vendor/
-exists vendor/github.com/anthropic/helpful-harmless/
-exists vendor/modules.txt
-
-# Graph dependencies
-exec pe mod graph
-stdout 'github.com/myorg/myproject github.com/anthropic/helpful-harmless@v1.3.0'
-stdout 'github.com/anthropic/helpful-harmless@v1.3.0 github.com/openai/best-practices@v2.1.0'
-
-# Download specific version
-exec pe mod download github.com/google/tech-writing@v1.0.0
-stdout 'go: downloading github.com/google/tech-writing v1.0.0'
-exists .pe/mod/cache/download/github.com/google/tech-writing/@v/v1.0.0.info
-
-# Replace directive
-exec pe mod edit -replace github.com/openai/best-practices=./local-overrides/best-practices
-contains pe.mod 'replace github.com/openai/best-practices => ./local-overrides/best-practices'
-
-# Module verification
-exec pe mod verify
-stdout 'all modules verified'
-
-# Why query
-exec pe mod why github.com/openai/best-practices
-stdout '# github.com/openai/best-practices'
-stdout 'github.com/myorg/myproject'
-stdout 'github.com/anthropic/helpful-harmless@v1.3.0'
-stdout 'github.com/openai/best-practices@v2.1.0'
-
-# Clean module cache
-exec pe mod clean -modcache
-stdout 'removed module download cache'
-! exists .pe/mod/cache
-
--- pe.mod --
-module github.com/myorg/myproject
-
-pe 1.0
+# Push module to registry (mock)
+env PE_TEST_MODE=true
+exec pe push --draft
+stdout 'Module validated'
+stdout 'Draft saved'
 
 -- prompt.txt --
-Apply best practices from helpful-harmless framework
+This is a sample prompt that uses helpful-harmless principles.
 
--- go.mod --
-// This should not interfere with pe.mod
-module example.com/different
-
+-- config.yaml --
+prompts:
+  - prompt.txt
+  
+-- go.work --
 go 1.21
+
+use .

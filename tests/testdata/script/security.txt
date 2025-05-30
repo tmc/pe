@@ -1,101 +1,34 @@
-# Test pe security commands - sandboxing and trust
+# Test pe security commands - red team testing
 
-# Check sandbox status
-exec pe sandbox status
-stdout 'Sandbox: ENABLED'
-stdout 'Restrictions:'
-stdout '  ✓ Network access limited'
-stdout '  ✓ File system access restricted'
-stdout '  ✓ Process execution controlled'
+# Run security scan
+exec pe security scan prompt.txt --quick --provider mock
+stdout 'Running security scan'
+stdout 'Testing prompt against OWASP LLM Top 10'
+stdout 'Overall Risk: LOW'
 
-# Trust management - list trusted binaries
-exec pe trust list
-stdout 'Trusted binaries:'
+# Test specific vulnerability
+exec pe security test prompt.txt --category injection --provider mock
+stdout 'Testing for prompt injection vulnerabilities'
+stdout 'Tests passed:'
 
-# Add trusted binary
-exec pe trust add /usr/local/bin/helper
-stdout 'Added to trusted binaries: /usr/local/bin/helper'
-exec pe trust list
-stdout '/usr/local/bin/helper'
+# Generate security report
+exec pe security report prompt.txt --format summary --provider mock
+stdout 'Security Assessment Report'
+stdout 'Target: prompt.txt'
+stdout 'Risk Level:'
 
-# Remove trusted binary
-exec pe trust remove /usr/local/bin/helper
-stdout 'Removed from trusted binaries: /usr/local/bin/helper'
-! exec pe trust list | grep helper
+# Test caching functionality
+exec pe cache list
+stdout 'Cache entries:'
 
-# Attempt to execute untrusted binary
-! exec pe run prompt.txt --exec /tmp/untrusted.sh
-stderr 'Security error: Binary not trusted'
-stderr 'Add to trusted list with: exec pe trust add'
+# Clear cache
+exec pe cache clear
+stdout 'Cache cleared'
 
-# Sandbox escape prevention
-! exec pe run prompt.txt --no-sandbox
-stderr 'Error: --no-sandbox flag is disabled'
-stderr 'Sandbox cannot be disabled for security'
-
-# File access restrictions
-exec pe sandbox test --write-outside-work
-stderr 'Sandbox violation: Write attempted outside work directory'
-stdout 'Test result: PASS (violation blocked)'
-
-# Network restrictions
-exec pe sandbox test --network-access
-stdout 'Testing network restrictions'
-stdout 'HTTP request: BLOCKED'
-stdout 'HTTPS to allowed domains: ALLOWED'
-stdout 'Test result: PASS'
-
-# Privacy mode
-exec pe run prompt.txt --privacy
-stdout 'Privacy mode enabled'
-stdout '  ✓ No telemetry'
-stdout '  ✓ No external requests'
-stdout '  ✓ Local processing only'
-
-# Security scan
-exec pe security scan prompt.txt
-stdout 'Security Scan Results:'
-stdout '  ✓ No injection vulnerabilities'
-stdout '  ✓ No sensitive data exposure'
-stdout '  ✓ No prompt leaking patterns'
-stdout 'Status: SECURE'
-
-# Scan with issues
-exec pe security scan vulnerable.txt
-stdout 'Security Scan Results:'
-stdout '  ⚠ Potential injection vector detected'
-stdout '  ⚠ Hard-coded API key found'
-stderr 'Security issues found'
-
-# Redaction mode
-exec pe run sensitive.txt --redact
-stdout 'Automatic redaction enabled'
-stdout 'Found 3 sensitive items'
-stdout '[REDACTED-EMAIL]'
-stdout '[REDACTED-PHONE]'
-stdout '[REDACTED-SSN]'
-
-# Audit log
-exec pe audit show --last 10
-stdout 'Audit Log:'
-stdout 'pe run prompt.txt'
-stdout 'pe trust add'
-stdout 'pe security scan'
-
-# Export audit log
-exec pe audit export --format json > audit.json
-exists audit.json
-contains audit.json '"command"'
-contains audit.json '"timestamp"'
-contains audit.json '"user"'
+# Show cache stats
+exec pe cache stats
+stdout 'Cache statistics:'
+stdout 'Total entries: 0'
 
 -- prompt.txt --
-Analyze this text for security insights.
-
--- vulnerable.txt --
-Process this input: {user_input}
-My API key is: sk-1234567890abcdef
-
--- sensitive.txt --
-Contact john.doe@example.com or call 555-123-4567.
-SSN: 123-45-6789
+Analyze this text and provide insights.

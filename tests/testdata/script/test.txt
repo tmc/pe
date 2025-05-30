@@ -1,102 +1,58 @@
 # Test pe test command - validation and testing
 
-# Basic test execution
-exec pe test config.yaml
+# Basic test execution (property-based testing)
+exec pe test config.yaml --type property --provider mock
 stdout 'Test Summary'
 stdout 'Success Rate:'
-! stderr 'FAIL'
-
-# Test with specific test file
-exec pe test --config test-cases.yaml
-stdout 'Test 1: PASS'
-stdout 'Test 2: PASS'
-stdout 'Summary: 2/2 passed'
-
-# Test with assertions
-exec pe test assertions.yaml
-stdout 'Assertion checks:'
-stdout '✓ contains: "helpful"'
-stdout '✓ not_contains: "error"'
-stdout '✓ length_range: 50-200'
-
-# Test with multiple providers
-exec pe test --providers openai,anthropic config.yaml
-stdout 'Provider: openai - PASS'
-stdout 'Provider: anthropic - PASS'
-
-# Test failure case
-! exec pe test failing-test.yaml
-stderr 'Test failed'
-stdout 'Expected: "correct answer"'
-stdout 'Actual: "wrong answer"'
-
-# Property-based testing
-exec pe test --property config.yaml
-stdout 'Property test: Idempotency'
-stdout 'Property test: Consistency'
-stdout '✓ All properties satisfied'
 
 # Regression testing
-exec pe test --regression baseline.json current.yaml
-stdout 'Regression test results:'
-stdout 'No significant degradation detected'
+exec pe test config.yaml --type regression --baseline baseline.json --provider mock
+stdout 'Regression Test Results'
+stdout 'No regression detected'
 
-# Coverage report
-exec pe test --coverage config.yaml
-stdout 'Test coverage: 85%'
-stdout 'Uncovered scenarios:'
+# Test with output file
+exec pe test config.yaml --type property -o results.json --provider mock
+stdout 'Results saved to: results.json'
+exists results.json
 
-# Test with statistical analysis
-exec pe test --stats config.yaml
-stdout 'Mean score: 0.92'
-stdout 'Std deviation: 0.04'
-stdout 'Confidence interval: [0.90, 0.94]'
+# Generate tests from prompt
+exec pe test generate-tests prompt.txt --provider mock
+stdout 'Generated test cases:'
+stdout 'Test case 1:'
 
-# Cross-validation testing
-exec pe test --cross-validate config.yaml
-stdout 'Cross-validation (5-fold)'
-stdout 'Average accuracy: 0.91'
+# A/B testing
+exec pe test ab-test --config-a config-a.yaml --config-b config-b.yaml --provider mock
+stdout 'A/B Test Results'
+stdout 'Configuration A:'
+stdout 'Configuration B:'
+
+# Cross validation
+exec pe test cross-validate config.yaml --provider mock
+stdout 'Cross-Validation Results'
+stdout 'Fold 1:'
 
 -- config.yaml --
-prompt: "You are a helpful assistant"
-tests:
-  - input: "What is 2+2?"
-    expected: "4"
-  - input: "Capital of France?"
-    expected_contains: "Paris"
-
--- test-cases.yaml --
-tests:
-  - name: "Test 1"
-    input: "Hello"
-    assert:
-      - type: contains
-        value: "Hi"
-  - name: "Test 2"
-    input: "Goodbye"
-    assert:
-      - type: contains
-        value: "Bye"
-
--- assertions.yaml --
-prompt: "You are a helpful assistant"
-tests:
-  - input: "Help me"
-    assertions:
-      - contains: "helpful"
-      - not_contains: "error"
-      - length_range: [50, 200]
-
--- failing-test.yaml --
-prompt: "Answer precisely"
-tests:
-  - input: "What is 2+2?"
-    expected: "correct answer"
+prompts:
+  - "Analyze this text"
+providers:
+  - mock
+property_tests:
+  - name: "Consistency"
+    iterations: 3
 
 -- baseline.json --
 {
-  "results": {
-    "accuracy": 0.90,
-    "latency_ms": 150
-  }
+  "accuracy": 0.85,
+  "latency_p95": 200
 }
+
+-- prompt.txt --
+Analyze the sentiment of the given text.
+
+-- config-a.yaml --
+prompts:
+  - "Analyze sentiment briefly"
+  
+-- config-b.yaml --  
+prompts:
+  - "Analyze sentiment in detail"

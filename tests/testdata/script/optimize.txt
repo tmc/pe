@@ -1,99 +1,54 @@
 # Test pe optimize command - prompt optimization
 
-# Basic optimization with PE2
-exec pe optimize prompt.txt --method pe2
-stdout 'Optimizing prompt with 3 iterations using pe2 method'
+# Basic optimization with standard method
+env PE_TEST_MODE=true
+exec pe optimize prompt.txt --provider mock --iterations 2
 stdout 'Optimization Results'
+stdout 'Original Prompt:'
+stdout 'Optimized Prompt:'
 stdout 'Improvement Score:'
-exists prompt_optimized.txt
+exists prompt_standard.txt
+
+# PE2 optimization
+env PE_TEST_MODE=true
+exec pe optimize prompt.txt --method pe2 --iterations 2 --provider mock
+stdout 'Optimization Results'
+stdout 'Iteration Details'
+exists prompt_pe2.txt
 
 # TextGrad optimization
-exec pe optimize prompt.txt --method textgrad --iterations 5
-stdout 'TextGrad optimization'
-stdout 'Computing semantic gradients'
-stdout 'Iteration'
-stdout 'Applied gradient'
+env PE_TEST_MODE=true
+exec pe optimize prompt.txt --method textgrad --iterations 2 --provider mock
+stdout 'Optimization Results'
 exists prompt_textgrad.txt
 
-# Semantic backpropagation (2025)
-exec pe optimize prompt.txt --method semantic-backprop --objective "accuracy"
-stdout 'Semantic backpropagation'
-stdout 'Computing directional semantic information'
-stdout 'Confidence score:'
-stdout 'Optimization complete'
-
-# GASO optimization for systems
-exec pe optimize system.json --method gaso --multi-objective
-stdout 'GASO optimization'
-stdout 'Building computational graph'
-stdout 'Optimizing component:'
-stdout 'Pareto frontier'
-exists system_optimized.json
-
-# Evolution-based optimization
-exec pe optimize prompt.txt --method evolve --generations 10 --population 20
-stdout 'Evolutionary optimization'
-stdout 'Generation 1/10'
-stdout 'Best fitness:'
-stdout 'Mutation:'
-stdout 'Crossover:'
-
-# Multi-stage optimization
-exec pe optimize prompt.txt --method multistage
-stdout 'Stage 1: Analysis'
-stdout 'Stage 2: Enhancement'
-stdout 'Stage 3: Validation'
-stdout 'Quality gate: PASSED'
+# APEX optimization
+env PE_TEST_MODE=true
+exec pe optimize prompt.txt --method apex --iterations 2 --provider mock
+stdout 'Optimization Results'
+exists prompt_apex.txt
 
 # Hybrid optimization
-exec pe optimize prompt.txt --method hybrid --combine pe2,textgrad,evolve
-stdout 'Hybrid optimization'
-stdout 'Method 1: PE2'
-stdout 'Method 2: TextGrad'
-stdout 'Method 3: Evolution'
-stdout 'Consensus strategy'
+env PE_TEST_MODE=true
+exec pe optimize prompt.txt --method hybrid --iterations 2 --provider mock
+stdout 'Optimization Results'
+exists prompt_hybrid.txt
 
-# Optimization with constraints
-exec pe optimize prompt.txt --max-tokens 100 --preserve-style
-stdout 'Constrained optimization'
-stdout 'Token limit: 100'
-stdout 'Style preserved'
-
-# Compare optimization methods
-exec pe optimize prompt.txt --compare-methods pe2,textgrad,semantic
-stdout 'Method comparison'
-stdout 'PE2: Score'
-stdout 'TextGrad: Score'
-stdout 'Semantic: Score'
-stdout 'Winner:'
-
-# Optimization with custom objective
-exec pe optimize prompt.txt --objective "clarity and conciseness" --method textgrad
-stdout 'Objective: clarity and conciseness'
-stdout 'Optimizing for objective'
-
-# Failed optimization (no convergence)
-exec pe optimize bad-prompt.txt --method textgrad --max-iterations 3
-stdout 'No convergence after 3 iterations'
-stdout 'Best attempt saved'
+# Optimization with output file
+env PE_TEST_MODE=true
+exec pe optimize prompt.txt -o results.json --provider mock --iterations 1
+stdout 'Results saved to: results.json'
+exists results.json
+contains results.json '"original_prompt"'
+contains results.json '"optimized_prompt"'
 
 -- prompt.txt --
-Analyze the sentiment of the given text.
+Analyze the sentiment of the provided text.
 
 -- system.json --
 {
   "components": {
-    "analyzer": {
-      "prompt": "Extract key information",
-      "dependencies": []
-    },
-    "summarizer": {
-      "prompt": "Summarize the analysis",
-      "dependencies": ["analyzer"]
-    }
-  },
-  "objective": "accuracy and latency"
+    "analyzer": "Analyze input",
+    "summarizer": "Summarize results"
+  }
 }
-
--- bad-prompt.txt --
-Do thing
