@@ -9,21 +9,23 @@ PE is a Go-based toolkit for prompt engineering that implements cutting-edge 202
 ### Current Implementation Status
 
 **✅ Implemented Core Features:**
-- **Provider Interface**: Extensible LLM provider abstraction with OpenAI/Anthropic native implementations
+- **Provider Interface**: Extensible LLM provider abstraction (⚠️ still primarily using cgpt CLI wrapper)
 - **Pipeline Processing**: Unix-style composable commands (ask, stream, filter, analyze, collect, reduce)
 - **Metaprompting Engine**: Advanced prompt optimization using multiple research-based methods
 - **Evaluation System**: Comprehensive evaluation with pass@n metrics and assertion types
-- **Testing Framework**: Property-based and regression testing support
+- **Testing Framework**: Property-based and regression testing support (⚠️ 7.8% test coverage)
 - **Module System**: Complete go mod-style commands (init, download, tidy, vendor)
 - **Component Composition**: DSPy-style prompt composition with validation
 - **Attestation System**: Cryptographic signing and verification of prompt runs
+- **Security Testing**: OWASP LLM Top 10 complete coverage via redteam module
 
 **🚧 In Development:**
-- Full native provider migration (still using cgpt CLI wrapper)
-- Distributed execution integration (foundation exists, needs CLI integration)
+- Full native provider migration (OpenAI/Anthropic providers partially implemented)
+- Distributed execution integration (foundation exists, CLI partially integrated)
 - Web dashboard and REST API
 - Module registry implementation
 - Advanced semantic caching strategies
+- Comprehensive test suite (current coverage only 7.8%)
 
 ### Key Commands (Implemented)
 
@@ -38,6 +40,13 @@ PE is a Go-based toolkit for prompt engineering that implements cutting-edge 202
 - `pe compose`: Component-based prompt composition with style handlers
 - `pe mod init/download/tidy/vendor`: Go-style module management
 - `pe attest`: Cryptographic attestation for prompt runs
+- `pe extract`: Extract and parse structured data from prompts
+- `pe passn`: Calculate pass@n metrics for code generation tasks
+- `pe evolve`: Evolutionary prompt optimization with genetic algorithms
+- `pe fusion`: Multi-model fusion for production reliability
+- `pe distributed`: Distributed execution commands (start/join/status/stop)
+- `pe cache`: Content-addressed caching with cryptographic verification
+- `pe security`: OWASP LLM Top 10 security testing
 - Pipeline commands: `ask`, `stream`, `filter`, `analyze`, `collect`, `reduce` for Unix composability
 
 ## Advanced Evaluation Features
@@ -264,10 +273,32 @@ PE supports runtime plugin discovery:
 3. **Testing**: Write table-driven tests for new functionality
 4. **Documentation**: Update command help text and examples
 
+## Current Limitations & Known Issues
+
+1. **Low Test Coverage**: Currently at 7.8% - needs comprehensive test suite implementation
+2. **Provider Dependency**: Still primarily using cgpt CLI wrapper instead of native API calls
+3. **Documentation Accuracy**: Some docs describe unimplemented features as complete
+4. **Distributed System**: CLI commands exist but full integration incomplete
+5. **Module Registry**: Not yet implemented despite documentation
+6. **Benchmarking**: No benchmarks against GSM8K, BIG-Bench Hard, or algorithmic datasets
+7. **Web Dashboard**: Not implemented despite being mentioned in docs
+
+## Priority Development Areas
+
+1. **Complete Native Providers**: Finish OpenAI/Anthropic implementations to remove cgpt dependency
+2. **Test Coverage**: Achieve >80% coverage with comprehensive test suite
+3. **Distributed Execution**: Complete integration with eval command
+4. **Documentation Cleanup**: Separate implemented vs planned features clearly
+5. **Performance Benchmarks**: Validate against research paper targets
+
 ## Future Roadmap
 
 See ROADMAP.md for planned features including:
 - Additional provider implementations
 - Advanced caching strategies
-- Distributed evaluation support
+- Full distributed evaluation support
 - Visual prompt engineering tools
+- Module registry with dependency resolution
+- Web dashboard and REST API
+- Multi-modal support (vision, audio)
+- Neurosymbolic prompt synthesis
