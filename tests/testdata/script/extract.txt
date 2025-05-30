@@ -66,7 +66,7 @@ stderr 'No tag found: missing'
 # Extract and save to file
 exec sh -c 'pe run prompt.txt --provider mock | pe extract --tag response --output response.txt'
 exists response.txt
-contains response.txt 'Extracted content'
+exec grep 'Extracted content' response.txt
 
 # Extract with streaming
 exec sh -c 'pe run stream-prompt.txt --provider mock --stream | pe extract --tag chunk --stream'

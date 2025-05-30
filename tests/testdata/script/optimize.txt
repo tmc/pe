@@ -39,8 +39,8 @@ env PE_TEST_MODE=true
 exec pe optimize prompt.txt -o results.json --provider mock --iterations 1
 stdout 'Results saved to: results.json'
 exists results.json
-contains results.json '"original_prompt"'
-contains results.json '"optimized_prompt"'
+exec grep '"original_prompt"' results.json
+exec grep '"optimized_prompt"' results.json
 
 -- prompt.txt --
 Analyze the sentiment of the provided text.

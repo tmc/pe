@@ -35,15 +35,15 @@ func init() {
 }
 
 var modInitCmd = &cobra.Command{
-	Use:   "init [module-name] --prompt='prompt text'",
+	Use:   "init [module-name]",
 	Short: "Initialize a new prompt module",
-	Long: `Initialize a new prompt module that can be published to the registry.
+	Long: `Initialize a new prompt module with go.mod style dependency management.
 
-This creates a local module structure that can be pushed to a GitHub gist.
+This creates a go.mod file for managing prompt dependencies.
 
 Example:
-  pe mod init tmc/hello --prompt='say hello in a random language'
-  pe mod init myorg/summarize --prompt='summarize this: {{.text}}'`,
+  pe mod init github.com/myorg/myproject
+  pe mod init example.com/prompts`,
 	Args: cobra.ExactArgs(1),
 	RunE: runModInit,
 }
@@ -61,11 +61,7 @@ var modGetCmd = &cobra.Command{
 	RunE:  runModGet,
 }
 
-var modInitPrompt string
-
 func init() {
-	modInitCmd.Flags().StringVar(&modInitPrompt, "prompt", "", "The prompt text for the module")
-	modInitCmd.MarkFlagRequired("prompt")
 	modInitCmd.Flags().BoolVar(&modForce, "force", false, "Overwrite existing module")
 }
 
@@ -90,71 +86,48 @@ type PromptModule struct {
 func runModInit(cmd *cobra.Command, args []string) error {
 	moduleName := args[0]
 	
-	// Validate module name format (org/name)
-	parts := strings.Split(moduleName, "/")
-	if len(parts) != 2 {
-		return fmt.Errorf("module name must be in format: org/name")
+	// Check if go.mod already exists
+	if _, err := os.Stat("go.mod"); err == nil && !modForce {
+		return fmt.Errorf("go.mod already exists")
 	}
 	
-	org, name := parts[0], parts[1]
+	// Create go.mod content similar to go mod init
+	goModContent := fmt.Sprintf(`module %s
+
+go 1.21
+
+require (
+	// Prompt dependencies will be added here
+)
+`, moduleName)
 	
-	// Create module directory
-	moduleDir := filepath.Join(".pe", "modules", org, name)
-	if err := os.MkdirAll(moduleDir, 0755); err != nil {
-		return fmt.Errorf("creating module directory: %w", err)
+	// Write go.mod file
+	if err := os.WriteFile("go.mod", []byte(goModContent), 0644); err != nil {
+		return fmt.Errorf("writing go.mod: %w", err)
 	}
 	
-	// Check if already exists
-	metaPath := filepath.Join(moduleDir, "module.json")
-	if _, err := os.Stat(metaPath); err == nil && !modForce {
-		return fmt.Errorf("module already exists at %s (use --force to overwrite)", moduleDir)
+	// Also create a .pe directory for prompt-specific metadata
+	if err := os.MkdirAll(".pe", 0755); err != nil {
+		return fmt.Errorf("creating .pe directory: %w", err)
 	}
 	
-	// Create module metadata
-	module := PromptModule{
-		Module: Module{
-			Name:        moduleName,
-			Version:     "0.1.0",
-			Description: fmt.Sprintf("Prompt module: %s", name),
-			Author:      getCurrentUser(),
-			Created:     time.Now(),
-			Updated:     time.Now(),
-		},
-		PromptFile: "prompt.txt",
-		Files:      make(map[string]string),
+	// Create pe.json for prompt-specific configuration
+	peConfig := map[string]interface{}{
+		"module":  moduleName,
+		"version": "0.1.0",
+		"created": time.Now().Format(time.RFC3339),
 	}
 	
-	// Create prompt file
-	promptPath := filepath.Join(moduleDir, "prompt.txt")
-	promptContent := modInitPrompt
-	
-	// If the prompt has variables, add defaults section
-	if strings.Contains(promptContent, "{{.") {
-		promptContent += "\n\n-- defaults --\n# Add your defaults here\n"
-	}
-	
-	// Add a simple eval section
-	promptContent += "\n-- evals --\n# Add your tests here\n$ \nExpected output\n"
-	
-	if err := os.WriteFile(promptPath, []byte(promptContent), 0644); err != nil {
-		return fmt.Errorf("writing prompt file: %w", err)
-	}
-	
-	// Save module metadata
-	data, err := json.MarshalIndent(module, "", "  ")
+	data, err := json.MarshalIndent(peConfig, "", "  ")
 	if err != nil {
-		return fmt.Errorf("marshaling module: %w", err)
+		return fmt.Errorf("marshaling pe config: %w", err)
 	}
 	
-	if err := os.WriteFile(metaPath, data, 0644); err != nil {
-		return fmt.Errorf("writing module metadata: %w", err)
+	if err := os.WriteFile(".pe/config.json", data, 0644); err != nil {
+		return fmt.Errorf("writing pe config: %w", err)
 	}
 	
-	fmt.Printf("Initialized module %s at %s\n", moduleName, moduleDir)
-	fmt.Printf("\nNext steps:\n")
-	fmt.Printf("  1. Edit %s\n", promptPath)
-	fmt.Printf("  2. Test with: pe vet %s\n", promptPath)
-	fmt.Printf("  3. Publish with: pe push %s\n", moduleName)
+	fmt.Printf("Created go.mod\n")
 	
 	return nil
 }

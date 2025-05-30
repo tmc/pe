@@ -4,13 +4,13 @@
 exec pe mod init github.com/myorg/myproject
 stdout 'Created go.mod'
 exists go.mod
-contains go.mod 'module github.com/myorg/myproject'
-contains go.mod 'go 1.21'
+exec grep 'module github.com/myorg/myproject' go.mod
+exec grep 'go 1.21' go.mod
 
 # Edit module file to add dependencies
 exec pe edit --module github.com/anthropic/helpful-harmless@v1.2.0
 stdout 'Added requirement: github.com/anthropic/helpful-harmless v1.2.0'
-contains go.mod 'require github.com/anthropic/helpful-harmless v1.2.0'
+exec grep 'require github.com/anthropic/helpful-harmless v1.2.0' go.mod
 
 # List module contents
 exec pe get

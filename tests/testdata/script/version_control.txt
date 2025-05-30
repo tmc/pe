@@ -10,18 +10,18 @@ exists .pe
 exec pe mod init example/mymodule
 stdout 'Created go.mod'
 exists go.mod
-contains go.mod 'module example/mymodule'
+exec grep 'module example/mymodule' go.mod
 
 # Edit mod file
 exec pe edit --module example/dependency@v1.0.0
 stdout 'Added requirement: example/dependency v1.0.0'
-contains go.mod 'require example/dependency v1.0.0'
+exec grep 'require example/dependency v1.0.0' go.mod
 
 # Work with modules
 exec pe work init
 stdout 'Created go.work'
 exists go.work
-contains go.work 'go 1.21'
+exec grep 'go 1.21' go.work
 
 # Basic attestation for tracking changes
 exec pe attest init

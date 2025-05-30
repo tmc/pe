@@ -11,9 +11,9 @@ stdout '3 tests'
 exists pe-config.yaml
 
 # Check imported config structure
-contains pe-config.yaml 'prompts:'
-contains pe-config.yaml 'tests:'
-contains pe-config.yaml 'description:'
+exec grep 'prompts:' pe-config.yaml
+exec grep 'tests:' pe-config.yaml
+exec grep 'description:' pe-config.yaml
 
 # Import promptfoo results
 exec pe promptfoo import promptfoo-results.json -o pe-results.json
@@ -31,7 +31,7 @@ exists exported-promptfoo.yaml
 exec pe promptfoo export -c pe-config.yaml -o exported-promptfoo.json -f json
 stdout 'Format: json'
 exists exported-promptfoo.json
-contains exported-promptfoo.json '"prompts"'
+exec grep '"prompts"' exported-promptfoo.json
 
 # Export test results to promptfoo format
 exec pe test config.yaml --export pe-native-results.json
@@ -42,9 +42,9 @@ stdout 'Tests: 3'
 exists promptfoo-output.json
 
 # Verify promptfoo output structure
-contains promptfoo-output.json '"version": 2'
-contains promptfoo-output.json '"results"'
-contains promptfoo-output.json '"stats"'
+exec grep '"version": 2' promptfoo-output.json
+exec grep '"results"' promptfoo-output.json
+exec grep '"stats"' promptfoo-output.json
 
 # Convert between formats
 exec pe promptfoo convert promptfoo-config.yaml -o converted.json
@@ -61,15 +61,15 @@ exists converted-back.yaml
 exec pe promptfoo import complex-promptfoo.yaml -o complex-pe.yaml --preserve-providers --expand-includes
 stdout '✓ Imported configuration'
 stdout '5 providers'
-contains complex-pe.yaml 'providers:'
+exec grep 'providers:' complex-pe.yaml
 
 # Test assertion conversion
 exec pe promptfoo import with-assertions.yaml -o pe-with-assertions.yaml --convert-assertions
 stdout '✓ Imported configuration'
-contains pe-with-assertions.yaml 'assertions:'
-contains pe-with-assertions.yaml 'type: contains'
-contains pe-with-assertions.yaml 'type: not_contains'
-contains pe-with-assertions.yaml 'type: llm_rubric'
+exec grep 'assertions:' pe-with-assertions.yaml
+exec grep 'type: contains' pe-with-assertions.yaml
+exec grep 'type: not_contains' pe-with-assertions.yaml
+exec grep 'type: llm_rubric' pe-with-assertions.yaml
 
 # Round-trip test
 exec pe promptfoo import original.yaml -o intermediate.yaml
