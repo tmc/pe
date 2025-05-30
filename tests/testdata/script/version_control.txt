@@ -15,7 +15,7 @@ exec grep 'module example/mymodule' go.mod
 # Edit mod file
 exec pe edit --module example/dependency@v1.0.0
 stdout 'Added requirement: example/dependency v1.0.0'
-exec grep 'require example/dependency v1.0.0' go.mod
+exec grep 'example/dependency v1.0.0' go.mod
 
 # Work with modules
 exec pe work init

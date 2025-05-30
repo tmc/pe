@@ -40,7 +40,7 @@ Examples:
   
   # Get specific variant
   pe get summarize.txt --variant academic prompt`,
-	Args: cobra.RangeArgs(1, 2),
+	Args: cobra.RangeArgs(0, 2),
 	RunE: runGet,
 }
 

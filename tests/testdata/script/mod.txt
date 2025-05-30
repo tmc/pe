@@ -10,7 +10,7 @@ exec grep 'go 1.21' go.mod
 # Edit module file to add dependencies
 exec pe edit --module github.com/anthropic/helpful-harmless@v1.2.0
 stdout 'Added requirement: github.com/anthropic/helpful-harmless v1.2.0'
-exec grep 'require github.com/anthropic/helpful-harmless v1.2.0' go.mod
+exec grep 'github.com/anthropic/helpful-harmless v1.2.0' go.mod
 
 # List module contents
 exec pe get

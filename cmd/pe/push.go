@@ -26,7 +26,7 @@ Requires GITHUB_TOKEN environment variable to be set.
 Example:
   pe push tmc/hello
   pe push myorg/summarize --public`,
-	Args: cobra.ExactArgs(1),
+	Args: cobra.RangeArgs(0, 1),
 	RunE: runPush,
 }
 
@@ -43,7 +43,30 @@ func init() {
 }
 
 func runPush(cmd *cobra.Command, args []string) error {
-	moduleName := args[0]
+	var moduleName string
+	
+	if len(args) > 0 {
+		moduleName = args[0]
+	} else {
+		// Try to read module name from go.mod
+		data, err := os.ReadFile("go.mod")
+		if err != nil {
+			return fmt.Errorf("no module name provided and go.mod not found")
+		}
+		
+		lines := strings.Split(string(data), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(line, "module ") {
+				moduleName = strings.TrimSpace(strings.TrimPrefix(line, "module"))
+				break
+			}
+		}
+		
+		if moduleName == "" {
+			return fmt.Errorf("could not determine module name from go.mod")
+		}
+	}
 	
 	// Check for test mode
 	testMode := os.Getenv("PE_TEST_MODE") == "true"

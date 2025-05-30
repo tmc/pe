@@ -104,8 +104,9 @@ func metricsCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "metrics",
+		Use:   "metrics [simple <file>] | [flags]",
 		Short: "Calculate advanced evaluation metrics for generated text",
+		Args:  cobra.RangeArgs(0, 2),
 		Long: `Calculate state-of-the-art evaluation metrics including:
 
 Reference-Based Metrics:
@@ -150,6 +151,11 @@ Statistical Analysis:
   # Export comprehensive analysis
   pe metrics --all --generated-file data.txt --reference-file refs.txt --output analysis.json --format json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Handle simple mode
+			if len(args) > 0 && args[0] == "simple" {
+				return runSimpleMetrics(cmd, args[1:])
+			}
+			
 			// Validate inputs
 			if len(metricTypes) == 0 && !cmd.Flags().Changed("all") {
 				return fmt.Errorf("must specify --type or --all")
@@ -645,4 +651,62 @@ func calculateOverallScore(scores map[string]float64) float64 {
 		sum += score
 	}
 	return sum / float64(len(scores))
+}
+
+// runSimpleMetrics provides a simple metrics interface for basic prompt analysis
+func runSimpleMetrics(cmd *cobra.Command, args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("usage: pe metrics simple <prompt-file>")
+	}
+	
+	filename := args[0]
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %v", err)
+	}
+	
+	content := string(data)
+	
+	// Calculate simple metrics
+	fmt.Printf("Metrics for %s:\n", filename)
+	
+	// Basic complexity score based on length and structure
+	lines := strings.Split(content, "\n")
+	words := len(strings.Fields(content))
+	avgWordsPerLine := float64(words) / float64(len(lines))
+	
+	// Simple complexity score
+	complexityScore := 0.0
+	if words < 50 {
+		complexityScore = 0.3
+	} else if words < 100 {
+		complexityScore = 0.5
+	} else if words < 200 {
+		complexityScore = 0.7
+	} else {
+		complexityScore = 0.9
+	}
+	
+	// Adjust for structure
+	if strings.Contains(content, "{{") {
+		complexityScore += 0.1
+	}
+	if complexityScore > 1.0 {
+		complexityScore = 1.0
+	}
+	
+	fmt.Printf("Complexity Score: %.2f\n", complexityScore)
+	fmt.Printf("Word Count: %d\n", words)
+	fmt.Printf("Line Count: %d\n", len(lines))
+	fmt.Printf("Avg Words/Line: %.1f\n", avgWordsPerLine)
+	
+	// Additional metrics
+	if strings.Contains(content, "{{") {
+		fmt.Println("Template Variables: Yes")
+	}
+	if strings.Contains(content, "-- system-prompt --") {
+		fmt.Println("System Prompt: Yes")
+	}
+	
+	return nil
 }

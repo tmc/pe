@@ -340,12 +340,19 @@ func addModuleDependency(module string) error {
 		lines := strings.Split(content, "\n")
 		for i, line := range lines {
 			if strings.TrimSpace(line) == "require (" {
-				// Find the closing )
+				// Find the closing ) and handle comments
 				for j := i + 1; j < len(lines); j++ {
-					if strings.TrimSpace(lines[j]) == ")" {
+					trimmed := strings.TrimSpace(lines[j])
+					if trimmed == ")" {
 						// Insert before the closing )
 						newLines := append(lines[:j], append([]string{requireLine}, lines[j:]...)...)
-						content = strings.Join(newLines, "\n")
+						lines = newLines
+						content = strings.Join(lines, "\n")
+						break
+					} else if strings.HasPrefix(trimmed, "//") && strings.Contains(trimmed, "will be added here") {
+						// Replace the placeholder comment
+						lines[j] = requireLine
+						content = strings.Join(lines, "\n")
 						break
 					}
 				}

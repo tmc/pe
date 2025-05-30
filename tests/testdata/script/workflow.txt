@@ -37,8 +37,8 @@ stdout 'Context Integration:'
 stdout 'Instructions:'
 
 # Production deployment workflow
-exec pe build config.yaml --validate
-stdout 'Building prompts from config.yaml'
+exec pe build build-config.yaml --validate
+stdout 'Building prompts from build-config.yaml'
 stdout 'Validation passed'
 exists dist/prompts.tar.gz
 
@@ -60,9 +60,9 @@ stdout 'Complexity Score:'
 
 # Knowledge distillation workflow
 # Basic evaluation test
-exec pe eval config.yaml --provider mock
-stdout 'Running 1 test'
-stdout 'Test passed:'
+exec pe eval eval-config.yaml
+stdout 'Success'
+stdout '✓'
 
 -- context.txt --
 You are a helpful AI assistant focused on providing accurate and useful information.
@@ -93,11 +93,23 @@ tests:
       - valid: true
       - compatible_with: [instruction.txt]
 
--- config.yaml --
-prompt: Production-ready prompt
+-- build-config.yaml --
+prompt: "Production-ready prompt"
 provider: openai
 model: gpt-4
 temperature: 0.7
+
+-- eval-config.yaml --
+prompts:
+  - "Production-ready prompt"
+providers:
+  - mock
+tests:
+  - vars:
+      input: "Test input"
+    assert:
+      - type: contains
+        value: "response"
 
 -- regression-tests.yaml --
 tests:
