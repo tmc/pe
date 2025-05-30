@@ -57,6 +57,11 @@ func init() {
 }
 
 func runGet(cmd *cobra.Command, args []string) error {
+	// If no args, check for go.mod
+	if len(args) == 0 {
+		return runGetModule(cmd)
+	}
+	
 	filename := args[0]
 	field := "all"
 	if len(args) > 1 {
@@ -372,4 +377,50 @@ func getPromptInfo(p *prompt.Prompt) PromptInfo {
 	}
 	
 	return info
+}
+
+func runGetModule(cmd *cobra.Command) error {
+	// Read go.mod file
+	data, err := os.ReadFile("go.mod")
+	if err != nil {
+		return fmt.Errorf("reading go.mod: %w", err)
+	}
+	
+	// Simple parsing of go.mod
+	lines := strings.Split(string(data), "\n")
+	inRequire := false
+	
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		
+		// Print module line
+		if strings.HasPrefix(line, "module ") {
+			fmt.Println(line)
+			continue
+		}
+		
+		// Check for require block
+		if line == "require (" {
+			inRequire = true
+			continue
+		}
+		
+		if inRequire {
+			if line == ")" {
+				inRequire = false
+				continue
+			}
+			// Print require lines (skip comments)
+			if line != "" && !strings.HasPrefix(line, "//") {
+				fmt.Printf("require %s\n", line)
+			}
+		}
+		
+		// Handle single-line require
+		if strings.HasPrefix(line, "require ") {
+			fmt.Println(line)
+		}
+	}
+	
+	return nil
 }

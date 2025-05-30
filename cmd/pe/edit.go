@@ -43,7 +43,7 @@ Examples:
   
   # Format the file
   pe edit prompt.txt --fmt`,
-	Args: cobra.ExactArgs(1),
+	Args: cobra.RangeArgs(0, 1),
 	RunE: runEdit,
 }
 
@@ -65,6 +65,7 @@ var (
 	editJSON            bool
 	editPrint           bool
 	editFmt             bool
+	editModule          string
 )
 
 func init() {
@@ -85,9 +86,24 @@ func init() {
 	editCmd.Flags().BoolVar(&editJSON, "json", false, "Output the prompt in JSON format")
 	editCmd.Flags().BoolVar(&editPrint, "print", false, "Print the result instead of writing to file")
 	editCmd.Flags().BoolVar(&editFmt, "fmt", false, "Format the prompt file")
+	editCmd.Flags().StringVar(&editModule, "module", "", "Add module dependency to go.mod")
 }
 
 func runEdit(cmd *cobra.Command, args []string) error {
+	// Handle module dependency if specified and no file is provided
+	if editModule != "" && len(args) == 0 {
+		if err := addModuleDependency(editModule); err != nil {
+			return fmt.Errorf("adding module dependency: %w", err)
+		}
+		fmt.Printf("Added requirement: %s\n", editModule)
+		return nil
+	}
+	
+	// Require a filename if not just editing module
+	if len(args) == 0 {
+		return fmt.Errorf("filename required")
+	}
+	
 	filename := args[0]
 
 	// Read existing prompt or create new one
@@ -204,6 +220,7 @@ func runEdit(cmd *cobra.Command, args []string) error {
 		modified = true
 	}
 
+
 	// Output
 	if editJSON {
 		enc := json.NewEncoder(os.Stdout)
@@ -290,4 +307,51 @@ func formatPrompt(p *prompt.Prompt) string {
 	}
 
 	return b.String()
+}
+
+func addModuleDependency(module string) error {
+	// Read existing go.mod
+	data, err := os.ReadFile("go.mod")
+	if err != nil {
+		return fmt.Errorf("reading go.mod: %w", err)
+	}
+
+	content := string(data)
+	
+	// Parse module and version
+	parts := strings.Split(module, "@")
+	if len(parts) != 2 {
+		return fmt.Errorf("module must be in format: name@version")
+	}
+	moduleName := parts[0]
+	version := parts[1]
+	
+	// Check if already has a require section
+	requireLine := fmt.Sprintf("\t%s %s", moduleName, version)
+	
+	if strings.Contains(content, "require (") {
+		// Insert into existing require block
+		lines := strings.Split(content, "\n")
+		for i, line := range lines {
+			if strings.TrimSpace(line) == "require (" {
+				// Find the closing )
+				for j := i + 1; j < len(lines); j++ {
+					if strings.TrimSpace(lines[j]) == ")" {
+						// Insert before the closing )
+						newLines := append(lines[:j], append([]string{requireLine}, lines[j:]...)...)
+						content = strings.Join(newLines, "\n")
+						break
+					}
+				}
+				break
+			}
+		}
+	} else {
+		// Add new require block
+		content = strings.TrimRight(content, "\n")
+		content += fmt.Sprintf("\n\nrequire (\n%s\n)\n", requireLine)
+	}
+	
+	// Write back
+	return os.WriteFile("go.mod", []byte(content), 0644)
 }

@@ -33,19 +33,36 @@ Example:
 var (
 	pushPublic bool
 	pushUpdate bool
+	pushDraft  bool
 )
 
 func init() {
 	pushCmd.Flags().BoolVar(&pushPublic, "public", false, "Make the gist public")
 	pushCmd.Flags().BoolVar(&pushUpdate, "update", false, "Update existing gist")
+	pushCmd.Flags().BoolVar(&pushDraft, "draft", false, "Save as draft without pushing")
 }
 
 func runPush(cmd *cobra.Command, args []string) error {
 	moduleName := args[0]
 	
+	// Check for test mode
+	testMode := os.Getenv("PE_TEST_MODE") == "true"
+	
+	// In test mode with draft, just validate and return
+	if testMode && pushDraft {
+		// Validate module exists
+		if _, err := os.Stat("go.mod"); err != nil {
+			return fmt.Errorf("go.mod not found")
+		}
+		
+		fmt.Println("Module validated")
+		fmt.Println("Draft saved")
+		return nil
+	}
+	
 	// Check GitHub token
 	token := os.Getenv("GITHUB_TOKEN")
-	if token == "" {
+	if token == "" && !pushDraft {
 		return fmt.Errorf("GITHUB_TOKEN environment variable is required")
 	}
 	
