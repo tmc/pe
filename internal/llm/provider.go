@@ -3,6 +3,7 @@ package llm
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/tmc/pe/internal/cgpt"
@@ -65,10 +66,19 @@ type BatchProvider interface {
 
 // GetProvider returns a Provider for the given backend
 func GetProvider(backend string) (Provider, error) {
-	switch backend {
+	// Parse provider:model format
+	provider := backend
+	model := ""
+	if idx := strings.IndexByte(backend, ':'); idx != -1 {
+		provider = backend[:idx]
+		model = backend[idx+1:]
+	}
+	
+	switch provider {
 	case "cgpt", "openai", "anthropic", "gemini", "googleai":
 		return &CGPTProvider{
-			Backend: backend,
+			Backend: provider,
+			model:   model,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported backend: %s", backend)
