@@ -68,7 +68,7 @@ work together seamlessly.`,
 	// Core commands (like go toolchain)
 	root.AddCommand(runCmd())      // go run for prompts
 	root.AddCommand(testCmd())     // go test for prompts
-	root.AddCommand(initCmd())     // go mod init for prompts
+	root.AddCommand(peInitCmd())   // pe init for repository
 	root.AddCommand(modCmd)        // go mod for prompt modules
 	root.AddCommand(pushCmd)       // push modules to registry
 	root.AddCommand(editCmd)       // go mod edit for prompts
@@ -81,7 +81,7 @@ work together seamlessly.`,
 	root.AddCommand(evalCmd())
 	root.AddCommand(viewCmd())
 	root.AddCommand(vetCmd())
-	root.AddCommand(fmtCmd())
+	root.AddCommand(promptFmtCmd()) // Use the prompt formatting command
 	root.AddCommand(convertCmd())
 	root.AddCommand(benchmarkCmd())
 	root.AddCommand(watchCmd())
@@ -96,6 +96,7 @@ work together seamlessly.`,
 	root.AddCommand(statsCmd())
 	root.AddCommand(diffCmd())
 	root.AddCommand(interactiveCmd())
+	root.AddCommand(extractCmd())
 	root.AddCommand(optimizeCmd())
 	root.AddCommand(evolveCmd())
 	root.AddCommand(fusionCmd)
@@ -108,6 +109,9 @@ work together seamlessly.`,
 
 	// Plugin command
 	root.AddCommand(pluginCmd())
+
+	// Distributed system commands
+	root.AddCommand(cacheCmd)
 
 	// Discover and add plugin commands dynamically
 	dynamicPluginCommands(root)

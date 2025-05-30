@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -24,7 +25,7 @@ func optimizeCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "optimize",
+		Use:   "optimize [prompt-file]",
 		Short: "Optimize prompts using metaprompting techniques",
 		Long: `Optimize prompts using advanced metaprompting techniques including:
 - PE2: Prompt Engineering a Prompt Engineer (2024 breakthrough)
@@ -50,6 +51,15 @@ automated prompt engineering and systematic optimization.`,
   # Standard with specific provider
   pe optimize --prompt "Summarize" --provider anthropic --output results.json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Handle file argument
+			if len(args) > 0 {
+				content, err := os.ReadFile(args[0])
+				if err != nil {
+					return fmt.Errorf("failed to read prompt file: %w", err)
+				}
+				initialPrompt = string(content)
+			}
+			
 			if initialPrompt == "" {
 				return fmt.Errorf("initial prompt is required")
 			}
@@ -116,7 +126,7 @@ automated prompt engineering and systematic optimization.`,
 	cmd.Flags().IntVar(&maxTokens, "max-tokens", 1000, "Maximum tokens per generation")
 	cmd.Flags().StringVarP(&method, "method", "m", "standard", "Optimization method (standard, pe2, apex, textgrad, hybrid)")
 
-	cmd.MarkFlagRequired("prompt")
+	// Remove required flag since we can also accept file argument
 
 	return cmd
 }
