@@ -1,7 +1,7 @@
 # Test pe promptfoo integration - import/export compatibility
 
 # Import a basic promptfoo config
-pe promptfoo import promptfoo-config.yaml -o pe-config.yaml
+exec pe promptfoo import promptfoo-config.yaml -o pe-config.yaml
 stdout 'Importing promptfoo configuration'
 stdout '✓ Imported configuration'
 stdout '2 prompts'
@@ -14,26 +14,26 @@ contains pe-config.yaml 'tests:'
 contains pe-config.yaml 'description:'
 
 # Import promptfoo results
-pe promptfoo import promptfoo-results.json -o pe-results.json
+exec pe promptfoo import promptfoo-results.json -o pe-results.json
 stdout 'Detected promptfoo results file'
 stdout '✓ Imported test results'
 exists pe-results.json
 
 # Export PE config to promptfoo format
-pe promptfoo export -c pe-config.yaml -o exported-promptfoo.yaml
+exec pe promptfoo export -c pe-config.yaml -o exported-promptfoo.yaml
 stdout 'Exporting configuration'
 stdout '✓ Exported configuration'
 exists exported-promptfoo.yaml
 
 # Export with JSON format
-pe promptfoo export -c pe-config.yaml -o exported-promptfoo.json -f json
+exec pe promptfoo export -c pe-config.yaml -o exported-promptfoo.json -f json
 stdout 'Format: json'
 exists exported-promptfoo.json
 contains exported-promptfoo.json '"prompts"'
 
 # Export test results to promptfoo format
-pe test config.yaml --export pe-native-results.json
-pe promptfoo export -r pe-native-results.json -o promptfoo-output.json
+exec pe test config.yaml --export pe-native-results.json
+exec pe promptfoo export -r pe-native-results.json -o promptfoo-output.json
 stdout 'Exporting test results'
 stdout '✓ Exported test results'
 stdout 'Tests: 3'
@@ -45,24 +45,24 @@ contains promptfoo-output.json '"results"'
 contains promptfoo-output.json '"stats"'
 
 # Convert between formats
-pe promptfoo convert promptfoo-config.yaml -o converted.json
+exec pe promptfoo convert promptfoo-config.yaml -o converted.json
 stdout 'Converting.*to json format'
 stdout '✓ Converted'
 exists converted.json
 
 # Convert back to YAML
-pe promptfoo convert converted.json -o converted-back.yaml -f yaml
+exec pe promptfoo convert converted.json -o converted-back.yaml -f yaml
 stdout 'Converting.*to yaml format'
 exists converted-back.yaml
 
 # Import with options
-pe promptfoo import complex-promptfoo.yaml -o complex-pe.yaml --preserve-providers --expand-includes
+exec pe promptfoo import complex-promptfoo.yaml -o complex-pe.yaml --preserve-providers --expand-includes
 stdout '✓ Imported configuration'
 stdout '5 providers'
 contains complex-pe.yaml 'providers:'
 
 # Test assertion conversion
-pe promptfoo import with-assertions.yaml -o pe-with-assertions.yaml --convert-assertions
+exec pe promptfoo import with-assertions.yaml -o pe-with-assertions.yaml --convert-assertions
 stdout '✓ Imported configuration'
 contains pe-with-assertions.yaml 'assertions:'
 contains pe-with-assertions.yaml 'type: contains'
@@ -70,8 +70,8 @@ contains pe-with-assertions.yaml 'type: not_contains'
 contains pe-with-assertions.yaml 'type: llm_rubric'
 
 # Round-trip test
-pe promptfoo import original.yaml -o intermediate.yaml
-pe promptfoo export -c intermediate.yaml -o roundtrip.yaml
+exec pe promptfoo import original.yaml -o intermediate.yaml
+exec pe promptfoo export -c intermediate.yaml -o roundtrip.yaml
 # Files should be semantically equivalent
 exists roundtrip.yaml
 

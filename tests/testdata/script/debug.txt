@@ -1,4 +1,4 @@
 # Debug test to check scripttest behavior
 
 # Simple pe command
-pe init
+exec pe init

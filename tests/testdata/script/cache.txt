@@ -1,33 +1,33 @@
 # Test pe cache commands - verifiable shared caching
 
 # Basic cache operations
-pe cache status
+exec pe cache status
 stdout 'Cache Status:'
 stdout 'Size: 0 MB'
 stdout 'Entries: 0'
 stdout 'Hit rate: N/A'
 
 # Run with caching
-pe run "What is 2+2?" --cache
+exec pe run "What is 2+2?" --cache
 stdout '4'
-pe cache status
+exec pe cache status
 stdout 'Entries: 1'
 
 # Cache hit
-pe run "What is 2+2?" --cache
+exec pe run "What is 2+2?" --cache
 stdout '4'
 stdout '(cached)'
-pe cache status
+exec pe cache status
 stdout 'Hit rate: 50%'
 
 # List cache entries
-pe cache list
+exec pe cache list
 stdout 'Cache entries:'
 stdout 'Hash.*Model.*Size.*Age'
 stdout 'sha256:.*gpt-4.*150B.*<1m'
 
 # Inspect cache entry
-pe cache inspect sha256:abc123
+exec pe cache inspect sha256:abc123
 stdout 'Cache Entry Details:'
 stdout 'Prompt hash: sha256:abc123'
 stdout 'Response hash: sha256:def456'
@@ -36,7 +36,7 @@ stdout 'Timestamp:'
 stdout 'Verification: VALID'
 
 # Import verified cache
-pe cache import team-cache.bundle --verify
+exec pe cache import team-cache.bundle --verify
 stdout 'Importing cache bundle'
 stdout 'Verifying signatures'
 stdout '✓ Signature valid: alice@team.com'
@@ -44,20 +44,20 @@ stdout '✓ Witness valid: bob@team.com'
 stdout 'Imported 50 entries'
 
 # Export cache with signing
-pe cache export --sign --output my-cache.bundle
+exec pe cache export --sign --output my-cache.bundle
 stdout 'Exporting cache'
 stdout 'Signing with key: user@example.com'
 stdout 'Exported 51 entries'
 exists my-cache.bundle
 
 # Verify cache integrity
-pe cache verify
+exec pe cache verify
 stdout 'Verifying cache integrity'
 stdout '✓ All entries valid'
 stdout '✓ No tampering detected'
 
 # Deep verification with witnesses
-pe cache verify --deep
+exec pe cache verify --deep
 stdout 'Deep verification'
 stdout 'Checking witness signatures'
 stdout 'Witness 1: bob@team.com ✓'
@@ -65,27 +65,27 @@ stdout 'Witness 2: cache.pe.dev ✓'
 stdout 'Certificate chain: VALID'
 
 # Clear cache
-pe cache clear
+exec pe cache clear
 stdout 'Clear cache? (y/N)'
 stdin 'y'
 stdout 'Cache cleared'
-pe cache status
+exec pe cache status
 stdout 'Entries: 0'
 
 # Cache with TTL
-pe run "Current time?" --cache --ttl 60s
+exec pe run "Current time?" --cache --ttl 60s
 stdout 'The current time is'
 sleep 61s
-pe run "Current time?" --cache --ttl 60s
+exec pe run "Current time?" --cache --ttl 60s
 stdout 'The current time is'
 ! stdout '(cached)'
 
 # Selective cache clear
-pe cache clear --older-than 24h
+exec pe cache clear --older-than 24h
 stdout 'Cleared 5 entries older than 24h'
 
 # Cache statistics
-pe cache stats
+exec pe cache stats
 stdout 'Cache Statistics:'
 stdout 'Total requests: 100'
 stdout 'Cache hits: 45'
@@ -95,9 +95,9 @@ stdout 'Space saved: $12.30'
 stdout 'Time saved: 4m 32s'
 
 # Privacy-preserving cache
-pe run "Sensitive query" --cache --private
+exec pe run "Sensitive query" --cache --private
 stdout 'Response'
-pe cache list
+exec pe cache list
 stdout 'sha256:.*<private>.*<private>'
 
 -- team-cache.bundle --

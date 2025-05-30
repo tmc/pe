@@ -1,62 +1,62 @@
 # Test complex PE workflows - end-to-end scenarios
 
 # Research paper summarization workflow
-pe run research-prompt.txt --var Paper=paper.pdf |
-  pe extract --tag summary |
-  pe optimize --method textgrad --objective "clarity and conciseness" |
-  pe test --inline criteria.yaml |
-  pe build --output final-summary.txt
+exec pe run research-prompt.txt --var Paper=paper.pdf |
+  exec pe extract --tag summary |
+  exec pe optimize --method textgrad --objective "clarity and conciseness" |
+  exec pe test --inline criteria.yaml |
+  exec pe build --output final-summary.txt
 stdout 'Workflow complete'
 exists final-summary.txt
 contains final-summary.txt 'Key findings:'
 
 # Multi-model consensus workflow  
-pe run prompt.txt --provider openai --output gpt4.txt &
-pe run prompt.txt --provider anthropic --output claude.txt &
-pe run prompt.txt --provider google --output gemini.txt &
+exec pe run prompt.txt --provider openai --output gpt4.txt &
+exec pe run prompt.txt --provider anthropic --output claude.txt &
+exec pe run prompt.txt --provider google --output gemini.txt &
 wait
-pe fusion gpt4.txt claude.txt gemini.txt --consensus weighted
+exec pe fusion gpt4.txt claude.txt gemini.txt --consensus weighted
 stdout 'Consensus reached'
 stdout 'Agreement score: 0.89'
 
 # A/B testing workflow
-pe init --experiment ab-test
-pe branch create variant-a
-pe optimize prompt.txt --method pe2 --target "engagement"
-pe commit -m "Variant A: Optimized for engagement"
-pe checkout main
-pe branch create variant-b  
-pe optimize prompt.txt --method evolve --target "accuracy"
-pe commit -m "Variant B: Optimized for accuracy"
-pe ab-test variant-a variant-b --duration 1h --metrics engagement,accuracy
+exec pe init --experiment ab-test
+exec pe branch create variant-a
+exec pe optimize prompt.txt --method pe2 --target "engagement"
+exec pe commit -m "Variant A: Optimized for engagement"
+exec pe checkout main
+exec pe branch create variant-b  
+exec pe optimize prompt.txt --method evolve --target "accuracy"
+exec pe commit -m "Variant B: Optimized for accuracy"
+exec pe ab-test variant-a variant-b --duration 1h --metrics engagement,accuracy
 stdout 'A/B Test Results:'
 stdout 'Variant A: engagement=0.87, accuracy=0.82'
 stdout 'Variant B: engagement=0.79, accuracy=0.91'
 stdout 'Winner: Variant B (higher combined score)'
 
 # Component library workflow
-pe mod init mycompany/prompts
-pe compose --import https://github.com/anthropic/helpful-harmless
-pe compose --import https://github.com/openai/best-practices
-pe compose context.txt instruction.txt --style cot --optimize
-pe test component-tests.yaml
-pe build --bundle
-pe mod publish
+exec pe mod init mycompany/prompts
+exec pe compose --import https://github.com/anthropic/helpful-harmless
+exec pe compose --import https://github.com/openai/best-practices
+exec pe compose context.txt instruction.txt --style cot --optimize
+exec pe test component-tests.yaml
+exec pe build --bundle
+exec pe mod publish
 stdout 'Published: mycompany/prompts v1.0.0'
 
 # Production deployment workflow
-pe build config.yaml --validate --minify
+exec pe build config.yaml --validate --minify
 stdout '✓ Validation passed'
-pe test regression-tests.yaml --baseline prod-baseline.json
+exec pe test regression-tests.yaml --baseline prod-baseline.json
 stdout '✓ No regression detected'
-pe security scan
+exec pe security scan
 stdout '✓ Security scan passed'
-pe build --production --sign
+exec pe build --production --sign
 stdout '✓ Built and signed'
 exists prompt.prod.signed
 
 # Continuous optimization workflow
-pe optimize prompt.txt --method hybrid --auto
+exec pe optimize prompt.txt --method hybrid --auto
 stdout 'Starting continuous optimization'
 stdout 'Iteration 1: Best method: textgrad'
 stdout 'Iteration 2: Best method: semantic'
@@ -65,30 +65,30 @@ stdout 'Convergence achieved'
 stdout 'Final improvement: +34%'
 
 # Debug workflow
-pe run failing-prompt.txt --debug
+exec pe run failing-prompt.txt --debug
 stderr 'Error: Ambiguous instruction'
-pe analyze failing-prompt.txt --diagnose
+exec pe analyze failing-prompt.txt --diagnose
 stdout 'Issues found:'
 stdout '  1. Conflicting directives'
 stdout '  2. Missing context'
-pe fix failing-prompt.txt --auto
+exec pe fix failing-prompt.txt --auto
 stdout 'Applied 2 fixes'
-pe run failing-prompt-fixed.txt
+exec pe run failing-prompt-fixed.txt
 stdout 'Success'
 
 # Batch processing workflow
-ls prompts/*.txt | pe map "pe optimize {} --output optimized/{}"
+ls prompts/*.txt | exec pe map "exec pe optimize {} --output optimized/{}"
 stdout 'Processed 10 prompts'
-pe metrics --batch --inputs prompts/*.txt --baseline optimized/*.txt
+exec pe metrics --batch --inputs prompts/*.txt --baseline optimized/*.txt
 stdout 'Average improvement: 23%'
 
 # Knowledge distillation workflow
-pe run teacher-prompt.txt --provider gpt-4 --examples 100 > examples.jsonl
-pe train student-prompt.txt --data examples.jsonl --method distillation
+exec pe run teacher-prompt.txt --provider gpt-4 --examples 100 > examples.jsonl
+exec pe train student-prompt.txt --data examples.jsonl --method distillation
 stdout 'Training student prompt'
 stdout 'Epoch 1/5: Loss=0.34'
 stdout 'Epoch 5/5: Loss=0.12'
-pe compare teacher-prompt.txt student-prompt.txt
+exec pe compare teacher-prompt.txt student-prompt.txt
 stdout 'Performance retention: 94%'
 stdout 'Cost reduction: 78%'
 

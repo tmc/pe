@@ -1,19 +1,19 @@
 # Test pe compose command - component-based prompt engineering
 
 # Initialize component library
-pe compose --library-init
+exec pe compose --library-init
 stdout 'Initialized component library'
 exists .pe/components
 exists .pe/components/registry.json
 
 # Add components to library
-pe compose --add-component context.txt --category context
+exec pe compose --add-component context.txt --category context
 stdout 'Added component: context.txt'
-pe compose --add-component instruction.txt --category instruction
+exec pe compose --add-component instruction.txt --category instruction
 stdout 'Added component: instruction.txt'
 
 # Basic composition
-pe compose context.txt instruction.txt examples.txt --output composed.txt
+exec pe compose context.txt instruction.txt examples.txt --output composed.txt
 stdout 'Composing 3 components'
 stdout 'Style: default'
 stdout 'Composition complete'
@@ -22,33 +22,33 @@ contains composed.txt 'Context:'
 contains composed.txt 'Instructions:'
 
 # Style-specific composition
-pe compose components/ --style cot --output cot-prompt.txt
+exec pe compose components/ --style cot --output cot-prompt.txt
 stdout 'Chain-of-thought composition'
 stdout 'Added reasoning structure'
 contains cot-prompt.txt "Let's think step by step"
 
 # Few-shot composition
-pe compose base.txt --style few-shot --examples examples.json
+exec pe compose base.txt --style few-shot --examples examples.json
 stdout 'Few-shot composition'
 stdout 'Injected 3 examples'
 contains base.txt 'Example 1:'
 
 # Composition with optimization
-pe compose context.txt task.txt --optimize --target gpt-4
+exec pe compose context.txt task.txt --optimize --target gpt-4
 stdout 'Composing with optimization'
 stdout 'Target model: gpt-4'
 stdout 'Optimizing coherence'
 stdout 'TextGrad optimization applied'
 
 # Component validation
-pe compose context.txt incompatible.txt --validate
+exec pe compose context.txt incompatible.txt --validate
 ! stderr .
 stdout 'Warning: Potential incompatibility detected'
 stdout 'context.txt expects: general knowledge'
 stdout 'incompatible.txt provides: specialized medical'
 
 # List available components
-pe compose --list
+exec pe compose --list
 stdout 'Available components:'
 stdout '  context/'
 stdout '    - general.txt'
@@ -58,19 +58,19 @@ stdout '    - analyze.txt'
 stdout '  examples/'
 
 # Composition with pe.mod file
-pe compose
+exec pe compose
 stdout 'Loading pe.mod'
 stdout 'Resolving dependencies'
 stdout 'Downloading github.com/anthropic/helpful-harmless@v1.2.0'
 stdout 'Composing from module requirements'
 
 # Import from URL
-pe compose --import https://example.com/components.txtar
+exec pe compose --import https://example.com/components.txtar
 stdout 'Importing components'
 stdout 'Added 5 components'
 
 # Coherence analysis
-pe compose prompt1.txt prompt2.txt --coherence-check
+exec pe compose prompt1.txt prompt2.txt --coherence-check
 stdout 'Coherence analysis:'
 stdout 'Semantic similarity: 0.85'
 stdout 'Style consistency: 0.92'

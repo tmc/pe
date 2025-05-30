@@ -1,22 +1,22 @@
 # Test pe pipeline commands - Unix-style composability
 
 # Basic pipeline
-echo "What is the capital of France?" | pe ask | pe filter --pattern "Paris"
+echo "What is the capital of France?" | exec pe ask | exec pe filter --pattern "Paris"
 stdout 'Paris'
 
 # Multi-stage pipeline
-pe run "List 5 random numbers" | pe stream | pe analyze --type statistical
+exec pe run "List 5 random numbers" | pe stream | pe analyze --type statistical
 stdout 'Mean:'
 stdout 'Median:'
 stdout 'Std Dev:'
 
 # Pipeline with file processing
-cat data.jsonl | pe ask --template "Summarize: {{.}}" | pe filter --json .summary
+cat data.jsonl | exec pe ask --template "Summarize: {{.}}" | exec pe filter --json .summary
 stdout '"Quick summary'
 stdout '"Brief overview'
 
 # Streaming pipeline
-pe run "Count from 1 to 10" --stream | pe filter --match "^[5-9]"
+exec pe run "Count from 1 to 10" --stream | pe filter --match "^[5-9]"
 stdout '5'
 stdout '6'
 stdout '7'
@@ -25,50 +25,50 @@ stdout '9'
 ! stdout '10'
 
 # Analysis pipeline
-pe run "Generate a paragraph about AI" | pe analyze --metrics readability,sentiment
+exec pe run "Generate a paragraph about AI" | pe analyze --metrics readability,sentiment
 stdout 'Readability score:'
 stdout 'Flesch-Kincaid:'
 stdout 'Sentiment: positive'
 
 # Transform pipeline
-echo "HELLO WORLD" | pe ask "Convert to lowercase" | pe filter --transform lowercase
+echo "HELLO WORLD" | exec pe ask "Convert to lowercase" | exec pe filter --transform lowercase
 stdout 'hello world'
 
 # Parallel pipeline processing
-pe run "Task 1" --async &
-pe run "Task 2" --async &
-pe run "Task 3" --async &
+exec pe run "Task 1" --async &
+exec pe run "Task 2" --async &
+exec pe run "Task 3" --async &
 wait
-pe collect --jobs 3
+exec pe collect --jobs 3
 stdout 'Collected 3 results'
 
 # Pipeline with error handling
-! echo "Invalid JSON" | pe filter --json .field
+! echo "Invalid JSON" | exec pe filter --json .field
 stderr 'JSON parse error'
 
 # Complex pipeline with multiple stages
-pe run prompt.txt |
-  pe optimize --method textgrad --quiet |
-  pe test --inline test-cases.yaml |
-  pe analyze --format json
+exec pe run prompt.txt |
+  exec pe optimize --method textgrad --quiet |
+  exec pe test --inline test-cases.yaml |
+  exec pe analyze --format json
 stdout '"optimization_score"'
 stdout '"test_results"'
 stdout '"analysis"'
 
 # Pipeline with caching
-pe run "Expensive computation" --cache | pe filter --field result
+exec pe run "Expensive computation" --cache | exec pe filter --field result
 stdout 'Result: 42'
 # Second run should use cache
-pe run "Expensive computation" --cache | pe filter --field result
+exec pe run "Expensive computation" --cache | exec pe filter --field result
 stdout 'Result: 42'
 stdout '(cached)'
 
 # Aggregation pipeline
-seq 1 5 | pe ask --template "Double {{.}}" --parallel | pe reduce --sum
+seq 1 5 | exec pe ask --template "Double {{.}}" --parallel | exec pe reduce --sum
 stdout '30'  # 2+4+6+8+10
 
 # Pipeline with conditions
-pe run "Check status" | pe filter --if-contains "OK" --then "pe run success.txt" --else "pe run failure.txt"
+exec pe run "Check status" | exec pe filter --if-contains "OK" --then "exec pe run success.txt" --else "exec pe run failure.txt"
 stdout 'Operation successful'
 
 -- data.jsonl --

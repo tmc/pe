@@ -1,14 +1,14 @@
 # Test pe mod commands - dependency management like go mod
 
 # Initialize module
-pe mod init github.com/myorg/myproject
+exec pe mod init github.com/myorg/myproject
 stdout 'go: creating new pe.mod'
 exists pe.mod
 contains pe.mod 'module github.com/myorg/myproject'
 contains pe.mod 'pe 1.0'
 
 # Add a dependency
-pe mod get github.com/anthropic/helpful-harmless@latest
+exec pe mod get github.com/anthropic/helpful-harmless@latest
 stdout 'go: downloading github.com/anthropic/helpful-harmless v1.2.0'
 stdout 'go: added github.com/anthropic/helpful-harmless v1.2.0'
 exists pe.sum
@@ -16,56 +16,56 @@ contains pe.mod 'require'
 contains pe.mod 'github.com/anthropic/helpful-harmless v1.2.0'
 
 # List dependencies
-pe mod list
+exec pe mod list
 stdout 'github.com/myorg/myproject'
 
-pe mod list -m all
+exec pe mod list -m all
 stdout 'github.com/anthropic/helpful-harmless v1.2.0'
 stdout 'github.com/openai/best-practices v2.1.0'
 
 # Update dependencies
-pe mod get -u
+exec pe mod get -u
 stdout 'go: upgraded github.com/anthropic/helpful-harmless v1.2.0 => v1.3.0'
 
 # Tidy dependencies
-pe mod tidy
+exec pe mod tidy
 stdout 'go: downloading github.com/google/tech-writing v1.0.0'
 ! stderr .
 
 # Vendor dependencies
-pe mod vendor
+exec pe mod vendor
 stdout 'go: copying requirements'
 exists vendor/
 exists vendor/github.com/anthropic/helpful-harmless/
 exists vendor/modules.txt
 
 # Graph dependencies
-pe mod graph
+exec pe mod graph
 stdout 'github.com/myorg/myproject github.com/anthropic/helpful-harmless@v1.3.0'
 stdout 'github.com/anthropic/helpful-harmless@v1.3.0 github.com/openai/best-practices@v2.1.0'
 
 # Download specific version
-pe mod download github.com/google/tech-writing@v1.0.0
+exec pe mod download github.com/google/tech-writing@v1.0.0
 stdout 'go: downloading github.com/google/tech-writing v1.0.0'
 exists .pe/mod/cache/download/github.com/google/tech-writing/@v/v1.0.0.info
 
 # Replace directive
-pe mod edit -replace github.com/openai/best-practices=./local-overrides/best-practices
+exec pe mod edit -replace github.com/openai/best-practices=./local-overrides/best-practices
 contains pe.mod 'replace github.com/openai/best-practices => ./local-overrides/best-practices'
 
 # Module verification
-pe mod verify
+exec pe mod verify
 stdout 'all modules verified'
 
 # Why query
-pe mod why github.com/openai/best-practices
+exec pe mod why github.com/openai/best-practices
 stdout '# github.com/openai/best-practices'
 stdout 'github.com/myorg/myproject'
 stdout 'github.com/anthropic/helpful-harmless@v1.3.0'
 stdout 'github.com/openai/best-practices@v2.1.0'
 
 # Clean module cache
-pe mod clean -modcache
+exec pe mod clean -modcache
 stdout 'removed module download cache'
 ! exists .pe/mod/cache
 

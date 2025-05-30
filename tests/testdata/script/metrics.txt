@@ -1,7 +1,7 @@
 # Test pe metrics command - advanced evaluation metrics
 
 # BLEU score calculation
-pe metrics --type bleu --generated output.txt --reference expected.txt
+exec pe metrics --type bleu --generated output.txt --reference expected.txt
 stdout 'BLEU Score: 0.76'
 stdout 'N-gram Precision:'
 stdout '  1-gram: 0.85'
@@ -10,7 +10,7 @@ stdout '  3-gram: 0.72'
 stdout '  4-gram: 0.68'
 
 # ROUGE scores
-pe metrics --type rouge --generated summary.txt --reference reference.txt
+exec pe metrics --type rouge --generated summary.txt --reference reference.txt
 stdout 'ROUGE Scores:'
 stdout '  ROUGE-1: 0.82'
 stdout '  ROUGE-2: 0.74'
@@ -18,7 +18,7 @@ stdout '  ROUGE-L: 0.79'
 stdout '  ROUGE-W: 0.77'
 
 # BERTScore evaluation
-pe metrics --type bertscore --generated output.txt --reference expected.txt
+exec pe metrics --type bertscore --generated output.txt --reference expected.txt
 stdout 'BERTScore:'
 stdout '  Precision: 0.91'
 stdout '  Recall: 0.89'
@@ -26,7 +26,7 @@ stdout '  F1: 0.90'
 stdout '  Confidence: ±0.02'
 
 # G-Eval with custom criteria
-pe metrics --type g-eval --generated response.txt --criteria criteria.yaml
+exec pe metrics --type g-eval --generated response.txt --criteria criteria.yaml
 stdout 'G-Eval Results:'
 stdout '  Accuracy: 0.88'
 stdout '  Clarity: 0.92'
@@ -34,7 +34,7 @@ stdout '  Completeness: 0.85'
 stdout '  Overall: 0.88'
 
 # UniEval task-specific evaluation
-pe metrics --type unieval --task summarization --generated summary.txt --source article.txt
+exec pe metrics --type unieval --task summarization --generated summary.txt --source article.txt
 stdout 'UniEval Summarization:'
 stdout '  Coherence: 0.91'
 stdout '  Consistency: 0.89'
@@ -42,7 +42,7 @@ stdout '  Fluency: 0.93'
 stdout '  Relevance: 0.87'
 
 # All metrics at once
-pe metrics --all --generated output.txt --reference expected.txt --output report.json
+exec pe metrics --all --generated output.txt --reference expected.txt --output report.json
 stdout 'Computing all metrics...'
 stdout 'BLEU: 0.76'
 stdout 'ROUGE-L: 0.79'
@@ -53,14 +53,14 @@ contains report.json '"rouge"'
 contains report.json '"bertscore"'
 
 # Batch evaluation
-pe metrics --batch --inputs batch.jsonl
+exec pe metrics --batch --inputs batch.jsonl
 stdout 'Processing 10 examples'
 stdout 'Average BLEU: 0.78'
 stdout 'Average ROUGE-L: 0.81'
 stdout 'Std Dev: 0.04'
 
 # Statistical significance testing
-pe metrics --compare baseline.json improved.json --significance
+exec pe metrics --compare baseline.json improved.json --significance
 stdout 'Statistical Comparison:'
 stdout 'Baseline avg: 0.75'
 stdout 'Improved avg: 0.82'
@@ -69,21 +69,21 @@ stdout 'p-value: 0.003'
 stdout 'Result: Statistically significant (p < 0.05)'
 
 # Custom metric definition
-pe metrics --custom custom-metric.js --generated output.txt
+exec pe metrics --custom custom-metric.js --generated output.txt
 stdout 'Custom Metric Result: 0.94'
 
 # Semantic similarity
-pe metrics --type similarity --text1 text1.txt --text2 text2.txt
+exec pe metrics --type similarity --text1 text1.txt --text2 text2.txt
 stdout 'Semantic Similarity: 0.87'
 stdout 'Cosine Distance: 0.13'
 
 # Perplexity measurement
-pe metrics --type perplexity --text output.txt --model gpt-4
+exec pe metrics --type perplexity --text output.txt --model gpt-4
 stdout 'Perplexity: 12.4'
 stdout 'Cross-entropy: 2.52'
 
 # Token-level analysis
-pe metrics --type token-analysis --generated output.txt --reference expected.txt
+exec pe metrics --type token-analysis --generated output.txt --reference expected.txt
 stdout 'Token Analysis:'
 stdout '  Exact matches: 76%'
 stdout '  Semantic matches: 89%'
@@ -91,7 +91,7 @@ stdout '  Added tokens: 12'
 stdout '  Removed tokens: 8'
 
 # Error analysis
-pe metrics --error-analysis --generated outputs/ --reference refs/
+exec pe metrics --error-analysis --generated outputs/ --reference refs/
 stdout 'Error Analysis:'
 stdout '  Most common errors:'
 stdout '    1. Missing context (23%)'

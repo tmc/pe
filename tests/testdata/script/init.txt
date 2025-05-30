@@ -1,7 +1,7 @@
 # Test pe init command
 
 # Initialize in clean directory
-pe init
+exec pe init
 stdout 'Initialized PE repository'
 exists .pe
 exists .pe/config
@@ -10,20 +10,20 @@ exists .pe/history
 # Initialize with custom directory
 mkdir myproject
 cd myproject
-pe init
+exec pe init
 exists .pe
 cd ..
 
 # Re-initialize should fail
-! pe init
+! exec pe init
 stderr 'already initialized'
 
 # Initialize with --force
-pe init --force
+exec pe init --force
 stdout 'Re-initialized PE repository'
 
 # Check default configuration
-pe config list
+exec pe config list
 stdout 'provider:'
 stdout 'model:'
 

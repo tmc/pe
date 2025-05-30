@@ -1,59 +1,59 @@
 # Test pe test command - validation and testing
 
 # Basic test execution
-pe test config.yaml
+exec pe test config.yaml
 stdout 'Running tests'
 stdout 'All tests passed'
 ! stderr 'FAIL'
 
 # Test with specific test file
-pe test --config test-cases.yaml
+exec pe test --config test-cases.yaml
 stdout 'Test 1: PASS'
 stdout 'Test 2: PASS'
 stdout 'Summary: 2/2 passed'
 
 # Test with assertions
-pe test assertions.yaml
+exec pe test assertions.yaml
 stdout 'Assertion checks:'
 stdout '✓ contains: "helpful"'
 stdout '✓ not_contains: "error"'
 stdout '✓ length_range: 50-200'
 
 # Test with multiple providers
-pe test --providers openai,anthropic config.yaml
+exec pe test --providers openai,anthropic config.yaml
 stdout 'Provider: openai - PASS'
 stdout 'Provider: anthropic - PASS'
 
 # Test failure case
-! pe test failing-test.yaml
+! exec pe test failing-test.yaml
 stderr 'Test failed'
 stdout 'Expected: "correct answer"'
 stdout 'Actual: "wrong answer"'
 
 # Property-based testing
-pe test --property config.yaml
+exec pe test --property config.yaml
 stdout 'Property test: Idempotency'
 stdout 'Property test: Consistency'
 stdout '✓ All properties satisfied'
 
 # Regression testing
-pe test --regression baseline.json current.yaml
+exec pe test --regression baseline.json current.yaml
 stdout 'Regression test results:'
 stdout 'No significant degradation detected'
 
 # Coverage report
-pe test --coverage config.yaml
+exec pe test --coverage config.yaml
 stdout 'Test coverage: 85%'
 stdout 'Uncovered scenarios:'
 
 # Test with statistical analysis
-pe test --stats config.yaml
+exec pe test --stats config.yaml
 stdout 'Mean score: 0.92'
 stdout 'Std deviation: 0.04'
 stdout 'Confidence interval: [0.90, 0.94]'
 
 # Cross-validation testing
-pe test --cross-validate config.yaml
+exec pe test --cross-validate config.yaml
 stdout 'Cross-validation (5-fold)'
 stdout 'Average accuracy: 0.91'
 

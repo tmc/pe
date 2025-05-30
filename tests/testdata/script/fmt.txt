@@ -1,65 +1,65 @@
 # Test pe fmt command - prompt formatting standardization
 
 # Format single file
-pe fmt prompt.txt
+exec pe fmt prompt.txt
 stdout 'prompt.txt'
 
 # Check formatted output
 cmp prompt.txt prompt_expected.txt
 
 # Format directory
-pe fmt prompts/
+exec pe fmt prompts/
 stdout 'prompts/context.txt'
 stdout 'prompts/instruction.txt'
 stdout 'prompts/example.txt'
 
 # Format with check only (no changes)
-pe fmt --check well-formatted.txt
+exec pe fmt --check well-formatted.txt
 # No output means it's already formatted
 
 # Format check with issues
-! pe fmt --check badly-formatted.txt
+! exec pe fmt --check badly-formatted.txt
 stdout 'badly-formatted.txt'
 stderr 'File needs formatting'
 
 # List formatting issues
-pe fmt --list badly-formatted.txt
+exec pe fmt --list badly-formatted.txt
 stdout 'Formatting issues:'
 stdout '  Line 3: Trailing whitespace'
 stdout '  Line 5: Inconsistent spacing'
 stdout '  Line 8: Missing final newline'
 
 # Format with specific style
-pe fmt --style anthropic prompt.txt
+exec pe fmt --style anthropic prompt.txt
 contains prompt.txt 'Human:'
 contains prompt.txt 'Assistant:'
 
 # Format stdin
 stdin 'Unformatted    prompt   with  issues'
-pe fmt -
+exec pe fmt -
 stdout 'Unformatted prompt with issues'
 
 # Format with diff output
-pe fmt --diff prompt-to-format.txt
+exec pe fmt --diff prompt-to-format.txt
 stdout '--- a/prompt-to-format.txt'
 stdout '+++ b/prompt-to-format.txt'
 stdout '-Analyze  this   text'
 stdout '+Analyze this text'
 
 # Format all files recursively
-pe fmt --recursive .
+exec pe fmt --recursive .
 stdout 'Formatted 5 files'
 
 # Format with custom rules
-pe fmt --rules format-rules.yaml prompt.txt
+exec pe fmt --rules format-rules.yaml prompt.txt
 stdout 'Applied custom formatting rules'
 
 # Preserve specific patterns
-pe fmt --preserve '{{.*}}' template.txt
+exec pe fmt --preserve '{{.*}}' template.txt
 contains template.txt '{{.Variable}}'
 
 # Auto-fix common issues
-pe fmt --fix prompt-with-issues.txt
+exec pe fmt --fix prompt-with-issues.txt
 stdout 'Fixed issues:'
 stdout '  ✓ Normalized quotes'
 stdout '  ✓ Fixed punctuation spacing'

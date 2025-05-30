@@ -1,106 +1,106 @@
 # Test pe version control - Git-like functionality for prompts
 
 # Initialize repository
-pe init
+exec pe init
 stdout 'Initialized PE repository'
 exists .pe/HEAD
 exists .pe/refs/heads/main
 contains .pe/HEAD 'ref: refs/heads/main'
 
 # First commit
-pe add prompt.txt
-pe commit -m "Initial prompt version"
+exec pe add prompt.txt
+exec pe commit -m "Initial prompt version"
 stdout 'Created commit'
 stdout 'main'
-pe log --oneline
+exec pe log --oneline
 stdout 'Initial prompt version'
 
 # Create and switch branch
-pe branch create feature/improve-clarity
+exec pe branch create feature/improve-clarity
 stdout 'Created branch: feature/improve-clarity'
-pe checkout feature/improve-clarity
+exec pe checkout feature/improve-clarity
 stdout 'Switched to branch: feature/improve-clarity'
 contains .pe/HEAD 'ref: refs/heads/feature/improve-clarity'
 
 # Make changes on branch
 cp prompt_v2.txt prompt.txt
-pe add prompt.txt
-pe commit -m "Improve clarity and add examples"
+exec pe add prompt.txt
+exec pe commit -m "Improve clarity and add examples"
 stdout 'Created commit'
 
 # Show diff
-pe diff main
+exec pe diff main
 stdout '--- a/prompt.txt'
 stdout '+++ b/prompt.txt'
 stdout '+Please provide clear, well-structured responses with examples.'
 
 # List branches
-pe branch list
+exec pe branch list
 stdout '  main'
 stdout '* feature/improve-clarity'
 
 # Merge branch
-pe checkout main
-pe merge feature/improve-clarity
+exec pe checkout main
+exec pe merge feature/improve-clarity
 stdout 'Merged feature/improve-clarity -> main'
 stdout 'Fast-forward merge'
 
 # Create tag
-pe tag v1.0.0 -m "First stable version"
+exec pe tag v1.0.0 -m "First stable version"
 stdout 'Created tag: v1.0.0'
-pe tag list
+exec pe tag list
 stdout 'v1.0.0'
 
 # Show prompt history
-pe log --stat
+exec pe log --stat
 stdout 'Initial prompt version'
 stdout '1 file changed'
 stdout 'Improve clarity and add examples'
 stdout '1 file changed'
 
 # Revert changes
-pe revert HEAD
+exec pe revert HEAD
 stdout 'Reverted: Improve clarity and add examples'
-pe log --oneline
+exec pe log --oneline
 stdout 'Revert "Improve clarity'
 stdout 'Improve clarity'
 stdout 'Initial prompt'
 
 # Stash changes
 cp prompt_v3.txt prompt.txt
-pe stash
+exec pe stash
 stdout 'Saved working directory'
-pe stash list
+exec pe stash list
 stdout 'stash@{0}:'
 
 # Apply stash
-pe stash pop
+exec pe stash pop
 stdout 'Applied stash@{0}'
 contains prompt.txt 'Version 3'
 
 # Show specific version
-pe show v1.0.0:prompt.txt
+exec pe show v1.0.0:prompt.txt
 stdout 'You are a helpful AI assistant.'
 
 # Blame/annotation
-pe blame prompt.txt
+exec pe blame prompt.txt
 stdout 'v1.0.0.*You are a helpful'
 stdout 'feature/improve.*Please provide clear'
 
 # Cherry-pick commit
-pe checkout -b hotfix
-pe cherry-pick abc123  # Would be actual commit hash
+exec pe checkout -b hotfix
+exec pe cherry-pick abc123  # Would be actual commit hash
 stdout 'Cherry-picked commit'
 
 # Export/import as bundle
-pe bundle create my-prompts.bundle --all
+exec pe bundle create my-prompts.bundle --all
 stdout 'Created bundle: my-prompts.bundle'
 exists my-prompts.bundle
 
 # Clone from bundle
 mkdir ../new-repo
 cd ../new-repo
-pe clone ../my-prompts.bundle
+exec pe clone ../my-prompts.bundle
 stdout 'Cloned from bundle'
 exists .pe
 exists prompt.txt

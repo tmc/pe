@@ -1,75 +1,75 @@
 # Test pe extract command - XML tag extraction from prompt outputs
 
 # Basic XML tag extraction
-pe run prompt.txt | pe extract --tag answer
+exec pe run prompt.txt | exec pe extract --tag answer
 stdout 'The capital of France is Paris'
 ! stdout '<answer>'
 ! stdout '</answer>'
 
 # Extract multiple tags
-pe run multi-output.txt | pe extract --tags result,explanation
+exec pe run multi-output.txt | exec pe extract --tags result,explanation
 stdout 'Result: 42'
 stdout 'Explanation: The answer to life'
 
 # Extract with specific tag
-echo '<output><name>John</name><age>30</age></output>' | pe extract --tag name
+echo '<output><name>John</name><age>30</age></output>' | exec pe extract --tag name
 stdout 'John'
 ! stdout '<name>'
 
 # Extract nested tags
-pe run nested.txt | pe extract --tag data --nested
+exec pe run nested.txt | exec pe extract --tag data --nested
 stdout '<item>First</item>'
 stdout '<item>Second</item>'
 
 # Extract with attribute filtering
-pe run attributed.txt | pe extract --tag response --attr type=final
+exec pe run attributed.txt | exec pe extract --tag response --attr type=final
 stdout 'This is the final answer'
 
 # Extract to JSON format
-pe run structured.txt | pe extract --tag data --json
+exec pe run structured.txt | exec pe extract --tag data --json
 stdout '{'
 stdout '"content":'
 stdout '"metadata":'
 
 # Extract with XPath-like selectors
-pe run complex.txt | pe extract --xpath "//answer[@confidence='high']"
+exec pe run complex.txt | exec pe extract --xpath "//answer[@confidence='high']"
 stdout 'Definitely Paris'
 
 # Extract multiple occurrences
-pe run listing.txt | pe extract --tag item --all
+exec pe run listing.txt | exec pe extract --tag item --all
 stdout 'Apple'
 stdout 'Banana'
 stdout 'Cherry'
 
 # Extract with transformation
-pe run formatted.txt | pe extract --tag code --transform "pe fmt -"
+exec pe run formatted.txt | exec pe extract --tag code --transform "exec pe fmt -"
 stdout 'func main() {'
 stdout '    fmt.Println("Hello")'
 stdout '}'
 
 # Extract and validate
-pe run validated.txt | pe extract --tag solution --validate schema.json
+exec pe run validated.txt | exec pe extract --tag solution --validate schema.json
 stdout 'Valid solution extracted'
 
 # Extract with custom delimiters
-pe run custom.txt | pe extract --start "[[RESULT]]" --end "[[/RESULT]]"
+exec pe run custom.txt | exec pe extract --start "[[RESULT]]" --end "[[/RESULT]]"
 stdout 'Custom delimited content'
 
 # Pipeline with extraction
-pe run prompt.txt | pe extract --tag answer | pe test --inline assertions.yaml
+exec pe run prompt.txt | exec pe extract --tag answer | exec pe test --inline assertions.yaml
 stdout 'Test passed'
 
 # Extract with error handling
-! pe run invalid.txt | pe extract --tag missing
+! exec pe run invalid.txt | exec pe extract --tag missing
 stderr 'No tag found: missing'
 
 # Extract and save to file
-pe run prompt.txt | pe extract --tag response --output response.txt
+exec pe run prompt.txt | exec pe extract --tag response --output response.txt
 exists response.txt
 contains response.txt 'Extracted content'
 
 # Extract with streaming
-pe run stream-prompt.txt --stream | pe extract --tag chunk --stream
+exec pe run stream-prompt.txt --stream | exec pe extract --tag chunk --stream
 stdout 'Chunk 1'
 stdout 'Chunk 2'
 stdout 'Chunk 3'
