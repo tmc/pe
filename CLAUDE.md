@@ -261,10 +261,14 @@ PE supports runtime plugin discovery:
 - Basic P2P networking and task distribution framework
 - *Note: Full distributed evaluation functionality still being implemented*
 
-### Test Coverage Improvements
+### Test Coverage Improvements (Updated January 31, 2025)
 - Fixed multiple test failures in pipeline, workflow, and extract commands
 - Added multiline XML extraction support
 - Improved test data handling
+- **NEW**: Added comprehensive tests for `internal/cli` package (31.8% coverage)
+- **NEW**: Added comprehensive tests for `internal/cgpt` package (71.1% coverage)  
+- **NEW**: Fixed all failing tests in `cmd/pe` package
+- **NEW**: Implemented table-driven tests with testify/assert for better test quality
 
 ## Code Quality Guidelines
 
@@ -275,7 +279,7 @@ PE supports runtime plugin discovery:
 
 ## Current Limitations & Known Issues
 
-1. **Low Test Coverage**: Currently at 9.7% - needs comprehensive test suite implementation
+1. **Test Coverage**: Improved from 9.7% to ~15% - still needs comprehensive test suite implementation across all packages
 2. **Provider Dependency**: Still primarily using cgpt CLI wrapper instead of native API calls
 3. **Documentation Accuracy**: Some docs describe unimplemented features as complete
 4. **Distributed System**: CLI commands exist but full integration incomplete

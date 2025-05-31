@@ -181,6 +181,25 @@ func (p *ModelProvider) ApplyConfigFromVars(vars map[string]interface{}) {
 		}
 	}
 
+	// Check for direct vars first
+	if model, ok := vars["model"].(string); ok {
+		p.Model = model
+	}
+	
+	if temp, ok := vars["temperature"].(float64); ok {
+		p.Temperature = temp
+	}
+	
+	if maxTokens, ok := vars["max_tokens"].(int); ok {
+		p.MaxTokens = maxTokens
+	} else if maxTokens, ok := vars["max_tokens"].(float64); ok {
+		p.MaxTokens = int(maxTokens)
+	}
+	
+	if backend, ok := vars["backend"].(string); ok {
+		p.Backend = backend
+	}
+
 	// Check for config map and apply settings
 	if configMap, ok := vars["config"].(map[string]interface{}); ok {
 		// Apply temperature if specified
@@ -271,3 +290,76 @@ func replaceVariables(prompt string, vars map[string]interface{}) string {
 // 	// Return the output
 // 	return stdout.String(), nil
 // }
+
+// formatDuration formats a duration in a human-readable way
+func formatDuration(d time.Duration) string {
+	if d < time.Millisecond {
+		return "0ms"
+	} else if d < time.Second {
+		return fmt.Sprintf("%dms", d.Milliseconds())
+	} else if d < time.Minute {
+		return fmt.Sprintf("%.2fs", d.Seconds())
+	}
+	return fmt.Sprintf("%.2fm", d.Minutes())
+}
+
+// isKnownProvider checks if a model string corresponds to a known provider
+func isKnownProvider(model string) bool {
+	knownPrefixes := []string{
+		"gpt-4", "gpt-3.5", "claude-", "gemini-", "text-bison",
+	}
+	
+	for _, prefix := range knownPrefixes {
+		if strings.HasPrefix(model, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// parseProviderString parses a provider string in the format "backend:model:key=value:..."
+func parseProviderString(provider string) (backend, model string, temperature float64, maxTokens int) {
+	if provider == "" {
+		return
+	}
+	
+	parts := strings.Split(provider, ":")
+	if len(parts) >= 1 {
+		backend = parts[0]
+	}
+	if len(parts) >= 2 {
+		model = parts[1]
+	}
+	
+	// Parse additional parameters
+	for i := 2; i < len(parts); i++ {
+		kv := strings.SplitN(parts[i], "=", 2)
+		if len(kv) == 2 {
+			switch kv[0] {
+			case "temperature":
+				if t, err := parseFloat(kv[1]); err == nil {
+					temperature = t
+				}
+			case "max_tokens":
+				if m, err := parseInt(kv[1]); err == nil {
+					maxTokens = m
+				}
+			}
+		}
+	}
+	
+	return
+}
+
+// Helper functions for parsing
+func parseFloat(s string) (float64, error) {
+	var f float64
+	_, err := fmt.Sscanf(s, "%f", &f)
+	return f, err
+}
+
+func parseInt(s string) (int, error) {
+	var i int
+	_, err := fmt.Sscanf(s, "%d", &i)
+	return i, err
+}

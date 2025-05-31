@@ -40,6 +40,8 @@ type PromptMetadata struct {
 	Prefill      string                 `yaml:"prefill" json:"prefill"`
 	Variations   interface{}            `yaml:"variations" json:"variations"`
 	Subcommands  []SubcommandDef        `yaml:"subcommands" json:"subcommands"`
+	Variables    []Variable             `yaml:"variables" json:"variables"`
+	OutputVars   []OutputVariable       `yaml:"output_vars" json:"output_vars"`
 }
 
 // Variable represents a template variable in the prompt
@@ -59,6 +61,7 @@ type Variable struct {
 // OutputVariable represents a variable that can be extracted from output
 type OutputVariable struct {
 	Name        string `yaml:"name" json:"name"`
+	Type        string `yaml:"type" json:"type"`           // string, list, etc.
 	Pattern     string `yaml:"pattern" json:"pattern"`     // regex to extract
 	XMLTag      string `yaml:"xml_tag" json:"xml_tag"`     // XML tag to extract
 	JSONPath    string `yaml:"json_path" json:"json_path"` // JSON path to extract
@@ -66,9 +69,15 @@ type OutputVariable struct {
 
 // Example shows usage examples
 type Example struct {
-	Description string            `yaml:"description" json:"description"`
-	Flags       map[string]string `yaml:"flags" json:"flags"`
-	Output      string            `yaml:"output" json:"output"`
+	Name        string                 `yaml:"name" json:"name"`
+	Description string                 `yaml:"description" json:"description"`
+	Flags       map[string]interface{} `yaml:"flags" json:"flags"`
+	Output      string                 `yaml:"output" json:"output"`
+}
+
+// NewPromptCLI creates a new PromptCLI from a prompt template
+func NewPromptCLI(prompt string) (*PromptCLI, error) {
+	return ParsePromptFile(prompt)
 }
 
 // ParsePromptFile parses a prompt file with frontmatter
@@ -89,14 +98,24 @@ func ParsePromptFile(content string) (*PromptCLI, error) {
 		cli.Prompt = content
 	}
 	
-	// Extract variables from prompt
-	cli.Variables = extractVariables(cli.Prompt)
+	// Use metadata-defined variables if available, otherwise extract from prompt
+	if len(cli.Metadata.Variables) > 0 {
+		cli.Variables = cli.Metadata.Variables
+	} else {
+		// Extract variables from prompt
+		cli.Variables = extractVariables(cli.Prompt)
+	}
+	
+	// Use metadata-defined output vars if available, otherwise extract from prompt
+	if len(cli.Metadata.OutputVars) > 0 {
+		cli.OutputVars = cli.Metadata.OutputVars
+	} else {
+		// Extract output variables from prompt
+		cli.OutputVars = extractOutputVariables(cli.Prompt)
+	}
 	
 	// Merge with metadata-defined variables for additional configuration
 	cli.mergeVariableMetadata()
-	
-	// Extract output variables
-	cli.OutputVars = extractOutputVariables(cli.Prompt)
 	
 	// Set defaults
 	if cli.Metadata.Temperature == 0 {
@@ -106,7 +125,22 @@ func ParsePromptFile(content string) (*PromptCLI, error) {
 		cli.Metadata.Model = "gpt-4"
 	}
 	
+	// Copy metadata to top-level fields
+	cli.Name = cli.Metadata.Name
+	if cli.Name == "" {
+		cli.Name = "prompt-cli"
+	}
+	cli.Description = cli.Metadata.Description
+	if cli.Description == "" {
+		cli.Description = "Execute a prompt template"
+	}
+	
 	return cli, nil
+}
+
+// ToCommand creates a cobra command from the prompt CLI (alias for BuildCommand)
+func (p *PromptCLI) ToCommand() *cobra.Command {
+	return p.BuildCommand()
 }
 
 // BuildCommand creates a cobra command from the prompt CLI
@@ -207,9 +241,9 @@ func (p *PromptCLI) execute(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// extractVariables finds all {{.VarName}} patterns in the prompt
+// extractVariables finds all {{VarName}} or {{.VarName}} patterns in the prompt
 func extractVariables(prompt string) []Variable {
-	re := regexp.MustCompile(`\{\{\.(\w+)\}\}`)
+	re := regexp.MustCompile(`\{\{\.?(\w+)\}\}`)
 	matches := re.FindAllStringSubmatch(prompt, -1)
 	
 	seen := make(map[string]bool)
@@ -234,13 +268,18 @@ func extractVariables(prompt string) []Variable {
 func extractOutputVariables(prompt string) []OutputVariable {
 	var outputVars []OutputVariable
 	
-	// Look for XML tags
-	xmlRe := regexp.MustCompile(`<(\w+)>.*?</\1>`)
-	for _, match := range xmlRe.FindAllStringSubmatch(prompt, -1) {
-		outputVars = append(outputVars, OutputVariable{
-			Name:   match[1],
-			XMLTag: match[1],
-		})
+	// Look for XML tags - simplified version without backreference
+	xmlRe := regexp.MustCompile(`<(\w+)>.*?</(\w+)>`)
+	matches := xmlRe.FindAllStringSubmatch(prompt, -1)
+	seen := make(map[string]bool)
+	for _, match := range matches {
+		if match[1] == match[2] && !seen[match[1]] {
+			seen[match[1]] = true
+			outputVars = append(outputVars, OutputVariable{
+				Name:   match[1],
+				XMLTag: match[1],
+			})
+		}
 	}
 	
 	// Look for JSON structure hints
@@ -587,4 +626,78 @@ func toKebabCase(s string) string {
 	re := regexp.MustCompile(`([a-z])([A-Z])`)
 	kebab := re.ReplaceAllString(s, `${1}-${2}`)
 	return strings.ToLower(kebab)
+}
+
+// parseMetadata extracts YAML frontmatter from a prompt
+func parseMetadata(content string) (PromptMetadata, string, error) {
+	var meta PromptMetadata
+	
+	// Check for frontmatter
+	if !strings.HasPrefix(content, "---\n") {
+		return meta, content, nil
+	}
+	
+	// Find end of frontmatter
+	parts := strings.SplitN(content[4:], "\n---\n", 2)
+	if len(parts) != 2 {
+		return meta, content, nil
+	}
+	
+	// Parse YAML
+	if err := yaml.Unmarshal([]byte(parts[0]), &meta); err != nil {
+		return meta, "", fmt.Errorf("failed to parse metadata: %w", err)
+	}
+	
+	return meta, parts[1], nil
+}
+
+// validateOutputFormat validates the output format
+func validateOutputFormat(format string) error {
+	if format == "" {
+		return nil
+	}
+	
+	validFormats := []string{"json", "yaml", "markdown", "csv", "tsv", "xml"}
+	for _, valid := range validFormats {
+		if format == valid {
+			return nil
+		}
+	}
+	
+	return fmt.Errorf("invalid output format: %s (must be one of: %s)", format, strings.Join(validFormats, ", "))
+}
+
+// buildExamplesHelp builds the examples section for help text
+func buildExamplesHelp(cmdName string, examples []Example) string {
+	if len(examples) == 0 {
+		return ""
+	}
+	
+	var lines []string
+	lines = append(lines, "Examples:")
+	
+	for _, ex := range examples {
+		lines = append(lines, fmt.Sprintf("  # %s", ex.Name))
+		
+		// Build command line
+		cmd := fmt.Sprintf("  %s", cmdName)
+		for name, value := range ex.Flags {
+			cmd += fmt.Sprintf(" --%s=\"%v\"", name, value)
+		}
+		lines = append(lines, cmd)
+		
+		if ex.Output != "" {
+			lines = append(lines, fmt.Sprintf("  # Output: %s", ex.Output))
+		}
+		lines = append(lines, "")
+	}
+	
+	return strings.Join(lines, "\n")
+}
+
+// addFlagsToCommand adds all variable flags to a command
+func (p *PromptCLI) addFlagsToCommand(cmd *cobra.Command) {
+	for _, v := range p.Variables {
+		p.addVariableFlag(cmd, v)
+	}
 }

@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -514,4 +515,155 @@ func addFlagToCommand(cmd *cobra.Command, flag FlagDefinition) {
 			cmd.Flags().Int(flag.Name, flag.Default.(int), flag.Description)
 		}
 	}
+}
+
+// Simple modifier types for basic use cases
+
+// Modifier represents a simple prompt modifier
+type Modifier struct {
+	Type  string
+	Value interface{}
+}
+
+// ApplyModifiers applies a list of modifiers to a prompt
+func ApplyModifiers(prompt string, modifiers []Modifier) (string, error) {
+	result := prompt
+	
+	// Group modifiers by type for proper ordering
+	var styleModifiers, lengthModifiers, toneModifiers, audienceModifiers []Modifier
+	var formatModifiers, constraintModifiers, exampleModifiers []Modifier
+	var temperatureModifiers []Modifier
+	
+	for _, mod := range modifiers {
+		switch mod.Type {
+		case "style":
+			styleModifiers = append(styleModifiers, mod)
+		case "length":
+			lengthModifiers = append(lengthModifiers, mod)
+		case "tone":
+			toneModifiers = append(toneModifiers, mod)
+		case "audience":
+			audienceModifiers = append(audienceModifiers, mod)
+		case "format":
+			formatModifiers = append(formatModifiers, mod)
+		case "constraint":
+			constraintModifiers = append(constraintModifiers, mod)
+		case "example":
+			exampleModifiers = append(exampleModifiers, mod)
+		case "temperature":
+			temperatureModifiers = append(temperatureModifiers, mod)
+		default:
+			return "", fmt.Errorf("unknown modifier type: %s", mod.Type)
+		}
+	}
+	
+	// Apply modifiers in order: style, length, tone, audience, then constraint, example, format
+	for _, mod := range styleModifiers {
+		result = fmt.Sprintf("%s in a %s style", result, mod.Value)
+	}
+	
+	for _, mod := range lengthModifiers {
+		result = fmt.Sprintf("%s (keep it %s)", result, mod.Value)
+	}
+	
+	for _, mod := range toneModifiers {
+		result = fmt.Sprintf("%s (use a %s tone)", result, mod.Value)
+	}
+	
+	for _, mod := range audienceModifiers {
+		audience := fmt.Sprintf("%s", mod.Value)
+		article := "a"
+		if strings.HasPrefix(strings.ToLower(audience), "a") || 
+		   strings.HasPrefix(strings.ToLower(audience), "e") ||
+		   strings.HasPrefix(strings.ToLower(audience), "i") ||
+		   strings.HasPrefix(strings.ToLower(audience), "o") ||
+		   strings.HasPrefix(strings.ToLower(audience), "u") {
+			article = "an"
+		}
+		result = fmt.Sprintf("%s (explain it for %s %s)", result, article, audience)
+	}
+	
+	// Add constraints
+	for _, mod := range constraintModifiers {
+		result = fmt.Sprintf("%s\n\nConstraint: %s", result, mod.Value)
+	}
+	
+	// Add examples
+	for _, mod := range exampleModifiers {
+		result = fmt.Sprintf("%s\n\nExample:\n%s", result, mod.Value)
+	}
+	
+	// Add format instructions last
+	for _, mod := range formatModifiers {
+		result = fmt.Sprintf("%s\n\nFormat the response as: %s", result, mod.Value)
+	}
+	
+	// Temperature doesn't modify the prompt text
+	
+	return result, nil
+}
+
+// ValidateModifier validates a modifier
+func ValidateModifier(modifier Modifier) error {
+	switch modifier.Type {
+	case "temperature":
+		temp, ok := modifier.Value.(float64)
+		if !ok {
+			return fmt.Errorf("temperature must be a float64")
+		}
+		if temp < 0 || temp > 2 {
+			return fmt.Errorf("temperature must be between 0 and 2")
+		}
+	case "style", "length", "tone", "format", "audience", "constraint", "example":
+		if modifier.Value == nil || modifier.Value == "" {
+			return fmt.Errorf("%s modifier requires a non-empty value", modifier.Type)
+		}
+	case "":
+		return fmt.Errorf("modifier type cannot be empty")
+	default:
+		return fmt.Errorf("unknown modifier type: %s", modifier.Type)
+	}
+	return nil
+}
+
+// ParseModifiers parses modifier strings into Modifier structs
+func ParseModifiers(inputs []string) ([]Modifier, error) {
+	var modifiers []Modifier
+	
+	for _, input := range inputs {
+		parts := strings.SplitN(input, ":", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid modifier format: %s (expected type:value)", input)
+		}
+		
+		modType := strings.TrimSpace(parts[0])
+		valueStr := strings.TrimSpace(parts[1])
+		
+		if modType == "" {
+			return nil, fmt.Errorf("empty modifier type in: %s", input)
+		}
+		
+		// Remove quotes if present
+		valueStr = strings.Trim(valueStr, "\"")
+		
+		var value interface{}
+		if modType == "temperature" {
+			temp, err := strconv.ParseFloat(valueStr, 64)
+			if err != nil {
+				return nil, fmt.Errorf("invalid temperature value: %s", valueStr)
+			}
+			value = temp
+		} else {
+			value = valueStr
+		}
+		
+		mod := Modifier{Type: modType, Value: value}
+		if err := ValidateModifier(mod); err != nil {
+			return nil, err
+		}
+		
+		modifiers = append(modifiers, mod)
+	}
+	
+	return modifiers, nil
 }
