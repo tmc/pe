@@ -16,10 +16,12 @@ PE implements breakthrough research from 2024-2025:
 - **Multiple Optimization Methods**: PE2, APEX, multistage, reflection, and evolutionary approaches
 
 ### Core Capabilities
-- **Multi-Provider Support**: Currently supports cgpt CLI with extensible provider interface
+- **Multi-Provider Support**: Currently supports cgpt CLI with extensible provider interface (⚠️ native providers in development)
 - **Advanced Evaluation**: Pass@N metrics, structured output validation, comprehensive assertions
 - **Unix Pipeline Philosophy**: Composable commands for streaming prompt processing
 - **Performance**: Native Go implementation for speed and efficiency
+- **Module Management**: Go-style module system (mod init/download/tidy/vendor)
+- **Security Testing**: OWASP LLM Top 10 coverage via redteam module
 
 ## 🎯 Quick Start
 
@@ -66,13 +68,29 @@ pe semantic backprop --prompt "task" --objective "goal"
 - `pe analyze` - Analyze results
 - `pe stats` - Statistical analysis
 
-### Planned Features (🚧 Roadmap)
-- Native OpenAI/Anthropic providers (currently only cgpt CLI)
-- Module system with registry (`pe mod`, `pe push`)
-- Web dashboard and API
-- Distributed execution at scale
-- Version control for prompts
+### Module & Advanced Commands (✅ Implemented)
+- `pe mod init/download/tidy/vendor` - Go-style module management
+- `pe compose` - Component-based prompt composition
+- `pe attest` - Cryptographic attestation for prompt runs
+- `pe extract` - Extract structured data from prompts
+- `pe passn` - Calculate pass@n metrics
+- `pe evolve` - Evolutionary prompt optimization
+- `pe fusion` - Multi-model fusion
+- `pe distributed` - Distributed execution commands
+- `pe cache` - Content-addressed caching
+
+### In Development (🚧)
+- Native OpenAI/Anthropic providers (partially implemented)
+- Module registry with dependency resolution
+- Full distributed execution integration
+- Web dashboard and REST API
+
+### Planned Features (📝 Roadmap)
+- Ollama and local model support
+- Multi-modal support (vision, audio)
+- Visual prompt engineering tools
 - IDE integrations
+- Neurosymbolic prompt synthesis
 
 ## 🧪 Evaluation Configuration
 

@@ -13,7 +13,7 @@ PE is a Go-based toolkit for prompt engineering that implements cutting-edge 202
 - **Pipeline Processing**: Unix-style composable commands (ask, stream, filter, analyze, collect, reduce)
 - **Metaprompting Engine**: Advanced prompt optimization using multiple research-based methods
 - **Evaluation System**: Comprehensive evaluation with pass@n metrics and assertion types
-- **Testing Framework**: Property-based and regression testing support (⚠️ 7.8% test coverage)
+- **Testing Framework**: Property-based and regression testing support (⚠️ 9.7% test coverage)
 - **Module System**: Complete go mod-style commands (init, download, tidy, vendor)
 - **Component Composition**: DSPy-style prompt composition with validation
 - **Attestation System**: Cryptographic signing and verification of prompt runs
@@ -25,7 +25,7 @@ PE is a Go-based toolkit for prompt engineering that implements cutting-edge 202
 - Web dashboard and REST API
 - Module registry implementation
 - Advanced semantic caching strategies
-- Comprehensive test suite (current coverage only 7.8%)
+- Comprehensive test suite (current coverage only 9.7%)
 
 ### Key Commands (Implemented)
 
@@ -275,21 +275,24 @@ PE supports runtime plugin discovery:
 
 ## Current Limitations & Known Issues
 
-1. **Low Test Coverage**: Currently at 7.8% - needs comprehensive test suite implementation
+1. **Low Test Coverage**: Currently at 9.7% - needs comprehensive test suite implementation
 2. **Provider Dependency**: Still primarily using cgpt CLI wrapper instead of native API calls
 3. **Documentation Accuracy**: Some docs describe unimplemented features as complete
 4. **Distributed System**: CLI commands exist but full integration incomplete
 5. **Module Registry**: Not yet implemented despite documentation
 6. **Benchmarking**: No benchmarks against GSM8K, BIG-Bench Hard, or algorithmic datasets
 7. **Web Dashboard**: Not implemented despite being mentioned in docs
+8. **Structured Output Validation**: Schema validation interface defined but full implementation incomplete
 
 ## Priority Development Areas
 
 1. **Complete Native Providers**: Finish OpenAI/Anthropic implementations to remove cgpt dependency
-2. **Test Coverage**: Achieve >80% coverage with comprehensive test suite
+2. **Test Coverage**: Achieve >80% coverage with comprehensive test suite (immediate goal: 50%)
 3. **Distributed Execution**: Complete integration with eval command
 4. **Documentation Cleanup**: Separate implemented vs planned features clearly
-5. **Performance Benchmarks**: Validate against research paper targets
+5. **Performance Benchmarks**: Validate against research paper targets (GSM8K, BIG-Bench Hard)
+6. **Module Registry**: Implement registry with dependency resolution
+7. **Provider Extensions**: Add Ollama support for local model execution
 
 ## Future Roadmap
 
