@@ -108,7 +108,22 @@ func GetProvider(backend string) (Provider, error) {
 			return nil, fmt.Errorf("failed to create native provider: %w", err)
 		}
 		return provider, nil
-	case "cgpt", "gemini", "googleai":
+	case "cgpt":
+		// Check if we can use native providers instead of cgpt
+		if os.Getenv("PE_USE_NATIVE_PROVIDERS") == "true" || os.Getenv("PE_FORCE_NATIVE") == "true" {
+			// Try to auto-detect and use native provider
+			if os.Getenv("OPENAI_API_KEY") != "" {
+				return CreateNativeProviderFromFactory("openai:gpt-4", nil)
+			} else if os.Getenv("ANTHROPIC_API_KEY") != "" {
+				return CreateNativeProviderFromFactory("anthropic:claude-3-sonnet-20240229", nil)
+			}
+		}
+		// Fall back to CGPT wrapper
+		return &CGPTProvider{
+			Backend: provider,
+			model:   model,
+		}, nil
+	case "gemini", "googleai":
 		// Still use CGPT for providers not yet migrated
 		return &CGPTProvider{
 			Backend: provider,
@@ -119,6 +134,13 @@ func GetProvider(backend string) (Provider, error) {
 		provider, err := CreateNativeProviderFromFactory(backend, nil)
 		if err == nil {
 			return provider, nil
+		}
+		// Fall back to CGPT if it exists
+		if _, err := os.Stat("/usr/local/bin/cgpt"); err == nil {
+			return &CGPTProvider{
+				Backend: backend,
+				model:   model,
+			}, nil
 		}
 		// Fall back to error
 		return nil, fmt.Errorf("unsupported backend: %s", backend)
