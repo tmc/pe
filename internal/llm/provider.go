@@ -297,7 +297,7 @@ func (p *MockProviderProxy) Generate(ctx context.Context, prompt string, options
 		} else {
 			responseText = "0.85" // Default score for semantic evaluation
 		}
-	} else if strings.Contains(prompt, "semantic gradient") || strings.Contains(prompt, "Compute semantic gradients") || strings.Contains(prompt, "textual gradients") {
+	} else if strings.Contains(prompt, "semantic gradient") || strings.Contains(prompt, "Compute semantic gradients") || strings.Contains(prompt, "textual gradients") || strings.Contains(prompt, "Provide feedback in JSON format with an array of gradients") {
 		// Return mock gradient response in the format expected by textgrad
 		responseText = `{
 			"gradients": [
