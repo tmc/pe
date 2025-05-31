@@ -37,6 +37,11 @@ func (r *Registry) registerBuiltinProviders() {
 	r.Register("anthropic", func(model string, options map[string]interface{}) (llm.Provider, error) {
 		return NewAnthropicProvider(model, options)
 	})
+	
+	// Register mock provider for testing
+	r.Register("mock", func(model string, options map[string]interface{}) (llm.Provider, error) {
+		return NewMockProvider(model, options)
+	})
 }
 
 // Register registers a new provider factory

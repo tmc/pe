@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/tmc/pe/internal/cgpt"
+	"github.com/tmc/pe/internal/llm"
 	"sigs.k8s.io/yaml"
 )
 
@@ -162,15 +162,10 @@ func runBenchmark(cmd *cobra.Command, configFile, outputFile, outputFormat strin
 					defer func() { <-semaphore }()
 
 					// Create a model provider for this run
-					modelProvider := cgpt.DefaultProvider()
-
-					// If provider explicitly specified in format like "googleai:gemini-2.0-flash"
-					if strings.Contains(providerName, ":") {
-						parts := strings.Split(providerName, ":")
-						modelProvider.Backend = parts[0]
-						if len(parts) > 1 {
-							modelProvider.Model = parts[1]
-						}
+					modelProvider, err := llm.GetProvider(providerName)
+					if err != nil {
+						fmt.Fprintf(cmd.OutOrStderr(), "Error creating provider %s: %v\n", providerName, err)
+						return
 					}
 
 					// Initialize vars from test cases if available
@@ -193,7 +188,7 @@ func runBenchmark(cmd *cobra.Command, configFile, outputFile, outputFormat strin
 					runStart := time.Now()
 
 					// Execute the prompt
-					response, err := modelProvider.EvaluatePrompt(prompt, vars)
+					response, err := modelProvider.EvaluatePrompt(cmd.Context(), prompt, vars)
 
 					executionTimeMs := float64(time.Since(runStart).Milliseconds())
 

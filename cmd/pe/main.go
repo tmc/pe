@@ -48,6 +48,9 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	
+	// Import providers to register native provider factories
+	_ "github.com/tmc/pe/internal/providers"
 )
 
 func main() {
