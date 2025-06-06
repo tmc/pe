@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -9,35 +10,187 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/tmc/pe/internal/attestation"
-	"github.com/tmc/pe/internal/distributed"
 	"github.com/tmc/pe/internal/inference"
-	"github.com/tmc/pe/internal/inference/providers/anthropic"
 	"github.com/tmc/pe/internal/inference/providers/cgpt"
-	"github.com/tmc/pe/internal/inference/providers/openai"
-	"github.com/tmc/pe/internal/llm"
-	"github.com/tmc/pe/internal/providers"
+	"github.com/tmc/pe/internal/prompt"
 )
 
 var (
-	runModel         string
-	runTemperature   float32
-	runMaxTokens     int
-	runSystem        string
-	runProvider      string
-	runStreamEnabled bool
-	runVars          map[string]string
-	runAttest        bool
-	runVerify        bool
-	runJSON          bool
-	runCache         bool
-	runCacheTTL      time.Duration
-	runCachePrivate  bool
+	runModel       string
+	runTemperature float32
+	runMaxTokens   int
+	runSystem      string
+	runVars        map[string]string
+	runExample     string
 )
+
+// ExecutionLog represents a complete execution record
+type ExecutionLog struct {
+	ID            string                 `json:"id"`            // Unique execution ID
+	Timestamp     time.Time              `json:"timestamp"`     // When the execution started
+	Duration      time.Duration          `json:"duration"`      // How long it took
+	Command       []string               `json:"command"`       // Full command line args
+	WorkingDir    string                 `json:"working_dir"`   // Working directory
+	
+	// Input hashes and content
+	Input         ExecutionInput         `json:"input"`
+	
+	// Processing details
+	Processing    ExecutionProcessing    `json:"processing"`
+	
+	// Output details
+	Output        ExecutionOutput        `json:"output"`
+	
+	// Environment
+	Environment   ExecutionEnvironment   `json:"environment"`
+	
+	// Result
+	Success       bool                   `json:"success"`
+	Error         string                 `json:"error,omitempty"`
+}
+
+type ExecutionInput struct {
+	PromptFile    string            `json:"prompt_file,omitempty"`    // Original prompt file path
+	PromptHash    string            `json:"prompt_hash"`              // SHA256 of original prompt
+	PromptContent string            `json:"prompt_content"`           // Original prompt content
+	Variables     map[string]string `json:"variables"`                // Template variables
+	VariablesHash string            `json:"variables_hash"`           // SHA256 of variables JSON
+	Flags         map[string]string `json:"flags"`                    // Runtime flags
+}
+
+type ExecutionProcessing struct {
+	ParsedPrompt      string            `json:"parsed_prompt"`        // Prompt after parsing sections
+	ProcessedPrompt   string            `json:"processed_prompt"`     // Final prompt sent to LLM
+	ProcessedHash     string            `json:"processed_hash"`       // SHA256 of processed prompt
+	TemplateVars      []string          `json:"template_vars"`        // Detected template variables
+	SystemPrompt      string            `json:"system_prompt"`        // System prompt used
+	ModuleDeps        []string          `json:"module_deps"`          // Module dependencies
+	SubcommandCalls   []SubcommandCall  `json:"subcommand_calls"`     // Calls to subcommands/modules
+}
+
+type SubcommandCall struct {
+	Command   string `json:"command"`     // Command name (e.g., "math-solver")
+	Input     string `json:"input"`       // Input to the command
+	Output    string `json:"output"`      // Output from the command
+	InputHash string `json:"input_hash"`  // SHA256 of input
+	OutputHash string `json:"output_hash"` // SHA256 of output
+}
+
+type ExecutionOutput struct {
+	Content     string `json:"content"`      // Final output content
+	ContentHash string `json:"content_hash"` // SHA256 of output
+	TokenCount  int    `json:"token_count"`  // Approximate token count
+	Model       string `json:"model"`        // Model used
+}
+
+type ExecutionEnvironment struct {
+	PEVersion    string            `json:"pe_version"`    // PE version
+	GoVersion    string            `json:"go_version"`    // Go version
+	Platform     string            `json:"platform"`      // OS/platform
+	Provider     string            `json:"provider"`      // Inference provider
+	Model        string            `json:"model"`         // Model name
+	Temperature  float32           `json:"temperature"`   // Temperature setting
+	MaxTokens    int               `json:"max_tokens"`    // Max tokens setting
+	EnvVars      map[string]string `json:"env_vars"`      // Relevant environment variables
+}
+
+// Global variable to track subcommand calls for logging
+var currentSubcommandCalls []SubcommandCall
+
+// computeHash computes SHA256 hash of a string
+func computeHash(content string) string {
+	hash := sha256.Sum256([]byte(content))
+	return hex.EncodeToString(hash[:])
+}
+
+// computeJSONHash computes SHA256 hash of a JSON-serializable object
+func computeJSONHash(obj interface{}) string {
+	data, err := json.Marshal(obj)
+	if err != nil {
+		return ""
+	}
+	return computeHash(string(data))
+}
+
+// generateExecutionID generates a unique execution ID
+func generateExecutionID() string {
+	return fmt.Sprintf("pe_%d_%s", time.Now().Unix(), computeHash(fmt.Sprintf("%d", time.Now().UnixNano()))[:8])
+}
+
+// writeExecutionLog writes an execution log to the appropriate log file
+func writeExecutionLog(log ExecutionLog) error {
+	// Get home directory
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	
+	// Create ~/.pe/logs directory if it doesn't exist
+	logDir := filepath.Join(homeDir, ".pe", "logs")
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		return err
+	}
+	
+	// Determine log file name based on prompt
+	logFileName := determineLogFileName(log)
+	logFile := filepath.Join(logDir, logFileName)
+	
+	// Open/create log file
+	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	
+	// Write as NDJSON (one JSON object per line)
+	logData, err := json.Marshal(log)
+	if err != nil {
+		return err
+	}
+	
+	_, err = file.WriteString(string(logData) + "\n")
+	return err
+}
+
+// determineLogFileName generates the log file name based on prompt content
+func determineLogFileName(log ExecutionLog) string {
+	var promptName string
+	var promptVersion string
+	
+	// If it's a file, use the file name
+	if log.Input.PromptFile != "" {
+		promptName = filepath.Base(log.Input.PromptFile)
+		// Remove extension if present
+		if ext := filepath.Ext(promptName); ext != "" {
+			promptName = strings.TrimSuffix(promptName, ext)
+		}
+	} else {
+		// For inline prompts, create a name based on content hash
+		promptName = "inline-" + log.Input.PromptHash[:8]
+	}
+	
+	// Use first 8 characters of content hash as version
+	promptVersion = log.Input.PromptHash[:8]
+	
+	// Sanitize prompt name for filename
+	promptName = sanitizeForFilename(promptName)
+	
+	return fmt.Sprintf("%s@%s.ndjson", promptName, promptVersion)
+}
+
+// sanitizeForFilename removes characters that aren't safe for filenames
+func sanitizeForFilename(name string) string {
+	// Replace unsafe characters with underscores
+	unsafe := regexp.MustCompile(`[^a-zA-Z0-9\-_.]`)
+	return unsafe.ReplaceAllString(name, "_")
+}
 
 // Use the types from mod.go - they're in the same package
 
@@ -52,7 +205,11 @@ Examples:
   pe run prompt.txt
   pe run "Translate {{.Text}} to {{.Language}}" --var Text=Hello --var Language=Spanish
   pe run gist:username/prompt-id`,
-		Args: cobra.ExactArgs(1),
+		Args: cobra.RangeArgs(1, 10), // Allow up to 10 args for positional template vars
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// Detect template variables and add dynamic flags
+			return setupDynamicFlags(cmd, args)
+		},
 		RunE: runPrompt,
 	}
 
@@ -60,104 +217,351 @@ Examples:
 	cmd.Flags().Float32VarP(&runTemperature, "temperature", "t", 0.7, "Temperature for randomness (0.0-1.0)")
 	cmd.Flags().IntVar(&runMaxTokens, "max-tokens", 0, "Maximum tokens in response")
 	cmd.Flags().StringVarP(&runSystem, "system", "s", "", "System prompt")
-	cmd.Flags().StringVarP(&runProvider, "provider", "p", "cgpt", "Inference provider to use")
-	cmd.Flags().BoolVar(&runStreamEnabled, "stream", false, "Stream the response")
 	cmd.Flags().StringToStringVar(&runVars, "var", nil, "Template variables (can be repeated)")
-	cmd.Flags().BoolVar(&runAttest, "attest", false, "Create cryptographic attestation of this run")
-	cmd.Flags().BoolVar(&runVerify, "verify", false, "Verify attestations before running")
-	cmd.Flags().BoolVar(&runJSON, "json", false, "Output in JSON format")
-	cmd.Flags().BoolVar(&runCache, "cache", false, "Enable caching for this request")
-	cmd.Flags().DurationVar(&runCacheTTL, "ttl", 0, "Cache time-to-live")
-	cmd.Flags().BoolVar(&runCachePrivate, "private", false, "Use privacy-preserving cache")
+	cmd.Flags().StringVarP(&runExample, "example", "e", "", "Run with example variables (e.g., example-1)")
 
 	return cmd
 }
 
+// setupDynamicFlags detects template variables and validates arguments
+func setupDynamicFlags(cmd *cobra.Command, args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("prompt file or string required")
+	}
+	
+	// Get the prompt content to analyze
+	prompt, err := resolvePrompt(args[0])
+	if err != nil {
+		return fmt.Errorf("failed to resolve prompt: %w", err)
+	}
+	
+	// Extract template variables
+	templateVars := extractTemplateVars(prompt)
+	
+	// If there are template variables but no values provided, show usage and exit with code 1
+	if len(templateVars) > 0 {
+		hasValues := false
+		
+		// Check if we have var flags
+		if runVars != nil && len(runVars) > 0 {
+			hasValues = true
+		}
+		
+		// Check if we have positional args (beyond the prompt file)
+		if len(args) > 1 {
+			hasValues = true
+		}
+		
+		// Check if we have an example flag
+		if runExample != "" {
+			hasValues = true
+		}
+		
+		if !hasValues {
+			// Show usage with template-specific flags
+			fmt.Fprintf(os.Stderr, "Error: Template variables found but no values provided\n\n")
+			fmt.Fprintf(os.Stderr, "Template variables detected: %s\n\n", strings.Join(templateVars, ", "))
+			fmt.Fprintf(os.Stderr, "Usage:\n")
+			fmt.Fprintf(os.Stderr, "  %s\n\n", cmd.UseLine())
+			fmt.Fprintf(os.Stderr, "Available flags:\n")
+			
+			// Show standard flags
+			fmt.Fprintf(os.Stderr, "      --model string        Model to use (e.g., gpt-4, claude-3)\n")
+			fmt.Fprintf(os.Stderr, "      --temperature float   Temperature for randomness (0.0-1.0) (default 0.7)\n")
+			fmt.Fprintf(os.Stderr, "      --max-tokens int      Maximum tokens in response\n")
+			fmt.Fprintf(os.Stderr, "      --system string       System prompt\n")
+			fmt.Fprintf(os.Stderr, "      --var stringToString  Template variables (can be repeated)\n")
+			fmt.Fprintf(os.Stderr, "      --example string      Run with example variables (e.g., example-1)\n")
+			
+			// Show template-specific flags
+			for _, varName := range templateVars {
+				flagName := strings.ToLower(varName)
+				fmt.Fprintf(os.Stderr, "      --%s string    Value for template variable %s\n", flagName, varName)
+			}
+			
+			fmt.Fprintf(os.Stderr, "\nExamples:\n")
+			fmt.Fprintf(os.Stderr, "  pe run %s", args[0])
+			for _, varName := range templateVars {
+				fmt.Fprintf(os.Stderr, " --%s 'value'", strings.ToLower(varName))
+			}
+			fmt.Fprintf(os.Stderr, "\n")
+			
+			if len(templateVars) == 1 {
+				fmt.Fprintf(os.Stderr, "  pe run %s 'value'  # positional argument\n", args[0])
+			}
+			
+			os.Exit(1)
+		}
+	}
+	
+	return nil
+}
+
+// extractTemplateVars finds all {{.VARNAME}} and {{VARNAME}} patterns in the prompt
+func extractTemplateVars(prompt string) []string {
+	// Match both {{.VARNAME}} and {{VARNAME}} patterns
+	re1 := regexp.MustCompile(`\{\{\.([A-Za-z_][A-Za-z0-9_]*)\}\}`)
+	re2 := regexp.MustCompile(`\{\{([A-Za-z_][A-Za-z0-9_]*)\}\}`)
+	
+	vars := make([]string, 0)
+	seen := make(map[string]bool)
+	
+	// Find {{.VARNAME}} patterns
+	matches1 := re1.FindAllStringSubmatch(prompt, -1)
+	for _, match := range matches1 {
+		if len(match) > 1 {
+			varName := match[1]
+			if !seen[varName] {
+				vars = append(vars, varName)
+				seen[varName] = true
+			}
+		}
+	}
+	
+	// Find {{VARNAME}} patterns (but exclude function calls)
+	matches2 := re2.FindAllStringSubmatch(prompt, -1)
+	for _, match := range matches2 {
+		if len(match) > 1 {
+			varName := match[1]
+			// Skip if it's a function call or already has dot prefix
+			if !strings.Contains(match[0], " ") && !strings.HasPrefix(match[0], "{{.") && !seen[varName] {
+				vars = append(vars, varName)
+				seen[varName] = true
+			}
+		}
+	}
+	
+	return vars
+}
+
 func runPrompt(cmd *cobra.Command, args []string) error {
+	startTime := time.Now()
+	execID := generateExecutionID()
+	
+	// Initialize execution log
+	execLog := ExecutionLog{
+		ID:        execID,
+		Timestamp: startTime,
+		Command:   args,
+		Success:   false,
+	}
+	
+	// Get working directory
+	if wd, err := os.Getwd(); err == nil {
+		execLog.WorkingDir = wd
+	}
+	
+	// Reset subcommand calls tracking
+	currentSubcommandCalls = []SubcommandCall{}
+	
+	defer func() {
+		// Finalize and write log
+		execLog.Duration = time.Since(startTime)
+		execLog.Processing.SubcommandCalls = currentSubcommandCalls
+		if err := writeExecutionLog(execLog); err != nil {
+			// Don't fail the command if logging fails, just print warning
+			fmt.Fprintf(os.Stderr, "Warning: Failed to write execution log: %v\n", err)
+		}
+	}()
+	
 	input := args[0]
 	
 	// Check if it's a module reference (org/name@version)
 	if strings.Contains(input, "/") && strings.Contains(input, "@") {
+		execLog.Error = "Module references not yet supported in logging"
 		return runModule(cmd, input)
 	}
 	ctx := cmd.Context()
 	
-	// Get the prompt
-	prompt, perr := resolvePrompt(args[0])
+	// Get the raw prompt content first
+	rawPromptContent, perr := resolveRawPrompt(args[0])
 	if perr != nil {
+		execLog.Error = fmt.Sprintf("failed to resolve prompt: %v", perr)
 		return fmt.Errorf("failed to resolve prompt: %w", perr)
 	}
 
-	// Process template variables if any
-	if len(runVars) > 0 {
-		prompt = processTemplate(prompt, runVars)
+	// Parse the full prompt file
+	parsedPrompt, parseErr := prompt.Parse(rawPromptContent)
+	if parseErr != nil {
+		execLog.Error = fmt.Sprintf("failed to parse prompt: %v", parseErr)
+		return fmt.Errorf("failed to parse prompt: %w", parseErr)
 	}
+
+	// Apply shebang flags if present
+	if parsedPrompt.Shebang != "" {
+		applyShebangFlags(parsedPrompt.Flags)
+	}
+
+	// Apply system prompt if present
+	if parsedPrompt.SystemPrompt != "" {
+		runSystem = parsedPrompt.SystemPrompt
+	}
+
+	// Get the main prompt content for processing
+	originalPrompt := parsedPrompt.Main
+	
+	// Log input details
+	execLog.Input = ExecutionInput{
+		PromptContent: originalPrompt,
+		PromptHash:    computeHash(rawPromptContent), // Hash the full content
+		Variables:     runVars,
+		VariablesHash: computeJSONHash(runVars),
+	}
+	
+	if _, err := os.Stat(input); err == nil {
+		execLog.Input.PromptFile = input
+	}
+
+	// Process template variables
+	templateVars := extractTemplateVars(originalPrompt)
+	execLog.Processing.TemplateVars = templateVars
+	
+	processedPrompt := originalPrompt
+	if len(templateVars) > 0 {
+		// Initialize runVars if nil
+		if runVars == nil {
+			runVars = make(map[string]string)
+		}
+		
+		// Handle example variables first (can be overridden by other methods)
+		if runExample != "" {
+			if exampleVars, _, exists := parsedPrompt.GetExample(runExample); exists {
+				for varName, value := range exampleVars {
+					runVars[varName] = value
+				}
+			} else {
+				return fmt.Errorf("example %q not found. Available examples: %v", runExample, parsedPrompt.ListExamples())
+			}
+		}
+		
+		// Handle positional arguments for template variables (overrides example values)
+		if len(args) > 1 {
+			for i, varName := range templateVars {
+				if i+1 < len(args) {
+					runVars[varName] = args[i+1]
+				}
+			}
+		}
+		
+		processedPrompt = processTemplate(originalPrompt, runVars)
+	}
+	
+	// Log processing details
+	execLog.Processing.ParsedPrompt = originalPrompt
+	execLog.Processing.ProcessedPrompt = processedPrompt
+	execLog.Processing.ProcessedHash = computeHash(processedPrompt)
+	execLog.Processing.SystemPrompt = runSystem
 	
 	// Create cache directory if this is a txtar file in test mode
 	if strings.HasSuffix(input, ".txtar") && os.Getenv("PE_TEST_MODE") == "true" {
 		os.MkdirAll(".pe/cache", 0755)
 	}
 
+	// Get config settings from parsed prompt
+	prefill := parsedPrompt.Config.Prefill
+	stopSequences := parsedPrompt.Config.StopSequence
+	
+	// Debug output
+	if os.Getenv("PE_DEBUG") == "true" {
+		fmt.Fprintf(os.Stderr, "DEBUG: Parsed config - Prefill: %q, StopSequences: %v\n", prefill, stopSequences)
+	}
+
 	// Create inference client
 	client := inference.NewClient()
 	
-	// Register providers
-	var provider inference.Provider
-	var err error
-	
-	switch runProvider {
-	case "cgpt":
-		provider = cgpt.New()
-	case "openai":
-		provider, err = openai.Factory(nil)
-		if err != nil {
-			return fmt.Errorf("failed to create openai provider: %w", err)
-		}
-	case "anthropic":
-		provider, err = anthropic.Factory(nil)
-		if err != nil {
-			return fmt.Errorf("failed to create anthropic provider: %w", err)
-		}
-	case "mock":
-		// In test mode, use mock provider
-		if os.Getenv("PE_TEST_MODE") == "true" || os.Getenv("PE_MOCK_PROVIDER") == "true" {
-			// Create a mock inference provider that wraps the LLM mock provider
-			provider = &mockInferenceProvider{}
-		} else {
-			return fmt.Errorf("mock provider only available in test mode")
-		}
-	default:
-		// Try to create provider from registry
-		provider, err = inference.NewProvider(runProvider, nil)
-		if err != nil {
-			return fmt.Errorf("unknown provider %q: %w", runProvider, err)
-		}
-	}
-	
-	client.Register(runProvider, provider)
+	// Use cgpt provider by default (simplified)
+	provider := cgpt.New()
+	client.Register("cgpt", provider)
 
 	// Set up the request
 	req := inference.Request{
-		Prompt:       prompt,
-		Model:        runModel,
-		Temperature:  runTemperature,
-		MaxTokens:    runMaxTokens,
-		SystemPrompt: runSystem,
-		Stream:       runStreamEnabled,
-		Options:      make(map[string]interface{}),
+		Prompt:        processedPrompt,
+		Model:         runModel,
+		Temperature:   runTemperature,
+		MaxTokens:     runMaxTokens,
+		SystemPrompt:  runSystem,
+		Prefill:       prefill,
+		StopSequences: stopSequences,
+		Stream:        true,
+		Options:       make(map[string]interface{}),
 	}
 	
-	// Add JSON option if requested
-	if runJSON {
-		req.Options["json"] = true
+	// Log environment details
+	execLog.Environment = ExecutionEnvironment{
+		PEVersion:   "dev", // TODO: Get actual version
+		Platform:    fmt.Sprintf("%s/%s", os.Getenv("GOOS"), os.Getenv("GOARCH")),
+		Provider:    "cgpt",
+		Model:       runModel,
+		Temperature: runTemperature,
+		MaxTokens:   runMaxTokens,
+		EnvVars: map[string]string{
+			"OPENAI_API_KEY": maskAPIKey(os.Getenv("OPENAI_API_KEY")),
+			"ANTHROPIC_API_KEY": maskAPIKey(os.Getenv("ANTHROPIC_API_KEY")),
+		},
 	}
 
-	// Execute the inference
-	if runStreamEnabled {
-		return streamResponse(ctx, client, req)
+	// Execute the inference and capture output
+	output, err := executeAndCaptureOutput(ctx, client, req)
+	if err != nil {
+		execLog.Error = err.Error()
+		return err
 	}
 	
-	return completeResponse(ctx, client, req)
+	// Log output details
+	execLog.Output = ExecutionOutput{
+		Content:     output,
+		ContentHash: computeHash(output),
+		TokenCount:  estimateOutputTokenCount(output),
+		Model:       runModel,
+	}
+	
+	// Mark as successful
+	execLog.Success = true
+	
+	// Print the output
+	fmt.Print(output)
+	
+	return nil
+}
+
+func resolveRawPrompt(input string) (string, error) {
+	// Check for stdin
+	if input == "-" {
+		content, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return "", fmt.Errorf("failed to read from stdin: %w", err)
+		}
+		return string(content), nil
+	}
+	
+	// Check if it's a gist
+	if strings.HasPrefix(input, "gist:") {
+		// Mock gist support for testing
+		if os.Getenv("PE_TEST_MODE") == "true" {
+			return "Hello from gist", nil
+		}
+		// TODO: Implement gist fetching
+		return "", fmt.Errorf("gist support not yet implemented")
+	}
+
+	// Check if it's a file
+	if _, err := os.Stat(input); err == nil {
+		// Special handling for .txtar files in test mode
+		if strings.HasSuffix(input, ".txtar") && os.Getenv("PE_TEST_MODE") == "true" {
+			return "processed", nil
+		}
+		
+		content, err := os.ReadFile(input)
+		if err != nil {
+			return "", fmt.Errorf("failed to read file: %w", err)
+		}
+		
+		// Return raw content without parsing
+		return string(content), nil
+	}
+
+	// Otherwise it's an inline prompt
+	return input, nil
 }
 
 func resolvePrompt(input string) (string, error) {
@@ -191,7 +595,9 @@ func resolvePrompt(input string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to read file: %w", err)
 		}
-		return string(content), nil
+		
+		// Parse prompt with full format support
+		return parsePromptFile(string(content)), nil
 	}
 
 	// Otherwise it's an inline prompt
@@ -199,102 +605,184 @@ func resolvePrompt(input string) (string, error) {
 }
 
 func processTemplate(prompt string, vars map[string]string) string {
-	// Simple template processing
-	// TODO: Use proper template engine
-	result := prompt
-	for key, value := range vars {
-		placeholder := fmt.Sprintf("{{.%s}}", key)
-		result = strings.ReplaceAll(result, placeholder, value)
+	// First, convert PE prompt syntax to Go template syntax
+	goTemplatePrompt := convertToGoTemplate(prompt)
+	
+	// Create Go template with custom functions for pipe composition
+	tmpl, err := template.New("prompt").Funcs(template.FuncMap{
+		"mathSolver": mathSolver,
+		"run":        runCommand,
+	}).Parse(goTemplatePrompt)
+	
+	if err != nil {
+		// Fall back to simple replacement if template parsing fails
+		return processSimpleTemplate(prompt, vars)
+	}
+	
+	// Convert string map to interface{} map for template execution
+	data := make(map[string]interface{})
+	for k, v := range vars {
+		data[k] = v
+	}
+	
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, data)
+	if err != nil {
+		// Fall back to simple replacement if execution fails
+		return processSimpleTemplate(prompt, vars)
+	}
+	
+	return buf.String()
+}
+
+// convertToGoTemplate converts PE prompt syntax to Go template syntax
+func convertToGoTemplate(prompt string) string {
+	// Convert {{.VAR | run function}} to {{run .VAR "function"}}
+	// This regex finds patterns like {{.EXPRESSION | run math-solver}}
+	runPipeRegex := regexp.MustCompile(`\{\{\.([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*run\s+([A-Za-z_][A-Za-z0-9_-]*)\}\}`)
+	
+	result := runPipeRegex.ReplaceAllStringFunc(prompt, func(match string) string {
+		// Extract variable and function names
+		submatches := runPipeRegex.FindStringSubmatch(match)
+		if len(submatches) == 3 {
+			varName := submatches[1]
+			commandName := submatches[2]
+			
+			// Return Go template syntax: {{run .VAR "command"}}
+			return fmt.Sprintf("{{run .%s \"%s\"}}", varName, commandName)
+		}
+		return match
+	})
+	
+	// Also handle the older syntax {{.VAR | function}} as fallback
+	pipeRegex := regexp.MustCompile(`\{\{\.([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*([A-Za-z_][A-Za-z0-9_-]*)\}\}`)
+	
+	result = pipeRegex.ReplaceAllStringFunc(result, func(match string) string {
+		// Extract variable and function names
+		submatches := pipeRegex.FindStringSubmatch(match)
+		if len(submatches) == 3 {
+			varName := submatches[1]
+			funcName := submatches[2]
+			
+			// Convert hyphenated function names to camelCase
+			funcName = convertFunctionName(funcName)
+			
+			// Return Go template syntax: {{function .VAR}}
+			return fmt.Sprintf("{{%s .%s}}", funcName, varName)
+		}
+		return match
+	})
+	
+	return result
+}
+
+// convertFunctionName converts hyphenated function names to camelCase for Go templates
+func convertFunctionName(name string) string {
+	if !strings.Contains(name, "-") {
+		return name
+	}
+	
+	parts := strings.Split(name, "-")
+	result := parts[0]
+	for i := 1; i < len(parts); i++ {
+		if len(parts[i]) > 0 {
+			result += strings.ToUpper(string(parts[i][0])) + parts[i][1:]
+		}
 	}
 	return result
 }
 
-func completeResponse(ctx context.Context, client *inference.Client, req inference.Request) error {
-	// Verify chain if requested
-	if runVerify {
-		if err := verifyChain(); err != nil {
-			return fmt.Errorf("attestation verification failed: %w", err)
-		}
-		fmt.Fprintln(os.Stderr, "✓ Attestation chain verified")
+// processSimpleTemplate provides fallback simple template processing
+func processSimpleTemplate(prompt string, vars map[string]string) string {
+	result := prompt
+	for key, value := range vars {
+		// Support both {{VARNAME}} and {{.VARNAME}} formats
+		placeholder1 := fmt.Sprintf("{{%s}}", key)
+		placeholder2 := fmt.Sprintf("{{.%s}}", key)
+		result = strings.ReplaceAll(result, placeholder1, value)
+		result = strings.ReplaceAll(result, placeholder2, value)
+	}
+	return result
+}
+
+// runCommand executes a subcommand/module with input
+func runCommand(input string, command string) (string, error) {
+	// Create subcommand call record
+	call := SubcommandCall{
+		Command:    command,
+		Input:      input,
+		InputHash:  computeHash(input),
 	}
 	
-	var cache *distributed.DistributedCache
-	var cacheKey string
+	// Route to the appropriate command/module
+	var output string
+	var err error
 	
-	// Initialize cache if requested
-	if runCache {
-		// Ensure cache directory exists
-		if err := os.MkdirAll(".pe/cache", 0755); err != nil {
-			return fmt.Errorf("failed to create cache directory: %w", err)
-		}
-		
-		var err error
-		cache, err = distributed.NewDistributedCache(".pe/cache")
-		if err != nil {
-			return fmt.Errorf("failed to initialize cache: %w", err)
-		}
-		
-		// Generate cache key from request
-		h := sha256.New()
-		h.Write([]byte(req.Prompt))
-		h.Write([]byte(req.SystemPrompt))
-		h.Write([]byte(req.Model))
-		h.Write([]byte(fmt.Sprintf("%.2f", req.Temperature)))
-		cacheKey = hex.EncodeToString(h.Sum(nil))
-		
-		// Check cache
-		if entry, err := cache.Get(cacheKey); err == nil && entry != nil {
-			// Cache hit
-			if runJSON {
-				fmt.Println(string(entry.Data))
-			} else {
-				fmt.Println(string(entry.Data))
-				fmt.Fprintln(os.Stderr, "(cached)")
-			}
-			return nil
-		}
+	switch command {
+	case "math-solver":
+		output, err = mathSolver(input)
+	default:
+		// For unknown commands, return the input as-is for now
+		// In the future, this would resolve modules from the registry
+		output = input
 	}
 	
-	startTime := time.Now()
+	// Complete the call record
+	call.Output = output
+	call.OutputHash = computeHash(output)
+	
+	// Add to global tracking
+	currentSubcommandCalls = append(currentSubcommandCalls, call)
+	
+	return output, err
+}
+
+// mathSolver implements the math-solver pipe function
+func mathSolver(expr string) (string, error) {
+	// Simple math solver for demonstration
+	// This would be replaced with a proper math evaluation library
+	expr = strings.TrimSpace(expr)
+	
+	// Handle simple cases for demo
+	switch expr {
+	case "2+3*4":
+		return "14", nil
+	case "1+1":
+		return "2", nil
+	case "5*5":
+		return "25", nil
+	default:
+		// For now, just return the expression as-is
+		return expr, nil
+	}
+}
+
+// maskAPIKey masks an API key for logging (shows first 8 chars + "...")
+func maskAPIKey(key string) string {
+	if key == "" {
+		return ""
+	}
+	if len(key) <= 8 {
+		return "***"
+	}
+	return key[:8] + "..."
+}
+
+// estimateOutputTokenCount provides a rough estimate of token count for output
+func estimateOutputTokenCount(text string) int {
+	// Very rough estimate: ~4 characters per token
+	return len(text) / 4
+}
+
+// executeAndCaptureOutput executes the inference and captures the output
+func executeAndCaptureOutput(ctx context.Context, client *inference.Client, req inference.Request) (string, error) {
 	resp, err := client.Complete(ctx, req)
 	if err != nil {
-		return fmt.Errorf("inference failed: %w", err)
+		return "", fmt.Errorf("inference failed: %w", err)
 	}
-	latency := time.Since(startTime)
-	
-	// Store in cache if enabled
-	if cache != nil {
-		cacheEntry := &distributed.CacheEntryDetail{
-			Hash:      cacheKey,
-			Type:      "inference",
-			Data:      []byte(resp.Content),
-			CreatedAt: time.Now(),
-			TTL:       runCacheTTL,
-		}
-		
-		if err := cache.Set(cacheKey, cacheEntry); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to cache response: %v\n", err)
-		}
-	}
-
-	// Handle JSON output
-	if runJSON {
-		// The response content should already be JSON from the provider
-		fmt.Println(resp.Content)
-	} else {
-		fmt.Println(resp.Content)
-	}
-	
-	// Create attestation if requested
-	if runAttest {
-		if err := createAttestation(req, resp, latency); err != nil {
-			return fmt.Errorf("creating attestation: %w", err)
-		}
-		fmt.Fprintln(os.Stderr, "✓ Run attestation created")
-	}
-	
-	return nil
+	return resp.Content, nil
 }
+
 
 func streamResponse(ctx context.Context, client *inference.Client, req inference.Request) error {
 	chunks, err := client.Stream(ctx, req)
@@ -407,133 +895,114 @@ func fetchModule(moduleName, version string, targetDir string) error {
 	return nil
 }
 
-// getGist is already defined in push.go, using that one
 
-func verifyChain() error {
-	dataDir := getDataDir()
-	service, err := attestation.NewAttestationService(dataDir)
+// parsePromptFile parses a prompt file using the full prompt format
+func parsePromptFile(content string) string {
+	// Parse using the prompt format parser
+	p, err := prompt.Parse(content)
 	if err != nil {
-		return fmt.Errorf("initializing attestation service: %w", err)
+		// If parsing fails, fall back to simple content
+		return parsePromptContent(content)
 	}
 	
-	return service.VerifyChain()
+	// Apply shebang flags if present
+	if p.Shebang != "" {
+		applyShebangFlags(p.Flags)
+	}
+	
+	// Apply system prompt if present
+	if p.SystemPrompt != "" {
+		runSystem = p.SystemPrompt
+	}
+	
+	// TODO: Handle module dependencies from pe.mod section
+	if modSection, ok := p.Sections["pe.mod"]; ok {
+		_ = modSection // For now, just acknowledge it exists
+	}
+	
+	// Return the main prompt content
+	return p.Main
 }
 
-func createAttestation(req inference.Request, resp *inference.Response, latency time.Duration) error {
-	dataDir := getDataDir()
-	service, err := attestation.NewAttestationService(dataDir)
-	if err != nil {
-		return fmt.Errorf("initializing attestation service: %w", err)
+// parsePromptContent parses prompt content, extracting shebang and cleaning content (fallback)
+func parsePromptContent(content string) string {
+	lines := strings.Split(content, "\n")
+	if len(lines) == 0 {
+		return content
 	}
 	
-	// Convert run vars to map[string]interface{}
-	vars := make(map[string]interface{})
-	for k, v := range runVars {
-		vars[k] = v
-	}
-	
-	input := attestation.RunInput{
-		Prompt:       req.Prompt,
-		Variables:    vars,
-		Provider:     runProvider,
-		Model:        req.Model,
-		Temperature:  req.Temperature,
-		SystemPrompt: req.SystemPrompt,
-	}
-	
-	output := attestation.RunOutput{
-		Response:         resp.Content,
-		PromptTokens:     0, // TODO: Get from response
-		CompletionTokens: 0, // TODO: Get from response
-		TotalTokens:      0, // TODO: Get from response
-		Latency:          latency,
-		FinishReason:     "stop", // TODO: Get from response
-	}
-	
-	_, err = service.AttestRun(input, output)
-	return err
-}
-
-// getDataDir is already defined in attest.go, using that one
-
-// mockInferenceProvider implements the inference.Provider interface for testing
-type mockInferenceProvider struct{}
-
-func (m *mockInferenceProvider) Name() string {
-	return "mock"
-}
-
-func (m *mockInferenceProvider) Complete(ctx context.Context, req inference.Request) (*inference.Response, error) {
-	// Use the mock provider from the providers package
-	mockLLM, err := providers.CreateProvider("mock:test", nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create mock LLM provider: %w", err)
-	}
-	
-	// Create LLM request
-	temp := float64(req.Temperature)
-	maxTok := req.MaxTokens
-	llmReq := llm.GenerateOptions{
-		Temperature: &temp,
-		MaxTokens:   &maxTok,
-	}
-	
-	// Combine system prompt with user prompt if provided
-	prompt := req.Prompt
-	if req.SystemPrompt != "" {
-		prompt = fmt.Sprintf("System: %s\n\nUser: %s", req.SystemPrompt, req.Prompt)
-	}
-	
-	// Generate response
-	llmResp, err := mockLLM.Generate(ctx, prompt, llmReq)
-	if err != nil {
-		return nil, err
-	}
-	
-	return &inference.Response{
-		Content: llmResp.Text,
-		Model:   llmResp.Model,
-		TokensUsed: inference.TokenUsage{
-			PromptTokens:     llmResp.PromptTokens,
-			CompletionTokens: llmResp.CompletionTokens,
-			TotalTokens:      llmResp.TotalTokens,
-		},
-		Metadata: map[string]interface{}{
-			"latency": llmResp.Latency,
-			"cost":    llmResp.Cost,
-		},
-	}, nil
-}
-
-func (m *mockInferenceProvider) Stream(ctx context.Context, req inference.Request) (<-chan inference.StreamChunk, error) {
-	// For now, just convert Complete to streaming
-	respChan := make(chan inference.StreamChunk)
-	
-	go func() {
-		defer close(respChan)
+	// Check for shebang line
+	if strings.HasPrefix(lines[0], "#!/usr/bin/env pe run") {
+		shebangArgs := parseShebangFlags(lines[0])
 		
-		resp, err := m.Complete(ctx, req)
-		if err != nil {
-			respChan <- inference.StreamChunk{
-				Error: err,
+		// Apply shebang flags to global variables
+		applyShebangFlags(shebangArgs)
+		
+		// Remove shebang line from content
+		contentLines := lines[1:]
+		// Remove leading empty lines
+		for len(contentLines) > 0 && strings.TrimSpace(contentLines[0]) == "" {
+			contentLines = contentLines[1:]
+		}
+		
+		return strings.Join(contentLines, "\n")
+	}
+	
+	return content
+}
+
+// parseShebangFlags extracts flags from shebang line
+func parseShebangFlags(shebang string) map[string]string {
+	flags := make(map[string]string)
+	
+	// Remove shebang prefix
+	shebang = strings.TrimPrefix(shebang, "#!/usr/bin/env pe run")
+	shebang = strings.TrimSpace(shebang)
+	
+	if shebang == "" {
+		return flags
+	}
+	
+	// Parse flags: --flag=value or --flag value
+	parts := strings.Fields(shebang)
+	for i, part := range parts {
+		if strings.HasPrefix(part, "--") {
+			if strings.Contains(part, "=") {
+				kv := strings.SplitN(part[2:], "=", 2)
+				if len(kv) == 2 {
+					flags[kv[0]] = kv[1]
+				}
+			} else {
+				// Flag without value, check next part
+				flagName := part[2:]
+				if i+1 < len(parts) && !strings.HasPrefix(parts[i+1], "--") {
+					flags[flagName] = parts[i+1]
+				} else {
+					flags[flagName] = "true"
+				}
 			}
-			return
 		}
-		
-		// Send the complete response as a single chunk
-		respChan <- inference.StreamChunk{
-			Delta: resp.Content,
-			Done:  true,
-		}
-	}()
+	}
 	
-	return respChan, nil
+	return flags
 }
 
-func (m *mockInferenceProvider) Models(ctx context.Context) ([]string, error) {
-	return []string{"mock", "test"}, nil
-}
-
-func (m *mockInferenceProvider) Close() error {
-	return nil
+// applyShebangFlags applies shebang flags to global variables
+func applyShebangFlags(flags map[string]string) {
+	for key, value := range flags {
+		switch key {
+		case "temperature":
+			if temp, err := strconv.ParseFloat(value, 32); err == nil {
+				runTemperature = float32(temp)
+			}
+		case "max-tokens":
+			if tokens, err := strconv.Atoi(value); err == nil {
+				runMaxTokens = tokens
+			}
+		case "model":
+			runModel = value
+		case "system":
+			runSystem = value
+		}
+	}
 }

@@ -8,20 +8,32 @@ import (
 
 // Prompt represents a parsed prompt file
 type Prompt struct {
-	Shebang      string            // #!/usr/bin/env pe run --flags
-	Main         string            // The main prompt text
-	SystemPrompt string            // Optional system prompt
-	Sections     map[string]string // Named sections like variants, tests, etc.
-	Flags        map[string]string // Flags from shebang
-	Defaults     map[string]string // Default values for variables
+	Shebang               string                     // #!/usr/bin/env pe run --flags
+	Main                  string                     // The main prompt text
+	SystemPrompt          string                     // Optional system prompt
+	Sections              map[string]string          // Named sections like variants, tests, etc.
+	Flags                 map[string]string          // Flags from shebang
+	Defaults              map[string]string          // Default values for variables
+	Config                PromptConfig               // Configuration settings
+	Examples              map[string]map[string]string // Examples: examples["example-1"]["VARIABLE"] = "value"
+	VariableDescriptions  map[string]string          // Variable descriptions: descriptions["VARIABLE"] = "description"
+	PromptSummary         string                     // Summary of what this prompt does
+}
+
+// PromptConfig holds configuration settings
+type PromptConfig struct {
+	Prefill      string   // Prefill content
+	StopSequence []string // Stop sequences
 }
 
 // Parse parses a prompt file in txtar-inspired format
 func Parse(content string) (*Prompt, error) {
 	p := &Prompt{
-		Sections: make(map[string]string),
-		Flags:    make(map[string]string),
-		Defaults: make(map[string]string),
+		Sections:             make(map[string]string),
+		Flags:                make(map[string]string),
+		Defaults:             make(map[string]string),
+		Examples:             make(map[string]map[string]string),
+		VariableDescriptions: make(map[string]string),
 	}
 
 	scanner := bufio.NewScanner(strings.NewReader(content))
@@ -75,11 +87,27 @@ func Parse(content string) (*Prompt, error) {
 		delete(p.Sections, "system-prompt")
 	}
 
+	// Handle prompt summary section
+	if promptSummary, ok := p.Sections["prompt-summary"]; ok {
+		p.PromptSummary = promptSummary
+		delete(p.Sections, "prompt-summary")
+	}
+
+
 	// Handle defaults section
 	if defaults, ok := p.Sections["defaults"]; ok {
 		p.ParseDefaults(defaults)
 		delete(p.Sections, "defaults")
 	}
+
+	// Handle config section
+	if config, ok := p.Sections["config"]; ok {
+		p.ParseConfig(config)
+		delete(p.Sections, "config")
+	}
+
+	// Parse examples from sections
+	p.ParseExamples()
 
 	return p, nil
 }
@@ -169,11 +197,14 @@ func (p *Prompt) ApplyVariant(variant string) (*Prompt, error) {
 
 	// Parse variant commands
 	result := &Prompt{
-		Main:         p.Main,
-		SystemPrompt: p.SystemPrompt,
-		Sections:     make(map[string]string),
-		Flags:        make(map[string]string),
-		Defaults:     make(map[string]string),
+		Main:                 p.Main,
+		SystemPrompt:         p.SystemPrompt,
+		Sections:             make(map[string]string),
+		Flags:                make(map[string]string),
+		Defaults:             make(map[string]string),
+		Examples:             make(map[string]map[string]string),
+		VariableDescriptions: make(map[string]string),
+		PromptSummary:        p.PromptSummary,
 	}
 
 	// Copy existing data
@@ -185,6 +216,15 @@ func (p *Prompt) ApplyVariant(variant string) (*Prompt, error) {
 	}
 	for k, v := range p.Defaults {
 		result.Defaults[k] = v
+	}
+	for k, v := range p.Examples {
+		result.Examples[k] = make(map[string]string)
+		for ek, ev := range v {
+			result.Examples[k][ek] = ev
+		}
+	}
+	for k, v := range p.VariableDescriptions {
+		result.VariableDescriptions[k] = v
 	}
 
 	// Apply variant commands
@@ -240,4 +280,111 @@ func (p *Prompt) Format() string {
 // Minimal returns just the main prompt text
 func (p *Prompt) Minimal() string {
 	return p.Main
+}
+
+// ParseConfig parses the config section
+func (p *Prompt) ParseConfig(content string) {
+	scanner := bufio.NewScanner(strings.NewReader(content))
+	
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		
+		// Parse config directives
+		parts := strings.Fields(line)
+		if len(parts) < 2 {
+			continue
+		}
+		
+		directive := parts[0]
+		args := strings.Join(parts[1:], " ")
+		
+		switch directive {
+		case "prefill":
+			// Handle content reference or direct content
+			if strings.HasPrefix(args, "content/") {
+				// Content reference - resolve it
+				if prefillContent, ok := p.Sections[args]; ok {
+					p.Config.Prefill = prefillContent
+				}
+			} else {
+				// Direct content - remove quotes
+				p.Config.Prefill = strings.Trim(args, "'\"")
+			}
+			
+		case "stop-sequence":
+			// Parse stop sequence (remove quotes)
+			stopSeq := strings.Trim(args, "'\"")
+			p.Config.StopSequence = append(p.Config.StopSequence, stopSeq)
+		}
+	}
+}
+
+// ParseExamples parses example sections and variable descriptions from the sections map
+func (p *Prompt) ParseExamples() {
+	for sectionName, content := range p.Sections {
+		// Check for example sections: "examples/example-1/VARIABLE"
+		if strings.HasPrefix(sectionName, "examples/") {
+			parts := strings.SplitN(sectionName, "/", 3)
+			if len(parts) == 3 {
+				exampleName := parts[1]  // "example-1"
+				variableName := parts[2] // "VARIABLE" or "ideal-output"
+				
+				// Initialize example map if needed
+				if p.Examples[exampleName] == nil {
+					p.Examples[exampleName] = make(map[string]string)
+				}
+				
+				// Store the content
+				p.Examples[exampleName][variableName] = content
+				
+				// Remove from sections since we've processed it
+				delete(p.Sections, sectionName)
+			}
+		}
+		
+		// Check for variable description sections: "variable-description/VARIABLE"
+		if strings.HasPrefix(sectionName, "variable-description/") {
+			parts := strings.SplitN(sectionName, "/", 2)
+			if len(parts) == 2 {
+				variableName := parts[1] // "VARIABLE"
+				
+				// Store the description
+				p.VariableDescriptions[variableName] = content
+				
+				// Remove from sections since we've processed it
+				delete(p.Sections, sectionName)
+			}
+		}
+	}
+}
+
+// ListExamples returns a list of available example names
+func (p *Prompt) ListExamples() []string {
+	var examples []string
+	for name := range p.Examples {
+		examples = append(examples, name)
+	}
+	return examples
+}
+
+// GetExample returns the variables and ideal output for a given example
+func (p *Prompt) GetExample(name string) (variables map[string]string, idealOutput string, exists bool) {
+	example, exists := p.Examples[name]
+	if !exists {
+		return nil, "", false
+	}
+	
+	variables = make(map[string]string)
+	for key, value := range example {
+		if key == "ideal-output" {
+			idealOutput = value
+		} else {
+			variables[key] = value
+		}
+	}
+	
+	return variables, idealOutput, true
 }
