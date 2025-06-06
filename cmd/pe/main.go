@@ -72,6 +72,7 @@ work together seamlessly.`,
 	root.AddCommand(runCmd())      // go run for prompts
 	root.AddCommand(buildCmd)      // go build for prompts
 	root.AddCommand(testCmd())     // go test for prompts
+	root.AddCommand(docCmd())      // go doc for prompts
 	root.AddCommand(peInitCmd())   // pe init for repository
 	root.AddCommand(modCmd)        // go mod for prompt modules
 	root.AddCommand(pushCmd)       // push modules to registry

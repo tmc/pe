@@ -6,6 +6,7 @@ Welcome to the PE (Go for Prompts) documentation. PE is the unified toolchain fo
 
 - **[Overview](OVERVIEW.md)** - Understand PE's philosophy and capabilities
 - **[Installation](INSTALLATION.md)** - Get PE running on your system
+- **[Prompt Format](PROMPT_FORMAT.md)** - Simple, Unix-friendly prompt file format
 - **[Tutorial](TUTORIAL.md)** - Step-by-step guide from basics to advanced
 - **[Commands](COMMANDS.md)** - Complete reference for all PE commands
 - **[Architecture](ARCHITECTURE.md)** - Technical deep dive into PE's design

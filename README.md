@@ -5,7 +5,7 @@
 [![Documentation](https://img.shields.io/badge/docs-comprehensive-blue)](docs/)
 [![Research](https://img.shields.io/badge/research-2024--2025-green)](docs/RESEARCH_FOUNDATIONS.md)
 
-**PE is a Go-based toolkit for prompt engineering** that implements cutting-edge 2024-2025 research in prompt optimization. Built with Go's philosophy of simplicity and performance, PE provides tools for developing, testing, and optimizing prompts using state-of-the-art metaprompting techniques.
+**PE brings the simplicity and power of Go's toolchain to prompt engineering.** Like `go run` for prompts, PE makes it easy to develop, test, and optimize prompts with a familiar, composable command-line interface.
 
 ## 🚀 Key Features (Implemented)
 
@@ -34,18 +34,97 @@ go install github.com/tmc/pe/cmd/pe@latest
 ### Basic Usage
 
 ```bash
-# Execute a prompt
-pe run "Summarize this: {{.text}}" --var text="Long article..."
+# Execute a prompt - simplest form
+pe run "What is 2+2?"
 
-# Evaluate prompts
-pe eval config.yaml -o results.json
+# From a file with template variables
+pe run math-solver.prompt "15 + 27"
 
-# Optimize prompts using metaprompting
-pe optimize --prompt "Write code" --method textgrad
+# Using examples built into the prompt
+pe run math-solver.prompt --example example-1
 
-# Semantic optimization (2025 research)
-pe semantic backprop --prompt "task" --objective "goal"
+# With explicit variables
+pe run translate.prompt --var TEXT="Hello" --var LANGUAGE="French"
 ```
+
+### Template Variables
+
+PE automatically detects template variables and provides helpful usage:
+
+```bash
+$ pe run math-solver.prompt
+Error: Template variables found but no values provided
+
+Template variables detected: EXPRESSION
+
+Available flags:
+      --model string        Model to use (e.g., gpt-4, claude-3)
+      --temperature float   Temperature for randomness (0.0-1.0) (default 0.7)
+      --var stringToString  Template variables (can be repeated)
+      --example string      Run with example variables (e.g., example-1)
+      --expression string   Value for template variable EXPRESSION
+
+Examples:
+  pe run math-solver.prompt --expression 'value'
+  pe run math-solver.prompt 'value'  # positional argument
+```
+
+## 📝 Prompt Format
+
+PE uses a simple, self-documenting format. Start simple and add features as needed:
+
+### Level 1: Just Text
+```
+What is the capital of France?
+```
+
+### Level 2: Templates
+```
+Solve this math problem: {{EXPRESSION}}
+```
+
+### Level 3: Documentation & Examples
+```
+Solve the following math problem step by step: {{EXPRESSION}}
+
+-- prompt-summary --
+A helpful math tutor that explains problem-solving step by step.
+
+-- variable-description/EXPRESSION --
+A mathematical expression to solve (e.g., "2+2", "15*3", "(10+5)/3")
+
+-- examples/simple/EXPRESSION --
+15 + 27
+
+-- examples/simple/ideal-output --
+Let me solve this step by step:
+15 + 27 = 42
+```
+
+### Level 4: Full Features
+```
+#!/usr/bin/env pe run --model gpt-4
+
+Translate the following {{LANGUAGE}} text to {{TARGET_LANGUAGE}}:
+
+{{TEXT}}
+
+-- system-prompt --
+You are a professional translator with native fluency in multiple languages.
+
+-- defaults --
+LANGUAGE=English
+TARGET_LANGUAGE=Spanish
+
+-- variant:formal --
+extend-system-prompt Use formal, professional language suitable for business.
+
+-- config --
+temperature 0.3
+max-tokens 1000
+```
+
+See [docs/PROMPT_FORMAT_SPEC.md](docs/PROMPT_FORMAT_SPEC.md) for the complete specification.
 
 ## 📋 Available Commands
 
@@ -184,8 +263,21 @@ PE is built with a modular architecture:
 
 PE is under active development. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+## 🎯 Design Philosophy
+
+PE follows Go's philosophy: simple, composable tools that do one thing well:
+
+- **Start Simple**: A prompt can just be text. Add complexity only as needed.
+- **Progressive Enhancement**: Templates → Documentation → Examples → Variants
+- **Familiar Patterns**: `pe.mod` files work like `go.mod`. Commands compose via pipes.
+- **No Magic**: Everything is explicit and inspectable.
+
+See [docs/DESIGN_PHILOSOPHY.md](docs/DESIGN_PHILOSOPHY.md) for more details.
+
 ## 📚 Documentation
 
+- [Design Philosophy](docs/DESIGN_PHILOSOPHY.md)
+- [Prompt Format Specification](docs/PROMPT_FORMAT_SPEC.md)
 - [Getting Started](docs/GETTING_STARTED.md)
 - [API Reference](docs/API_REFERENCE.md)
 - [Research Foundations](docs/RESEARCH_FOUNDATIONS.md)

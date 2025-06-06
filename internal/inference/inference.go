@@ -27,6 +27,12 @@ type Request struct {
 	// SystemPrompt sets the system message (if supported)
 	SystemPrompt string
 
+	// Prefill content to start the assistant's response
+	Prefill string
+
+	// StopSequences are sequences that stop generation when encountered
+	StopSequences []string
+
 	// Options for provider-specific settings
 	Options map[string]interface{}
 }

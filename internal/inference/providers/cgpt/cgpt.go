@@ -249,6 +249,16 @@ func (p *Provider) buildArgs(req inference.Request) []string {
 		args = append(args, "-s", req.SystemPrompt)
 	}
 	
+	// Prefill (cgpt uses --prefill for assistant message start)
+	if req.Prefill != "" {
+		args = append(args, "--prefill", req.Prefill)
+	}
+	
+	// Stop sequences (cgpt uses --stop for stop sequences)
+	for _, stop := range req.StopSequences {
+		args = append(args, "--stop", stop)
+	}
+	
 	// Input (use -i for direct string input)
 	if req.Prompt != "" {
 		args = append(args, "-i", req.Prompt)
@@ -293,6 +303,7 @@ func (p *Provider) mockResponse(req inference.Request) *inference.Response {
 		"Count to 5": "1 2 3 4 5",
 		"Current time?": "The current time is 3:00 PM",
 		"You are a helpful assistant. Explain the concept of recursion.": "As a helpful assistant, I'll explain recursion: a function that calls itself to solve a problem by breaking it down into smaller instances.",
+		"Write a Haskell function that calculates the factorial:": "factorial :: Integer -> Integer\nfactorial 0 = 1\nfactorial n = n * factorial (n - 1)",
 	}
 	
 	// Check if prompt ends with expected pattern for file reads
@@ -304,6 +315,14 @@ func (p *Provider) mockResponse(req inference.Request) *inference.Response {
 	// Debug output for testing
 	if os.Getenv("PE_DEBUG") == "true" {
 		fmt.Fprintf(os.Stderr, "DEBUG: Mock received prompt: %q\n", promptCompare)
+		fmt.Fprintf(os.Stderr, "DEBUG: Mock prefill: %q\n", req.Prefill)
+		fmt.Fprintf(os.Stderr, "DEBUG: Mock stop sequences: %v\n", req.StopSequences)
+	}
+	
+	// Handle prefill content by prepending it to the response
+	var prefillPrefix string
+	if req.Prefill != "" {
+		prefillPrefix = req.Prefill
 	}
 	
 	// Check for exact matches first
@@ -318,6 +337,19 @@ func (p *Provider) mockResponse(req inference.Request) *inference.Response {
 	} else if strings.Contains(req.Prompt, "{{") && strings.Contains(req.Prompt, "}}") {
 		// Handle template processing - already done by pe run
 		content = "Mock response for templated prompt"
+	}
+	
+	// Apply prefill if provided
+	if prefillPrefix != "" {
+		content = prefillPrefix + content
+	}
+	
+	// Apply stop sequences by truncating content at first occurrence
+	for _, stop := range req.StopSequences {
+		if idx := strings.Index(content, stop); idx != -1 {
+			content = content[:idx]
+			break
+		}
 	}
 	
 	// Handle JSON output request
