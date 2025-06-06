@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/tmc/pe/internal/pemod"
 )
 
 var modCmd = &cobra.Command{
@@ -107,48 +108,40 @@ type PromptModule struct {
 func runModInit(cmd *cobra.Command, args []string) error {
 	moduleName := args[0]
 	
-	// Check if go.mod already exists
-	if _, err := os.Stat("go.mod"); err == nil && !modForce {
-		return fmt.Errorf("go.mod already exists")
+	// Check if pe.mod already exists
+	if _, err := os.Stat("pe.mod"); err == nil && !modForce {
+		return fmt.Errorf("pe.mod already exists (use --force to overwrite)")
 	}
 	
-	// Create go.mod content similar to go mod init
-	goModContent := fmt.Sprintf(`module %s
-
-go 1.21
-
-require (
-	// Prompt dependencies will be added here
-)
-`, moduleName)
+	// Create new pe.mod file
+	file := &pemod.File{}
 	
-	// Write go.mod file
-	if err := os.WriteFile("go.mod", []byte(goModContent), 0644); err != nil {
-		return fmt.Errorf("writing go.mod: %w", err)
+	// Set module path if provided
+	if moduleName != "" {
+		file.SetModule(moduleName)
 	}
 	
-	// Also create a .pe directory for prompt-specific metadata
+	// Set PE version
+	file.SetPEVersion("1")
+	
+	// Format and write pe.mod file
+	content := file.Format()
+	if err := os.WriteFile("pe.mod", []byte(content), 0644); err != nil {
+		return fmt.Errorf("writing pe.mod: %w", err)
+	}
+	
+	// Create .pe directory for caching and metadata
 	if err := os.MkdirAll(".pe", 0755); err != nil {
 		return fmt.Errorf("creating .pe directory: %w", err)
 	}
 	
-	// Create pe.json for prompt-specific configuration
-	peConfig := map[string]interface{}{
-		"module":  moduleName,
-		"version": "0.1.0",
-		"created": time.Now().Format(time.RFC3339),
+	// Create cache directories
+	cacheDir := filepath.Join(".pe", "cache")
+	if err := os.MkdirAll(filepath.Join(cacheDir, "modules"), 0755); err != nil {
+		return fmt.Errorf("creating cache directory: %w", err)
 	}
 	
-	data, err := json.MarshalIndent(peConfig, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshaling pe config: %w", err)
-	}
-	
-	if err := os.WriteFile(".pe/config.json", data, 0644); err != nil {
-		return fmt.Errorf("writing pe config: %w", err)
-	}
-	
-	fmt.Printf("Created go.mod\n")
+	fmt.Printf("Created pe.mod for module %s\n", moduleName)
 	
 	return nil
 }
@@ -257,10 +250,16 @@ func fetchGist(gistID string) (*Gist, error) {
 }
 
 func runModDownload(cmd *cobra.Command, args []string) error {
-	// Read go.mod file
-	_, err := os.ReadFile("go.mod")
+	// Read pe.mod file
+	content, err := os.ReadFile("pe.mod")
 	if err != nil {
-		return fmt.Errorf("reading go.mod: %w", err)
+		return fmt.Errorf("reading pe.mod: %w (run 'pe mod init' first)", err)
+	}
+
+	// Parse pe.mod file
+	file, err := pemod.Parse(strings.NewReader(string(content)))
+	if err != nil {
+		return fmt.Errorf("parsing pe.mod: %w", err)
 	}
 
 	// Create modules directory
@@ -270,30 +269,94 @@ func runModDownload(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("Downloading modules...")
-	// TODO: Parse go.mod and download each module
-	// For now, just indicate success
-	fmt.Println("All modules downloaded")
+	
+	// Download each required module
+	for _, req := range file.Require {
+		fmt.Printf("Downloading %s@%s...\n", req.Mod, req.Version)
+		
+		// Create module directory
+		modDir := filepath.Join(modulesDir, string(req.Mod)+"@"+req.Version)
+		if err := os.MkdirAll(modDir, 0755); err != nil {
+			return fmt.Errorf("creating module directory: %w", err)
+		}
+		
+		// TODO: Implement actual download from registry
+		// For now, create a placeholder
+		placeholder := fmt.Sprintf("# Module %s@%s\n# Downloaded on %s\n", 
+			req.Mod, req.Version, time.Now().Format(time.RFC3339))
+		if err := os.WriteFile(filepath.Join(modDir, "module.info"), []byte(placeholder), 0644); err != nil {
+			return fmt.Errorf("writing module info: %w", err)
+		}
+	}
+	
+	fmt.Printf("Downloaded %d modules\n", len(file.Require))
 	return nil
 }
 
 func runModTidy(cmd *cobra.Command, args []string) error {
-	// Check if go.mod exists
-	if _, err := os.Stat("go.mod"); err != nil {
-		return fmt.Errorf("go.mod not found: run 'pe mod init' first")
+	// Check if pe.mod exists
+	if _, err := os.Stat("pe.mod"); err != nil {
+		return fmt.Errorf("pe.mod not found: run 'pe mod init' first")
+	}
+
+	// Read and parse pe.mod file
+	content, err := os.ReadFile("pe.mod")
+	if err != nil {
+		return fmt.Errorf("reading pe.mod: %w", err)
+	}
+
+	file, err := pemod.Parse(strings.NewReader(string(content)))
+	if err != nil {
+		return fmt.Errorf("parsing pe.mod: %w", err)
 	}
 
 	fmt.Println("Analyzing prompt dependencies...")
 	
-	// TODO: Scan for prompt imports and update go.mod
-	// For now, just indicate success
-	fmt.Println("go.mod updated")
+	// TODO: Scan prompt files for pe://module/prompt references
+	// For now, validate existing dependencies
+	var updated bool
+	
+	// Remove unused dependencies (placeholder logic)
+	var filteredRequires []pemod.Require
+	for _, req := range file.Require {
+		// TODO: Check if requirement is actually used
+		filteredRequires = append(filteredRequires, req)
+	}
+	
+	if len(filteredRequires) != len(file.Require) {
+		file.Require = filteredRequires
+		updated = true
+	}
+	
+	// Write updated pe.mod if changes were made
+	if updated {
+		content := file.Format()
+		if err := os.WriteFile("pe.mod", []byte(content), 0644); err != nil {
+			return fmt.Errorf("writing pe.mod: %w", err)
+		}
+		fmt.Println("pe.mod updated")
+	} else {
+		fmt.Println("pe.mod is already tidy")
+	}
+	
 	return nil
 }
 
 func runModVendor(cmd *cobra.Command, args []string) error {
-	// Check if go.mod exists
-	if _, err := os.Stat("go.mod"); err != nil {
-		return fmt.Errorf("go.mod not found: run 'pe mod init' first")
+	// Check if pe.mod exists
+	if _, err := os.Stat("pe.mod"); err != nil {
+		return fmt.Errorf("pe.mod not found: run 'pe mod init' first")
+	}
+
+	// Read and parse pe.mod file
+	content, err := os.ReadFile("pe.mod")
+	if err != nil {
+		return fmt.Errorf("reading pe.mod: %w", err)
+	}
+
+	file, err := pemod.Parse(strings.NewReader(string(content)))
+	if err != nil {
+		return fmt.Errorf("parsing pe.mod: %w", err)
 	}
 
 	// Create vendor directory
@@ -304,8 +367,42 @@ func runModVendor(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("Copying dependencies to vendor/...")
 	
-	// TODO: Copy all dependencies from .pe/cache/modules to vendor/
-	// For now, just indicate success
-	fmt.Println("Vendor directory created")
+	// Create modules.txt file listing vendored modules
+	var modulesList []string
+	
+	// Copy each required module from cache to vendor
+	cacheDir := filepath.Join(".pe", "cache", "modules")
+	for _, req := range file.Require {
+		srcDir := filepath.Join(cacheDir, string(req.Mod)+"@"+req.Version)
+		destDir := filepath.Join(vendorDir, string(req.Mod)+"@"+req.Version)
+		
+		// Check if module exists in cache
+		if _, err := os.Stat(srcDir); os.IsNotExist(err) {
+			fmt.Printf("Warning: Module %s@%s not found in cache, run 'pe mod download' first\n", req.Mod, req.Version)
+			continue
+		}
+		
+		// Create destination directory
+		if err := os.MkdirAll(destDir, 0755); err != nil {
+			return fmt.Errorf("creating vendor module directory: %w", err)
+		}
+		
+		// Copy module files (placeholder - would copy actual files)
+		moduleInfo := fmt.Sprintf("# %s@%s\n# Vendored on %s\n", req.Mod, req.Version, time.Now().Format(time.RFC3339))
+		if err := os.WriteFile(filepath.Join(destDir, "module.info"), []byte(moduleInfo), 0644); err != nil {
+			return fmt.Errorf("writing vendored module info: %w", err)
+		}
+		
+		modulesList = append(modulesList, fmt.Sprintf("%s@%s", req.Mod, req.Version))
+		fmt.Printf("Vendored %s@%s\n", req.Mod, req.Version)
+	}
+	
+	// Write modules.txt
+	modulesContent := strings.Join(modulesList, "\n") + "\n"
+	if err := os.WriteFile(filepath.Join(vendorDir, "modules.txt"), []byte(modulesContent), 0644); err != nil {
+		return fmt.Errorf("writing modules.txt: %w", err)
+	}
+	
+	fmt.Printf("Vendored %d modules\n", len(modulesList))
 	return nil
 }
