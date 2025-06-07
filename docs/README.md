@@ -1,149 +1,187 @@
 # PE Documentation
 
-Welcome to the PE (Go for Prompts) documentation. PE is the unified toolchain for prompt engineering, bringing Go's philosophy of simplicity, composability, and performance to LLM development.
+PE is a prompt engineering toolkit inspired by the Go toolchain. This documentation reflects the current implementation status as of January 2025.
 
-## Quick Links
+## Current Implementation Status
 
-- **[Overview](OVERVIEW.md)** - Understand PE's philosophy and capabilities
-- **[Installation](INSTALLATION.md)** - Get PE running on your system
-- **[Prompt Format](PROMPT_FORMAT.md)** - Simple, Unix-friendly prompt file format
-- **[Tutorial](TUTORIAL.md)** - Step-by-step guide from basics to advanced
-- **[Commands](COMMANDS.md)** - Complete reference for all PE commands
-- **[Architecture](ARCHITECTURE.md)** - Technical deep dive into PE's design
-- **[Plugins](PLUGINS.md)** - Extend PE with custom functionality
+PE is **under active development**. Many features documented elsewhere are aspirational or incomplete. This README provides accurate information about what is currently implemented.
 
-## Getting Started
+## Quick Start
 
+### Installation
 ```bash
-# Install PE
 go install github.com/tmc/pe/cmd/pe@latest
+```
 
+### Basic Usage
+```bash
 # Initialize a project
-pe init
+pe init config.yaml
 
-# Run your first prompt
-pe run "Hello, PE!"
+# Run evaluation
+pe eval config.yaml
 
-# Explore help
-pe help
+# View results
+pe view
+
+# Format configuration
+pe fmt config.yaml
+
+# Validate configuration
+pe vet config.yaml
 ```
 
-## Documentation Guide
+## Implemented Commands
 
-### For New Users
+### Core Evaluation
+- **`pe eval`** - Evaluate prompts against LLM providers ✅ **IMPLEMENTED**
+- **`pe view`** - View evaluation results in browser UI ✅ **IMPLEMENTED**
+- **`pe vet`** - Validate promptfoo configuration files ✅ **IMPLEMENTED**
+- **`pe fmt`** - Format promptfoo configuration files ✅ **IMPLEMENTED**
 
-1. Start with the **[Overview](OVERVIEW.md)** to understand PE's approach
-2. Follow the **[Installation Guide](INSTALLATION.md)** to set up PE
-3. Work through the **[Tutorial](TUTORIAL.md)** for hands-on learning
-4. Reference the **[Command Reference](COMMANDS.md)** as needed
+### Testing & Analysis
+- **`pe test`** - Run advanced testing (property-based, regression) ✅ **IMPLEMENTED**
+- **`pe benchmark`** - Compare performance metrics ✅ **IMPLEMENTED**
+- **`pe stats`** - Show quick statistics ✅ **IMPLEMENTED**
+- **`pe diff`** - Compare evaluation results ✅ **IMPLEMENTED**
 
-### For Developers
+### Pipeline Commands (Unix-style)
+- **`pe ask`** - Ask single question to LLM provider ✅ **IMPLEMENTED**
+- **`pe stream`** - Process evaluation results as stream ✅ **IMPLEMENTED**
+- **`pe filter`** - Filter evaluation results ✅ **IMPLEMENTED**
+- **`pe analyze`** - Analyze results with statistics ✅ **IMPLEMENTED**
 
-1. Review the **[Architecture Guide](ARCHITECTURE.md)** for system design
-2. Learn **[Plugin Development](PLUGINS.md)** to extend PE
-3. Check the **[API Reference](../pkg/)** for programmatic usage
-4. See **[Contributing Guidelines](../CONTRIBUTING.md)** to contribute
+### Optimization & Composition
+- **`pe optimize`** - Optimize prompts using metaprompting ✅ **IMPLEMENTED**
+- **`pe semantic`** - Semantic gradient descent optimization ✅ **IMPLEMENTED**
+- **`pe evolve`** - Evolutionary prompt optimization ✅ **IMPLEMENTED**
+- **`pe fusion`** - Multi-model fusion ✅ **IMPLEMENTED**
+- **`pe compose`** - Component-based prompt composition ✅ **IMPLEMENTED**
 
-### For Teams
+### Module System
+- **`pe mod init/tidy/download/vendor`** - Go-style module management ✅ **IMPLEMENTED**
+- **`pe push`** - Push modules to registry ✅ **IMPLEMENTED**
 
-1. Learn about **[Shared Caching](TUTORIAL.md#part-7-team-collaboration)** for collaboration
-2. Set up **[Style Guides](COMMANDS.md#style--composition-commands)** for consistency
-3. Configure **[Security Policies](INSTALLATION.md#security-model)** for your organization
-4. Implement **[CI/CD Integration](TUTORIAL.md#continuous-integration)** for automation
+### Security & Attestation
+- **`pe attest`** - Cryptographic attestation ✅ **IMPLEMENTED**
+- **`pe security`** - Security testing (OWASP LLM Top 10) ✅ **IMPLEMENTED**
 
-## Core Concepts
+### Utilities
+- **`pe extract`** - Extract structured data from prompts ✅ **IMPLEMENTED**
+- **`pe metrics`** - Calculate evaluation metrics ✅ **IMPLEMENTED**
+- **`pe template`** - Manage prompt templates ✅ **IMPLEMENTED**
+- **`pe profile`** - Profiling and observability ✅ **IMPLEMENTED**
+- **`pe interactive`** - Interactive REPL mode ✅ **IMPLEMENTED**
+- **`pe watch`** - Watch files for changes ✅ **IMPLEMENTED**
+- **`pe convert`** - Convert between formats ✅ **IMPLEMENTED**
 
-### The PE Toolchain
+## Documentation by Implementation Status
 
-PE provides a complete toolchain similar to Go:
+### ✅ Current Implementation (Accurate)
+- [GETTING_STARTED.md](GETTING_STARTED.md) - Getting started guide
+- [INSTALLATION.md](INSTALLATION.md) - Installation instructions
+- [COMMANDS.md](COMMANDS.md) - Command reference (mostly accurate)
+- [CLI_REFERENCE.md](CLI_REFERENCE.md) - CLI reference
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
+- [MODULES.md](MODULES.md) - Module system
+- [MODULE_REGISTRY.md](MODULE_REGISTRY.md) - Module registry
+- [PLUGINS.md](PLUGINS.md) - Plugin system
+- [ATTESTATION.md](ATTESTATION.md) - Cryptographic attestation
 
-| PE Command | Go Equivalent | Purpose |
-|------------|---------------|---------|
-| `pe run` | `go run` | Execute prompts immediately |
-| `pe test` | `go test` | Test prompts with assertions |
-| `pe build` | `go build` | Build optimized prompts |
-| `pe install` | `go get` | Install prompt libraries |
-| `pe fmt` | `go fmt` | Format prompt files |
-| `pe mod` | `go mod` | Manage dependencies |
+### ⚠️ Partially Implemented
+- [OVERVIEW.md](OVERVIEW.md) - Contains both implemented and aspirational features
+- [TUTORIAL.md](TUTORIAL.md) - Basic tutorial (some advanced features not implemented)
+- [QUICK_START.md](QUICK_START.md) - Quick start guide (some commands not fully implemented)
+- [ADVANCED_FEATURES.md](ADVANCED_FEATURES.md) - Mix of implemented and planned features
+- [API_REFERENCE.md](API_REFERENCE.md) - API reference (provider interfaces exist, some incomplete)
+- [OPTIMIZATION_EXAMPLES.md](OPTIMIZATION_EXAMPLES.md) - Optimization examples (methods vary in completeness)
+- [STARLARK_EXTENSION.md](STARLARK_EXTENSION.md) - Starlark integration (partial)
+- [PROMPTFOO_INTEGRATION.md](PROMPTFOO_INTEGRATION.md) - Integration guide (basic compatibility)
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Troubleshooting guide
 
-### Key Features
+### 🔮 Future/Planned Features
+All documents in [future/](future/) directory describe planned features that are not yet implemented:
+- Comprehensive features
+- World-class tooling
+- Advanced optimization guides
+- Complete API references
+- Competitive analysis
+- Research foundations
+- And more...
 
-- **🔧 Unified Toolchain**: One tool for all prompt engineering needs
-- **🚀 Performance**: Written in Go for maximum speed and efficiency
-- **🔒 Security First**: macOS sandboxing and trusted execution
-- **🔌 Extensible**: Plugin system for custom providers and tools
-- **📦 Native Formats**: Works with txtar files and GitHub gists
-- **🔄 Version Control**: Git-like branching and history
-- **🧬 Advanced Optimization**: State-of-the-art methods (PE2, TextGrad, APEX)
-- **📊 Comprehensive Testing**: Property-based, A/B, and regression testing
-- **💾 Verifiable Caching**: Cryptographically signed shared caches
-- **📈 Benchmarking**: Performance and cost analysis tools
+## Key Implementation Notes
 
-## Example Workflows
+### What Actually Works
+1. **Core Evaluation**: Full promptfoo-compatible evaluation system
+2. **Pipeline Commands**: Unix-style commands for composability
+3. **Module System**: Go mod-style dependency management with gist registry
+4. **Attestation**: Cryptographic signing and verification
+5. **Plugin System**: Runtime plugin discovery and execution
+6. **Optimization**: Basic metaprompting techniques (PE2, TextGrad, etc.)
 
-### Basic Development
+### Major Limitations
+1. **Provider Integration**: Still primarily uses cgpt CLI wrapper, not native APIs
+2. **Test Coverage**: Only ~15% test coverage across the codebase
+3. **Documentation Accuracy**: Many docs describe aspirational features as implemented
+4. **Distributed System**: CLI commands exist but integration incomplete
+5. **Advanced Features**: Many "world-class" features are designs, not implementations
 
-```bash
-# Create and test a prompt
-echo "You are a helpful assistant" > assistant.txt
-pe test assistant.txt --assert "polite"
+### Provider Support
+Currently supported providers (via cgpt wrapper):
+- OpenAI (GPT-3.5, GPT-4, etc.)
+- Anthropic (Claude 3 family)
+- Google AI (Gemini)
+- Local models via cgpt
 
-# Optimize it
-pe optimize assistant.txt --method pe2
+Native provider implementations are partially complete but not fully integrated.
 
-# Build for production
-pe build assistant.txt --output prod/
+## Configuration Format
+
+PE uses YAML configuration files compatible with promptfoo:
+
+```yaml
+prompts:
+  - "What is the capital of {{country}}?"
+  
+providers:
+  - "openai:gpt-4"
+  - "anthropic:claude-3-haiku"
+  
+tests:
+  - vars:
+      country: "France"
+    assert:
+      - type: "contains"
+        value: "Paris"
 ```
 
-### Team Collaboration
+## Examples
 
-```bash
-# Share via gist
-pe push gist:team/assistant
+Basic examples are available in:
+- [../example/](../example/) - Working examples
+- [../examples/](../examples/) - Additional examples
+- [future/EXAMPLES_LIBRARY.md](future/EXAMPLES_LIBRARY.md) - Comprehensive examples (planned)
 
-# Import and customize
-pe pull gist:team/assistant
-pe fork assistant.txt --name my-variant
+## Getting Help
 
-# Share cache
-pe cache export --sign > team-cache.tar
-```
+- **Built-in help**: `pe help [command]`
+- **Issues**: [GitHub Issues](https://github.com/tmc/pe/issues)
+- **Source**: [GitHub Repository](https://github.com/tmc/pe)
 
-### Advanced Optimization
+## Contributing
 
-```bash
-# Multi-stage optimization
-pe compose components/ | \
-  pe optimize --method textgrad | \
-  pe optimize --method evolve | \
-  pe test --comprehensive
-```
+PE is under active development. The most helpful contributions:
 
-## Community Resources
+1. **Test Coverage**: Improve test coverage from current ~15%
+2. **Provider Integration**: Complete native provider implementations
+3. **Documentation Accuracy**: Fix gaps between docs and implementation
+4. **Core Features**: Complete partially implemented features
 
-- **GitHub**: [github.com/tmc/pe](https://github.com/tmc/pe)
-- **Discord**: [Join our community](https://discord.gg/pe-prompts)
-- **Examples**: [Example projects](../examples/)
-- **Blog**: [PE Blog](https://pe.dev/blog)
+## Development Status
 
-## Documentation Versions
+PE follows semantic versioning. Current status:
+- **Version**: Pre-1.0 (under development)
+- **Stability**: Core evaluation features are stable
+- **API**: Subject to change during development
 
-This documentation is for PE v1.0. For other versions:
-
-- [Latest](https://docs.pe.dev/latest)
-- [v1.0](https://docs.pe.dev/v1.0) (current)
-- [Development](https://docs.pe.dev/dev)
-
-## Contributing to Docs
-
-We welcome documentation improvements! To contribute:
-
-1. Fork the repository
-2. Make your changes in the `docs/` directory
-3. Submit a pull request
-
-See [Contributing Guidelines](../CONTRIBUTING.md) for details.
-
-## License
-
-PE is open source under the MIT License. See [LICENSE](../LICENSE) for details.
+This documentation will be updated as features are implemented and stabilized.
