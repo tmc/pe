@@ -59,7 +59,7 @@ automated prompt engineering and systematic optimization.`,
 				}
 				initialPrompt = string(content)
 			}
-			
+
 			if initialPrompt == "" {
 				return fmt.Errorf("initial prompt is required")
 			}
@@ -83,7 +83,7 @@ automated prompt engineering and systematic optimization.`,
 			optimizer := metaprompt.NewOptimizer(llmProvider)
 
 			fmt.Printf("Optimizing prompt with %d iterations using %s method...\n", iterations, method)
-			
+
 			// Run optimization
 			result, err := optimizer.Optimize(context.Background(), cfg)
 			if err != nil {
@@ -95,7 +95,7 @@ automated prompt engineering and systematic optimization.`,
 			fmt.Printf("Original Prompt:\n%s\n\n", result.OriginalPrompt)
 			fmt.Printf("Optimized Prompt:\n%s\n\n", result.OptimizedPrompt)
 			fmt.Printf("Improvement Score: %.2f\n", result.ImprovementScore)
-			
+
 			// Show iteration details
 			fmt.Printf("\n=== Iteration Details ===\n")
 			for i, iter := range result.Iterations {
@@ -112,10 +112,10 @@ automated prompt engineering and systematic optimization.`,
 				}
 				fmt.Printf("\nResults saved to: %s\n", outputFile)
 			}
-			
+
 			// Always save the optimized prompt to a default file based on method
 			defaultFilename := fmt.Sprintf("prompt_%s.txt", method)
-			
+
 			// Save just the optimized prompt text
 			if err := os.WriteFile(defaultFilename, []byte(result.OptimizedPrompt), 0644); err != nil {
 				return fmt.Errorf("failed to save optimized prompt: %w", err)

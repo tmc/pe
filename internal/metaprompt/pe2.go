@@ -13,7 +13,7 @@ import (
 // Based on 2024 research: "Prompt Engineering a Prompt Engineer"
 // PE2 infuses three key components into meta-prompts:
 // 1. Detailed descriptions
-// 2. Context specification  
+// 2. Context specification
 // 3. Step-by-step reasoning template
 type PE2Optimizer struct {
 	llm llm.Provider
@@ -39,10 +39,10 @@ func NewPE2Optimizer(llmProvider llm.Provider) *PE2Optimizer {
 // OptimizeWithPE2 runs PE2-style optimization
 func (o *PE2Optimizer) OptimizeWithPE2(ctx context.Context, cfg Config) (*OptimizationResult, error) {
 	startTime := time.Now()
-	
+
 	// Parse PE2-specific config from method parameters
 	pe2Config := o.parsePE2Config(cfg)
-	
+
 	result := &OptimizationResult{
 		OriginalPrompt: cfg.InitialPrompt,
 		Iterations:     make([]IterationResult, 0, cfg.Iterations),
@@ -54,10 +54,10 @@ func (o *PE2Optimizer) OptimizeWithPE2(ctx context.Context, cfg Config) (*Optimi
 
 	for i := 0; i < cfg.Iterations; i++ {
 		iterStart := time.Now()
-		
+
 		// Generate PE2 meta-prompt
 		metaPrompt := o.generatePE2MetaPrompt(currentPrompt, pe2Config, previousFeedback)
-		
+
 		// Execute optimization iteration
 		optimizedPrompt, feedback, score, err := o.executePE2Iteration(ctx, metaPrompt, cfg)
 		if err != nil {
@@ -71,9 +71,9 @@ func (o *PE2Optimizer) OptimizeWithPE2(ctx context.Context, cfg Config) (*Optimi
 			Feedback:  feedback,
 			Duration:  time.Since(iterStart),
 		}
-		
+
 		result.Iterations = append(result.Iterations, iteration)
-		
+
 		// Update for next iteration
 		currentPrompt = optimizedPrompt
 		if pe2Config.FeedbackIntegration {
@@ -95,29 +95,29 @@ func (o *PE2Optimizer) OptimizeWithPE2(ctx context.Context, cfg Config) (*Optimi
 // generatePE2MetaPrompt creates the PE2-style meta-prompt
 func (o *PE2Optimizer) generatePE2MetaPrompt(currentPrompt string, config PE2Config, previousFeedback []string) string {
 	var metaPrompt strings.Builder
-	
+
 	// 1. Expert persona and detailed description
 	metaPrompt.WriteString(o.generateExpertPersona(config.MetaPromptStyle))
 	metaPrompt.WriteString("\n\n")
-	
+
 	// 2. Detailed task description
 	metaPrompt.WriteString(o.generateDetailedDescription(config.DescriptionDepth))
 	metaPrompt.WriteString("\n\n")
-	
+
 	// 3. Context specification
 	metaPrompt.WriteString(o.generateContextSpecification(config.ContextSpecification))
 	metaPrompt.WriteString("\n\n")
-	
+
 	// 4. Step-by-step reasoning template
 	metaPrompt.WriteString(o.generateReasoningTemplate(config.ReasoningTemplate))
 	metaPrompt.WriteString("\n\n")
-	
+
 	// 5. Current prompt to optimize
 	metaPrompt.WriteString("CURRENT PROMPT TO OPTIMIZE:\n")
 	metaPrompt.WriteString("---\n")
 	metaPrompt.WriteString(currentPrompt)
 	metaPrompt.WriteString("\n---\n\n")
-	
+
 	// 6. Previous feedback integration (if enabled)
 	if config.FeedbackIntegration && len(previousFeedback) > 0 {
 		metaPrompt.WriteString("PREVIOUS OPTIMIZATION FEEDBACK:\n")
@@ -126,16 +126,16 @@ func (o *PE2Optimizer) generatePE2MetaPrompt(currentPrompt string, config PE2Con
 		}
 		metaPrompt.WriteString("\n")
 	}
-	
+
 	// 7. Error correction instructions (if enabled)
 	if config.ErrorCorrection {
 		metaPrompt.WriteString(o.generateErrorCorrectionInstructions())
 		metaPrompt.WriteString("\n\n")
 	}
-	
+
 	// 8. Output format specification
 	metaPrompt.WriteString(o.generateOutputFormat())
-	
+
 	return metaPrompt.String()
 }
 
@@ -151,7 +151,7 @@ func (o *PE2Optimizer) generateExpertPersona(style string) string {
 - Systematic evaluation and quality assessment
 
 Your expertise spans both theoretical foundations and practical application across diverse domains including reasoning, creative generation, code synthesis, and analytical tasks.`
-		
+
 	case "systematic":
 		return `You are a systematic prompt optimization specialist who follows rigorous methodologies:
 - Apply structured analysis frameworks to identify improvement opportunities
@@ -161,7 +161,7 @@ Your expertise spans both theoretical foundations and practical application acro
 - Maintain consistency and reproducibility in optimization processes
 
 Your approach is methodical, data-driven, and focuses on measurable improvements.`
-		
+
 	case "creative":
 		return `You are an innovative prompt engineering researcher who:
 - Explores novel approaches to prompt design and optimization
@@ -171,7 +171,7 @@ Your approach is methodical, data-driven, and focuses on measurable improvements
 - Balances innovation with proven optimization principles
 
 Your strength lies in finding creative solutions while maintaining technical rigor.`
-		
+
 	default:
 		return `You are an expert prompt engineer specializing in systematic prompt optimization and improvement.`
 	}
@@ -206,7 +206,7 @@ SUCCESS METRICS:
 - Enhanced consistency across diverse inputs
 - Better handling of edge cases and error conditions
 - Optimal balance of comprehensiveness and conciseness`
-		
+
 	case "standard":
 		return `TASK DESCRIPTION:
 
@@ -218,10 +218,10 @@ Analyze the provided prompt and create an improved version that:
 5. Optimizes for the intended use case and audience
 
 Focus on practical improvements that will measurably enhance prompt effectiveness while maintaining the original intent and requirements.`
-		
+
 	case "basic":
 		return `TASK: Analyze and improve the given prompt to make it clearer, more effective, and more reliable.`
-		
+
 	default:
 		return `TASK: Optimize the given prompt for improved clarity and effectiveness.`
 	}
@@ -259,17 +259,17 @@ TECHNICAL CONTEXT:
 - Consider token limitations and efficiency requirements
 - Account for model capabilities and limitations
 - Optimize for the target LLM architecture and training`
-		
+
 	case "standard":
 		return `CONTEXT REQUIREMENTS:
 - Specify the domain and subject matter
 - Define the intended audience and use case
 - Clarify input/output format expectations
 - Include relevant constraints and limitations`
-		
+
 	case "minimal":
 		return `CONTEXT: Consider the domain, audience, and use case when optimizing.`
-		
+
 	default:
 		return `CONTEXT: Provide appropriate context for the optimization task.`
 	}
@@ -299,7 +299,7 @@ STEP 5 - VALIDATION:
 Think through: Does the optimized prompt address the original requirements? Are there any new issues?
 
 Show your reasoning for each step before providing the final optimized prompt.`
-		
+
 	case "analytical":
 		return `ANALYTICAL REASONING FRAMEWORK:
 
@@ -326,7 +326,7 @@ VERIFICATION:
 - Validate against success criteria
 
 Present your analysis and reasoning before the optimized prompt.`
-		
+
 	case "step_by_step":
 		return `STEP-BY-STEP OPTIMIZATION PROCESS:
 
@@ -341,7 +341,7 @@ Follow these systematic steps:
 7. VALIDATE against original requirements
 
 Execute each step explicitly and show your work.`
-		
+
 	default:
 		return `REASONING: Use step-by-step thinking to analyze and improve the prompt systematically.`
 	}
@@ -418,35 +418,35 @@ func (o *PE2Optimizer) executePE2Iteration(ctx context.Context, metaPrompt strin
 
 	// Parse the structured PE2 response
 	optimizedPrompt, feedback, score := o.parsePE2Response(response.Text)
-	
+
 	return optimizedPrompt, feedback, score, nil
 }
 
 // parsePE2Response extracts components from PE2 response
 func (o *PE2Optimizer) parsePE2Response(response string) (string, string, float64) {
 	sections := make(map[string]string)
-	
+
 	// Split response into sections
 	lines := strings.Split(response, "\n")
 	currentSection := ""
 	var sectionContent strings.Builder
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		
+
 		// Check if this is a section header
-		if strings.HasSuffix(line, ":") && 
-		   (strings.Contains(line, "ANALYSIS") || 
-		    strings.Contains(line, "REASONING") || 
-		    strings.Contains(line, "OPTIMIZED PROMPT") ||
-		    strings.Contains(line, "IMPROVEMENT SUMMARY") ||
-		    strings.Contains(line, "VALIDATION")) {
-			
+		if strings.HasSuffix(line, ":") &&
+			(strings.Contains(line, "ANALYSIS") ||
+				strings.Contains(line, "REASONING") ||
+				strings.Contains(line, "OPTIMIZED PROMPT") ||
+				strings.Contains(line, "IMPROVEMENT SUMMARY") ||
+				strings.Contains(line, "VALIDATION")) {
+
 			// Save previous section
 			if currentSection != "" {
 				sections[currentSection] = strings.TrimSpace(sectionContent.String())
 			}
-			
+
 			// Start new section
 			currentSection = strings.ToUpper(strings.TrimSuffix(line, ":"))
 			sectionContent.Reset()
@@ -455,19 +455,19 @@ func (o *PE2Optimizer) parsePE2Response(response string) (string, string, float6
 			sectionContent.WriteString("\n")
 		}
 	}
-	
+
 	// Save final section
 	if currentSection != "" {
 		sections[currentSection] = strings.TrimSpace(sectionContent.String())
 	}
-	
+
 	// Extract optimized prompt
 	optimizedPrompt := sections["OPTIMIZED PROMPT"]
 	if optimizedPrompt == "" {
 		// Fallback: try to find prompt in response
 		optimizedPrompt = o.extractPromptFallback(response)
 	}
-	
+
 	// Create feedback from analysis and reasoning
 	feedback := ""
 	if analysis := sections["ANALYSIS"]; analysis != "" {
@@ -479,10 +479,10 @@ func (o *PE2Optimizer) parsePE2Response(response string) (string, string, float6
 	if summary := sections["IMPROVEMENT SUMMARY"]; summary != "" {
 		feedback += "Improvements: " + summary
 	}
-	
+
 	// Calculate score based on response quality
 	score := o.calculatePE2Score(sections)
-	
+
 	return optimizedPrompt, feedback, score
 }
 
@@ -496,7 +496,7 @@ func (o *PE2Optimizer) extractPromptFallback(response string) string {
 		"OPTIMIZED:",
 		"IMPROVED:",
 	}
-	
+
 	for _, pattern := range patterns {
 		if idx := strings.Index(strings.ToUpper(response), pattern); idx != -1 {
 			remaining := response[idx+len(pattern):]
@@ -519,7 +519,7 @@ func (o *PE2Optimizer) extractPromptFallback(response string) string {
 			}
 		}
 	}
-	
+
 	// Last resort: return first substantial paragraph
 	paragraphs := strings.Split(response, "\n\n")
 	for _, para := range paragraphs {
@@ -528,14 +528,14 @@ func (o *PE2Optimizer) extractPromptFallback(response string) string {
 			return para
 		}
 	}
-	
+
 	return response // Return full response as fallback
 }
 
 // calculatePE2Score calculates quality score based on response sections
 func (o *PE2Optimizer) calculatePE2Score(sections map[string]string) float64 {
 	score := 5.0 // Base score
-	
+
 	// Bonus for complete sections
 	if sections["ANALYSIS"] != "" {
 		score += 1.0
@@ -552,7 +552,7 @@ func (o *PE2Optimizer) calculatePE2Score(sections map[string]string) float64 {
 	if sections["VALIDATION"] != "" {
 		score += 1.0
 	}
-	
+
 	// Quality bonuses based on content length and structure
 	for _, content := range sections {
 		if len(content) > 200 { // Substantial content
@@ -562,12 +562,12 @@ func (o *PE2Optimizer) calculatePE2Score(sections map[string]string) float64 {
 			score += 0.1
 		}
 	}
-	
+
 	// Cap at 10.0
 	if score > 10.0 {
 		score = 10.0
 	}
-	
+
 	return score
 }
 
@@ -576,27 +576,27 @@ func (o *PE2Optimizer) calculatePE2ImprovementScore(result *OptimizationResult) 
 	if len(result.Iterations) == 0 {
 		return 0.0
 	}
-	
+
 	// PE2 uses a sophisticated scoring approach
 	var totalScore float64
 	var maxScore float64
-	
+
 	for _, iter := range result.Iterations {
 		totalScore += iter.Score
 		if iter.Score > maxScore {
 			maxScore = iter.Score
 		}
 	}
-	
+
 	avgScore := totalScore / float64(len(result.Iterations))
-	
+
 	// PE2 improvement score: weighted combination emphasizing final quality
 	// and consistency across iterations
 	finalScore := result.Iterations[len(result.Iterations)-1].Score
-	
+
 	// Weight: 50% final score, 30% max score, 20% average score
 	improvementScore := (finalScore * 0.5) + (maxScore * 0.3) + (avgScore * 0.2)
-	
+
 	return improvementScore
 }
 
@@ -611,9 +611,9 @@ func (o *PE2Optimizer) parsePE2Config(cfg Config) PE2Config {
 		FeedbackIntegration:  true,
 		ErrorCorrection:      true,
 	}
-	
+
 	// TODO: Parse from cfg.Method parameters when advanced config is implemented
 	// For now, use defaults which provide optimal PE2 behavior
-	
+
 	return pe2Config
 }

@@ -4,11 +4,11 @@ package promptfoo
 
 // Config represents the promptfoo configuration structure.
 type Config struct {
-	Description string         `yaml:"description,omitempty" json:"description,omitempty"`
-	Prompts     []string       `yaml:"prompts" json:"prompts"`
-	Providers   []string       `yaml:"providers" json:"providers"`
-	Tests       []TestCase     `yaml:"tests" json:"tests"`
-	DefaultTest *TestDefaults  `yaml:"defaultTest,omitempty" json:"defaultTest,omitempty"`
+	Description string        `yaml:"description,omitempty" json:"description,omitempty"`
+	Prompts     []string      `yaml:"prompts" json:"prompts"`
+	Providers   []string      `yaml:"providers" json:"providers"`
+	Tests       []TestCase    `yaml:"tests" json:"tests"`
+	DefaultTest *TestDefaults `yaml:"defaultTest,omitempty" json:"defaultTest,omitempty"`
 }
 
 // TestCase represents a single test case in the configuration.
@@ -92,12 +92,12 @@ type ProviderResponse struct {
 
 // TokenUsage tracks token consumption.
 type TokenUsage struct {
-	Total      int32                `json:"total"`
-	Prompt     int32                `json:"prompt"`
-	Completion int32                `json:"completion"`
-	Cached     int32                `json:"cached"`
-	NumRequests int32               `json:"numRequests,omitempty"`
-	Details    *CompletionDetails   `json:"completionDetails,omitempty"`
+	Total       int32              `json:"total"`
+	Prompt      int32              `json:"prompt"`
+	Completion  int32              `json:"completion"`
+	Cached      int32              `json:"cached"`
+	NumRequests int32              `json:"numRequests,omitempty"`
+	Details     *CompletionDetails `json:"completionDetails,omitempty"`
 }
 
 // CompletionDetails provides details about token usage for completions
@@ -166,8 +166,8 @@ type EvalResults struct {
 
 // BodyRow represents a row in the results table
 type BodyRow struct {
-	Test   TestCase     `json:"test"`
-	Result TestResult   `json:"result"`
+	Test   TestCase   `json:"test"`
+	Result TestResult `json:"result"`
 }
 
 // Note: PETestResults is defined in export.go for now

@@ -1,15 +1,17 @@
+//go:build ignore
+
 package cli
 
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
 	"text/template"
 
-	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
 
@@ -21,7 +23,7 @@ type PromptCLI struct {
 	Metadata    PromptMetadata
 	Variables   []Variable
 	OutputVars  []OutputVariable
-	cmd         *cobra.Command
+	flagSet     *flag.FlagSet
 }
 
 // PromptMetadata contains CLI configuration from prompt frontmatter
@@ -47,24 +49,24 @@ type PromptMetadata struct {
 // Variable represents a template variable in the prompt
 type Variable struct {
 	Name        string      `yaml:"name" json:"name"`
-	Type        string      `yaml:"type" json:"type"`         // string, int, float, bool, file
+	Type        string      `yaml:"type" json:"type"` // string, int, float, bool, file
 	Description string      `yaml:"description" json:"description"`
 	Default     interface{} `yaml:"default" json:"default"`
 	Required    bool        `yaml:"required" json:"required"`
-	Short       string      `yaml:"short" json:"short"`       // short flag
-	Enum        []string    `yaml:"enum" json:"enum"`         // allowed values
-	Pattern     string      `yaml:"pattern" json:"pattern"`   // regex validation
+	Short       string      `yaml:"short" json:"short"`     // short flag
+	Enum        []string    `yaml:"enum" json:"enum"`       // allowed values
+	Pattern     string      `yaml:"pattern" json:"pattern"` // regex validation
 	Min         *float64    `yaml:"min" json:"min"`
 	Max         *float64    `yaml:"max" json:"max"`
 }
 
 // OutputVariable represents a variable that can be extracted from output
 type OutputVariable struct {
-	Name        string `yaml:"name" json:"name"`
-	Type        string `yaml:"type" json:"type"`           // string, list, etc.
-	Pattern     string `yaml:"pattern" json:"pattern"`     // regex to extract
-	XMLTag      string `yaml:"xml_tag" json:"xml_tag"`     // XML tag to extract
-	JSONPath    string `yaml:"json_path" json:"json_path"` // JSON path to extract
+	Name     string `yaml:"name" json:"name"`
+	Type     string `yaml:"type" json:"type"`           // string, list, etc.
+	Pattern  string `yaml:"pattern" json:"pattern"`     // regex to extract
+	XMLTag   string `yaml:"xml_tag" json:"xml_tag"`     // XML tag to extract
+	JSONPath string `yaml:"json_path" json:"json_path"` // JSON path to extract
 }
 
 // Example shows usage examples
@@ -84,9 +86,9 @@ func NewPromptCLI(prompt string) (*PromptCLI, error) {
 func ParsePromptFile(content string) (*PromptCLI, error) {
 	// Check for frontmatter
 	parts := regexp.MustCompile(`(?s)^---\n(.+?)\n---\n(.*)$`).FindStringSubmatch(content)
-	
+
 	cli := &PromptCLI{}
-	
+
 	if len(parts) == 3 {
 		// Parse frontmatter
 		if err := yaml.Unmarshal([]byte(parts[1]), &cli.Metadata); err != nil {
@@ -97,7 +99,7 @@ func ParsePromptFile(content string) (*PromptCLI, error) {
 		// No frontmatter, use the whole content as prompt
 		cli.Prompt = content
 	}
-	
+
 	// Use metadata-defined variables if available, otherwise extract from prompt
 	if len(cli.Metadata.Variables) > 0 {
 		cli.Variables = cli.Metadata.Variables
@@ -105,7 +107,7 @@ func ParsePromptFile(content string) (*PromptCLI, error) {
 		// Extract variables from prompt
 		cli.Variables = extractVariables(cli.Prompt)
 	}
-	
+
 	// Use metadata-defined output vars if available, otherwise extract from prompt
 	if len(cli.Metadata.OutputVars) > 0 {
 		cli.OutputVars = cli.Metadata.OutputVars
@@ -113,10 +115,10 @@ func ParsePromptFile(content string) (*PromptCLI, error) {
 		// Extract output variables from prompt
 		cli.OutputVars = extractOutputVariables(cli.Prompt)
 	}
-	
+
 	// Merge with metadata-defined variables for additional configuration
 	cli.mergeVariableMetadata()
-	
+
 	// Set defaults
 	if cli.Metadata.Temperature == 0 {
 		cli.Metadata.Temperature = 0.7
@@ -124,7 +126,7 @@ func ParsePromptFile(content string) (*PromptCLI, error) {
 	if cli.Metadata.Model == "" {
 		cli.Metadata.Model = "gpt-4"
 	}
-	
+
 	// Copy metadata to top-level fields
 	cli.Name = cli.Metadata.Name
 	if cli.Name == "" {
@@ -134,7 +136,7 @@ func ParsePromptFile(content string) (*PromptCLI, error) {
 	if cli.Description == "" {
 		cli.Description = "Execute a prompt template"
 	}
-	
+
 	return cli, nil
 }
 
@@ -146,20 +148,20 @@ func (p *PromptCLI) ToCommand() *cobra.Command {
 // BuildCommand creates a cobra command from the prompt CLI
 func (p *PromptCLI) BuildCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   p.Name,
-		Short: p.Description,
-		Long:  p.generateLongDescription(),
+		Use:     p.Name,
+		Short:   p.Description,
+		Long:    p.generateLongDescription(),
 		Example: p.generateExamples(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return p.execute(cmd, args)
 		},
 	}
-	
+
 	// Add variable flags
 	for _, v := range p.Variables {
 		p.addVariableFlag(cmd, v)
 	}
-	
+
 	// Add standard flags
 	cmd.Flags().StringP("model", "m", p.Metadata.Model, "LLM model to use")
 	cmd.Flags().Float64P("temperature", "t", p.Metadata.Temperature, "Sampling temperature")
@@ -169,10 +171,10 @@ func (p *PromptCLI) BuildCommand() *cobra.Command {
 	cmd.Flags().BoolP("json", "j", false, "Output as JSON")
 	cmd.Flags().BoolP("quiet", "q", false, "Suppress non-essential output")
 	cmd.Flags().Bool("dry-run", false, "Show the prompt without executing")
-	
+
 	// Add completion
 	p.addCompletion(cmd)
-	
+
 	p.cmd = cmd
 	return cmd
 }
@@ -181,7 +183,7 @@ func (p *PromptCLI) BuildCommand() *cobra.Command {
 func (p *PromptCLI) execute(cmd *cobra.Command, args []string) error {
 	// Collect variable values
 	vars := make(map[string]interface{})
-	
+
 	for _, v := range p.Variables {
 		value, err := p.getVariableValue(cmd, v)
 		if err != nil {
@@ -189,20 +191,20 @@ func (p *PromptCLI) execute(cmd *cobra.Command, args []string) error {
 		}
 		vars[v.Name] = value
 	}
-	
+
 	// Render the prompt
 	tmpl, err := template.New("prompt").Parse(p.Prompt)
 	if err != nil {
 		return fmt.Errorf("failed to parse prompt template: %w", err)
 	}
-	
+
 	var promptBuf bytes.Buffer
 	if err := tmpl.Execute(&promptBuf, vars); err != nil {
 		return fmt.Errorf("failed to render prompt: %w", err)
 	}
-	
+
 	renderedPrompt := promptBuf.String()
-	
+
 	// Check for dry run
 	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
 		fmt.Println("=== Rendered Prompt ===")
@@ -213,30 +215,30 @@ func (p *PromptCLI) execute(cmd *cobra.Command, args []string) error {
 		}
 		return nil
 	}
-	
+
 	// Get execution parameters
 	model, _ := cmd.Flags().GetString("model")
 	temperature, _ := cmd.Flags().GetFloat64("temperature")
 	maxTokens, _ := cmd.Flags().GetInt("max-tokens")
-	
+
 	// Execute the prompt (this would call PE's inference API)
 	response, err := p.executePrompt(renderedPrompt, model, temperature, maxTokens)
 	if err != nil {
 		return fmt.Errorf("failed to execute prompt: %w", err)
 	}
-	
+
 	// Format output
 	output, err := p.formatOutput(cmd, response)
 	if err != nil {
 		return fmt.Errorf("failed to format output: %w", err)
 	}
-	
+
 	// Write output
 	outputFile, _ := cmd.Flags().GetString("output")
 	if outputFile != "" {
 		return os.WriteFile(outputFile, []byte(output), 0644)
 	}
-	
+
 	fmt.Print(output)
 	return nil
 }
@@ -245,10 +247,10 @@ func (p *PromptCLI) execute(cmd *cobra.Command, args []string) error {
 func extractVariables(prompt string) []Variable {
 	re := regexp.MustCompile(`\{\{\.?(\w+)\}\}`)
 	matches := re.FindAllStringSubmatch(prompt, -1)
-	
+
 	seen := make(map[string]bool)
 	var variables []Variable
-	
+
 	for _, match := range matches {
 		varName := match[1]
 		if !seen[varName] {
@@ -260,14 +262,14 @@ func extractVariables(prompt string) []Variable {
 			})
 		}
 	}
-	
+
 	return variables
 }
 
 // extractOutputVariables finds output format specifications
 func extractOutputVariables(prompt string) []OutputVariable {
 	var outputVars []OutputVariable
-	
+
 	// Look for XML tags - simplified version without backreference
 	xmlRe := regexp.MustCompile(`<(\w+)>.*?</(\w+)>`)
 	matches := xmlRe.FindAllStringSubmatch(prompt, -1)
@@ -281,7 +283,7 @@ func extractOutputVariables(prompt string) []OutputVariable {
 			})
 		}
 	}
-	
+
 	// Look for JSON structure hints
 	jsonRe := regexp.MustCompile(`"(\w+)":\s*(?:".*?"|[\d.]+|true|false|null)`)
 	for _, match := range jsonRe.FindAllStringSubmatch(prompt, -1) {
@@ -290,7 +292,7 @@ func extractOutputVariables(prompt string) []OutputVariable {
 			JSONPath: "$." + match[1],
 		})
 	}
-	
+
 	return outputVars
 }
 
@@ -301,7 +303,7 @@ func (p *PromptCLI) mergeVariableMetadata() {
 	for i := range p.Variables {
 		varMap[p.Variables[i].Name] = &p.Variables[i]
 	}
-	
+
 	// Apply defaults from metadata
 	if p.Metadata.Defaults != nil {
 		for name, value := range p.Metadata.Defaults {
@@ -316,10 +318,10 @@ func (p *PromptCLI) mergeVariableMetadata() {
 // addVariableFlag adds a flag for a variable
 func (p *PromptCLI) addVariableFlag(cmd *cobra.Command, v Variable) {
 	flags := cmd.Flags()
-	
+
 	// Generate flag name (convert camelCase to kebab-case)
 	flagName := toKebabCase(v.Name)
-	
+
 	// Add description with type info
 	description := v.Description
 	if description == "" {
@@ -328,7 +330,7 @@ func (p *PromptCLI) addVariableFlag(cmd *cobra.Command, v Variable) {
 	if len(v.Enum) > 0 {
 		description += fmt.Sprintf(" (allowed: %s)", strings.Join(v.Enum, ", "))
 	}
-	
+
 	switch v.Type {
 	case "int":
 		defaultVal := 0
@@ -340,7 +342,7 @@ func (p *PromptCLI) addVariableFlag(cmd *cobra.Command, v Variable) {
 		} else {
 			flags.Int(flagName, defaultVal, description)
 		}
-		
+
 	case "float", "float64":
 		defaultVal := 0.0
 		if v.Default != nil {
@@ -351,7 +353,7 @@ func (p *PromptCLI) addVariableFlag(cmd *cobra.Command, v Variable) {
 		} else {
 			flags.Float64(flagName, defaultVal, description)
 		}
-		
+
 	case "bool":
 		defaultVal := false
 		if v.Default != nil {
@@ -362,7 +364,7 @@ func (p *PromptCLI) addVariableFlag(cmd *cobra.Command, v Variable) {
 		} else {
 			flags.Bool(flagName, defaultVal, description)
 		}
-		
+
 	case "file":
 		defaultVal := ""
 		if v.Default != nil {
@@ -373,7 +375,7 @@ func (p *PromptCLI) addVariableFlag(cmd *cobra.Command, v Variable) {
 		} else {
 			flags.String(flagName, defaultVal, description+" (file path)")
 		}
-		
+
 	default: // string
 		defaultVal := ""
 		if v.Default != nil {
@@ -385,7 +387,7 @@ func (p *PromptCLI) addVariableFlag(cmd *cobra.Command, v Variable) {
 			flags.String(flagName, defaultVal, description)
 		}
 	}
-	
+
 	// Mark as required if needed
 	if v.Required && v.Default == nil {
 		cmd.MarkFlagRequired(flagName)
@@ -396,15 +398,15 @@ func (p *PromptCLI) addVariableFlag(cmd *cobra.Command, v Variable) {
 func (p *PromptCLI) getVariableValue(cmd *cobra.Command, v Variable) (interface{}, error) {
 	flagName := toKebabCase(v.Name)
 	flags := cmd.Flags()
-	
+
 	// Check if flag was set
 	if !flags.Changed(flagName) && v.Required && v.Default == nil {
 		return nil, fmt.Errorf("required flag --%s not provided", flagName)
 	}
-	
+
 	var value interface{}
 	var err error
-	
+
 	switch v.Type {
 	case "int":
 		value, err = flags.GetInt(flagName)
@@ -427,16 +429,16 @@ func (p *PromptCLI) getVariableValue(cmd *cobra.Command, v Variable) (interface{
 	default:
 		value, err = flags.GetString(flagName)
 	}
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Validate value
 	if err := p.validateValue(v, value); err != nil {
 		return nil, fmt.Errorf("invalid value for --%s: %w", flagName, err)
 	}
-	
+
 	return value, nil
 }
 
@@ -456,7 +458,7 @@ func (p *PromptCLI) validateValue(v Variable, value interface{}) error {
 			return fmt.Errorf("must be one of: %s", strings.Join(v.Enum, ", "))
 		}
 	}
-	
+
 	// Pattern validation
 	if v.Pattern != "" && v.Type == "string" {
 		strVal := value.(string)
@@ -468,7 +470,7 @@ func (p *PromptCLI) validateValue(v Variable, value interface{}) error {
 			return fmt.Errorf("does not match pattern: %s", v.Pattern)
 		}
 	}
-	
+
 	// Range validation
 	if v.Min != nil || v.Max != nil {
 		var numVal float64
@@ -480,7 +482,7 @@ func (p *PromptCLI) validateValue(v Variable, value interface{}) error {
 		default:
 			return nil // skip range validation for non-numeric types
 		}
-		
+
 		if v.Min != nil && numVal < *v.Min {
 			return fmt.Errorf("must be >= %v", *v.Min)
 		}
@@ -488,7 +490,7 @@ func (p *PromptCLI) validateValue(v Variable, value interface{}) error {
 			return fmt.Errorf("must be <= %v", *v.Max)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -496,7 +498,7 @@ func (p *PromptCLI) validateValue(v Variable, value interface{}) error {
 func (p *PromptCLI) formatOutput(cmd *cobra.Command, response string) (string, error) {
 	formatStr, _ := cmd.Flags().GetString("format")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
-	
+
 	if jsonOutput {
 		// Extract structured data and output as JSON
 		data := p.extractStructuredData(response)
@@ -506,26 +508,26 @@ func (p *PromptCLI) formatOutput(cmd *cobra.Command, response string) (string, e
 		}
 		return string(output) + "\n", nil
 	}
-	
+
 	if formatStr != "" {
 		// Parse format template
 		tmpl, err := template.New("output").Parse(formatStr)
 		if err != nil {
 			return "", fmt.Errorf("invalid format template: %w", err)
 		}
-		
+
 		// Extract data for template
 		data := p.extractStructuredData(response)
 		data["_raw"] = response // Include raw response
-		
+
 		var buf bytes.Buffer
 		if err := tmpl.Execute(&buf, data); err != nil {
 			return "", fmt.Errorf("failed to execute format template: %w", err)
 		}
-		
+
 		return buf.String(), nil
 	}
-	
+
 	// Default: return raw response
 	return response, nil
 }
@@ -533,7 +535,7 @@ func (p *PromptCLI) formatOutput(cmd *cobra.Command, response string) (string, e
 // extractStructuredData extracts structured data from the response
 func (p *PromptCLI) extractStructuredData(response string) map[string]interface{} {
 	data := make(map[string]interface{})
-	
+
 	// Extract XML tags
 	for _, ov := range p.OutputVars {
 		if ov.XMLTag != "" {
@@ -543,7 +545,7 @@ func (p *PromptCLI) extractStructuredData(response string) map[string]interface{
 			}
 		}
 	}
-	
+
 	// Try to parse as JSON
 	var jsonData map[string]interface{}
 	if err := json.Unmarshal([]byte(response), &jsonData); err == nil {
@@ -552,7 +554,7 @@ func (p *PromptCLI) extractStructuredData(response string) map[string]interface{
 			data[k] = v
 		}
 	}
-	
+
 	return data
 }
 
@@ -562,14 +564,14 @@ func (p *PromptCLI) generateLongDescription() string {
 	if desc == "" {
 		desc = "Execute a prompt with customizable variables"
 	}
-	
+
 	if p.Metadata.Author != "" {
 		desc += fmt.Sprintf("\n\nAuthor: %s", p.Metadata.Author)
 	}
 	if p.Metadata.Version != "" {
 		desc += fmt.Sprintf("\nVersion: %s", p.Metadata.Version)
 	}
-	
+
 	return desc
 }
 
@@ -578,7 +580,7 @@ func (p *PromptCLI) generateExamples() string {
 	if len(p.Metadata.Examples) == 0 {
 		return ""
 	}
-	
+
 	var examples []string
 	for _, ex := range p.Metadata.Examples {
 		example := fmt.Sprintf("  # %s\n  %s", ex.Description, p.Name)
@@ -590,7 +592,7 @@ func (p *PromptCLI) generateExamples() string {
 		}
 		examples = append(examples, example)
 	}
-	
+
 	return strings.Join(examples, "\n\n")
 }
 
@@ -605,7 +607,7 @@ func (p *PromptCLI) addCompletion(cmd *cobra.Command) {
 			})
 		}
 	}
-	
+
 	// Add model completion
 	cmd.RegisterFlagCompletionFunc("model", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"gpt-4", "gpt-3.5-turbo", "claude-3", "claude-2"}, cobra.ShellCompDirectiveDefault
@@ -631,23 +633,23 @@ func toKebabCase(s string) string {
 // parseMetadata extracts YAML frontmatter from a prompt
 func parseMetadata(content string) (PromptMetadata, string, error) {
 	var meta PromptMetadata
-	
+
 	// Check for frontmatter
 	if !strings.HasPrefix(content, "---\n") {
 		return meta, content, nil
 	}
-	
+
 	// Find end of frontmatter
 	parts := strings.SplitN(content[4:], "\n---\n", 2)
 	if len(parts) != 2 {
 		return meta, content, nil
 	}
-	
+
 	// Parse YAML
 	if err := yaml.Unmarshal([]byte(parts[0]), &meta); err != nil {
 		return meta, "", fmt.Errorf("failed to parse metadata: %w", err)
 	}
-	
+
 	return meta, parts[1], nil
 }
 
@@ -656,14 +658,14 @@ func validateOutputFormat(format string) error {
 	if format == "" {
 		return nil
 	}
-	
+
 	validFormats := []string{"json", "yaml", "markdown", "csv", "tsv", "xml"}
 	for _, valid := range validFormats {
 		if format == valid {
 			return nil
 		}
 	}
-	
+
 	return fmt.Errorf("invalid output format: %s (must be one of: %s)", format, strings.Join(validFormats, ", "))
 }
 
@@ -672,26 +674,26 @@ func buildExamplesHelp(cmdName string, examples []Example) string {
 	if len(examples) == 0 {
 		return ""
 	}
-	
+
 	var lines []string
 	lines = append(lines, "Examples:")
-	
+
 	for _, ex := range examples {
 		lines = append(lines, fmt.Sprintf("  # %s", ex.Name))
-		
+
 		// Build command line
 		cmd := fmt.Sprintf("  %s", cmdName)
 		for name, value := range ex.Flags {
 			cmd += fmt.Sprintf(" --%s=\"%v\"", name, value)
 		}
 		lines = append(lines, cmd)
-		
+
 		if ex.Output != "" {
 			lines = append(lines, fmt.Sprintf("  # Output: %s", ex.Output))
 		}
 		lines = append(lines, "")
 	}
-	
+
 	return strings.Join(lines, "\n")
 }
 

@@ -42,20 +42,20 @@ type Schema struct {
 
 // Property represents a property in a schema
 type Property struct {
-	Type        string                 `json:"type" yaml:"type"`
-	Description string                 `json:"description,omitempty" yaml:"description,omitempty"`
-	Format      string                 `json:"format,omitempty" yaml:"format,omitempty"`
-	Enum        []interface{}          `json:"enum,omitempty" yaml:"enum,omitempty"`
-	Pattern     string                 `json:"pattern,omitempty" yaml:"pattern,omitempty"`
-	MinLength   *int                   `json:"minLength,omitempty" yaml:"minLength,omitempty"`
-	MaxLength   *int                   `json:"maxLength,omitempty" yaml:"maxLength,omitempty"`
-	Minimum     *float64               `json:"minimum,omitempty" yaml:"minimum,omitempty"`
-	Maximum     *float64               `json:"maximum,omitempty" yaml:"maximum,omitempty"`
-	Items       *Property              `json:"items,omitempty" yaml:"items,omitempty"`
-	Properties  map[string]*Property   `json:"properties,omitempty" yaml:"properties,omitempty"`
-	Required    []string               `json:"required,omitempty" yaml:"required,omitempty"`
-	Default     interface{}            `json:"default,omitempty" yaml:"default,omitempty"`
-	Examples    []interface{}          `json:"examples,omitempty" yaml:"examples,omitempty"`
+	Type        string               `json:"type" yaml:"type"`
+	Description string               `json:"description,omitempty" yaml:"description,omitempty"`
+	Format      string               `json:"format,omitempty" yaml:"format,omitempty"`
+	Enum        []interface{}        `json:"enum,omitempty" yaml:"enum,omitempty"`
+	Pattern     string               `json:"pattern,omitempty" yaml:"pattern,omitempty"`
+	MinLength   *int                 `json:"minLength,omitempty" yaml:"minLength,omitempty"`
+	MaxLength   *int                 `json:"maxLength,omitempty" yaml:"maxLength,omitempty"`
+	Minimum     *float64             `json:"minimum,omitempty" yaml:"minimum,omitempty"`
+	Maximum     *float64             `json:"maximum,omitempty" yaml:"maximum,omitempty"`
+	Items       *Property            `json:"items,omitempty" yaml:"items,omitempty"`
+	Properties  map[string]*Property `json:"properties,omitempty" yaml:"properties,omitempty"`
+	Required    []string             `json:"required,omitempty" yaml:"required,omitempty"`
+	Default     interface{}          `json:"default,omitempty" yaml:"default,omitempty"`
+	Examples    []interface{}        `json:"examples,omitempty" yaml:"examples,omitempty"`
 }
 
 // Formatter handles conversion between different structured formats
@@ -67,13 +67,13 @@ type Formatter struct {
 type FormatterPlugin interface {
 	// Format converts a schema to the target format
 	Format(schema *Schema) (string, error)
-	
+
 	// Parse parses content in the format to extract structured data
 	Parse(content string) (map[string]interface{}, error)
-	
+
 	// Validate checks if content matches the expected format
 	Validate(content string, schema *Schema) error
-	
+
 	// GetPromptInstructions returns instructions for generating this format
 	GetPromptInstructions(schema *Schema) string
 }
@@ -221,11 +221,11 @@ type MarkdownPlugin struct{}
 
 func (p *MarkdownPlugin) Format(schema *Schema) (string, error) {
 	var sb strings.Builder
-	
+
 	// Generate header
 	sb.WriteString("| Field | Type | Required | Description |\n")
 	sb.WriteString("|-------|------|----------|-------------|\n")
-	
+
 	// Generate rows
 	for name, prop := range schema.Properties {
 		required := "No"
@@ -235,11 +235,11 @@ func (p *MarkdownPlugin) Format(schema *Schema) (string, error) {
 				break
 			}
 		}
-		
-		sb.WriteString(fmt.Sprintf("| %s | %s | %s | %s |\n", 
+
+		sb.WriteString(fmt.Sprintf("| %s | %s | %s | %s |\n",
 			name, prop.Type, required, prop.Description))
 	}
-	
+
 	return sb.String(), nil
 }
 
@@ -263,13 +263,13 @@ func (p *MarkdownPlugin) Parse(content string) (map[string]interface{}, error) {
 		if lines[i] == "" {
 			continue
 		}
-		
+
 		cells := strings.Split(lines[i], "|")
 		if len(cells) < 3 {
 			continue
 		}
 		cells = cells[1 : len(cells)-1]
-		
+
 		if len(cells) >= 2 {
 			field := strings.TrimSpace(cells[0])
 			value := strings.TrimSpace(cells[1])
@@ -338,9 +338,9 @@ type TypeScriptPlugin struct{}
 
 func (p *TypeScriptPlugin) Format(schema *Schema) (string, error) {
 	var sb strings.Builder
-	
+
 	sb.WriteString(fmt.Sprintf("interface %s {\n", toPascalCase(schema.Name)))
-	
+
 	for name, prop := range schema.Properties {
 		required := true
 		for _, req := range schema.Required {
@@ -349,18 +349,18 @@ func (p *TypeScriptPlugin) Format(schema *Schema) (string, error) {
 				break
 			}
 		}
-		
+
 		optional := ""
 		if !required {
 			optional = "?"
 		}
-		
+
 		tsType := goTypeToTypeScript(prop.Type)
 		sb.WriteString(fmt.Sprintf("  %s%s: %s;\n", name, optional, tsType))
 	}
-	
+
 	sb.WriteString("}")
-	
+
 	return sb.String(), nil
 }
 
@@ -387,16 +387,16 @@ type PydanticPlugin struct{}
 
 func (p *PydanticPlugin) Format(schema *Schema) (string, error) {
 	var sb strings.Builder
-	
+
 	sb.WriteString("from pydantic import BaseModel, Field\n")
 	sb.WriteString("from typing import Optional, List, Dict, Any\n\n")
-	
+
 	sb.WriteString(fmt.Sprintf("class %s(BaseModel):\n", toPascalCase(schema.Name)))
-	
+
 	if schema.Description != "" {
 		sb.WriteString(fmt.Sprintf(`    """%s"""`+"\n", schema.Description))
 	}
-	
+
 	for name, prop := range schema.Properties {
 		required := false
 		for _, req := range schema.Required {
@@ -405,14 +405,14 @@ func (p *PydanticPlugin) Format(schema *Schema) (string, error) {
 				break
 			}
 		}
-		
+
 		pyType := goTypeToPython(prop.Type)
 		if !required {
 			pyType = fmt.Sprintf("Optional[%s]", pyType)
 		}
-		
+
 		fieldDef := fmt.Sprintf("    %s: %s", toSnakeCase(name), pyType)
-		
+
 		if prop.Description != "" {
 			fieldDef += fmt.Sprintf(` = Field(description="%s")`, prop.Description)
 		} else if prop.Default != nil {
@@ -420,10 +420,10 @@ func (p *PydanticPlugin) Format(schema *Schema) (string, error) {
 		} else if !required {
 			fieldDef += " = None"
 		}
-		
+
 		sb.WriteString(fieldDef + "\n")
 	}
-	
+
 	return sb.String(), nil
 }
 
@@ -525,13 +525,13 @@ func validateAgainstSchema(data map[string]interface{}, schema *Schema) error {
 func validateProperty(name string, value interface{}, prop *Property) error {
 	// Type checking
 	valueType := reflect.TypeOf(value).Kind()
-	
+
 	switch prop.Type {
 	case "string":
 		if valueType != reflect.String {
 			return fmt.Errorf("field %s: expected string, got %T", name, value)
 		}
-		
+
 		str := value.(string)
 		if prop.MinLength != nil && len(str) < *prop.MinLength {
 			return fmt.Errorf("field %s: string too short (min %d)", name, *prop.MinLength)
@@ -544,22 +544,22 @@ func validateProperty(name string, value interface{}, prop *Property) error {
 				return fmt.Errorf("field %s: does not match pattern %s", name, prop.Pattern)
 			}
 		}
-		
+
 	case "number", "integer":
 		if valueType != reflect.Float64 && valueType != reflect.Int {
 			return fmt.Errorf("field %s: expected number, got %T", name, value)
 		}
-		
+
 	case "boolean":
 		if valueType != reflect.Bool {
 			return fmt.Errorf("field %s: expected boolean, got %T", name, value)
 		}
-		
+
 	case "array":
 		if valueType != reflect.Slice {
 			return fmt.Errorf("field %s: expected array, got %T", name, value)
 		}
-		
+
 	case "object":
 		if valueType != reflect.Map {
 			return fmt.Errorf("field %s: expected object, got %T", name, value)
@@ -585,12 +585,12 @@ func validateProperty(name string, value interface{}, prop *Property) error {
 
 func convertPropertiesToJSONSchema(props map[string]*Property) map[string]interface{} {
 	result := make(map[string]interface{})
-	
+
 	for name, prop := range props {
 		jsonProp := map[string]interface{}{
 			"type": prop.Type,
 		}
-		
+
 		if prop.Description != "" {
 			jsonProp["description"] = prop.Description
 		}
@@ -624,10 +624,10 @@ func convertPropertiesToJSONSchema(props map[string]*Property) map[string]interf
 		if len(prop.Required) > 0 {
 			jsonProp["required"] = prop.Required
 		}
-		
+
 		result[name] = jsonProp
 	}
-	
+
 	return result
 }
 

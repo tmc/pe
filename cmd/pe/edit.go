@@ -104,12 +104,12 @@ func runEdit(cmd *cobra.Command, args []string) error {
 		}
 		return nil
 	}
-	
+
 	// Require a filename if not just editing module
 	if len(args) == 0 {
 		return fmt.Errorf("filename required")
 	}
-	
+
 	filename := args[0]
 
 	// Read existing prompt or create new one
@@ -226,7 +226,6 @@ func runEdit(cmd *cobra.Command, args []string) error {
 		modified = true
 	}
 
-
 	// Output
 	if editJSON {
 		enc := json.NewEncoder(os.Stdout)
@@ -275,7 +274,7 @@ func formatPrompt(p *prompt.Prompt) string {
 			b.WriteString("\n")
 		}
 		b.WriteString("-- defaults --\n")
-		
+
 		// Format as key1=value1&key2=value2
 		var defaults []string
 		for k, v := range p.Defaults {
@@ -323,7 +322,7 @@ func addModuleDependency(module string) error {
 	}
 
 	content := string(data)
-	
+
 	// Parse module and version
 	parts := strings.Split(module, "@")
 	if len(parts) != 2 {
@@ -331,10 +330,10 @@ func addModuleDependency(module string) error {
 	}
 	moduleName := parts[0]
 	version := parts[1]
-	
+
 	// Check if already has a require section
 	requireLine := fmt.Sprintf("\t%s %s", moduleName, version)
-	
+
 	if strings.Contains(content, "require (") {
 		// Insert into existing require block
 		lines := strings.Split(content, "\n")
@@ -364,7 +363,7 @@ func addModuleDependency(module string) error {
 		content = strings.TrimRight(content, "\n")
 		content += fmt.Sprintf("\n\nrequire (\n%s\n)\n", requireLine)
 	}
-	
+
 	// Write back
 	return os.WriteFile("go.mod", []byte(content), 0644)
 }

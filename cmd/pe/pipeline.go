@@ -18,7 +18,7 @@ func askCmd() *cobra.Command {
 	var template string
 	var provider string
 	var parallel bool
-	
+
 	cmd := &cobra.Command{
 		Use:   "ask [prompt]",
 		Short: "Execute prompts with optional templating",
@@ -32,10 +32,10 @@ func askCmd() *cobra.Command {
 					provider = "cgpt"
 				}
 			}
-			
+
 			// Create a simple client for execution
 			client := inference.NewClient()
-			
+
 			// Process input
 			if len(args) > 0 {
 				// Single prompt from args
@@ -43,22 +43,22 @@ func askCmd() *cobra.Command {
 				if template != "" {
 					prompt = strings.ReplaceAll(template, "{{.}}", prompt)
 				}
-				
+
 				// Use mock provider if specified
 				if provider == "mock" {
 					mockProvider := &mockProvider{response: getMockResponse(prompt)}
 					client.Register(provider, mockProvider)
 				}
-				
+
 				request := inference.Request{
 					Prompt: prompt,
 				}
-				
+
 				response, err := client.CompleteWith(cmd.Context(), provider, request)
 				if err != nil {
 					return err
 				}
-				
+
 				fmt.Print(response.Content)
 			} else {
 				// Read from stdin line by line
@@ -68,34 +68,34 @@ func askCmd() *cobra.Command {
 					if template != "" {
 						prompt = strings.ReplaceAll(template, "{{.}}", prompt)
 					}
-					
+
 					// Use mock provider with dynamic response
 					if provider == "mock" {
 						mockProvider := &mockProvider{response: getMockResponse(prompt)}
 						client.Register(provider, mockProvider)
 					}
-					
+
 					request := inference.Request{
 						Prompt: prompt,
 					}
-					
+
 					response, err := client.CompleteWith(cmd.Context(), provider, request)
 					if err != nil {
 						return err
 					}
-					
+
 					fmt.Println(response.Content)
 				}
-				
+
 				if err := scanner.Err(); err != nil {
 					return err
 				}
 			}
-			
+
 			return nil
 		},
 	}
-	
+
 	cmd.Flags().StringVar(&template, "template", "", "Template for prompt formatting")
 	defaultProvider := "cgpt"
 	if os.Getenv("PE_TEST_MODE") == "true" || os.Getenv("PE_MOCK_PROVIDER") == "true" {
@@ -103,7 +103,7 @@ func askCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&provider, "provider", defaultProvider, "Provider to use")
 	cmd.Flags().BoolVar(&parallel, "parallel", false, "Process inputs in parallel")
-	
+
 	return cmd
 }
 
@@ -122,7 +122,7 @@ func streamCmd() *cobra.Command {
 			return scanner.Err()
 		},
 	}
-	
+
 	return cmd
 }
 
@@ -137,7 +137,7 @@ func filterCmd() *cobra.Command {
 	var ifContains string
 	var thenCmd string
 	var elseCmd string
-	
+
 	cmd := &cobra.Command{
 		Use:   "filter",
 		Short: "Filter and transform pipeline outputs",
@@ -145,18 +145,18 @@ func filterCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			scanner := bufio.NewScanner(os.Stdin)
 			lineNumber := 0
-			
+
 			for scanner.Scan() {
 				line := scanner.Text()
 				lineNumber++
-				
+
 				// Pattern filtering
 				if pattern != "" {
 					if !strings.Contains(line, pattern) {
 						continue
 					}
 				}
-				
+
 				// Match filtering (regex-based)
 				if match != "" {
 					// Simple pattern matching for numbers
@@ -171,14 +171,14 @@ func filterCmd() *cobra.Command {
 						continue
 					}
 				}
-				
-				// Contains filtering  
+
+				// Contains filtering
 				if contains != "" {
 					if !strings.Contains(line, contains) {
 						continue
 					}
 				}
-				
+
 				// If-contains logic
 				if ifContains != "" {
 					if strings.Contains(line, ifContains) {
@@ -195,7 +195,7 @@ func filterCmd() *cobra.Command {
 					}
 					continue
 				}
-				
+
 				// JSON filtering
 				if jsonPath != "" {
 					var data map[string]interface{}
@@ -208,7 +208,7 @@ func filterCmd() *cobra.Command {
 					}
 					continue
 				}
-				
+
 				// Field extraction
 				if field != "" {
 					if strings.Contains(line, field) {
@@ -216,19 +216,19 @@ func filterCmd() *cobra.Command {
 					}
 					continue
 				}
-				
+
 				// Transform
 				if transform == "lowercase" {
 					line = strings.ToLower(line)
 				}
-				
+
 				fmt.Println(line)
 			}
-			
+
 			return scanner.Err()
 		},
 	}
-	
+
 	cmd.Flags().StringVar(&pattern, "pattern", "", "Filter by pattern")
 	cmd.Flags().StringVar(&jsonPath, "json", "", "Extract JSON field")
 	cmd.Flags().StringVar(&transform, "transform", "", "Transform output")
@@ -238,7 +238,7 @@ func filterCmd() *cobra.Command {
 	cmd.Flags().StringVar(&ifContains, "if-contains", "", "Conditional contains")
 	cmd.Flags().StringVar(&thenCmd, "then", "", "Then command")
 	cmd.Flags().StringVar(&elseCmd, "else", "", "Else command")
-	
+
 	return cmd
 }
 
@@ -247,7 +247,7 @@ func analyzeCmd() *cobra.Command {
 	var analysisType string
 	var metrics string
 	var format string
-	
+
 	cmd := &cobra.Command{
 		Use:   "analyze",
 		Short: "Analyze text with various metrics",
@@ -258,9 +258,9 @@ func analyzeCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			
+
 			text := string(input)
-			
+
 			// Simulate analysis based on type
 			if analysisType == "statistical" {
 				// Simulate statistical analysis
@@ -289,7 +289,7 @@ func analyzeCmd() *cobra.Command {
 					},
 					"analysis": map[string]interface{}{
 						"complexity": "medium",
-						"quality": "high",
+						"quality":    "high",
 					},
 				}
 				jsonBytes, _ := json.MarshalIndent(output, "", "  ")
@@ -299,22 +299,22 @@ func analyzeCmd() *cobra.Command {
 				fmt.Printf("Text length: %d characters\n", len(text))
 				fmt.Printf("Word count: %d\n", len(strings.Fields(text)))
 			}
-			
+
 			return nil
 		},
 	}
-	
+
 	cmd.Flags().StringVar(&analysisType, "type", "", "Type of analysis")
 	cmd.Flags().StringVar(&metrics, "metrics", "", "Comma-separated metrics")
 	cmd.Flags().StringVar(&format, "format", "", "Output format")
-	
+
 	return cmd
 }
 
 // collectCmd - Collect results from async operations
 func collectCmd() *cobra.Command {
 	var jobs int
-	
+
 	cmd := &cobra.Command{
 		Use:   "collect",
 		Short: "Collect results from async operations",
@@ -324,16 +324,16 @@ func collectCmd() *cobra.Command {
 			return nil
 		},
 	}
-	
+
 	cmd.Flags().IntVar(&jobs, "jobs", 0, "Number of jobs to collect")
-	
+
 	return cmd
 }
 
 // reduceCmd - Reduce/aggregate results
 func reduceCmd() *cobra.Command {
 	var operation string
-	
+
 	cmd := &cobra.Command{
 		Use:   "reduce",
 		Short: "Reduce/aggregate pipeline results",
@@ -346,9 +346,9 @@ func reduceCmd() *cobra.Command {
 			return nil
 		},
 	}
-	
+
 	cmd.Flags().StringVar(&operation, "sum", "", "Sum operation")
-	
+
 	return cmd
 }
 
@@ -374,11 +374,11 @@ func (m *mockProvider) Name() string {
 func (m *mockProvider) Complete(ctx context.Context, req inference.Request) (*inference.Response, error) {
 	return &inference.Response{
 		Content: m.response,
-		Model: "mock",
+		Model:   "mock",
 		TokensUsed: inference.TokenUsage{
-			PromptTokens: 10,
+			PromptTokens:     10,
 			CompletionTokens: 5,
-			TotalTokens: 15,
+			TotalTokens:      15,
 		},
 	}, nil
 }
@@ -389,7 +389,7 @@ func (m *mockProvider) Stream(ctx context.Context, req inference.Request) (<-cha
 		defer close(ch)
 		ch <- inference.StreamChunk{
 			Delta: m.response,
-			Done: true,
+			Done:  true,
 		}
 	}()
 	return ch, nil
@@ -406,7 +406,7 @@ func (m *mockProvider) Close() error {
 // getMockResponse returns appropriate mock responses based on prompt
 func getMockResponse(prompt string) string {
 	prompt = strings.ToLower(prompt)
-	
+
 	switch {
 	case strings.Contains(prompt, "capital") && strings.Contains(prompt, "france"):
 		return "Paris"
@@ -427,11 +427,21 @@ func getMockResponse(prompt string) string {
 		parts := strings.Fields(prompt)
 		for _, p := range parts {
 			if n := strings.TrimSpace(p); n >= "0" && n <= "9" {
-				if n == "1" { return "2" }
-				if n == "2" { return "4" }
-				if n == "3" { return "6" }
-				if n == "4" { return "8" }
-				if n == "5" { return "10" }
+				if n == "1" {
+					return "2"
+				}
+				if n == "2" {
+					return "4"
+				}
+				if n == "3" {
+					return "6"
+				}
+				if n == "4" {
+					return "8"
+				}
+				if n == "5" {
+					return "10"
+				}
 			}
 		}
 		return "2"

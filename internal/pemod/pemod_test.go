@@ -7,10 +7,7 @@ import (
 )
 
 func TestParseBasic(t *testing.T) {
-	input := `pe 1
-
-require (
-)`
+	input := `pe 1`
 
 	file, err := Parse(strings.NewReader(input))
 	if err != nil {
@@ -149,7 +146,7 @@ security {
 	expectedFrom := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	expectedUntil := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
 	if !trust2.ValidFrom.Equal(expectedFrom) || !trust2.ValidUntil.Equal(expectedUntil) {
-		t.Errorf("Expected validity period 2024-01-01 to 2024-12-31, got %v to %v", 
+		t.Errorf("Expected validity period 2024-01-01 to 2024-12-31, got %v to %v",
 			trust2.ValidFrom, trust2.ValidUntil)
 	}
 
@@ -245,13 +242,13 @@ func TestParseErrors(t *testing.T) {
 		},
 		{
 			name:  "invalid require",
-			input: `pe 1\nrequire`,
+			input: "pe 1\nrequire",
 			want:  "require directive needs module and version",
 		},
 		{
 			name:  "invalid replace",
-			input: `pe 1\nreplace old new`,
-			want:  "replace directive must use '=>' separator",
+			input: "pe 1\nreplace old new",
+			want:  "replace directive needs old => new",
 		},
 	}
 
@@ -308,7 +305,7 @@ security {
 	}
 
 	formatted := file.Format()
-	
+
 	// Verify key components are present
 	expectedParts := []string{
 		"module github.com/org/prompts",

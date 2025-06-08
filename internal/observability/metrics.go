@@ -45,19 +45,19 @@ type HistogramBucket struct {
 
 // SummaryData contains summary-specific data
 type SummaryData struct {
-	Count      uint64              `json:"count"`
-	Sum        float64             `json:"sum"`
-	Quantiles  map[float64]float64 `json:"quantiles"`
+	Count     uint64              `json:"count"`
+	Sum       float64             `json:"sum"`
+	Quantiles map[float64]float64 `json:"quantiles"`
 }
 
 // MetricsCollector collects and manages metrics
 type MetricsCollector struct {
-	mu          sync.RWMutex
-	metrics     map[string]*Metric
-	histograms  map[string]*HistogramData
-	summaries   map[string]*SummaryData
-	enabled     bool
-	writer      MetricsWriter
+	mu         sync.RWMutex
+	metrics    map[string]*Metric
+	histograms map[string]*HistogramData
+	summaries  map[string]*SummaryData
+	enabled    bool
+	writer     MetricsWriter
 }
 
 // MetricsWriter interface for outputting metrics
@@ -80,7 +80,7 @@ func NewJSONMetricsWriter(filename string) (*JSONMetricsWriter, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &JSONMetricsWriter{file: file}, nil
 }
 
@@ -90,7 +90,7 @@ func (w *JSONMetricsWriter) WriteMetric(metric *Metric) error {
 	if err != nil {
 		return err
 	}
-	
+
 	_, err = w.file.Write(append(data, '\n'))
 	return err
 }
@@ -104,12 +104,12 @@ func (w *JSONMetricsWriter) WriteHistogram(name string, data *HistogramData, tag
 		"tags":      tags,
 		"timestamp": time.Now(),
 	}
-	
+
 	jsonData, err := json.Marshal(entry)
 	if err != nil {
 		return err
 	}
-	
+
 	_, err = w.file.Write(append(jsonData, '\n'))
 	return err
 }
@@ -123,12 +123,12 @@ func (w *JSONMetricsWriter) WriteSummary(name string, data *SummaryData, tags ma
 		"tags":      tags,
 		"timestamp": time.Now(),
 	}
-	
+
 	jsonData, err := json.Marshal(entry)
 	if err != nil {
 		return err
 	}
-	
+
 	_, err = w.file.Write(append(jsonData, '\n'))
 	return err
 }
@@ -159,10 +159,10 @@ func (mc *MetricsCollector) Counter(name string, value float64, tags map[string]
 	if !mc.enabled {
 		return
 	}
-	
+
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
-	
+
 	key := mc.metricKey(name, tags)
 	if metric, exists := mc.metrics[key]; exists {
 		metric.Value += value
@@ -177,7 +177,7 @@ func (mc *MetricsCollector) Counter(name string, value float64, tags map[string]
 		}
 		mc.metrics[key] = metric
 	}
-	
+
 	if mc.writer != nil {
 		mc.writer.WriteMetric(mc.metrics[key])
 	}
@@ -188,10 +188,10 @@ func (mc *MetricsCollector) Gauge(name string, value float64, tags map[string]st
 	if !mc.enabled {
 		return
 	}
-	
+
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
-	
+
 	key := mc.metricKey(name, tags)
 	metric := &Metric{
 		Name:      name,
@@ -201,7 +201,7 @@ func (mc *MetricsCollector) Gauge(name string, value float64, tags map[string]st
 		Timestamp: time.Now(),
 	}
 	mc.metrics[key] = metric
-	
+
 	if mc.writer != nil {
 		mc.writer.WriteMetric(metric)
 	}
@@ -212,10 +212,10 @@ func (mc *MetricsCollector) Histogram(name string, value float64, buckets []floa
 	if !mc.enabled {
 		return
 	}
-	
+
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
-	
+
 	key := mc.metricKey(name, tags)
 	histogram, exists := mc.histograms[key]
 	if !exists {
@@ -227,17 +227,17 @@ func (mc *MetricsCollector) Histogram(name string, value float64, buckets []floa
 		}
 		mc.histograms[key] = histogram
 	}
-	
+
 	// Update histogram
 	histogram.Count++
 	histogram.Sum += value
-	
+
 	for i := range histogram.Buckets {
 		if value <= histogram.Buckets[i].UpperBound {
 			histogram.Buckets[i].Count++
 		}
 	}
-	
+
 	if mc.writer != nil {
 		mc.writer.WriteHistogram(name, histogram, tags)
 	}
@@ -248,10 +248,10 @@ func (mc *MetricsCollector) Summary(name string, value float64, quantiles []floa
 	if !mc.enabled {
 		return
 	}
-	
+
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
-	
+
 	key := mc.metricKey(name, tags)
 	summary, exists := mc.summaries[key]
 	if !exists {
@@ -260,16 +260,16 @@ func (mc *MetricsCollector) Summary(name string, value float64, quantiles []floa
 		}
 		mc.summaries[key] = summary
 	}
-	
+
 	// Simple implementation - in production, you'd use a more sophisticated algorithm
 	summary.Count++
 	summary.Sum += value
-	
+
 	// Calculate quantiles (simplified)
 	for _, q := range quantiles {
 		summary.Quantiles[q] = value // Placeholder - would need proper quantile calculation
 	}
-	
+
 	if mc.writer != nil {
 		mc.writer.WriteSummary(name, summary, tags)
 	}
@@ -280,7 +280,7 @@ func (mc *MetricsCollector) Timer(name string, tags map[string]string) func() {
 	start := time.Now()
 	return func() {
 		duration := time.Since(start)
-		mc.Histogram(name+"_duration_ms", duration.Seconds()*1000, 
+		mc.Histogram(name+"_duration_ms", duration.Seconds()*1000,
 			[]float64{1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000}, tags)
 	}
 }
@@ -289,7 +289,7 @@ func (mc *MetricsCollector) Timer(name string, tags map[string]string) func() {
 func (mc *MetricsCollector) GetMetrics() map[string]*Metric {
 	mc.mu.RLock()
 	defer mc.mu.RUnlock()
-	
+
 	metrics := make(map[string]*Metric)
 	for k, v := range mc.metrics {
 		metrics[k] = v
@@ -301,7 +301,7 @@ func (mc *MetricsCollector) GetMetrics() map[string]*Metric {
 func (mc *MetricsCollector) Reset() {
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
-	
+
 	mc.metrics = make(map[string]*Metric)
 	mc.histograms = make(map[string]*HistogramData)
 	mc.summaries = make(map[string]*SummaryData)
@@ -338,28 +338,28 @@ func (mc *MetricsCollector) metricKey(name string, tags map[string]string) strin
 	if len(tags) == 0 {
 		return name
 	}
-	
+
 	// Sort tags for consistent key generation
 	var keys []string
 	for k := range tags {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	
+
 	key := name
 	for _, k := range keys {
 		key += fmt.Sprintf(",%s=%s", k, tags[k])
 	}
-	
+
 	return key
 }
 
 // MetricsReport contains a summary of collected metrics
 type MetricsReport struct {
-	Timestamp time.Time            `json:"timestamp"`
-	Counters  map[string]float64   `json:"counters"`
-	Gauges    map[string]float64   `json:"gauges"`
-	Summary   MetricsSummary       `json:"summary"`
+	Timestamp time.Time          `json:"timestamp"`
+	Counters  map[string]float64 `json:"counters"`
+	Gauges    map[string]float64 `json:"gauges"`
+	Summary   MetricsSummary     `json:"summary"`
 }
 
 // MetricsSummary contains high-level metrics summary
@@ -375,10 +375,10 @@ type MetricsSummary struct {
 func (mc *MetricsCollector) GenerateReport() MetricsReport {
 	mc.mu.RLock()
 	defer mc.mu.RUnlock()
-	
+
 	counters := make(map[string]float64)
 	gauges := make(map[string]float64)
-	
+
 	for _, metric := range mc.metrics {
 		switch metric.Type {
 		case CounterMetric:
@@ -387,7 +387,7 @@ func (mc *MetricsCollector) GenerateReport() MetricsReport {
 			gauges[metric.Name] = metric.Value
 		}
 	}
-	
+
 	return MetricsReport{
 		Timestamp: time.Now(),
 		Counters:  counters,
@@ -440,7 +440,7 @@ func Timer(name string, tags map[string]string) func() {
 func MeasureLatency(ctx context.Context, name string, tags map[string]string, fn func(context.Context) error) error {
 	stopTimer := Timer(name, tags)
 	defer stopTimer()
-	
+
 	return fn(ctx)
 }
 
@@ -448,6 +448,6 @@ func MeasureLatency(ctx context.Context, name string, tags map[string]string, fn
 func MeasureLatencyWithResult(ctx context.Context, name string, tags map[string]string, fn func(context.Context) (interface{}, error)) (interface{}, error) {
 	stopTimer := Timer(name, tags)
 	defer stopTimer()
-	
+
 	return fn(ctx)
 }

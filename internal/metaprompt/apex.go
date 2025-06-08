@@ -58,10 +58,10 @@ func NewAPEXOptimizer(llmProvider llm.Provider) *APEXOptimizer {
 // OptimizeWithAPEX runs APEX-style long prompt optimization
 func (o *APEXOptimizer) OptimizeWithAPEX(ctx context.Context, cfg Config) (*OptimizationResult, error) {
 	startTime := time.Now()
-	
+
 	// Parse APEX-specific config
 	apexConfig := o.parseAPEXConfig(cfg)
-	
+
 	result := &OptimizationResult{
 		OriginalPrompt: cfg.InitialPrompt,
 		Iterations:     make([]IterationResult, 0, cfg.Iterations),
@@ -83,26 +83,26 @@ func (o *APEXOptimizer) OptimizeWithAPEX(ctx context.Context, cfg Config) (*Opti
 		MutationLog: []string{},
 		Parent:      nil,
 	}
-	
+
 	// Evaluate initial prompt
 	initialScore, err := o.evaluatePrompt(ctx, cfg.InitialPrompt, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to evaluate initial prompt: %w", err)
 	}
 	initialCandidate.Score = initialScore
-	
+
 	beam := []*APEXCandidate{initialCandidate}
-	
+
 	// APEX beam search optimization
 	for generation := 0; generation < cfg.Iterations; generation++ {
 		iterStart := time.Now()
-		
+
 		// Generate new candidates through mutation
 		newCandidates, err := o.generateAPEXCandidates(ctx, beam, apexConfig, history, cfg)
 		if err != nil {
 			return nil, fmt.Errorf("APEX generation %d failed: %w", generation+1, err)
 		}
-		
+
 		// Evaluate all candidates
 		for _, candidate := range newCandidates {
 			score, evalErr := o.evaluatePrompt(ctx, candidate.Prompt, cfg)
@@ -113,14 +113,14 @@ func (o *APEXOptimizer) OptimizeWithAPEX(ctx context.Context, cfg Config) (*Opti
 			}
 			candidate.Generation = generation + 1
 		}
-		
+
 		// Update search history with results
 		o.updateSearchHistory(history, beam, newCandidates)
-		
+
 		// Select top candidates for next beam (greedy selection)
 		allCandidates := append(beam, newCandidates...)
 		beam = o.selectTopCandidates(allCandidates, apexConfig.BeamWidth)
-		
+
 		// Record best candidate for this iteration
 		bestCandidate := beam[0]
 		iteration := IterationResult{
@@ -130,9 +130,9 @@ func (o *APEXOptimizer) OptimizeWithAPEX(ctx context.Context, cfg Config) (*Opti
 			Feedback:  o.generateAPEXFeedback(bestCandidate, history),
 			Duration:  time.Since(iterStart),
 		}
-		
+
 		result.Iterations = append(result.Iterations, iteration)
-		
+
 		// Early termination if improvement is too small
 		if generation > 0 {
 			prevScore := result.Iterations[generation-1].Score
@@ -149,7 +149,7 @@ func (o *APEXOptimizer) OptimizeWithAPEX(ctx context.Context, cfg Config) (*Opti
 	} else {
 		result.OptimizedPrompt = cfg.InitialPrompt
 	}
-	
+
 	result.ImprovementScore = o.calculateAPEXImprovementScore(result)
 	result.TotalDuration = time.Since(startTime)
 
@@ -159,7 +159,7 @@ func (o *APEXOptimizer) OptimizeWithAPEX(ctx context.Context, cfg Config) (*Opti
 // generateAPEXCandidates generates new candidate prompts through mutation
 func (o *APEXOptimizer) generateAPEXCandidates(ctx context.Context, beam []*APEXCandidate, config APEXConfig, history *APEXSearchHistory, cfg Config) ([]*APEXCandidate, error) {
 	var newCandidates []*APEXCandidate
-	
+
 	// Generate candidates from each beam member
 	for _, parent := range beam {
 		for _, mutationOp := range config.MutationOperators {
@@ -167,20 +167,20 @@ func (o *APEXOptimizer) generateAPEXCandidates(ctx context.Context, beam []*APEX
 			if rand.Float64() > config.MutationProbability {
 				continue
 			}
-			
+
 			// Skip mutations that have failed too often
 			if config.UseSearchHistory {
 				if failures, exists := history.FailedMutations[mutationOp]; exists && failures > 3 {
 					continue
 				}
 			}
-			
+
 			// Apply mutation
 			mutatedPrompt, err := o.applyMutation(ctx, parent.Prompt, mutationOp, config, cfg)
 			if err != nil {
 				continue // Skip failed mutations
 			}
-			
+
 			// Create new candidate
 			candidate := &APEXCandidate{
 				Prompt:      mutatedPrompt,
@@ -189,18 +189,18 @@ func (o *APEXOptimizer) generateAPEXCandidates(ctx context.Context, beam []*APEX
 				MutationLog: append(parent.MutationLog, mutationOp),
 				Parent:      parent,
 			}
-			
+
 			newCandidates = append(newCandidates, candidate)
 		}
 	}
-	
+
 	return newCandidates, nil
 }
 
 // applyMutation applies a specific mutation operator to a prompt
 func (o *APEXOptimizer) applyMutation(ctx context.Context, prompt, mutation string, config APEXConfig, cfg Config) (string, error) {
 	var mutationPrompt string
-	
+
 	switch mutation {
 	case "rephrase_section":
 		mutationPrompt = o.generateRephraseMutation(prompt)
@@ -221,25 +221,25 @@ func (o *APEXOptimizer) applyMutation(ctx context.Context, prompt, mutation stri
 	default:
 		return "", fmt.Errorf("unknown mutation operator: %s", mutation)
 	}
-	
+
 	options := llm.GenerateOptions{
 		Temperature: &cfg.Temperature,
 		MaxTokens:   &cfg.MaxTokens,
 	}
-	
+
 	response, err := o.llm.Generate(ctx, mutationPrompt, options)
 	if err != nil {
 		return "", fmt.Errorf("mutation failed: %w", err)
 	}
-	
+
 	// Extract mutated prompt from response
 	mutatedPrompt := o.extractMutatedPrompt(response.Text, prompt)
-	
+
 	// Apply length constraints if needed
 	if config.LengthOptimization && len(mutatedPrompt) > config.MaxPromptLength {
 		mutatedPrompt = o.truncatePrompt(mutatedPrompt, config.MaxPromptLength)
 	}
-	
+
 	return mutatedPrompt, nil
 }
 
@@ -378,7 +378,7 @@ func (o *APEXOptimizer) extractMutatedPrompt(response, originalPrompt string) st
 		"SPECIFIC PROMPT:",
 		"FORMATTED PROMPT:",
 	}
-	
+
 	for _, pattern := range patterns {
 		if idx := strings.Index(strings.ToUpper(response), pattern); idx != -1 {
 			extracted := strings.TrimSpace(response[idx+len(pattern):])
@@ -387,7 +387,7 @@ func (o *APEXOptimizer) extractMutatedPrompt(response, originalPrompt string) st
 			}
 		}
 	}
-	
+
 	// Fallback: look for the longest substantial paragraph
 	paragraphs := strings.Split(response, "\n\n")
 	longest := ""
@@ -397,11 +397,11 @@ func (o *APEXOptimizer) extractMutatedPrompt(response, originalPrompt string) st
 			longest = para
 		}
 	}
-	
+
 	if longest != "" {
 		return longest
 	}
-	
+
 	// Last resort: return original if extraction fails
 	return originalPrompt
 }
@@ -411,23 +411,23 @@ func (o *APEXOptimizer) truncatePrompt(prompt string, maxLength int) string {
 	if len(prompt) <= maxLength {
 		return prompt
 	}
-	
+
 	// Try to truncate at sentence boundaries
 	sentences := strings.Split(prompt, ". ")
 	result := ""
-	
+
 	for i, sentence := range sentences {
 		candidate := result + sentence
 		if i < len(sentences)-1 {
 			candidate += ". "
 		}
-		
+
 		if len(candidate) > maxLength {
 			break
 		}
 		result = candidate
 	}
-	
+
 	// If no sentences fit, truncate at word boundaries
 	if result == "" {
 		words := strings.Split(prompt, " ")
@@ -439,7 +439,7 @@ func (o *APEXOptimizer) truncatePrompt(prompt string, maxLength int) string {
 			result = candidate
 		}
 	}
-	
+
 	return strings.TrimSpace(result)
 }
 
@@ -447,16 +447,16 @@ func (o *APEXOptimizer) truncatePrompt(prompt string, maxLength int) string {
 func (o *APEXOptimizer) evaluatePrompt(ctx context.Context, prompt string, cfg Config) (float64, error) {
 	// This is a simplified evaluation - in practice, this would use
 	// more sophisticated metrics based on the specific use case
-	
+
 	// Base score on prompt characteristics
 	score := 5.0
-	
+
 	// Length-based scoring
 	promptLength := len(prompt)
 	if promptLength > 100 && promptLength < 2000 {
 		score += 1.0
 	}
-	
+
 	// Structure-based scoring
 	if strings.Contains(prompt, "TASK:") || strings.Contains(prompt, "INSTRUCTIONS:") {
 		score += 0.5
@@ -464,17 +464,17 @@ func (o *APEXOptimizer) evaluatePrompt(ctx context.Context, prompt string, cfg C
 	if strings.Contains(prompt, "EXAMPLE:") || strings.Contains(prompt, "FORMAT:") {
 		score += 0.5
 	}
-	
+
 	// Clarity indicators
 	sentences := strings.Split(prompt, ".")
 	if len(sentences) > 3 && len(sentences) < 20 {
 		score += 0.5
 	}
-	
+
 	// Add some randomness to simulate real evaluation
 	noise := (rand.Float64() - 0.5) * 0.5
 	score += noise
-	
+
 	return math.Max(0.0, math.Min(10.0, score)), nil
 }
 
@@ -487,13 +487,13 @@ func (o *APEXOptimizer) updateSearchHistory(history *APEXSearchHistory, oldBeam,
 			bestOldScore = candidate.Score
 		}
 	}
-	
+
 	// Evaluate each new candidate's improvement
 	for _, candidate := range newCandidates {
 		if len(candidate.MutationLog) > 0 {
 			lastMutation := candidate.MutationLog[len(candidate.MutationLog)-1]
 			improvement := candidate.Score - bestOldScore
-			
+
 			if improvement > 0 {
 				// Track successful mutation
 				if current, exists := history.SuccessfulMutations[lastMutation]; exists {
@@ -507,13 +507,13 @@ func (o *APEXOptimizer) updateSearchHistory(history *APEXSearchHistory, oldBeam,
 			}
 		}
 	}
-	
+
 	// Update best prompts
 	allCandidates := append(oldBeam, newCandidates...)
 	sort.Slice(allCandidates, func(i, j int) bool {
 		return allCandidates[i].Score > allCandidates[j].Score
 	})
-	
+
 	// Keep top 5 best prompts in history
 	maxKeep := 5
 	if len(allCandidates) < maxKeep {
@@ -528,23 +528,23 @@ func (o *APEXOptimizer) selectTopCandidates(candidates []*APEXCandidate, beamWid
 	sort.Slice(candidates, func(i, j int) bool {
 		return candidates[i].Score > candidates[j].Score
 	})
-	
+
 	// Select top candidates up to beam width
 	if len(candidates) <= beamWidth {
 		return candidates
 	}
-	
+
 	return candidates[:beamWidth]
 }
 
 // generateAPEXFeedback generates feedback for APEX iterations
 func (o *APEXOptimizer) generateAPEXFeedback(candidate *APEXCandidate, history *APEXSearchHistory) string {
 	feedback := fmt.Sprintf("Score: %.2f", candidate.Score)
-	
+
 	if len(candidate.MutationLog) > 0 {
 		feedback += fmt.Sprintf(" | Mutations: %s", strings.Join(candidate.MutationLog, " → "))
 	}
-	
+
 	if len(history.SuccessfulMutations) > 0 {
 		// Find best performing mutation
 		bestMutation := ""
@@ -559,7 +559,7 @@ func (o *APEXOptimizer) generateAPEXFeedback(candidate *APEXCandidate, history *
 			feedback += fmt.Sprintf(" | Best mutation: %s (%.2f)", bestMutation, bestScore)
 		}
 	}
-	
+
 	return feedback
 }
 
@@ -568,10 +568,10 @@ func (o *APEXOptimizer) calculateAPEXImprovementScore(result *OptimizationResult
 	if len(result.Iterations) == 0 {
 		return 0.0
 	}
-	
+
 	// APEX improvement is based on the final best score achieved
 	finalScore := result.Iterations[len(result.Iterations)-1].Score
-	
+
 	// Apply bonus for consistent improvement across iterations
 	consistencyBonus := 0.0
 	for i := 1; i < len(result.Iterations); i++ {
@@ -579,7 +579,7 @@ func (o *APEXOptimizer) calculateAPEXImprovementScore(result *OptimizationResult
 			consistencyBonus += 0.1
 		}
 	}
-	
+
 	return finalScore + consistencyBonus
 }
 
@@ -605,9 +605,9 @@ func (o *APEXOptimizer) parseAPEXConfig(cfg Config) APEXConfig {
 		MinImprovementThreshold: 0.05,
 		MutationProbability:     0.3,
 	}
-	
+
 	// TODO: Parse from cfg.Method parameters when advanced config is implemented
 	// For now, use defaults which provide optimal APEX behavior
-	
+
 	return apexConfig
 }

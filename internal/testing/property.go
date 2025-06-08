@@ -14,22 +14,22 @@ import (
 
 // PropertyTest represents a property-based test
 type PropertyTest struct {
-	Name        string                 `yaml:"name"`
-	Property    string                 `yaml:"property"`
-	Generator   string                 `yaml:"generator"`
-	Constraint  string                 `yaml:"constraint"`
-	Iterations  int                    `yaml:"iterations"`
-	Options     map[string]interface{} `yaml:"options"`
+	Name       string                 `yaml:"name"`
+	Property   string                 `yaml:"property"`
+	Generator  string                 `yaml:"generator"`
+	Constraint string                 `yaml:"constraint"`
+	Iterations int                    `yaml:"iterations"`
+	Options    map[string]interface{} `yaml:"options"`
 }
 
 // PropertyTestResult contains the result of a property test
 type PropertyTestResult struct {
-	Name          string        `json:"name"`
-	Property      string        `json:"property"`
-	Passed        bool          `json:"passed"`
-	Iterations    int           `json:"iterations"`
-	Failures      []TestFailure `json:"failures"`
-	TotalDuration time.Duration `json:"total_duration"`
+	Name           string        `json:"name"`
+	Property       string        `json:"property"`
+	Passed         bool          `json:"passed"`
+	Iterations     int           `json:"iterations"`
+	Failures       []TestFailure `json:"failures"`
+	TotalDuration  time.Duration `json:"total_duration"`
 	AverageLatency time.Duration `json:"average_latency"`
 }
 
@@ -136,21 +136,21 @@ func (pt *PropertyTester) generateInput(generator string, options map[string]int
 func (pt *PropertyTester) generateRandomText(options map[string]interface{}) (string, error) {
 	minLength := getIntOption(options, "min_length", 10)
 	maxLength := getIntOption(options, "max_length", 100)
-	
+
 	words := []string{
 		"the", "quick", "brown", "fox", "jumps", "over", "lazy", "dog",
 		"artificial", "intelligence", "machine", "learning", "computer", "science",
 		"algorithm", "data", "analysis", "programming", "software", "development",
 		"technology", "innovation", "research", "experiment", "hypothesis", "theory",
 	}
-	
+
 	length := rand.Intn(maxLength-minLength+1) + minLength
 	var result []string
-	
+
 	for i := 0; i < length; i++ {
 		result = append(result, words[rand.Intn(len(words))])
 	}
-	
+
 	return strings.Join(result, " "), nil
 }
 
@@ -166,23 +166,23 @@ func (pt *PropertyTester) generateRandomQuestion(options map[string]interface{})
 		"Can you explain %s?",
 		"What are the benefits of %s?",
 	}
-	
+
 	topics := []string{
 		"artificial intelligence", "machine learning", "blockchain", "quantum computing",
 		"cloud computing", "cybersecurity", "data science", "robotics", "IoT",
 		"virtual reality", "augmented reality", "natural language processing",
 	}
-	
+
 	questionTemplate := questions[rand.Intn(len(questions))]
 	topic := topics[rand.Intn(len(topics))]
-	
+
 	return fmt.Sprintf(questionTemplate, topic), nil
 }
 
 // generateRandomCode generates random code snippets
 func (pt *PropertyTester) generateRandomCode(options map[string]interface{}) (string, error) {
 	language := getStringOption(options, "language", "python")
-	
+
 	templates := map[string][]string{
 		"python": {
 			"def %s():\n    return %s",
@@ -196,12 +196,12 @@ func (pt *PropertyTester) generateRandomCode(options map[string]interface{}) (st
 			"class %s {\n    constructor() {\n        this.%s = %s;\n    }\n}",
 		},
 	}
-	
+
 	if langTemplates, exists := templates[language]; exists {
 		template := langTemplates[rand.Intn(len(langTemplates))]
 		return pt.fillCodeTemplate(template), nil
 	}
-	
+
 	return fmt.Sprintf("# Example %s code\nprint('Hello, World!')", language), nil
 }
 
@@ -214,7 +214,7 @@ func (pt *PropertyTester) generateRandomJSON(options map[string]interface{}) (st
 // generateSentences generates random sentences
 func (pt *PropertyTester) generateSentences(options map[string]interface{}) (string, error) {
 	count := getIntOption(options, "count", 3)
-	
+
 	sentences := []string{
 		"The sun rises in the east and sets in the west.",
 		"Technology continues to evolve at a rapid pace.",
@@ -222,12 +222,12 @@ func (pt *PropertyTester) generateSentences(options map[string]interface{}) (str
 		"Education plays a crucial role in personal development.",
 		"Innovation drives progress in many industries.",
 	}
-	
+
 	var result []string
 	for i := 0; i < count; i++ {
 		result = append(result, sentences[rand.Intn(len(sentences))])
 	}
-	
+
 	return strings.Join(result, " "), nil
 }
 
@@ -236,13 +236,13 @@ func (pt *PropertyTester) generateNumbers(options map[string]interface{}) (strin
 	min := getIntOption(options, "min", 1)
 	max := getIntOption(options, "max", 100)
 	count := getIntOption(options, "count", 1)
-	
+
 	var numbers []string
 	for i := 0; i < count; i++ {
 		num := rand.Intn(max-min+1) + min
 		numbers = append(numbers, strconv.Itoa(num))
 	}
-	
+
 	return strings.Join(numbers, ", "), nil
 }
 
@@ -252,11 +252,11 @@ func (pt *PropertyTester) fillCodeTemplate(template string) string {
 	functionNames := []string{"calculate", "process", "handle", "execute", "run", "compute"}
 	variableNames := []string{"data", "value", "result", "item", "element", "object"}
 	values := []string{"42", "'hello'", "True", "None", "[]", "{}"}
-	
+
 	result := template
 	result = strings.ReplaceAll(result, "%s", functionNames[rand.Intn(len(functionNames))])
 	result = strings.ReplaceAll(result, "%d", strconv.Itoa(rand.Intn(10)+1))
-	
+
 	// Replace remaining %s with variables or values
 	for strings.Contains(result, "%s") {
 		if rand.Float32() < 0.5 {
@@ -265,7 +265,7 @@ func (pt *PropertyTester) fillCodeTemplate(template string) string {
 			result = strings.Replace(result, "%s", values[rand.Intn(len(values))], 1)
 		}
 	}
-	
+
 	return result
 }
 
@@ -274,34 +274,34 @@ func (pt *PropertyTester) generateJSONObject(depth int) string {
 	if depth <= 0 {
 		return `"value"`
 	}
-	
+
 	keys := []string{"name", "id", "value", "data", "config", "settings", "info"}
 	values := []string{`"string"`, `42`, `true`, `false`, `null`}
-	
+
 	var pairs []string
 	numPairs := rand.Intn(3) + 1
-	
+
 	for i := 0; i < numPairs; i++ {
 		key := keys[rand.Intn(len(keys))]
 		var value string
-		
+
 		if rand.Float32() < 0.3 && depth > 1 {
 			// Nested object
 			value = pt.generateJSONObject(depth - 1)
 		} else {
 			value = values[rand.Intn(len(values))]
 		}
-		
+
 		pairs = append(pairs, fmt.Sprintf(`"%s": %s`, key, value))
 	}
-	
+
 	return fmt.Sprintf(`{%s}`, strings.Join(pairs, ", "))
 }
 
 // checkConstraint evaluates a constraint against the input and output
 func (pt *PropertyTester) checkConstraint(constraint, input, output string, response *llm.GenerateResponse) bool {
 	// Simple constraint evaluation - this could be much more sophisticated
-	
+
 	// Length constraints
 	if strings.Contains(constraint, "response.length >") {
 		re := regexp.MustCompile(`response\.length > (\d+)`)
@@ -312,7 +312,7 @@ func (pt *PropertyTester) checkConstraint(constraint, input, output string, resp
 			}
 		}
 	}
-	
+
 	if strings.Contains(constraint, "response.length <") {
 		re := regexp.MustCompile(`response\.length < (\d+)`)
 		matches := re.FindStringSubmatch(constraint)
@@ -322,7 +322,7 @@ func (pt *PropertyTester) checkConstraint(constraint, input, output string, resp
 			}
 		}
 	}
-	
+
 	// Content constraints
 	if strings.Contains(constraint, "response.contains") {
 		re := regexp.MustCompile(`response\.contains\("([^"]+)"\)`)
@@ -331,7 +331,7 @@ func (pt *PropertyTester) checkConstraint(constraint, input, output string, resp
 			return strings.Contains(strings.ToLower(output), strings.ToLower(matches[1]))
 		}
 	}
-	
+
 	// Token constraints
 	if strings.Contains(constraint, "response.tokens <") {
 		re := regexp.MustCompile(`response\.tokens < (\d+)`)
@@ -342,7 +342,7 @@ func (pt *PropertyTester) checkConstraint(constraint, input, output string, resp
 			}
 		}
 	}
-	
+
 	// Latency constraints
 	if strings.Contains(constraint, "response.latency <") {
 		re := regexp.MustCompile(`response\.latency < (\d+)`)
@@ -353,7 +353,7 @@ func (pt *PropertyTester) checkConstraint(constraint, input, output string, resp
 			}
 		}
 	}
-	
+
 	// Relation constraints
 	if strings.Contains(constraint, "response.length > prompt.length") {
 		inputLength := len(input)
@@ -363,7 +363,7 @@ func (pt *PropertyTester) checkConstraint(constraint, input, output string, resp
 		}
 		return outputLength > inputLength
 	}
-	
+
 	// Default: assume constraint is met if we can't parse it
 	return true
 }

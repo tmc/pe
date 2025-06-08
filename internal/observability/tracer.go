@@ -12,16 +12,16 @@ import (
 
 // Span represents a traced operation
 type Span struct {
-	ID          string            `json:"id"`
-	ParentID    string            `json:"parent_id,omitempty"`
-	Operation   string            `json:"operation"`
-	StartTime   time.Time         `json:"start_time"`
-	EndTime     time.Time         `json:"end_time,omitempty"`
-	Duration    time.Duration     `json:"duration"`
-	Tags        map[string]string `json:"tags"`
-	Events      []Event           `json:"events"`
-	Success     bool              `json:"success"`
-	Error       string            `json:"error,omitempty"`
+	ID        string            `json:"id"`
+	ParentID  string            `json:"parent_id,omitempty"`
+	Operation string            `json:"operation"`
+	StartTime time.Time         `json:"start_time"`
+	EndTime   time.Time         `json:"end_time,omitempty"`
+	Duration  time.Duration     `json:"duration"`
+	Tags      map[string]string `json:"tags"`
+	Events    []Event           `json:"events"`
+	Success   bool              `json:"success"`
+	Error     string            `json:"error,omitempty"`
 }
 
 // Event represents a timestamped event within a span
@@ -59,7 +59,7 @@ func NewFileTraceWriter(filename string) (*FileTraceWriter, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &FileTraceWriter{file: file}, nil
 }
 
@@ -69,7 +69,7 @@ func (w *FileTraceWriter) WriteSpan(span *Span) error {
 	if err != nil {
 		return err
 	}
-	
+
 	_, err = w.file.Write(append(data, '\n'))
 	return err
 }
@@ -98,12 +98,12 @@ func (t *Tracer) StartSpan(ctx context.Context, operation string) (context.Conte
 	if !t.enabled {
 		return ctx, nil
 	}
-	
+
 	t.mu.Lock()
 	t.idCounter++
 	spanID := fmt.Sprintf("span_%d", t.idCounter)
 	t.mu.Unlock()
-	
+
 	span := &Span{
 		ID:        spanID,
 		Operation: operation,
@@ -112,19 +112,19 @@ func (t *Tracer) StartSpan(ctx context.Context, operation string) (context.Conte
 		Events:    []Event{},
 		Success:   true,
 	}
-	
+
 	// Check for parent span
 	if parentSpan := SpanFromContext(ctx); parentSpan != nil {
 		span.ParentID = parentSpan.ID
 	}
-	
+
 	t.mu.Lock()
 	t.spans[spanID] = span
 	t.mu.Unlock()
-	
+
 	// Add span to context
 	ctx = ContextWithSpan(ctx, span)
-	
+
 	return ctx, span
 }
 
@@ -133,10 +133,10 @@ func (t *Tracer) FinishSpan(span *Span) {
 	if !t.enabled || span == nil {
 		return
 	}
-	
+
 	span.EndTime = time.Now()
 	span.Duration = span.EndTime.Sub(span.StartTime)
-	
+
 	// Write span to output
 	if t.writer != nil {
 		if err := t.writer.WriteSpan(span); err != nil {
@@ -144,7 +144,7 @@ func (t *Tracer) FinishSpan(span *Span) {
 			fmt.Fprintf(os.Stderr, "Failed to write span: %v\n", err)
 		}
 	}
-	
+
 	// Remove from active spans
 	t.mu.Lock()
 	delete(t.spans, span.ID)
@@ -156,19 +156,19 @@ func (t *Tracer) AddEvent(ctx context.Context, name, message, level string) {
 	if !t.enabled {
 		return
 	}
-	
+
 	span := SpanFromContext(ctx)
 	if span == nil {
 		return
 	}
-	
+
 	event := Event{
 		Timestamp: time.Now(),
 		Name:      name,
 		Message:   message,
 		Level:     level,
 	}
-	
+
 	span.Events = append(span.Events, event)
 }
 
@@ -177,12 +177,12 @@ func (t *Tracer) SetTag(ctx context.Context, key, value string) {
 	if !t.enabled {
 		return
 	}
-	
+
 	span := SpanFromContext(ctx)
 	if span == nil {
 		return
 	}
-	
+
 	span.Tags[key] = value
 }
 
@@ -191,12 +191,12 @@ func (t *Tracer) SetError(ctx context.Context, err error) {
 	if !t.enabled {
 		return
 	}
-	
+
 	span := SpanFromContext(ctx)
 	if span == nil {
 		return
 	}
-	
+
 	span.Success = false
 	if err != nil {
 		span.Error = err.Error()
@@ -233,7 +233,7 @@ func (t *Tracer) Close() error {
 func (t *Tracer) GetStats() TracingStats {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	return TracingStats{
 		ActiveSpans: len(t.spans),
 		Enabled:     t.enabled,
@@ -284,12 +284,12 @@ func InitGlobalTracer(writer TraceWriter) {
 func StartSpan(ctx context.Context, operation string) (context.Context, func()) {
 	tracer := GetGlobalTracer()
 	newCtx, span := tracer.StartSpan(ctx, operation)
-	
+
 	// Return a finish function
 	finish := func() {
 		tracer.FinishSpan(span)
 	}
-	
+
 	return newCtx, finish
 }
 
@@ -312,7 +312,7 @@ func SetError(ctx context.Context, err error) {
 func TraceFunction(ctx context.Context, name string, fn func(context.Context) error) error {
 	ctx, finish := StartSpan(ctx, name)
 	defer finish()
-	
+
 	// Get function caller info
 	pc, file, line, ok := runtime.Caller(1)
 	if ok {
@@ -323,12 +323,12 @@ func TraceFunction(ctx context.Context, name string, fn func(context.Context) er
 		SetTag(ctx, "file", file)
 		SetTag(ctx, "line", fmt.Sprintf("%d", line))
 	}
-	
+
 	err := fn(ctx)
 	if err != nil {
 		SetError(ctx, err)
 	}
-	
+
 	return err
 }
 
@@ -336,16 +336,16 @@ func TraceFunction(ctx context.Context, name string, fn func(context.Context) er
 func TraceMeasure(ctx context.Context, name string, fn func(context.Context) (interface{}, error)) (interface{}, error) {
 	ctx, finish := StartSpan(ctx, name)
 	defer finish()
-	
+
 	start := time.Now()
 	result, err := fn(ctx)
 	duration := time.Since(start)
-	
+
 	SetTag(ctx, "duration_ms", fmt.Sprintf("%.2f", duration.Seconds()*1000))
-	
+
 	if err != nil {
 		SetError(ctx, err)
 	}
-	
+
 	return result, err
 }

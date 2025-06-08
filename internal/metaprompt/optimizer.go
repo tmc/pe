@@ -15,7 +15,7 @@ import (
 type Config struct {
 	InitialPrompt        string
 	Iterations           int
-	MaxIterations        int     // Maximum iterations for methods that use it
+	MaxIterations        int // Maximum iterations for methods that use it
 	Temperature          float64
 	MaxTokens            int
 	UseTextGrad          bool    // Enable TextGrad-style optimization
@@ -26,24 +26,24 @@ type Config struct {
 
 // OptimizationResult contains the results of prompt optimization
 type OptimizationResult struct {
-	OriginalPrompt    string             `json:"original_prompt"`
-	OptimizedPrompt   string             `json:"optimized_prompt"`
-	Iterations        []IterationResult  `json:"iterations"`
-	ImprovementScore  float64            `json:"improvement_score"`
-	TotalDuration     time.Duration      `json:"total_duration"`
-	CreatedAt         time.Time          `json:"created_at"`
+	OriginalPrompt   string            `json:"original_prompt"`
+	OptimizedPrompt  string            `json:"optimized_prompt"`
+	Iterations       []IterationResult `json:"iterations"`
+	ImprovementScore float64           `json:"improvement_score"`
+	TotalDuration    time.Duration     `json:"total_duration"`
+	CreatedAt        time.Time         `json:"created_at"`
 }
 
 // IterationResult contains the result of a single optimization iteration
 type IterationResult struct {
-	Iteration     int           `json:"iteration"`
-	Prompt        string        `json:"prompt"`
-	Score         float64       `json:"score"`
-	Feedback      string        `json:"feedback"`
-	Suggestions   []string      `json:"suggestions"`
-	Duration      time.Duration `json:"duration"`
-	Changes       []string      `json:"changes,omitempty"`
-	Timestamp     time.Time     `json:"timestamp,omitempty"`
+	Iteration   int           `json:"iteration"`
+	Prompt      string        `json:"prompt"`
+	Score       float64       `json:"score"`
+	Feedback    string        `json:"feedback"`
+	Suggestions []string      `json:"suggestions"`
+	Duration    time.Duration `json:"duration"`
+	Changes     []string      `json:"changes,omitempty"`
+	Timestamp   time.Time     `json:"timestamp,omitempty"`
 }
 
 // Optimizer implements prompt optimization using metaprompting techniques
@@ -84,7 +84,7 @@ func (o *Optimizer) Optimize(ctx context.Context, cfg Config) (*OptimizationResu
 // optimizeStandard runs the standard prompt optimization process
 func (o *Optimizer) optimizeStandard(ctx context.Context, cfg Config) (*OptimizationResult, error) {
 	startTime := time.Now()
-	
+
 	result := &OptimizationResult{
 		OriginalPrompt: cfg.InitialPrompt,
 		Iterations:     make([]IterationResult, 0, cfg.Iterations),
@@ -95,7 +95,7 @@ func (o *Optimizer) optimizeStandard(ctx context.Context, cfg Config) (*Optimiza
 
 	for i := 0; i < cfg.Iterations; i++ {
 		iterStart := time.Now()
-		
+
 		// Generate analysis and suggestions
 		_, suggestions, err := o.generateOptimizationSuggestions(ctx, currentPrompt, cfg)
 		if err != nil {
@@ -104,7 +104,7 @@ func (o *Optimizer) optimizeStandard(ctx context.Context, cfg Config) (*Optimiza
 
 		// Select best suggestion and score it
 		bestPrompt, score, feedback := o.selectBestImprovement(ctx, currentPrompt, suggestions, cfg)
-		
+
 		iteration := IterationResult{
 			Iteration:   i + 1,
 			Prompt:      bestPrompt,
@@ -113,9 +113,9 @@ func (o *Optimizer) optimizeStandard(ctx context.Context, cfg Config) (*Optimiza
 			Suggestions: suggestions,
 			Duration:    time.Since(iterStart),
 		}
-		
+
 		result.Iterations = append(result.Iterations, iteration)
-		
+
 		// Update current prompt for next iteration
 		currentPrompt = bestPrompt
 	}
@@ -133,7 +133,7 @@ func (o *Optimizer) optimizeHybrid(ctx context.Context, cfg Config) (*Optimizati
 	standardCfg := cfg
 	standardCfg.Iterations = cfg.Iterations / 2
 	standardCfg.Method = "standard"
-	
+
 	standardResult, err := o.optimizeStandard(ctx, standardCfg)
 	if err != nil {
 		return nil, fmt.Errorf("standard optimization phase failed: %w", err)
@@ -144,7 +144,7 @@ func (o *Optimizer) optimizeHybrid(ctx context.Context, cfg Config) (*Optimizati
 	textgradCfg.InitialPrompt = standardResult.OptimizedPrompt
 	textgradCfg.Iterations = cfg.Iterations - standardCfg.Iterations
 	textgradCfg.Method = "textgrad"
-	
+
 	textgradResult, err := o.textGrad.OptimizeWithTextGrad(ctx, textgradCfg)
 	if err != nil {
 		return nil, fmt.Errorf("textgrad optimization phase failed: %w", err)
@@ -257,7 +257,7 @@ REASONING: [explanation of why this is the best choice]`, originalPrompt, o.form
 	}
 
 	selectedIndex, score, reasoning := o.parseEvaluationResponse(response.Text)
-	
+
 	// Validate selection
 	if selectedIndex < 0 || selectedIndex >= len(suggestions) {
 		selectedIndex = 0
@@ -269,7 +269,7 @@ REASONING: [explanation of why this is the best choice]`, originalPrompt, o.form
 // parseOptimizationResponse extracts analysis and suggestions from the response
 func (o *Optimizer) parseOptimizationResponse(response string) (string, []string) {
 	parts := strings.Split(response, "SUGGESTION")
-	
+
 	var analysis string
 	var suggestions []string
 
@@ -296,14 +296,14 @@ func (o *Optimizer) parseOptimizationResponse(response string) (string, []string
 // parseEvaluationResponse extracts the selected index, score, and reasoning
 func (o *Optimizer) parseEvaluationResponse(response string) (int, float64, string) {
 	lines := strings.Split(response, "\n")
-	
+
 	selectedIndex := 0
 	score := 5.0
 	reasoning := "Default evaluation"
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		
+
 		if strings.HasPrefix(line, "SELECTED:") {
 			selectedText := strings.TrimSpace(line[9:])
 			// Extract number from text like "1", "candidate 1", etc.
@@ -343,17 +343,17 @@ func (o *Optimizer) calculateImprovementScore(result *OptimizationResult) float6
 	if len(result.Iterations) == 0 {
 		return 0.0
 	}
-	
+
 	// Use the final iteration's score
 	finalScore := result.Iterations[len(result.Iterations)-1].Score
-	
+
 	// Apply bonus for consistency across iterations
 	var totalScore float64
 	for _, iter := range result.Iterations {
 		totalScore += iter.Score
 	}
 	avgScore := totalScore / float64(len(result.Iterations))
-	
+
 	// Weighted combination of final score and average
 	return (finalScore * 0.7) + (avgScore * 0.3)
 }
@@ -364,10 +364,10 @@ func (r *OptimizationResult) SaveToFile(path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal result: %w", err)
 	}
-	
+
 	if err := os.WriteFile(path, data, 0644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
-	
+
 	return nil
 }

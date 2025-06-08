@@ -16,16 +16,16 @@ func parseFloat(s string) (float64, error) {
 // FromGoStruct creates a Schema from a Go struct using reflection
 func FromGoStruct(v interface{}) (*Schema, error) {
 	typ := reflect.TypeOf(v)
-	
+
 	// Handle pointer types
 	if typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
 	}
-	
+
 	if typ.Kind() != reflect.Struct {
 		return nil, fmt.Errorf("expected struct type, got %s", typ.Kind())
 	}
-	
+
 	schema := &Schema{
 		Name:        toSnakeCase(typ.Name()),
 		Type:        "object",
@@ -33,29 +33,29 @@ func FromGoStruct(v interface{}) (*Schema, error) {
 		Required:    []string{},
 		Description: getStructTag(typ, "description"),
 	}
-	
+
 	// Process struct fields
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
-		
+
 		// Skip unexported fields
 		if !field.IsExported() {
 			continue
 		}
-		
+
 		// Get field name from json tag or use field name
 		jsonTag := field.Tag.Get("json")
 		if jsonTag == "-" {
 			continue
 		}
-		
+
 		fieldName := field.Name
 		if jsonTag != "" {
 			parts := strings.Split(jsonTag, ",")
 			if parts[0] != "" {
 				fieldName = parts[0]
 			}
-			
+
 			// Check for omitempty
 			omitempty := false
 			for _, part := range parts[1:] {
@@ -64,22 +64,22 @@ func FromGoStruct(v interface{}) (*Schema, error) {
 					break
 				}
 			}
-			
+
 			// If not omitempty, it's required
 			if !omitempty {
 				schema.Required = append(schema.Required, fieldName)
 			}
 		}
-		
+
 		// Create property from field type
 		prop, err := createPropertyFromType(field.Type, field.Tag)
 		if err != nil {
 			return nil, fmt.Errorf("failed to process field %s: %w", field.Name, err)
 		}
-		
+
 		schema.Properties[fieldName] = prop
 	}
-	
+
 	return schema, nil
 }
 
@@ -89,36 +89,36 @@ func createPropertyFromType(typ reflect.Type, tag reflect.StructTag) (*Property,
 		Description: tag.Get("description"),
 		Format:      tag.Get("format"),
 	}
-	
+
 	// Handle validation tags
 	if minStr := tag.Get("min"); minStr != "" {
 		if val, err := parseFloat(minStr); err == nil {
 			prop.Minimum = &val
 		}
 	}
-	
+
 	if maxStr := tag.Get("max"); maxStr != "" {
 		if val, err := parseFloat(maxStr); err == nil {
 			prop.Maximum = &val
 		}
 	}
-	
+
 	if minLenStr := tag.Get("minLength"); minLenStr != "" {
 		if val, err := parseInt(minLenStr); err == nil {
 			prop.MinLength = &val
 		}
 	}
-	
+
 	if maxLenStr := tag.Get("maxLength"); maxLenStr != "" {
 		if val, err := parseInt(maxLenStr); err == nil {
 			prop.MaxLength = &val
 		}
 	}
-	
+
 	if pattern := tag.Get("pattern"); pattern != "" {
 		prop.Pattern = pattern
 	}
-	
+
 	if enumStr := tag.Get("enum"); enumStr != "" {
 		// Parse enum values
 		enumVals := strings.Split(enumStr, "|")
@@ -127,30 +127,30 @@ func createPropertyFromType(typ reflect.Type, tag reflect.StructTag) (*Property,
 			prop.Enum[i] = strings.TrimSpace(v)
 		}
 	}
-	
+
 	if defaultStr := tag.Get("default"); defaultStr != "" {
 		prop.Default = parseDefaultValue(defaultStr, typ)
 	}
-	
+
 	if exampleStr := tag.Get("example"); exampleStr != "" {
 		prop.Examples = []interface{}{parseDefaultValue(exampleStr, typ)}
 	}
-	
+
 	// Determine type from Go type
 	switch typ.Kind() {
 	case reflect.String:
 		prop.Type = "string"
-		
+
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		prop.Type = "integer"
-		
+
 	case reflect.Float32, reflect.Float64:
 		prop.Type = "number"
-		
+
 	case reflect.Bool:
 		prop.Type = "boolean"
-		
+
 	case reflect.Slice, reflect.Array:
 		prop.Type = "array"
 		itemProp, err := createPropertyFromType(typ.Elem(), reflect.StructTag(""))
@@ -158,11 +158,11 @@ func createPropertyFromType(typ reflect.Type, tag reflect.StructTag) (*Property,
 			return nil, fmt.Errorf("failed to process array items: %w", err)
 		}
 		prop.Items = itemProp
-		
+
 	case reflect.Map:
 		prop.Type = "object"
 		// For maps, we can't determine the property schema
-		
+
 	case reflect.Struct:
 		// Handle time.Time specially
 		if typ.String() == "time.Time" {
@@ -173,18 +173,18 @@ func createPropertyFromType(typ reflect.Type, tag reflect.StructTag) (*Property,
 			prop.Type = "object"
 			prop.Properties = make(map[string]*Property)
 			prop.Required = []string{}
-			
+
 			for i := 0; i < typ.NumField(); i++ {
 				field := typ.Field(i)
 				if !field.IsExported() {
 					continue
 				}
-				
+
 				jsonTag := field.Tag.Get("json")
 				if jsonTag == "-" {
 					continue
 				}
-				
+
 				fieldName := field.Name
 				if jsonTag != "" {
 					parts := strings.Split(jsonTag, ",")
@@ -192,28 +192,28 @@ func createPropertyFromType(typ reflect.Type, tag reflect.StructTag) (*Property,
 						fieldName = parts[0]
 					}
 				}
-				
+
 				fieldProp, err := createPropertyFromType(field.Type, field.Tag)
 				if err != nil {
 					return nil, err
 				}
-				
+
 				prop.Properties[fieldName] = fieldProp
 			}
 		}
-		
+
 	case reflect.Ptr:
 		// Handle pointer types
 		return createPropertyFromType(typ.Elem(), tag)
-		
+
 	case reflect.Interface:
 		// Interface{} maps to any
 		prop.Type = "object"
-		
+
 	default:
 		return nil, fmt.Errorf("unsupported type: %s", typ.Kind())
 	}
-	
+
 	return prop, nil
 }
 
@@ -231,18 +231,18 @@ func GeneratePromptFromStruct(v interface{}, opts StructuredPromptOptions) (stri
 	if err != nil {
 		return "", fmt.Errorf("failed to generate schema from struct: %w", err)
 	}
-	
+
 	builder := NewPromptBuilder()
-	
+
 	if opts.Format == "" {
 		opts.Format = FormatJSON
 	}
-	
+
 	// Add examples if the struct has example values
 	if opts.Examples == nil && hasExampleValues(v) {
 		opts.Examples = []interface{}{v}
 	}
-	
+
 	// Build prompt based on style
 	switch opts.Style {
 	case "chain-of-thought":
@@ -260,13 +260,13 @@ func ValidateStructuredOutput(output string, expectedStruct interface{}) error {
 	if err != nil {
 		return fmt.Errorf("failed to generate schema from struct: %w", err)
 	}
-	
+
 	// Try to parse as JSON first
 	var data map[string]interface{}
 	if err := json.Unmarshal([]byte(output), &data); err != nil {
 		return fmt.Errorf("failed to parse output as JSON: %w", err)
 	}
-	
+
 	// Validate against schema
 	return validateAgainstSchema(data, schema)
 }
@@ -274,7 +274,7 @@ func ValidateStructuredOutput(output string, expectedStruct interface{}) error {
 // MarshalStructuredOutput marshals a Go struct to the specified format
 func MarshalStructuredOutput(v interface{}, format OutputFormat) (string, error) {
 	formatter := NewFormatter()
-	
+
 	switch format {
 	case FormatJSON:
 		data, err := json.MarshalIndent(v, "", "  ")
@@ -282,31 +282,31 @@ func MarshalStructuredOutput(v interface{}, format OutputFormat) (string, error)
 			return "", err
 		}
 		return string(data), nil
-		
+
 	case FormatYAML:
 		plugin := formatter.plugins[FormatYAML]
 		if plugin == nil {
 			return "", fmt.Errorf("YAML plugin not found")
 		}
-		
+
 		// Convert to map first
 		jsonData, err := json.Marshal(v)
 		if err != nil {
 			return "", err
 		}
-		
+
 		var mapData map[string]interface{}
 		if err := json.Unmarshal(jsonData, &mapData); err != nil {
 			return "", err
 		}
-		
+
 		schema, err := FromGoStruct(v)
 		if err != nil {
 			return "", err
 		}
-		
+
 		return plugin.Format(schema)
-		
+
 	default:
 		return "", fmt.Errorf("unsupported format: %s", format)
 	}
@@ -351,11 +351,11 @@ func hasExampleValues(v interface{}) bool {
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
 	}
-	
+
 	if val.Kind() != reflect.Struct {
 		return false
 	}
-	
+
 	// Check if any field has a non-zero value
 	for i := 0; i < val.NumField(); i++ {
 		field := val.Field(i)
@@ -363,7 +363,7 @@ func hasExampleValues(v interface{}) bool {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -396,11 +396,11 @@ type TestCase struct {
 
 // ExampleAnalysis demonstrates struct for analysis output
 type ExampleAnalysis struct {
-	Topic       string         `json:"topic" description:"The main topic or subject"`
-	Findings    []Finding      `json:"findings" description:"Key findings from the analysis"`
-	Conclusion  string         `json:"conclusion" description:"Overall conclusion"`
-	Confidence  float64        `json:"confidence" description:"Confidence level" min:"0" max:"1"`
-	Metadata    map[string]any `json:"metadata,omitempty" description:"Additional metadata"`
+	Topic      string         `json:"topic" description:"The main topic or subject"`
+	Findings   []Finding      `json:"findings" description:"Key findings from the analysis"`
+	Conclusion string         `json:"conclusion" description:"Overall conclusion"`
+	Confidence float64        `json:"confidence" description:"Confidence level" min:"0" max:"1"`
+	Metadata   map[string]any `json:"metadata,omitempty" description:"Additional metadata"`
 }
 
 // Finding represents a single finding in an analysis

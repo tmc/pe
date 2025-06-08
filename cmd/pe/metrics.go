@@ -8,19 +8,19 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/tmc/pe/internal/metrics"
 	"github.com/tmc/pe/internal/llm"
+	"github.com/tmc/pe/internal/metrics"
 )
 
 // MetricsResult represents the result of metrics evaluation
 type MetricsResult struct {
-	BLEU       *BLEUScore       `json:"bleu,omitempty"`
-	ROUGE      *ROUGEScore      `json:"rouge,omitempty"`
-	METEOR     *METEORScore     `json:"meteor,omitempty"`
-	BERTScore  *BERTScoreResult `json:"bertscore,omitempty"`
-	GEval      *GEvalResult     `json:"g_eval,omitempty"`
-	UniEval    *UniEvalResult   `json:"uni_eval,omitempty"`
-	PassAtN    *PassAtNScore    `json:"pass_at_n,omitempty"`
+	BLEU       *BLEUScore                `json:"bleu,omitempty"`
+	ROUGE      *ROUGEScore               `json:"rouge,omitempty"`
+	METEOR     *METEORScore              `json:"meteor,omitempty"`
+	BERTScore  *BERTScoreResult          `json:"bertscore,omitempty"`
+	GEval      *GEvalResult              `json:"g_eval,omitempty"`
+	UniEval    *UniEvalResult            `json:"uni_eval,omitempty"`
+	PassAtN    *PassAtNScore             `json:"pass_at_n,omitempty"`
 	Statistics *metrics.ComparisonResult `json:"statistics,omitempty"`
 }
 
@@ -74,33 +74,33 @@ type UniEvalResult struct {
 
 // PassAtNScore represents pass@n metric result
 type PassAtNScore struct {
-	N           int     `json:"n"`
-	PassRate    float64 `json:"pass_rate"`
-	NumSamples  int     `json:"num_samples"`
-	NumPassed   int     `json:"num_passed"`
+	N           int             `json:"n"`
+	PassRate    float64         `json:"pass_rate"`
+	NumSamples  int             `json:"num_samples"`
+	NumPassed   int             `json:"num_passed"`
 	PassedRates map[int]float64 `json:"passed_rates,omitempty"` // Pass rates for different n values
 }
 
 // metricsCmd returns a cobra.Command for advanced evaluation metrics
 func metricsCmd() *cobra.Command {
 	var (
-		metricTypes    []string
-		generatedText  string
-		referenceText  string
-		generatedFile  string
-		referenceFile  string
-		criteria       []string
-		outputFile     string
-		format         string
-		statistical    bool
-		confidence     float64
-		bootstrap      int
-		provider       string
-		model          string
+		metricTypes   []string
+		generatedText string
+		referenceText string
+		generatedFile string
+		referenceFile string
+		criteria      []string
+		outputFile    string
+		format        string
+		statistical   bool
+		confidence    float64
+		bootstrap     int
+		provider      string
+		model         string
 		// Pass@n specific flags
-		n              int
-		testCasesFile  string
-		samplesFile    string
+		n             int
+		testCasesFile string
+		samplesFile   string
 	)
 
 	cmd := &cobra.Command{
@@ -155,7 +155,7 @@ Statistical Analysis:
 			if len(args) > 0 && args[0] == "simple" {
 				return runSimpleMetrics(cmd, args[1:])
 			}
-			
+
 			// Validate inputs
 			if len(metricTypes) == 0 && !cmd.Flags().Changed("all") {
 				return fmt.Errorf("must specify --type or --all")
@@ -207,7 +207,7 @@ Statistical Analysis:
 	cmd.Flags().IntVar(&bootstrap, "bootstrap", 1000, "Number of bootstrap samples")
 	cmd.Flags().StringVar(&provider, "provider", "openai", "LLM provider for G-Eval and UniEval")
 	cmd.Flags().StringVar(&model, "model", "gpt-4", "Model for LLM-based evaluation")
-	
+
 	// Pass@n specific flags
 	cmd.Flags().IntVar(&n, "n", 1, "Number of attempts for pass@n metric")
 	cmd.Flags().StringVar(&testCasesFile, "test-cases", "", "JSON file with test cases for pass@n evaluation")
@@ -278,11 +278,11 @@ func calculateMetrics(generated, reference string, metricTypes, criteria []strin
 			rouge2Result := advancedMetrics.CalculateROUGE(generated, reference, "ROUGE-2")
 			rougeLResult := advancedMetrics.CalculateROUGE(generated, reference, "ROUGE-L")
 			rougeWResult := advancedMetrics.CalculateROUGE(generated, reference, "ROUGE-W")
-			
+
 			if rouge1Result.ErrorMessage != "" || rouge2Result.ErrorMessage != "" || rougeLResult.ErrorMessage != "" || rougeWResult.ErrorMessage != "" {
 				return nil, fmt.Errorf("ROUGE calculation failed")
 			}
-			
+
 			result.ROUGE = &ROUGEScore{
 				ROUGE1: rouge1Result.Score,
 				ROUGE2: rouge2Result.Score,
@@ -323,9 +323,9 @@ func calculateMetrics(generated, reference string, metricTypes, criteria []strin
 				return nil, fmt.Errorf("BERTScore calculation failed: %s", bertResult.ErrorMessage)
 			}
 			result.BERTScore = &BERTScoreResult{
-				Precision: bertResult.Score,
-				Recall:    bertResult.Score, // Using semantic similarity as approximation
-				F1:        bertResult.Score,
+				Precision:          bertResult.Score,
+				Recall:             bertResult.Score, // Using semantic similarity as approximation
+				F1:                 bertResult.Score,
 				ConfidenceInterval: [2]float64{bertResult.Score - 0.05, bertResult.Score + 0.05},
 			}
 
@@ -341,13 +341,13 @@ func calculateMetrics(generated, reference string, metricTypes, criteria []strin
 			if gevalResult.ErrorMessage != "" {
 				return nil, fmt.Errorf("G-Eval calculation failed: %s", gevalResult.ErrorMessage)
 			}
-			
+
 			// Extract scores for each criterion
 			scores := make(map[string]float64)
 			for _, criterion := range criteria {
 				scores[criterion] = gevalResult.Score // Simplified - using overall score for each criterion
 			}
-			
+
 			result.GEval = &GEvalResult{
 				Scores:       scores,
 				OverallScore: gevalResult.Score,
@@ -366,7 +366,7 @@ func calculateMetrics(generated, reference string, metricTypes, criteria []strin
 			if unievalResult.ErrorMessage != "" {
 				return nil, fmt.Errorf("UniEval calculation failed: %s", unievalResult.ErrorMessage)
 			}
-			
+
 			result.UniEval = &UniEvalResult{
 				Dimensions:   unievalResult.Details["dimension_scores"].(map[string]float64),
 				OverallScore: unievalResult.Score,
@@ -386,7 +386,7 @@ func calculateMetrics(generated, reference string, metricTypes, criteria []strin
 				// Use generated text as single sample
 				samples = []string{generated}
 			}
-			
+
 			// Filter empty samples
 			var validSamples []string
 			for _, s := range samples {
@@ -394,7 +394,7 @@ func calculateMetrics(generated, reference string, metricTypes, criteria []strin
 					validSamples = append(validSamples, s)
 				}
 			}
-			
+
 			// Load test cases if provided
 			var testCases []map[string]interface{}
 			if testCasesFile != "" {
@@ -406,40 +406,40 @@ func calculateMetrics(generated, reference string, metricTypes, criteria []strin
 					return nil, fmt.Errorf("failed to parse test cases: %v", err)
 				}
 			}
-			
+
 			// Create LLM provider if needed
 			llmProvider, err := llm.GetProvider(provider)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create LLM provider: %v", err)
 			}
-			
+
 			// Calculate pass@n
 			advancedMetrics := metrics.NewAdvancedMetrics(llmProvider)
 			var passResult *metrics.PassAtNResult
-			
+
 			if len(testCases) > 0 {
 				passResult = advancedMetrics.CalculatePassAtNWithTests(ctx, n, validSamples, testCases)
 			} else {
 				// Use default test function
 				testFunc := func(code string) bool {
 					// Basic validation - check if code is non-empty and doesn't contain obvious errors
-					return len(strings.TrimSpace(code)) > 10 && 
-						   !strings.Contains(strings.ToLower(code), "error") &&
-						   !strings.Contains(strings.ToLower(code), "exception")
+					return len(strings.TrimSpace(code)) > 10 &&
+						!strings.Contains(strings.ToLower(code), "error") &&
+						!strings.Contains(strings.ToLower(code), "exception")
 				}
 				passResult = advancedMetrics.CalculatePassAtN(n, validSamples, testFunc)
 			}
-			
+
 			// Calculate pass rates for different n values
 			passedRates := make(map[int]float64)
 			for i := 1; i <= min(10, len(validSamples)); i++ {
 				rate := advancedMetrics.CalculatePassAtN(i, validSamples, func(code string) bool {
-					return len(strings.TrimSpace(code)) > 10 && 
-						   !strings.Contains(strings.ToLower(code), "error")
+					return len(strings.TrimSpace(code)) > 10 &&
+						!strings.Contains(strings.ToLower(code), "error")
 				})
 				passedRates[i] = rate.PassRate
 			}
-			
+
 			result.PassAtN = &PassAtNScore{
 				N:           n,
 				PassRate:    passResult.PassRate,
@@ -523,7 +523,7 @@ func outputMetricsResult(result *MetricsResult, outputFile, format string) error
 // formatMetricsTable formats results as a readable table
 func formatMetricsTable(result *MetricsResult) string {
 	var sb strings.Builder
-	
+
 	sb.WriteString("=== Evaluation Metrics Results ===\n\n")
 
 	if result.BLEU != nil {
@@ -548,7 +548,7 @@ func formatMetricsTable(result *MetricsResult) string {
 		sb.WriteString(fmt.Sprintf("  Precision: %.4f\n", result.BERTScore.Precision))
 		sb.WriteString(fmt.Sprintf("  Recall: %.4f\n", result.BERTScore.Recall))
 		sb.WriteString(fmt.Sprintf("  F1: %.4f\n", result.BERTScore.F1))
-		sb.WriteString(fmt.Sprintf("  95%% CI: [%.4f, %.4f]\n\n", 
+		sb.WriteString(fmt.Sprintf("  95%% CI: [%.4f, %.4f]\n\n",
 			result.BERTScore.ConfidenceInterval[0], result.BERTScore.ConfidenceInterval[1]))
 	}
 
@@ -575,8 +575,8 @@ func formatMetricsTable(result *MetricsResult) string {
 
 	if result.PassAtN != nil {
 		sb.WriteString("Pass@N Results:\n")
-		sb.WriteString(fmt.Sprintf("  Pass@%d: %.2f%% (%d/%d samples)\n", 
-			result.PassAtN.N, result.PassAtN.PassRate*100, 
+		sb.WriteString(fmt.Sprintf("  Pass@%d: %.2f%% (%d/%d samples)\n",
+			result.PassAtN.N, result.PassAtN.PassRate*100,
 			result.PassAtN.NumPassed, result.PassAtN.NumSamples))
 		if len(result.PassAtN.PassedRates) > 0 {
 			sb.WriteString("  Pass rates by N:\n")
@@ -594,8 +594,8 @@ func formatMetricsTable(result *MetricsResult) string {
 		sb.WriteString(fmt.Sprintf("  Sample Size: %d\n", result.Statistics.Group1Summary.Count))
 		sb.WriteString(fmt.Sprintf("  Mean: %.4f\n", result.Statistics.Group1Summary.Mean))
 		sb.WriteString(fmt.Sprintf("  Std Dev: %.4f\n", result.Statistics.Group1Summary.StandardDeviation))
-		sb.WriteString(fmt.Sprintf("  95%% CI: [%.4f, %.4f]\n", 
-			result.Statistics.Group1Summary.ConfidenceInterval.LowerBound, 
+		sb.WriteString(fmt.Sprintf("  95%% CI: [%.4f, %.4f]\n",
+			result.Statistics.Group1Summary.ConfidenceInterval.LowerBound,
 			result.Statistics.Group1Summary.ConfidenceInterval.UpperBound))
 		sb.WriteString(fmt.Sprintf("  P-Value: %.4f\n", result.Statistics.TTest.PValue))
 		sb.WriteString("\n")
@@ -607,7 +607,7 @@ func formatMetricsTable(result *MetricsResult) string {
 // formatMetricsCSV formats results as CSV
 func formatMetricsCSV(result *MetricsResult) string {
 	var sb strings.Builder
-	
+
 	sb.WriteString("Metric,Score,Details\n")
 
 	if result.BLEU != nil {
@@ -632,8 +632,8 @@ func formatMetricsCSV(result *MetricsResult) string {
 	}
 
 	if result.PassAtN != nil {
-		sb.WriteString(fmt.Sprintf("Pass@%d,%.4f,samples=%d passed=%d\n", 
-			result.PassAtN.N, result.PassAtN.PassRate, 
+		sb.WriteString(fmt.Sprintf("Pass@%d,%.4f,samples=%d passed=%d\n",
+			result.PassAtN.N, result.PassAtN.PassRate,
 			result.PassAtN.NumSamples, result.PassAtN.NumPassed))
 	}
 
@@ -658,23 +658,23 @@ func runSimpleMetrics(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("usage: pe metrics simple <prompt-file>")
 	}
-	
+
 	filename := args[0]
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %v", err)
 	}
-	
+
 	content := string(data)
-	
+
 	// Calculate simple metrics
 	fmt.Printf("Metrics for %s:\n", filename)
-	
+
 	// Basic complexity score based on length and structure
 	lines := strings.Split(content, "\n")
 	words := len(strings.Fields(content))
 	avgWordsPerLine := float64(words) / float64(len(lines))
-	
+
 	// Simple complexity score
 	complexityScore := 0.0
 	if words < 50 {
@@ -686,7 +686,7 @@ func runSimpleMetrics(cmd *cobra.Command, args []string) error {
 	} else {
 		complexityScore = 0.9
 	}
-	
+
 	// Adjust for structure
 	if strings.Contains(content, "{{") {
 		complexityScore += 0.1
@@ -694,12 +694,12 @@ func runSimpleMetrics(cmd *cobra.Command, args []string) error {
 	if complexityScore > 1.0 {
 		complexityScore = 1.0
 	}
-	
+
 	fmt.Printf("Complexity Score: %.2f\n", complexityScore)
 	fmt.Printf("Word Count: %d\n", words)
 	fmt.Printf("Line Count: %d\n", len(lines))
 	fmt.Printf("Avg Words/Line: %.1f\n", avgWordsPerLine)
-	
+
 	// Additional metrics
 	if strings.Contains(content, "{{") {
 		fmt.Println("Template Variables: Yes")
@@ -707,6 +707,6 @@ func runSimpleMetrics(cmd *cobra.Command, args []string) error {
 	if strings.Contains(content, "-- system-prompt --") {
 		fmt.Println("System Prompt: Yes")
 	}
-	
+
 	return nil
 }

@@ -47,16 +47,16 @@ func addBuiltins(globals starlark.StringDict) {
 	globals["min_length"] = starlark.NewBuiltin("min_length", minLength)
 	globals["max_length"] = starlark.NewBuiltin("max_length", maxLength)
 	globals["regex_match"] = starlark.NewBuiltin("regex_match", regexMatch)
-	
+
 	// Numeric assertion functions
 	globals["greater_than"] = starlark.NewBuiltin("greater_than", greaterThan)
 	globals["less_than"] = starlark.NewBuiltin("less_than", lessThan)
 	globals["between"] = starlark.NewBuiltin("between", between)
-	
+
 	// List/collection functions
 	globals["has_length"] = starlark.NewBuiltin("has_length", hasLength)
 	globals["is_subset"] = starlark.NewBuiltin("is_subset", isSubset)
-	
+
 	// Type checking functions
 	globals["is_string"] = starlark.NewBuiltin("is_string", isString)
 	globals["is_int"] = starlark.NewBuiltin("is_int", isInt)
@@ -175,12 +175,12 @@ func minLength(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tupl
 	if err := starlark.UnpackArgs(fn.Name(), args, kwargs, "str", &str, "min_len", &minLen); err != nil {
 		return nil, err
 	}
-	
+
 	min, ok := minLen.Int64()
 	if !ok {
 		return nil, fmt.Errorf("%s: min_len too large", fn.Name())
 	}
-	
+
 	return starlark.Bool(len(string(str)) >= int(min)), nil
 }
 
@@ -190,12 +190,12 @@ func maxLength(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tupl
 	if err := starlark.UnpackArgs(fn.Name(), args, kwargs, "str", &str, "max_len", &maxLen); err != nil {
 		return nil, err
 	}
-	
+
 	max, ok := maxLen.Int64()
 	if !ok {
 		return nil, fmt.Errorf("%s: max_len too large", fn.Name())
 	}
-	
+
 	return starlark.Bool(len(string(str)) <= int(max)), nil
 }
 
@@ -204,12 +204,12 @@ func regexMatch(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tup
 	if err := starlark.UnpackArgs(fn.Name(), args, kwargs, "str", &str, "pattern", &pattern); err != nil {
 		return nil, err
 	}
-	
+
 	re, err := regexp.Compile(string(pattern))
 	if err != nil {
 		return nil, fmt.Errorf("%s: invalid regex pattern: %w", fn.Name(), err)
 	}
-	
+
 	return starlark.Bool(re.MatchString(string(str))), nil
 }
 
@@ -217,7 +217,7 @@ func greaterThan(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tu
 	if len(args) != 2 {
 		return nil, fmt.Errorf("%s: want 2 arguments, got %d", fn.Name(), len(args))
 	}
-	
+
 	// Use Starlark's comparison
 	result, err := starlark.Compare(syntax.GT, args[0], args[1])
 	if err != nil {
@@ -230,7 +230,7 @@ func lessThan(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple
 	if len(args) != 2 {
 		return nil, fmt.Errorf("%s: want 2 arguments, got %d", fn.Name(), len(args))
 	}
-	
+
 	result, err := starlark.Compare(syntax.LT, args[0], args[1])
 	if err != nil {
 		return nil, err
@@ -242,19 +242,19 @@ func between(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple,
 	if len(args) != 3 {
 		return nil, fmt.Errorf("%s: want 3 arguments (value, min, max), got %d", fn.Name(), len(args))
 	}
-	
+
 	// Check value >= min
 	geMin, err := starlark.Compare(syntax.GE, args[0], args[1])
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Check value <= max
 	leMax, err := starlark.Compare(syntax.LE, args[0], args[2])
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return starlark.Bool(geMin && leMax), nil
 }
 
@@ -262,17 +262,17 @@ func hasLength(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tupl
 	if len(args) != 2 {
 		return nil, fmt.Errorf("%s: want 2 arguments (collection, length), got %d", fn.Name(), len(args))
 	}
-	
+
 	collection, ok := args[0].(starlark.Indexable)
 	if !ok {
 		return nil, fmt.Errorf("%s: first argument must be a collection", fn.Name())
 	}
-	
+
 	expectedLen, err := starlark.AsInt32(args[1])
 	if err != nil {
 		return nil, fmt.Errorf("%s: second argument must be an integer: %w", fn.Name(), err)
 	}
-	
+
 	return starlark.Bool(collection.Len() == expectedLen), nil
 }
 
@@ -280,17 +280,17 @@ func isSubset(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple
 	if len(args) != 2 {
 		return nil, fmt.Errorf("%s: want 2 arguments (subset, superset), got %d", fn.Name(), len(args))
 	}
-	
+
 	subset, ok := args[0].(*starlark.List)
 	if !ok {
 		return nil, fmt.Errorf("%s: first argument must be a list", fn.Name())
 	}
-	
+
 	superset, ok := args[1].(*starlark.List)
 	if !ok {
 		return nil, fmt.Errorf("%s: second argument must be a list", fn.Name())
 	}
-	
+
 	// Check if all elements in subset are in superset
 	for i := 0; i < subset.Len(); i++ {
 		found := false
@@ -309,7 +309,7 @@ func isSubset(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple
 			return starlark.Bool(false), nil
 		}
 	}
-	
+
 	return starlark.Bool(true), nil
 }
 

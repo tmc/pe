@@ -21,20 +21,20 @@ type PassNStore struct {
 
 // PassNMetadata stores metadata about pass@n evaluations
 type PassNMetadata struct {
-	PromptID      string                 `json:"prompt_id"`
-	PromptHash    string                 `json:"prompt_hash"`
-	Prompt        string                 `json:"prompt"`
-	ProviderID    string                 `json:"provider_id"`
-	Task          string                 `json:"task,omitempty"`
-	Language      string                 `json:"language,omitempty"`
-	CreatedAt     time.Time              `json:"created_at"`
-	UpdatedAt     time.Time              `json:"updated_at"`
-	Evaluations   []PassNEvaluation      `json:"evaluations"`
-	Tags          []string               `json:"tags,omitempty"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
-	BestPassRate  float64                `json:"best_pass_rate"`
-	AvgPassRate   float64                `json:"avg_pass_rate"`
-	TotalSamples  int                    `json:"total_samples"`
+	PromptID     string                 `json:"prompt_id"`
+	PromptHash   string                 `json:"prompt_hash"`
+	Prompt       string                 `json:"prompt"`
+	ProviderID   string                 `json:"provider_id"`
+	Task         string                 `json:"task,omitempty"`
+	Language     string                 `json:"language,omitempty"`
+	CreatedAt    time.Time              `json:"created_at"`
+	UpdatedAt    time.Time              `json:"updated_at"`
+	Evaluations  []PassNEvaluation      `json:"evaluations"`
+	Tags         []string               `json:"tags,omitempty"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+	BestPassRate float64                `json:"best_pass_rate"`
+	AvgPassRate  float64                `json:"avg_pass_rate"`
+	TotalSamples int                    `json:"total_samples"`
 }
 
 // PassNEvaluation represents a single pass@n evaluation session
@@ -53,22 +53,22 @@ type PassNEvaluation struct {
 
 // PassNSample represents a single generated sample
 type PassNSample struct {
-	Index      int                    `json:"index"`
-	Content    string                 `json:"content"`
-	Passed     bool                   `json:"passed"`
-	TestResults []PassNTestResult     `json:"test_results,omitempty"`
-	Metadata   map[string]interface{} `json:"metadata,omitempty"`
-	Error      string                 `json:"error,omitempty"`
+	Index       int                    `json:"index"`
+	Content     string                 `json:"content"`
+	Passed      bool                   `json:"passed"`
+	TestResults []PassNTestResult      `json:"test_results,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	Error       string                 `json:"error,omitempty"`
 }
 
 // PassNTestCase represents a test case for evaluation
 type PassNTestCase struct {
-	ID          string                 `json:"id"`
-	Input       string                 `json:"input"`
-	Expected    string                 `json:"expected"`
-	Description string                 `json:"description,omitempty"`
-	Type        string                 `json:"type,omitempty"` // exact, contains, regex, semantic
-	Weight      float64                `json:"weight,omitempty"`
+	ID          string  `json:"id"`
+	Input       string  `json:"input"`
+	Expected    string  `json:"expected"`
+	Description string  `json:"description,omitempty"`
+	Type        string  `json:"type,omitempty"` // exact, contains, regex, semantic
+	Weight      float64 `json:"weight,omitempty"`
 }
 
 // PassNTestResult represents the result of a single test case
@@ -217,17 +217,17 @@ func (s *PassNStore) GeneratePassNReport(promptID string) (*PassNReport, error) 
 
 // PassNReport represents a comprehensive report for pass@n evaluations
 type PassNReport struct {
-	PromptID     string                `json:"prompt_id"`
-	Prompt       string                `json:"prompt"`
-	ProviderID   string                `json:"provider_id"`
-	TotalEvals   int                   `json:"total_evaluations"`
-	BestPassRate float64               `json:"best_pass_rate"`
-	AvgPassRate  float64               `json:"avg_pass_rate"`
-	TotalSamples int                   `json:"total_samples"`
-	PassRateByN  map[int][]float64     `json:"pass_rate_by_n"`
-	Trend        string                `json:"trend,omitempty"`
-	CreatedAt    time.Time             `json:"created_at"`
-	UpdatedAt    time.Time             `json:"updated_at"`
+	PromptID     string            `json:"prompt_id"`
+	Prompt       string            `json:"prompt"`
+	ProviderID   string            `json:"provider_id"`
+	TotalEvals   int               `json:"total_evaluations"`
+	BestPassRate float64           `json:"best_pass_rate"`
+	AvgPassRate  float64           `json:"avg_pass_rate"`
+	TotalSamples int               `json:"total_samples"`
+	PassRateByN  map[int][]float64 `json:"pass_rate_by_n"`
+	Trend        string            `json:"trend,omitempty"`
+	CreatedAt    time.Time         `json:"created_at"`
+	UpdatedAt    time.Time         `json:"updated_at"`
 }
 
 // PassNGenerator generates samples for pass@n evaluation
@@ -344,15 +344,15 @@ func (g *PassNGenerator) generateDiverseSamples(ctx context.Context, prompt stri
 
 	// Use different temperatures for diversity
 	temperatures := []float64{0.5, 0.7, 0.9, 1.0, 1.2}
-	
+
 	for i := 0; i < n; i++ {
 		temp := temperatures[i%len(temperatures)]
-		
+
 		opts := llm.GenerateOptions{
-			Temperature:   &temp,
-			TopP:          &g.config.TopP,
-			MaxTokens: &g.config.MaxTokens,
-			Stop:      g.config.StopSequences,
+			Temperature: &temp,
+			TopP:        &g.config.TopP,
+			MaxTokens:   &g.config.MaxTokens,
+			Stop:        g.config.StopSequences,
 		}
 
 		response, err := g.provider.Generate(ctx, prompt, opts)
@@ -374,13 +374,13 @@ func (g *PassNGenerator) generateAdaptiveSamples(ctx context.Context, prompt str
 
 	// Start with base temperature
 	currentTemp := g.config.Temperature
-	
+
 	for i := 0; i < n; i++ {
 		opts := llm.GenerateOptions{
-			Temperature:   &currentTemp,
-			TopP:          &g.config.TopP,
-			MaxTokens: &g.config.MaxTokens,
-			Stop:      g.config.StopSequences,
+			Temperature: &currentTemp,
+			TopP:        &g.config.TopP,
+			MaxTokens:   &g.config.MaxTokens,
+			Stop:        g.config.StopSequences,
 		}
 
 		response, err := g.provider.Generate(ctx, prompt, opts)
@@ -417,7 +417,7 @@ func (g *PassNGenerator) generateAdaptiveSamples(ctx context.Context, prompt str
 
 func (s *PassNStore) loadMetadata() error {
 	metadataFile := filepath.Join(s.dataDir, "metadata.json")
-	
+
 	data, err := os.ReadFile(metadataFile)
 	if err != nil {
 		if os.IsNotExist(err) {

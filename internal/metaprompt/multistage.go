@@ -29,7 +29,7 @@ func NewMultiStageOptimizer(llmProvider llm.Provider) *MultiStageOptimizer {
 type OptimizationStage struct {
 	Name        string        `json:"name"`
 	Description string        `json:"description"`
-	Method      string        `json:"method"`      // "analysis", "refinement", "validation", "polishing"
+	Method      string        `json:"method"` // "analysis", "refinement", "validation", "polishing"
 	Iterations  int           `json:"iterations"`
 	Temperature float64       `json:"temperature"`
 	Criteria    StageCriteria `json:"criteria"`
@@ -37,10 +37,10 @@ type OptimizationStage struct {
 
 // StageCriteria defines success criteria for each stage
 type StageCriteria struct {
-	MinScore        float64 `json:"min_score"`         // Minimum score to pass this stage
-	MaxIterations   int     `json:"max_iterations"`    // Maximum iterations allowed
+	MinScore        float64  `json:"min_score"`        // Minimum score to pass this stage
+	MaxIterations   int      `json:"max_iterations"`   // Maximum iterations allowed
 	RequiredMetrics []string `json:"required_metrics"` // Metrics that must be satisfied
-	GatingFunction  string  `json:"gating_function"`   // Function that determines if stage passes
+	GatingFunction  string   `json:"gating_function"`  // Function that determines if stage passes
 }
 
 // StageResult contains the result of a single optimization stage
@@ -71,7 +71,7 @@ type MultiStageResult struct {
 // OptimizeMultiStage performs progressive multi-stage optimization
 func (mso *MultiStageOptimizer) OptimizeMultiStage(ctx context.Context, initialPrompt string, stages []OptimizationStage) (*MultiStageResult, error) {
 	startTime := time.Now()
-	
+
 	result := &MultiStageResult{
 		OriginalPrompt: initialPrompt,
 		Stages:         make([]StageResult, 0, len(stages)),
@@ -91,12 +91,12 @@ func (mso *MultiStageOptimizer) OptimizeMultiStage(ctx context.Context, initialP
 		}
 
 		result.Stages = append(result.Stages, *stageResult)
-		
+
 		// Check if stage passed its criteria
 		if !stageResult.PassedCriteria {
 			result.Success = false
 			result.FailureReason = fmt.Sprintf("Stage %d (%s) failed to meet criteria", i+1, stage.Name)
-			
+
 			// Allow continuing to next stage if explicitly configured
 			if stage.Criteria.GatingFunction != "allow_failure" {
 				break
@@ -110,7 +110,7 @@ func (mso *MultiStageOptimizer) OptimizeMultiStage(ctx context.Context, initialP
 	result.FinalPrompt = currentPrompt
 	result.OverallScore = mso.calculateOverallScore(result.Stages)
 	result.TotalDuration = time.Since(startTime)
-	
+
 	// Generate final recommendations
 	recommendations, err := mso.generateFinalRecommendations(ctx, result)
 	if err == nil {
@@ -123,7 +123,7 @@ func (mso *MultiStageOptimizer) OptimizeMultiStage(ctx context.Context, initialP
 // executeStage runs a single optimization stage
 func (mso *MultiStageOptimizer) executeStage(ctx context.Context, stage OptimizationStage, inputPrompt string, stageIndex int) (*StageResult, error) {
 	stageStart := time.Now()
-	
+
 	result := &StageResult{
 		Stage:       stage,
 		InputPrompt: inputPrompt,
@@ -158,10 +158,10 @@ func (mso *MultiStageOptimizer) executeStage(ctx context.Context, stage Optimiza
 	}
 
 	result.Duration = time.Since(stageStart)
-	
+
 	// Evaluate stage criteria
 	result.PassedCriteria = mso.evaluateStageCriteria(stage.Criteria, result)
-	
+
 	// Generate advice for next stage
 	advice, err := mso.generateNextStageAdvice(ctx, stage, result, stageIndex)
 	if err == nil {
@@ -280,7 +280,7 @@ RECOMMENDATIONS: [Validation recommendations]`, result.InputPrompt)
 
 	// Parse validation score
 	score := mso.parseValidationScore(resp.Text)
-	
+
 	iteration := IterationResult{
 		Iteration:   1,
 		Prompt:      result.InputPrompt,
@@ -346,7 +346,7 @@ func (mso *MultiStageOptimizer) evaluateStageCriteria(criteria StageCriteria, re
 		if !exists {
 			return false
 		}
-		
+
 		// Apply metric-specific thresholds
 		switch metricName {
 		case "gradient_strength":
@@ -401,8 +401,8 @@ TASK: Provide specific, actionable advice for optimizing the next stage. Focus o
 3. Specific recommendations for the next stage
 4. Potential risks to watch for
 
-Keep advice concise and actionable.`, 
-		currentStage.Name, 
+Keep advice concise and actionable.`,
+		currentStage.Name,
 		currentStage.Method,
 		result.StageScore,
 		result.PassedCriteria,
@@ -485,7 +485,7 @@ func (mso *MultiStageOptimizer) parseValidationSuggestions(text string) []string
 	lines := strings.Split(text, "\n")
 	var suggestions []string
 	inRecommendations := false
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if strings.Contains(line, "RECOMMENDATIONS:") {
@@ -499,7 +499,7 @@ func (mso *MultiStageOptimizer) parseValidationSuggestions(text string) []string
 			}
 		}
 	}
-	
+
 	return suggestions
 }
 

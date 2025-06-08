@@ -55,7 +55,7 @@ Can output in different formats and validate against schemas.`,
 			}
 
 			var result []ExtractedContent
-			
+
 			// Handle custom delimiters
 			if start != "" && end != "" {
 				result, err = extractCustomDelimiters(string(content), start, end, all)
@@ -66,7 +66,7 @@ Can output in different formats and validate against schemas.`,
 				// Regular extraction
 				result, err = extractTags(string(content), tag, all, xpath, nested, attr)
 			}
-			
+
 			if err != nil {
 				// For JSON format, output default structure instead of error
 				if format == "json" && strings.Contains(err.Error(), "not found") {
@@ -74,7 +74,7 @@ Can output in different formats and validate against schemas.`,
 						"content": "",
 						"metadata": map[string]interface{}{
 							"extracted": false,
-							"tag": tag,
+							"tag":       tag,
 						},
 					}
 					jsonBytes, _ := json.MarshalIndent(defaultResult, "", "  ")
@@ -138,11 +138,11 @@ Can output in different formats and validate against schemas.`,
 }
 
 type ExtractedContent struct {
-	Tag      string                 `json:"tag,omitempty"`
-	Content  string                 `json:"content"`
-	Attrs    map[string]string      `json:"attrs,omitempty"`
-	Children []ExtractedContent     `json:"children,omitempty"`
-	Path     string                 `json:"path,omitempty"`
+	Tag      string             `json:"tag,omitempty"`
+	Content  string             `json:"content"`
+	Attrs    map[string]string  `json:"attrs,omitempty"`
+	Children []ExtractedContent `json:"children,omitempty"`
+	Path     string             `json:"path,omitempty"`
 }
 
 func extractTags(content, tag string, all bool, xpath string, nested bool, attrFilter string) ([]ExtractedContent, error) {
@@ -162,7 +162,7 @@ func extractTags(content, tag string, all bool, xpath string, nested bool, attrF
 		if len(parts) == 2 {
 			attrName := parts[0]
 			attrValue := parts[1]
-			pattern = fmt.Sprintf(`(?s)<%s[^>]*\s+%s=["']%s["'][^>]*>(.+?)</%s>`, 
+			pattern = fmt.Sprintf(`(?s)<%s[^>]*\s+%s=["']%s["'][^>]*>(.+?)</%s>`,
 				regexp.QuoteMeta(tag), regexp.QuoteMeta(attrName), regexp.QuoteMeta(attrValue), regexp.QuoteMeta(tag))
 		}
 	} else {
@@ -214,20 +214,20 @@ func extractXPath(content, xpath string, nested bool) ([]ExtractedContent, error
 		tagStart := strings.LastIndex(xpath, "/") + 1
 		bracketStart := strings.Index(xpath[tagStart:], "[@")
 		if bracketStart > 0 {
-			tag := xpath[tagStart:tagStart+bracketStart]
+			tag := xpath[tagStart : tagStart+bracketStart]
 			attrSection := xpath[tagStart+bracketStart+2 : strings.LastIndex(xpath, "]")]
-			
+
 			// Parse attribute condition
 			parts := strings.Split(attrSection, "=")
 			if len(parts) == 2 {
 				attrName := strings.TrimSpace(parts[0])
 				attrValue := strings.Trim(strings.TrimSpace(parts[1]), `"'`)
-				
+
 				// Build pattern with attribute matching
-				pattern := fmt.Sprintf(`(?s)<%s[^>]*\s+%s=["']%s["'][^>]*>(.+?)</%s>`, 
+				pattern := fmt.Sprintf(`(?s)<%s[^>]*\s+%s=["']%s["'][^>]*>(.+?)</%s>`,
 					regexp.QuoteMeta(tag), regexp.QuoteMeta(attrName), regexp.QuoteMeta(attrValue), regexp.QuoteMeta(tag))
 				re := regexp.MustCompile(pattern)
-				
+
 				matches := re.FindAllStringSubmatch(content, -1)
 				var results []ExtractedContent
 				for _, match := range matches {
@@ -239,7 +239,7 @@ func extractXPath(content, xpath string, nested bool) ([]ExtractedContent, error
 						})
 					}
 				}
-				
+
 				if len(results) == 0 {
 					return nil, fmt.Errorf("no elements found matching xpath: %s", xpath)
 				}
@@ -265,7 +265,7 @@ func extractXPath(content, xpath string, nested bool) ([]ExtractedContent, error
 
 		pattern := fmt.Sprintf(`(?s)<%s(?:\s+[^>]*)?>(.+?)</%s>`, regexp.QuoteMeta(part), regexp.QuoteMeta(part))
 		re := regexp.MustCompile(pattern)
-		
+
 		if i == len(parts)-1 {
 			// Last part - extract all or first occurrence
 			matches := re.FindAllStringSubmatch(currentContent, -1)
@@ -313,14 +313,14 @@ func formatExtracted(results []ExtractedContent, format string) (string, error) 
 			innerContent := results[0].Content
 			metadata := make(map[string]interface{})
 			content := ""
-			
+
 			// Extract metadata tags
 			metadataRe := regexp.MustCompile(`(?s)<metadata>(.+?)</metadata>`)
 			if match := metadataRe.FindStringSubmatch(innerContent); len(match) > 1 {
 				// Parse individual metadata fields
 				authorRe := regexp.MustCompile(`<author>(.+?)</author>`)
 				timestampRe := regexp.MustCompile(`<timestamp>(.+?)</timestamp>`)
-				
+
 				if authorMatch := authorRe.FindStringSubmatch(match[1]); len(authorMatch) > 1 {
 					metadata["author"] = strings.TrimSpace(authorMatch[1])
 				}
@@ -328,26 +328,26 @@ func formatExtracted(results []ExtractedContent, format string) (string, error) 
 					metadata["timestamp"] = strings.TrimSpace(tsMatch[1])
 				}
 			}
-			
+
 			// Extract content tag
 			contentRe := regexp.MustCompile(`(?s)<content>(.+?)</content>`)
 			if match := contentRe.FindStringSubmatch(innerContent); len(match) > 1 {
 				content = strings.TrimSpace(match[1])
 			}
-			
+
 			// Create structured output
 			structuredResult := map[string]interface{}{
-				"content": content,
+				"content":  content,
 				"metadata": metadata,
 			}
-			
+
 			data, err := json.MarshalIndent(structuredResult, "", "  ")
 			if err != nil {
 				return "", err
 			}
 			return string(data) + "\n", nil
 		}
-		
+
 		// Default JSON output for non-structured content
 		data, err := json.MarshalIndent(results, "", "  ")
 		if err != nil {
@@ -359,9 +359,9 @@ func formatExtracted(results []ExtractedContent, format string) (string, error) 
 		var b strings.Builder
 		b.WriteString("<extracted>\n")
 		for _, r := range results {
-				var escapedContent bytes.Buffer
-				xml.EscapeText(&escapedContent, []byte(r.Content))
-				b.WriteString(fmt.Sprintf("  <%s>%s</%s>\n", r.Tag, escapedContent.String(), r.Tag))
+			var escapedContent bytes.Buffer
+			xml.EscapeText(&escapedContent, []byte(r.Content))
+			b.WriteString(fmt.Sprintf("  <%s>%s</%s>\n", r.Tag, escapedContent.String(), r.Tag))
 		}
 		b.WriteString("</extracted>\n")
 		return b.String(), nil
@@ -370,7 +370,7 @@ func formatExtracted(results []ExtractedContent, format string) (string, error) 
 		if len(results) == 1 {
 			return results[0].Content + "\n", nil
 		}
-		
+
 		var b strings.Builder
 		for i, r := range results {
 			if r.Tag != "" {
@@ -388,37 +388,37 @@ func formatExtracted(results []ExtractedContent, format string) (string, error) 
 
 func extractCustomDelimiters(content, start, end string, all bool) ([]ExtractedContent, error) {
 	var results []ExtractedContent
-	
+
 	// Simple implementation using string splitting
 	parts := strings.Split(content, start)
 	for i, part := range parts {
 		if i == 0 {
 			continue // Skip content before first delimiter
 		}
-		
+
 		endIdx := strings.Index(part, end)
 		if endIdx >= 0 {
 			extracted := part[:endIdx]
 			results = append(results, ExtractedContent{
 				Content: extracted,
 			})
-			
+
 			if !all {
 				break
 			}
 		}
 	}
-	
+
 	if len(results) == 0 {
 		return nil, fmt.Errorf("no content found between %s and %s", start, end)
 	}
-	
+
 	return results, nil
 }
 
 func extractMultipleTags(content, tags string, all bool, nested bool, attrFilter string) ([]ExtractedContent, error) {
 	var results []ExtractedContent
-	
+
 	tagList := strings.Split(tags, ",")
 	for _, tag := range tagList {
 		tag = strings.TrimSpace(tag)
@@ -428,11 +428,11 @@ func extractMultipleTags(content, tags string, all bool, nested bool, attrFilter
 		}
 		results = append(results, extracted...)
 	}
-	
+
 	if len(results) == 0 {
 		return nil, fmt.Errorf("no tags found from: %s", tags)
 	}
-	
+
 	// Format for multiple tags output
 	if len(tagList) > 1 {
 		// For the test case, format as "Tag: content"
@@ -440,7 +440,7 @@ func extractMultipleTags(content, tags string, all bool, nested bool, attrFilter
 			results[i].Content = fmt.Sprintf("%s: %s", strings.Title(results[i].Tag), results[i].Content)
 		}
 	}
-	
+
 	return results, nil
 }
 
@@ -451,7 +451,7 @@ func applyTransform(results []ExtractedContent, transform string) ([]ExtractedCo
 			// For Go code, ensure proper indentation
 			lines := strings.Split(results[i].Content, "\n")
 			var formatted []string
-			
+
 			for _, line := range lines {
 				trimmed := strings.TrimSpace(line)
 				if trimmed == "" {
@@ -461,10 +461,10 @@ func applyTransform(results []ExtractedContent, transform string) ([]ExtractedCo
 					formatted = append(formatted, trimmed)
 				} else {
 					// Inner content - add 4 spaces indentation
-					formatted = append(formatted, "    " + trimmed)
+					formatted = append(formatted, "    "+trimmed)
 				}
 			}
-			
+
 			results[i].Content = strings.Join(formatted, "\n")
 		}
 	}

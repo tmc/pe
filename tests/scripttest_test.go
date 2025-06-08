@@ -20,7 +20,7 @@ func TestScripts(t *testing.T) {
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to build pe binary: %v", err)
 	}
-	
+
 	// Create engine with default commands
 	engine := &script.Engine{
 		Cmds:  scripttest.DefaultCmds(),
@@ -38,24 +38,24 @@ func TestScripts(t *testing.T) {
 
 	// Run tests from testdata/script directory
 	scriptDir := "testdata/script"
-	
+
 	// Check if directory exists
 	if _, err := os.Stat(scriptDir); os.IsNotExist(err) {
 		t.Skip("testdata/script directory not found")
 		return
 	}
-	
+
 	// Get all .txt files in the directory
 	files, err := filepath.Glob(filepath.Join(scriptDir, "*.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	if len(files) == 0 {
 		t.Skip("no test files found in testdata/script")
 		return
 	}
-	
+
 	// Run each test file
 	for _, file := range files {
 		file := file // capture loop variable

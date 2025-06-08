@@ -38,7 +38,7 @@ func NewREPLSession(cmd *cobra.Command, provider, configFile string, temperature
 // Run starts the REPL session
 func (r *REPLSession) Run() error {
 	r.printWelcome()
-	
+
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Fprint(r.cmd.OutOrStdout(), "pe> ")
@@ -207,7 +207,7 @@ func (r *REPLSession) handleCommand(input string) bool {
 // processPrompt processes a user prompt
 func (r *REPLSession) processPrompt(prompt string) error {
 	fmt.Fprintf(r.cmd.OutOrStdout(), "Processing with %s...\n", r.provider)
-	
+
 	// Create ask command and execute
 	askCmd := askCmd()
 	args := []string{
@@ -217,11 +217,11 @@ func (r *REPLSession) processPrompt(prompt string) error {
 		"--format", "text",
 		prompt,
 	}
-	
+
 	askCmd.SetArgs(args)
 	askCmd.SetOut(r.cmd.OutOrStdout())
 	askCmd.SetErr(r.cmd.OutOrStderr())
-	
+
 	return askCmd.Execute()
 }
 
@@ -352,24 +352,24 @@ func (r *REPLSession) loadConfig(filename string) {
 // handleMultiline handles multiline input mode
 func (r *REPLSession) handleMultiline() {
 	fmt.Fprintln(r.cmd.OutOrStdout(), "Entering multiline mode. Type 'END' on a new line to finish:")
-	
+
 	var lines []string
 	scanner := bufio.NewScanner(os.Stdin)
-	
+
 	for {
 		fmt.Fprint(r.cmd.OutOrStdout(), "... ")
 		if !scanner.Scan() {
 			break
 		}
-		
+
 		line := scanner.Text()
 		if strings.TrimSpace(line) == "END" {
 			break
 		}
-		
+
 		lines = append(lines, line)
 	}
-	
+
 	if len(lines) > 0 {
 		prompt := strings.Join(lines, "\n")
 		fmt.Fprintln(r.cmd.OutOrStdout(), "Processing multiline prompt...")
@@ -383,26 +383,26 @@ func (r *REPLSession) handleMultiline() {
 func (r *REPLSession) runBenchmark(iterations int) {
 	fmt.Fprintln(r.cmd.OutOrStdout(), "Enter the prompt to benchmark:")
 	fmt.Fprint(r.cmd.OutOrStdout(), "pe> ")
-	
+
 	scanner := bufio.NewScanner(os.Stdin)
 	if !scanner.Scan() {
 		return
 	}
-	
+
 	prompt := strings.TrimSpace(scanner.Text())
 	if prompt == "" {
 		fmt.Fprintln(r.cmd.OutOrStderr(), "No prompt provided")
 		return
 	}
-	
+
 	fmt.Fprintf(r.cmd.OutOrStdout(), "Running benchmark with %d iterations...\n", iterations)
-	
+
 	var latencies []time.Duration
 	var errors int
-	
+
 	for i := 0; i < iterations; i++ {
 		fmt.Fprintf(r.cmd.OutOrStdout(), "Iteration %d/%d... ", i+1, iterations)
-		
+
 		start := time.Now()
 		if err := r.processPrompt(prompt); err != nil {
 			errors++
@@ -413,7 +413,7 @@ func (r *REPLSession) runBenchmark(iterations int) {
 			fmt.Fprintf(r.cmd.OutOrStdout(), "%.2fs\n", latency.Seconds())
 		}
 	}
-	
+
 	// Calculate statistics
 	if len(latencies) > 0 {
 		var total time.Duration
@@ -421,7 +421,7 @@ func (r *REPLSession) runBenchmark(iterations int) {
 			total += lat
 		}
 		avg := total / time.Duration(len(latencies))
-		
+
 		fmt.Fprintf(r.cmd.OutOrStdout(), `
 Benchmark Results:
   Iterations:    %d
@@ -436,7 +436,7 @@ Benchmark Results:
 // listModels lists available models for the current provider
 func (r *REPLSession) listModels() {
 	fmt.Fprintln(r.cmd.OutOrStdout(), "Commonly supported models:")
-	
+
 	models := map[string][]string{
 		"openai": {
 			"gpt-4", "gpt-4-turbo", "gpt-4-turbo-preview",
@@ -447,7 +447,7 @@ func (r *REPLSession) listModels() {
 			"claude-3-haiku-20240307", "claude-2.1", "claude-instant-1.2",
 		},
 	}
-	
+
 	providerName := strings.Split(r.provider, ":")[0]
 	if providerModels, exists := models[providerName]; exists {
 		for _, model := range providerModels {

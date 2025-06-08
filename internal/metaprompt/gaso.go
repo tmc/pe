@@ -27,12 +27,12 @@ func NewGASOOptimizer(llmProvider llm.Provider) *GASOOptimizer {
 
 // SystemDefinition defines a multi-component agentic system
 type SystemDefinition struct {
-	Name         string                 `json:"name"`
-	Description  string                 `json:"description"`
-	Components   []SystemComponent      `json:"components"`
-	Dependencies []ComponentDependency  `json:"dependencies"`
-	Objectives   []SystemObjective      `json:"objectives"`
-	Constraints  []SystemConstraint     `json:"constraints"`
+	Name         string                `json:"name"`
+	Description  string                `json:"description"`
+	Components   []SystemComponent     `json:"components"`
+	Dependencies []ComponentDependency `json:"dependencies"`
+	Objectives   []SystemObjective     `json:"objectives"`
+	Constraints  []SystemConstraint    `json:"constraints"`
 }
 
 // SystemComponent represents a single component in the agentic system
@@ -42,16 +42,16 @@ type SystemComponent struct {
 	Type        string                 `json:"type"` // "prompt", "tool", "agent", "workflow"
 	Content     string                 `json:"content"`
 	Parameters  map[string]interface{} `json:"parameters"`
-	Performance float64               `json:"performance"`
+	Performance float64                `json:"performance"`
 }
 
 // ComponentDependency represents a dependency relationship between components
 type ComponentDependency struct {
-	From         string  `json:"from"`
-	To           string  `json:"to"`
-	Type         string  `json:"type"` // "input", "control", "data"
-	Weight       float64 `json:"weight"`
-	Description  string  `json:"description"`
+	From        string  `json:"from"`
+	To          string  `json:"to"`
+	Type        string  `json:"type"` // "input", "control", "data"
+	Weight      float64 `json:"weight"`
+	Description string  `json:"description"`
 }
 
 // SystemObjective represents an optimization objective for the system
@@ -84,15 +84,15 @@ type GASOConfig struct {
 
 // GASOResult represents the result of GASO optimization
 type GASOResult struct {
-	OptimizedComponents  []SystemComponent      `json:"optimized_components"`
-	OverallPerformance   float64               `json:"overall_performance"`
-	ObjectiveScores      map[string]float64    `json:"objective_scores"`
-	ParetoEfficient      bool                  `json:"pareto_efficient"`
-	ComputationalGraph   *GASOComputationalGraph   `json:"computational_graph"`
-	OptimizationHistory  []GASOIteration       `json:"optimization_history"`
-	Iterations          int                   `json:"iterations"`
-	Duration            time.Duration         `json:"duration"`
-	ConvergenceAnalysis *ConvergenceAnalysis  `json:"convergence_analysis"`
+	OptimizedComponents []SystemComponent       `json:"optimized_components"`
+	OverallPerformance  float64                 `json:"overall_performance"`
+	ObjectiveScores     map[string]float64      `json:"objective_scores"`
+	ParetoEfficient     bool                    `json:"pareto_efficient"`
+	ComputationalGraph  *GASOComputationalGraph `json:"computational_graph"`
+	OptimizationHistory []GASOIteration         `json:"optimization_history"`
+	Iterations          int                     `json:"iterations"`
+	Duration            time.Duration           `json:"duration"`
+	ConvergenceAnalysis *ConvergenceAnalysis    `json:"convergence_analysis"`
 }
 
 // GASOComputationalGraph represents the computational graph of the system
@@ -114,73 +114,73 @@ type GASOGraphEdge struct {
 	From   string                 `json:"from"`
 	To     string                 `json:"to"`
 	Type   string                 `json:"type"`
-	Weight float64               `json:"weight"`
+	Weight float64                `json:"weight"`
 	Data   map[string]interface{} `json:"data"`
 }
 
 // GASOIteration represents a single GASO optimization iteration
 type GASOIteration struct {
-	Iteration    int                   `json:"iteration"`
-	Performance  float64              `json:"performance"`
-	Objectives   map[string]float64   `json:"objectives"`
-	Gradients    []SystemGradient     `json:"gradients"`
-	Changes      []ComponentChange     `json:"changes"`
-	Improvement  float64              `json:"improvement"`
+	Iteration   int                `json:"iteration"`
+	Performance float64            `json:"performance"`
+	Objectives  map[string]float64 `json:"objectives"`
+	Gradients   []SystemGradient   `json:"gradients"`
+	Changes     []ComponentChange  `json:"changes"`
+	Improvement float64            `json:"improvement"`
 }
 
 // SystemGradient represents a semantic gradient for a system component
 type SystemGradient struct {
-	ComponentID string  `json:"component_id"`
+	ComponentID string           `json:"component_id"`
 	Gradient    SemanticGradient `json:"gradient"`
-	Priority    float64 `json:"priority"`
+	Priority    float64          `json:"priority"`
 }
 
 // ComponentChange represents a change made to a system component
 type ComponentChange struct {
-	ComponentID  string `json:"component_id"`
-	ChangeType   string `json:"change_type"`
-	OldValue     string `json:"old_value"`
-	NewValue     string `json:"new_value"`
-	Impact       float64 `json:"impact"`
+	ComponentID string  `json:"component_id"`
+	ChangeType  string  `json:"change_type"`
+	OldValue    string  `json:"old_value"`
+	NewValue    string  `json:"new_value"`
+	Impact      float64 `json:"impact"`
 }
 
 // ConvergenceAnalysis analyzes the convergence properties of the optimization
 type ConvergenceAnalysis struct {
-	Converged        bool    `json:"converged"`
-	ConvergenceRate  float64 `json:"convergence_rate"`
-	FinalGradient    float64 `json:"final_gradient"`
-	StabilityMetric  float64 `json:"stability_metric"`
+	Converged       bool    `json:"converged"`
+	ConvergenceRate float64 `json:"convergence_rate"`
+	FinalGradient   float64 `json:"final_gradient"`
+	StabilityMetric float64 `json:"stability_metric"`
 }
 
 // OptimizeSystem optimizes a multi-component agentic system using GASO
 func (gaso *GASOOptimizer) OptimizeSystem(ctx context.Context, system *SystemDefinition, config GASOConfig) (*GASOResult, error) {
 	start := time.Now()
-	
+
 	result := &GASOResult{
 		OptimizedComponents: make([]SystemComponent, len(system.Components)),
 		ObjectiveScores:     make(map[string]float64),
 		OptimizationHistory: make([]GASOIteration, 0, config.Iterations),
 	}
-	
+
 	// Copy initial components
 	copy(result.OptimizedComponents, system.Components)
-	
+
 	// Build computational graph
 	graph, err := gaso.buildComputationalGraph(system)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build computational graph: %v", err)
 	}
 	result.ComputationalGraph = graph
-	
+
 	// Initial system evaluation
 	initialPerformance, err := gaso.evaluateSystem(ctx, system, config.Objective)
 	if err != nil {
 		return nil, fmt.Errorf("initial system evaluation failed: %v", err)
 	}
 	result.OverallPerformance = initialPerformance
-	
+
 	fmt.Printf("Initial system performance: %.4f\n", initialPerformance)
-	
+
 	// GASO optimization iterations
 	currentSystem := system
 	for i := 0; i < config.Iterations; i++ {
@@ -189,19 +189,19 @@ func (gaso *GASOOptimizer) OptimizeSystem(ctx context.Context, system *SystemDef
 		if err != nil {
 			return nil, fmt.Errorf("gradient computation failed at iteration %d: %v", i, err)
 		}
-		
+
 		// Apply multi-component optimization
 		optimizedSystem, changes, err := gaso.applySystemGradients(ctx, currentSystem, systemGradients, config)
 		if err != nil {
 			return nil, fmt.Errorf("system optimization failed at iteration %d: %v", i, err)
 		}
-		
+
 		// Evaluate optimized system
 		newPerformance, err := gaso.evaluateSystem(ctx, optimizedSystem, config.Objective)
 		if err != nil {
 			return nil, fmt.Errorf("system evaluation failed at iteration %d: %v", i, err)
 		}
-		
+
 		// Evaluate individual objectives if multi-objective
 		objectiveScores := make(map[string]float64)
 		if config.MultiObjective {
@@ -213,7 +213,7 @@ func (gaso *GASOOptimizer) OptimizeSystem(ctx context.Context, system *SystemDef
 				objectiveScores[obj.Name] = score
 			}
 		}
-		
+
 		// Record iteration
 		iteration := GASOIteration{
 			Iteration:   i + 1,
@@ -224,29 +224,29 @@ func (gaso *GASOOptimizer) OptimizeSystem(ctx context.Context, system *SystemDef
 			Improvement: newPerformance - result.OverallPerformance,
 		}
 		result.OptimizationHistory = append(result.OptimizationHistory, iteration)
-		
+
 		fmt.Printf("Iteration %d: performance %.4f (Δ%.4f)\n", i+1, newPerformance, iteration.Improvement)
-		
+
 		// Update best result if improvement
 		if newPerformance > result.OverallPerformance {
 			result.OverallPerformance = newPerformance
 			result.OptimizedComponents = optimizedSystem.Components
 			result.ObjectiveScores = objectiveScores
 		}
-		
+
 		currentSystem = optimizedSystem
 	}
-	
+
 	// Analyze convergence
 	result.ConvergenceAnalysis = gaso.analyzeConvergence(result.OptimizationHistory)
 	result.Iterations = config.Iterations
 	result.Duration = time.Since(start)
-	
+
 	// Check Pareto efficiency for multi-objective optimization
 	if config.MultiObjective {
 		result.ParetoEfficient = gaso.checkParetoEfficiency(result.ObjectiveScores, system.Objectives)
 	}
-	
+
 	return result, nil
 }
 
@@ -256,7 +256,7 @@ func (gaso *GASOOptimizer) buildComputationalGraph(system *SystemDefinition) (*G
 		Nodes: make([]GASOGraphNode, 0, len(system.Components)),
 		Edges: make([]GASOGraphEdge, 0, len(system.Dependencies)),
 	}
-	
+
 	// Create nodes for each component
 	for i, component := range system.Components {
 		node := GASOGraphNode{
@@ -275,7 +275,7 @@ func (gaso *GASOOptimizer) buildComputationalGraph(system *SystemDefinition) (*G
 		}
 		graph.Nodes = append(graph.Nodes, node)
 	}
-	
+
 	// Create edges for dependencies
 	for _, dep := range system.Dependencies {
 		edge := GASOGraphEdge{
@@ -289,24 +289,24 @@ func (gaso *GASOOptimizer) buildComputationalGraph(system *SystemDefinition) (*G
 		}
 		graph.Edges = append(graph.Edges, edge)
 	}
-	
+
 	return graph, nil
 }
 
 // computeSystemGradients computes semantic gradients for all system components
 func (gaso *GASOOptimizer) computeSystemGradients(ctx context.Context, system *SystemDefinition, objective string) ([]SystemGradient, error) {
 	gradients := make([]SystemGradient, 0, len(system.Components))
-	
+
 	for _, component := range system.Components {
 		// Compute gradients for this component considering system context
 		gradient, err := gaso.computeComponentGradient(ctx, component, system, objective)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compute gradient for component %s: %v", component.ID, err)
 		}
-		
+
 		// Calculate priority based on component's role in system
 		priority := gaso.calculateComponentPriority(component, system)
-		
+
 		systemGrad := SystemGradient{
 			ComponentID: component.ID,
 			Gradient:    gradient,
@@ -314,7 +314,7 @@ func (gaso *GASOOptimizer) computeSystemGradients(ctx context.Context, system *S
 		}
 		gradients = append(gradients, systemGrad)
 	}
-	
+
 	return gradients, nil
 }
 
@@ -366,7 +366,7 @@ Response format:
 			Confidence: 0.8,
 		}, nil
 	}
-	
+
 	return gradient, nil
 }
 
@@ -374,12 +374,12 @@ Response format:
 func (gaso *GASOOptimizer) applySystemGradients(ctx context.Context, system *SystemDefinition, gradients []SystemGradient, config GASOConfig) (*SystemDefinition, []ComponentChange, error) {
 	optimizedSystem := *system // Copy system
 	changes := make([]ComponentChange, 0)
-	
+
 	// Sort gradients by priority (highest first)
 	sort.Slice(gradients, func(i, j int) bool {
 		return gradients[i].Priority > gradients[j].Priority
 	})
-	
+
 	// Apply gradients to components
 	for _, sysGrad := range gradients {
 		// Find component
@@ -390,7 +390,7 @@ func (gaso *GASOOptimizer) applySystemGradients(ctx context.Context, system *Sys
 				if err != nil {
 					return nil, nil, fmt.Errorf("failed to apply gradient to component %s: %v", component.ID, err)
 				}
-				
+
 				// Record change
 				change := ComponentChange{
 					ComponentID: component.ID,
@@ -400,14 +400,14 @@ func (gaso *GASOOptimizer) applySystemGradients(ctx context.Context, system *Sys
 					Impact:      sysGrad.Priority,
 				}
 				changes = append(changes, change)
-				
+
 				// Update component
 				optimizedSystem.Components[i].Content = optimizedContent
 				break
 			}
 		}
 	}
-	
+
 	return &optimizedSystem, changes, nil
 }
 
@@ -425,7 +425,7 @@ Direction: %s
 Reasoning: %s
 
 Apply this gradient to optimize the component content.
-Return only the optimized content without additional explanation.`, 
+Return only the optimized content without additional explanation.`,
 		component.Type, component.Content, gradient.Component, gradient.Direction, gradient.Reasoning)
 
 	response, err := gaso.llm.Generate(ctx, optimizationPrompt, llm.GenerateOptions{
@@ -457,7 +457,7 @@ Rate the system's overall effectiveness on a scale of 0.0 to 1.0, considering:
 - Alignment with objective
 - System efficiency and robustness
 
-Provide only a numeric score between 0.0 and 1.0.`, 
+Provide only a numeric score between 0.0 and 1.0.`,
 		system.Description, objective, gaso.formatComponents(system.Components), gaso.formatAllDependencies(system))
 
 	response, err := gaso.llm.Generate(ctx, evaluationPrompt, llm.GenerateOptions{
@@ -472,7 +472,7 @@ Provide only a numeric score between 0.0 and 1.0.`,
 	if err != nil {
 		return 0.5, nil // Default fallback
 	}
-	
+
 	return score, nil
 }
 
@@ -489,7 +489,7 @@ COMPONENTS:
 %s
 
 Rate how well the system meets this objective on a scale of 0.0 to 1.0.
-Provide only a numeric score.`, 
+Provide only a numeric score.`,
 		system.Description, objective.Description, objective.Type, objective.Target,
 		gaso.formatComponents(system.Components))
 
@@ -504,7 +504,7 @@ Provide only a numeric score.`,
 	if err != nil {
 		return 0.5, nil // Default fallback
 	}
-	
+
 	return score, nil
 }
 
@@ -512,12 +512,12 @@ Provide only a numeric score.`,
 func (gaso *GASOOptimizer) calculateComponentPriority(component SystemComponent, system *SystemDefinition) float64 {
 	// Calculate priority based on component dependencies and system structure
 	priority := 0.5 // Base priority
-	
+
 	// Increase priority for components with many outgoing dependencies
 	outgoingCount := 0
 	incomingCount := 0
 	totalWeight := 0.0
-	
+
 	for _, dep := range system.Dependencies {
 		if dep.From == component.ID {
 			outgoingCount++
@@ -528,16 +528,16 @@ func (gaso *GASOOptimizer) calculateComponentPriority(component SystemComponent,
 			totalWeight += dep.Weight
 		}
 	}
-	
+
 	// Components that affect many others have higher priority
 	priority += float64(outgoingCount) * 0.1
-	
+
 	// Components that are central to the system have higher priority
 	priority += float64(incomingCount) * 0.05
-	
+
 	// Weight-based priority adjustment
 	priority += totalWeight * 0.1
-	
+
 	// Component type-based priority
 	switch component.Type {
 	case "agent":
@@ -549,7 +549,7 @@ func (gaso *GASOOptimizer) calculateComponentPriority(component SystemComponent,
 	case "tool":
 		priority += 0.05
 	}
-	
+
 	// Normalize to [0, 1]
 	return math.Min(1.0, math.Max(0.0, priority))
 }
@@ -589,26 +589,26 @@ func (gaso *GASOOptimizer) analyzeConvergence(history []GASOIteration) *Converge
 			StabilityMetric: 0.0,
 		}
 	}
-	
+
 	// Calculate convergence metrics
 	lastN := 5
 	if len(history) < lastN {
 		lastN = len(history)
 	}
-	
+
 	// Check if improvements are decreasing (convergence indicator)
 	improvements := make([]float64, 0, lastN)
 	for i := len(history) - lastN; i < len(history); i++ {
 		improvements = append(improvements, math.Abs(history[i].Improvement))
 	}
-	
+
 	// Calculate average improvement over last N iterations
 	avgImprovement := 0.0
 	for _, imp := range improvements {
 		avgImprovement += imp
 	}
 	avgImprovement /= float64(len(improvements))
-	
+
 	// Calculate stability (variance of improvements)
 	variance := 0.0
 	for _, imp := range improvements {
@@ -616,10 +616,10 @@ func (gaso *GASOOptimizer) analyzeConvergence(history []GASOIteration) *Converge
 	}
 	variance /= float64(len(improvements))
 	stability := 1.0 - math.Min(1.0, math.Sqrt(variance))
-	
+
 	// Determine convergence
 	converged := avgImprovement < 0.01 && stability > 0.8
-	
+
 	// Calculate convergence rate (how fast we're approaching optimum)
 	convergenceRate := 0.0
 	if len(history) > 1 {
@@ -629,7 +629,7 @@ func (gaso *GASOOptimizer) analyzeConvergence(history []GASOIteration) *Converge
 			convergenceRate = (finalPerf - initialPerf) / float64(len(history))
 		}
 	}
-	
+
 	return &ConvergenceAnalysis{
 		Converged:       converged,
 		ConvergenceRate: convergenceRate,
@@ -641,15 +641,15 @@ func (gaso *GASOOptimizer) analyzeConvergence(history []GASOIteration) *Converge
 func (gaso *GASOOptimizer) checkParetoEfficiency(scores map[string]float64, objectives []SystemObjective) bool {
 	// A solution is Pareto efficient if no other solution dominates it
 	// For multi-objective optimization, check if all objectives meet their targets
-	
+
 	paretoEfficient := true
-	
+
 	for _, obj := range objectives {
 		score, exists := scores[obj.Name]
 		if !exists {
 			continue
 		}
-		
+
 		switch obj.Type {
 		case "maximize":
 			if score < obj.Target {
@@ -666,7 +666,7 @@ func (gaso *GASOOptimizer) checkParetoEfficiency(scores map[string]float64, obje
 			}
 		}
 	}
-	
+
 	return paretoEfficient
 }
 
@@ -678,14 +678,14 @@ func parseComponentGradient(response string) (SemanticGradient, error) {
 	if start == -1 || end == -1 || start > end {
 		return SemanticGradient{}, fmt.Errorf("no JSON found in response")
 	}
-	
+
 	jsonStr := response[start : end+1]
-	
+
 	var gradient SemanticGradient
 	if err := json.Unmarshal([]byte(jsonStr), &gradient); err != nil {
 		return SemanticGradient{}, fmt.Errorf("failed to parse gradient JSON: %v", err)
 	}
-	
+
 	// Validate and normalize
 	if gradient.Magnitude < 0 {
 		gradient.Magnitude = 0
@@ -697,6 +697,6 @@ func parseComponentGradient(response string) (SemanticGradient, error) {
 	} else if gradient.Confidence > 1 {
 		gradient.Confidence = 1
 	}
-	
+
 	return gradient, nil
 }

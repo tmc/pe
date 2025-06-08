@@ -83,12 +83,12 @@ var attestKeyCmd = &cobra.Command{
 
 // Flags
 var (
-	attestFormat     string
-	attestOutput     string
-	attestLimit      int
-	attestSince      string
-	attestProvider   string
-	attestVerbose    bool
+	attestFormat      string
+	attestOutput      string
+	attestLimit       int
+	attestSince       string
+	attestProvider    string
+	attestVerbose     bool
 	attestKeyGenerate bool
 )
 
@@ -96,48 +96,48 @@ func init() {
 	attestListCmd.Flags().IntVar(&attestLimit, "limit", 10, "Maximum number of attestations to show")
 	attestListCmd.Flags().StringVar(&attestSince, "since", "", "Show attestations since date (RFC3339)")
 	attestListCmd.Flags().StringVar(&attestProvider, "provider", "", "Filter by provider")
-	
+
 	attestExportCmd.Flags().StringVar(&attestFormat, "format", "json", "Export format (json, jsonl, csv, proof)")
 	attestExportCmd.Flags().StringVar(&attestOutput, "output", "", "Output file (default: stdout)")
-	
+
 	attestVerifyCmd.Flags().BoolVar(&attestVerbose, "verbose", false, "Show detailed verification info")
-	
+
 	attestKeyCmd.Flags().BoolVar(&attestKeyGenerate, "generate", false, "Generate new key pair")
 }
 
 func runAttestInit(cmd *cobra.Command, args []string) error {
 	dataDir := getDataDir()
-	
+
 	// Create attestations directory
 	attestDir := filepath.Join(dataDir, "attestations")
 	if err := os.MkdirAll(attestDir, 0755); err != nil {
 		return fmt.Errorf("creating attestations directory: %w", err)
 	}
-	
+
 	// Create config.json
 	config := map[string]interface{}{
-		"version": "1.0",
-		"algorithm": "ed25519",
+		"version":    "1.0",
+		"algorithm":  "ed25519",
 		"chain_type": "linear",
-		"created": time.Now().UTC().Format(time.RFC3339),
+		"created":    time.Now().UTC().Format(time.RFC3339),
 	}
-	
+
 	configData, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshaling config: %w", err)
 	}
-	
+
 	configPath := filepath.Join(attestDir, "config.json")
 	if err := os.WriteFile(configPath, configData, 0644); err != nil {
 		return fmt.Errorf("writing config: %w", err)
 	}
-	
+
 	// Initialize attestation service to generate keys
 	_, err = attestation.NewAttestationService(dataDir)
 	if err != nil {
 		return fmt.Errorf("initializing attestation service: %w", err)
 	}
-	
+
 	fmt.Println("Attestation store initialized")
 	return nil
 }
@@ -148,7 +148,7 @@ func runAttestList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("initializing attestation service: %w", err)
 	}
-	
+
 	chainFile := filepath.Join(dataDir, "attestations", "chain.jsonl")
 	file, err := os.Open(chainFile)
 	if err != nil {
@@ -159,21 +159,21 @@ func runAttestList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("opening chain file: %w", err)
 	}
 	defer file.Close()
-	
+
 	var attestations []attestation.RunAttestation
 	decoder := json.NewDecoder(file)
-	
+
 	for decoder.More() {
 		var att attestation.RunAttestation
 		if err := decoder.Decode(&att); err != nil {
 			return fmt.Errorf("decoding attestation: %w", err)
 		}
-		
+
 		// Apply filters
 		if attestProvider != "" && att.Provider != attestProvider {
 			continue
 		}
-		
+
 		if attestSince != "" {
 			sinceTime, err := time.Parse(time.RFC3339, attestSince)
 			if err != nil {
@@ -183,10 +183,10 @@ func runAttestList(cmd *cobra.Command, args []string) error {
 				continue
 			}
 		}
-		
+
 		attestations = append(attestations, att)
 	}
-	
+
 	// Show latest first
 	for i := len(attestations) - 1; i >= 0 && i >= len(attestations)-attestLimit; i-- {
 		att := attestations[i]
@@ -199,9 +199,9 @@ func runAttestList(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Hash: %s\n", att.InputHash[:16]+"...")
 		fmt.Println()
 	}
-	
+
 	fmt.Printf("Total attestations: %d\n", len(attestations))
-	
+
 	return nil
 }
 
@@ -211,7 +211,7 @@ func runAttestVerify(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("initializing attestation service: %w", err)
 	}
-	
+
 	if len(args) == 0 {
 		// Verify entire chain
 		fmt.Println("Verifying attestation chain...")
@@ -221,21 +221,21 @@ func runAttestVerify(cmd *cobra.Command, args []string) error {
 		fmt.Println("✓ Chain verified successfully")
 		return nil
 	}
-	
+
 	// Verify specific attestation
 	attID := args[0]
 	attFile := filepath.Join(dataDir, "attestations", attID+".json")
-	
+
 	data, err := os.ReadFile(attFile)
 	if err != nil {
 		return fmt.Errorf("reading attestation: %w", err)
 	}
-	
+
 	var att attestation.RunAttestation
 	if err := json.Unmarshal(data, &att); err != nil {
 		return fmt.Errorf("parsing attestation: %w", err)
 	}
-	
+
 	if attestVerbose {
 		fmt.Printf("Verifying attestation %s...\n", attID)
 		fmt.Printf("Timestamp: %s\n", att.Timestamp.Format(time.RFC3339))
@@ -244,13 +244,13 @@ func runAttestVerify(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Previous hash: %s\n", att.PreviousHash)
 		fmt.Printf("Signature: %s...\n", att.Signature[:32])
 	}
-	
+
 	if err := service.Verify(&att); err != nil {
 		return fmt.Errorf("verification failed: %w", err)
 	}
-	
+
 	fmt.Printf("✓ Attestation %s verified successfully\n", attID)
-	
+
 	return nil
 }
 
@@ -258,31 +258,31 @@ func runAttestShow(cmd *cobra.Command, args []string) error {
 	attID := args[0]
 	dataDir := getDataDir()
 	attFile := filepath.Join(dataDir, "attestations", attID+".json")
-	
+
 	data, err := os.ReadFile(attFile)
 	if err != nil {
 		return fmt.Errorf("reading attestation: %w", err)
 	}
-	
+
 	// Pretty print the JSON
 	var att attestation.RunAttestation
 	if err := json.Unmarshal(data, &att); err != nil {
 		return fmt.Errorf("parsing attestation: %w", err)
 	}
-	
+
 	output, err := json.MarshalIndent(att, "", "  ")
 	if err != nil {
 		return fmt.Errorf("formatting attestation: %w", err)
 	}
-	
+
 	fmt.Println(string(output))
-	
+
 	return nil
 }
 
 func runAttestExport(cmd *cobra.Command, args []string) error {
 	dataDir := getDataDir()
-	
+
 	var output *os.File
 	if attestOutput != "" {
 		f, err := os.Create(attestOutput)
@@ -294,7 +294,7 @@ func runAttestExport(cmd *cobra.Command, args []string) error {
 	} else {
 		output = os.Stdout
 	}
-	
+
 	switch attestFormat {
 	case "json":
 		return exportJSON(dataDir, output)
@@ -311,30 +311,30 @@ func runAttestExport(cmd *cobra.Command, args []string) error {
 
 func runAttestKey(cmd *cobra.Command, args []string) error {
 	dataDir := getDataDir()
-	
+
 	// Check if --generate flag is set
 	if attestKeyGenerate {
 		service, err := attestation.NewAttestationService(dataDir)
 		if err != nil {
 			return fmt.Errorf("initializing attestation service: %w", err)
 		}
-		
+
 		return service.GenerateNewKeyPair()
 	}
-	
+
 	// Otherwise show current public key
 	service, err := attestation.NewAttestationService(dataDir)
 	if err != nil {
 		return fmt.Errorf("initializing attestation service: %w", err)
 	}
-	
+
 	pubKeyStr := service.GetPublicKeyString()
-	
+
 	fmt.Printf("Public Key: %s\n", pubKeyStr)
 	fmt.Printf("Key Storage: Secure (macOS Keychain or encrypted file)\n")
-	
+
 	// TODO: Add key rotation functionality
-	
+
 	return nil
 }
 
@@ -362,10 +362,10 @@ func exportJSON(dataDir string, output *os.File) error {
 		return fmt.Errorf("opening chain file: %w", err)
 	}
 	defer file.Close()
-	
+
 	var attestations []attestation.RunAttestation
 	decoder := json.NewDecoder(file)
-	
+
 	for decoder.More() {
 		var att attestation.RunAttestation
 		if err := decoder.Decode(&att); err != nil {
@@ -373,7 +373,7 @@ func exportJSON(dataDir string, output *os.File) error {
 		}
 		attestations = append(attestations, att)
 	}
-	
+
 	encoder := json.NewEncoder(output)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(attestations)
@@ -385,7 +385,7 @@ func exportJSONL(dataDir string, output *os.File) error {
 	if err != nil {
 		return fmt.Errorf("reading chain file: %w", err)
 	}
-	
+
 	_, err = output.Write(data)
 	return err
 }
@@ -393,22 +393,22 @@ func exportJSONL(dataDir string, output *os.File) error {
 func exportCSV(dataDir string, output *os.File) error {
 	// CSV header
 	fmt.Fprintln(output, "ID,Timestamp,Provider,Model,PromptLength,ResponseLength,TotalTokens,Latency,InputHash")
-	
+
 	chainFile := filepath.Join(dataDir, "attestations", "chain.jsonl")
 	file, err := os.Open(chainFile)
 	if err != nil {
 		return fmt.Errorf("opening chain file: %w", err)
 	}
 	defer file.Close()
-	
+
 	decoder := json.NewDecoder(file)
-	
+
 	for decoder.More() {
 		var att attestation.RunAttestation
 		if err := decoder.Decode(&att); err != nil {
 			return fmt.Errorf("decoding attestation: %w", err)
 		}
-		
+
 		fmt.Fprintf(output, "%s,%s,%s,%s,%d,%d,%d,%s,%s\n",
 			att.ID,
 			att.Timestamp.Format(time.RFC3339),
@@ -421,7 +421,7 @@ func exportCSV(dataDir string, output *os.File) error {
 			att.InputHash[:16],
 		)
 	}
-	
+
 	return nil
 }
 
@@ -432,34 +432,34 @@ func exportProof(dataDir string, output *os.File) error {
 	// - Public key
 	// - Merkle tree root
 	// - Instructions for verification
-	
+
 	bundle := map[string]interface{}{
 		"version": "1.0",
 		"type":    "pe-attestation-proof",
 		"created": time.Now().UTC(),
 	}
-	
+
 	// Add public key
 	pubKey, err := os.ReadFile(filepath.Join(dataDir, "attestations", "signing.pub"))
 	if err != nil {
 		return fmt.Errorf("reading public key: %w", err)
 	}
 	bundle["public_key"] = fmt.Sprintf("%x", pubKey)
-	
+
 	// Add chain
 	chainData, err := exportChainData(dataDir)
 	if err != nil {
 		return fmt.Errorf("exporting chain data: %w", err)
 	}
 	bundle["chain"] = chainData
-	
+
 	// Add verification instructions
 	bundle["verification"] = map[string]string{
-		"method":       "ed25519",
+		"method":         "ed25519",
 		"hash_algorithm": "sha256",
-		"instructions": "Verify each attestation's signature and check chain integrity",
+		"instructions":   "Verify each attestation's signature and check chain integrity",
 	}
-	
+
 	encoder := json.NewEncoder(output)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(bundle)
@@ -472,16 +472,16 @@ func exportChainData(dataDir string) ([]map[string]interface{}, error) {
 		return nil, err
 	}
 	defer file.Close()
-	
+
 	var chain []map[string]interface{}
 	decoder := json.NewDecoder(file)
-	
+
 	for decoder.More() {
 		var att attestation.RunAttestation
 		if err := decoder.Decode(&att); err != nil {
 			return nil, err
 		}
-		
+
 		// Include only essential fields for proof
 		chain = append(chain, map[string]interface{}{
 			"id":            att.ID,
@@ -492,6 +492,6 @@ func exportChainData(dataDir string) ([]map[string]interface{}, error) {
 			"signature":     att.Signature,
 		})
 	}
-	
+
 	return chain, nil
 }

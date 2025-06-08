@@ -54,7 +54,7 @@ Please provide a clear, concise summary that captures the main ideas.`,
 			},
 			Providers: []string{"openai:gpt-4", "anthropic:claude-3-sonnet", "openai:gpt-3.5-turbo"},
 		},
-		
+
 		{
 			Name:        "code-review",
 			Description: "Perform a comprehensive code review",
@@ -65,7 +65,7 @@ Please provide a clear, concise summary that captures the main ideas.`,
 			License:     "MIT",
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
-			Prompt: "Please review the following {{language}} code and provide feedback on:\n\n1. Code quality and style\n2. Potential bugs or issues\n3. Performance considerations\n4. Security concerns\n5. Suggestions for improvement\n\nCode:\n```{{language}}\n{{code}}\n```\n\nFocus areas: {{focus_areas}}",
+			Prompt:      "Please review the following {{language}} code and provide feedback on:\n\n1. Code quality and style\n2. Potential bugs or issues\n3. Performance considerations\n4. Security concerns\n5. Suggestions for improvement\n\nCode:\n```{{language}}\n{{code}}\n```\n\nFocus areas: {{focus_areas}}",
 			Variables: map[string]Variable{
 				"code": {
 					Name:        "code",
@@ -107,7 +107,7 @@ Please provide a clear, concise summary that captures the main ideas.`,
 			},
 			Providers: []string{"openai:gpt-4", "anthropic:claude-3-sonnet"},
 		},
-		
+
 		{
 			Name:        "creative-writing",
 			Description: "Generate creative content based on prompts",
@@ -214,7 +214,7 @@ Additional requirements: {{requirements}}`,
 			},
 			Providers: []string{"openai:gpt-4", "anthropic:claude-3-sonnet", "anthropic:claude-3-opus"},
 		},
-		
+
 		{
 			Name:        "data-analysis",
 			Description: "Analyze and interpret data sets",
@@ -288,7 +288,7 @@ Format: {{output_format}}`,
 			},
 			Providers: []string{"openai:gpt-4", "anthropic:claude-3-sonnet"},
 		},
-		
+
 		{
 			Name:        "email-composer",
 			Description: "Compose professional emails for various purposes",
@@ -386,20 +386,20 @@ Please write a well-structured, professional email that is {{length}} in length.
 					Name:        "Meeting Request",
 					Description: "Request a meeting with a client",
 					Variables: map[string]interface{}{
-						"email_type":  "business inquiry",
-						"recipient":   "potential client",
-						"subject":     "Partnership Discussion Meeting",
-						"purpose":     "discuss potential partnership opportunities",
-						"tone":        "professional",
-						"key_points":  "mutual benefits, timeline, next steps",
-						"length":      "concise",
+						"email_type": "business inquiry",
+						"recipient":  "potential client",
+						"subject":    "Partnership Discussion Meeting",
+						"purpose":    "discuss potential partnership opportunities",
+						"tone":       "professional",
+						"key_points": "mutual benefits, timeline, next steps",
+						"length":     "concise",
 					},
 					Expected: "Professional meeting request email",
 				},
 			},
 			Providers: []string{"openai:gpt-4", "anthropic:claude-3-sonnet", "openai:gpt-3.5-turbo"},
 		},
-		
+
 		{
 			Name:        "learning-assistant",
 			Description: "Create educational content and explanations",

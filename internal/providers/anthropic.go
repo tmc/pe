@@ -25,11 +25,11 @@ type AnthropicProvider struct {
 
 // AnthropicRequest represents the request structure for Anthropic API
 type AnthropicRequest struct {
-	Model       string     `json:"model"`
-	MaxTokens   int        `json:"max_tokens"`
+	Model       string          `json:"model"`
+	MaxTokens   int             `json:"max_tokens"`
 	Messages    []ClaudeMessage `json:"messages"`
-	Temperature *float64   `json:"temperature,omitempty"`
-	Stream      bool       `json:"stream,omitempty"`
+	Temperature *float64        `json:"temperature,omitempty"`
+	Stream      bool            `json:"stream,omitempty"`
 }
 
 // ClaudeMessage represents a Claude message
@@ -40,10 +40,10 @@ type ClaudeMessage struct {
 
 // AnthropicResponse represents the response structure from Anthropic API
 type AnthropicResponse struct {
-	ID           string `json:"id"`
-	Type         string `json:"type"`
-	Role         string `json:"role"`
-	Content      []struct {
+	ID      string `json:"id"`
+	Type    string `json:"type"`
+	Role    string `json:"role"`
+	Content []struct {
 		Type string `json:"type"`
 		Text string `json:"text"`
 	} `json:"content"`
@@ -199,7 +199,7 @@ func (p *AnthropicProvider) Generate(ctx context.Context, prompt string, options
 	}
 
 	latency := time.Since(startTime)
-	
+
 	// Calculate cost (approximate)
 	cost := calculateAnthropicCost(p.model, anthropicResp.Usage.InputTokens, anthropicResp.Usage.OutputTokens)
 
@@ -294,7 +294,7 @@ func (p *AnthropicProvider) handleStreamResponse(ctx context.Context, resp *http
 		}
 
 		event := scanner.Event()
-		
+
 		// Handle different event types
 		switch event.Type {
 		case "content_block_delta":
@@ -387,7 +387,7 @@ func calculateAnthropicCost(model string, inputTokens, outputTokens int) float64
 func (p *AnthropicProvider) EvaluatePrompt(ctx context.Context, prompt string, vars map[string]interface{}) (*promptfoo.ProviderResponse, error) {
 	// Convert vars to GenerateOptions
 	options := llm.GenerateOptions{}
-	
+
 	if temp, ok := vars["temperature"].(float64); ok {
 		options.Temperature = &temp
 	}

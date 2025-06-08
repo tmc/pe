@@ -15,43 +15,43 @@ import (
 
 // ComposeConfig represents configuration for prompt composition
 type ComposeConfig struct {
-	Components      []string          `json:"components"`
-	Style          string            `json:"style"`
-	Target         string            `json:"target"`
-	Coherence      bool              `json:"coherence"`
-	ValidationGate bool              `json:"validation_gate"`
-	Optimize       bool              `json:"optimize"`
+	Components     []string               `json:"components"`
+	Style          string                 `json:"style"`
+	Target         string                 `json:"target"`
+	Coherence      bool                   `json:"coherence"`
+	ValidationGate bool                   `json:"validation_gate"`
+	Optimize       bool                   `json:"optimize"`
 	Metadata       map[string]interface{} `json:"metadata"`
 }
 
 // EnhancedComposeConfig extends ComposeConfig with DSPy-style features
 type EnhancedComposeConfig struct {
 	ComposeConfig
-	QualityGates          bool   `json:"quality_gates"`
-	ProgramSynthesis      bool   `json:"program_synthesis"`
-	ParameterOptimization bool   `json:"parameter_optimization"`
-	SignatureValidation   bool   `json:"signature_validation"`
-	MultiStageOptimization bool  `json:"multi_stage_optimization"`
-	StatisticalValidation bool   `json:"statistical_validation"`
+	QualityGates           bool `json:"quality_gates"`
+	ProgramSynthesis       bool `json:"program_synthesis"`
+	ParameterOptimization  bool `json:"parameter_optimization"`
+	SignatureValidation    bool `json:"signature_validation"`
+	MultiStageOptimization bool `json:"multi_stage_optimization"`
+	StatisticalValidation  bool `json:"statistical_validation"`
 }
 
 // PromptComponent represents a reusable prompt component
 type PromptComponent struct {
-	Type        string                 `json:"type"`
-	Content     string                 `json:"content"`
-	Category    string                 `json:"category"`
-	Metadata    map[string]interface{} `json:"metadata"`
-	Verified    bool                   `json:"verified"`
-	Dependencies []string              `json:"dependencies,omitempty"`
+	Type         string                 `json:"type"`
+	Content      string                 `json:"content"`
+	Category     string                 `json:"category"`
+	Metadata     map[string]interface{} `json:"metadata"`
+	Verified     bool                   `json:"verified"`
+	Dependencies []string               `json:"dependencies,omitempty"`
 }
 
 // ComposeResult represents the result of prompt composition
 type ComposeResult struct {
-	ComposedPrompt string            `json:"composed_prompt"`
-	Components     []PromptComponent `json:"components"`
-	Style          string            `json:"style"`
-	CoherenceScore float64           `json:"coherence_score,omitempty"`
-	ValidationPass bool              `json:"validation_pass"`
+	ComposedPrompt string                 `json:"composed_prompt"`
+	Components     []PromptComponent      `json:"components"`
+	Style          string                 `json:"style"`
+	CoherenceScore float64                `json:"coherence_score,omitempty"`
+	ValidationPass bool                   `json:"validation_pass"`
 	Metadata       map[string]interface{} `json:"metadata"`
 }
 
@@ -92,7 +92,7 @@ func init() {
 	composeCmd.Flags().Bool("coherence-check", false, "Check coherence between components")
 	composeCmd.Flags().Bool("validate", false, "Validate component compatibility")
 	composeCmd.Flags().String("examples", "", "Examples file for few-shot composition")
-	
+
 	// DSPy-style enhanced features
 	composeCmd.Flags().Bool("quality-gates", false, "Enable statistical quality gates")
 	composeCmd.Flags().Bool("program-synthesis", false, "Use automated program synthesis")
@@ -107,7 +107,7 @@ func init() {
 
 func runCompose(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
-	
+
 	// Handle library initialization
 	if libInit, _ := cmd.Flags().GetBool("library-init"); libInit {
 		return initComponentLibrary()
@@ -166,7 +166,7 @@ func runCompose(cmd *cobra.Command, args []string) error {
 	if err := validateComponentDependencies(components); err != nil {
 		return fmt.Errorf("dependency validation failed: %v", err)
 	}
-	
+
 	// Validate component compatibility if requested
 	if validate {
 		validateComponentCompatibility(components)
@@ -175,7 +175,7 @@ func runCompose(cmd *cobra.Command, args []string) error {
 	// Compose prompt with style-specific logic
 	fmt.Printf("Composing %d components\n", len(components))
 	fmt.Printf("Style: %s\n", config.Style)
-	
+
 	// Print style-specific messages
 	switch config.Style {
 	case "cot":
@@ -207,44 +207,44 @@ func runCompose(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
-	
+
 	// Handle optimization message
 	if config.Optimize {
 		fmt.Println("Composing with optimization")
 		fmt.Printf("Target model: %s\n", config.Target)
 		fmt.Println("Optimizing coherence")
 	}
-	
+
 	composer := metaprompt.NewPromptComposer()
-	
+
 	// Convert components to interface slice
 	var interfaceComponents []interface{}
 	for _, comp := range components {
 		// Convert to metaprompt.PromptComponent
 		metaComp := metaprompt.PromptComponent{
-			Type:     comp.Type,
-			Content:  comp.Content,
-			Category: comp.Category,
-			Metadata: comp.Metadata,
-			Verified: comp.Verified,
+			Type:         comp.Type,
+			Content:      comp.Content,
+			Category:     comp.Category,
+			Metadata:     comp.Metadata,
+			Verified:     comp.Verified,
 			Dependencies: comp.Dependencies,
 		}
 		interfaceComponents = append(interfaceComponents, metaComp)
 	}
-	
+
 	// Create config map for composer
 	configMap := map[string]interface{}{
-		"Style":          config.Style,
-		"QualityGates":   config.QualityGates,
-		"ProgramSynthesis": config.ProgramSynthesis,
+		"Style":                 config.Style,
+		"QualityGates":          config.QualityGates,
+		"ProgramSynthesis":      config.ProgramSynthesis,
 		"ParameterOptimization": config.ParameterOptimization,
 	}
-	
+
 	metaResult, err := composer.Compose(ctx, interfaceComponents, configMap)
 	if err != nil {
 		return fmt.Errorf("composition failed: %v", err)
 	}
-	
+
 	// Convert to local result type
 	result := &ComposeResult{
 		ComposedPrompt: metaResult.ComposedPrompt,
@@ -253,7 +253,7 @@ func runCompose(cmd *cobra.Command, args []string) error {
 		ValidationPass: metaResult.ValidationPass,
 		Metadata:       metaResult.Metadata,
 	}
-	
+
 	// Debug: print composed prompt
 	if result.ComposedPrompt == "" {
 		fmt.Println("Warning: Composed prompt is empty")
@@ -296,12 +296,12 @@ func runCompose(cmd *cobra.Command, args []string) error {
 	if config.Optimize {
 		fmt.Println("TextGrad optimization applied")
 	}
-	
+
 	// Print expected output for the test
 	if config.Style == "cot" {
 		// Already printed above in the switch statement
 	}
-	
+
 	// Print composition complete
 	fmt.Println("Composition complete")
 
@@ -333,7 +333,7 @@ func loadComposeConfig(cmd *cobra.Command, args []string) (*EnhancedComposeConfi
 		components = args
 	}
 	config.Components = components
-	
+
 	config.Style, _ = cmd.Flags().GetString("style")
 	config.Target, _ = cmd.Flags().GetString("target")
 	config.Coherence, _ = cmd.Flags().GetBool("coherence")
@@ -440,7 +440,7 @@ func loadComponent(path string) (PromptComponent, error) {
 
 func inferComponentType(path, content string) string {
 	filename := strings.ToLower(filepath.Base(path))
-	
+
 	if strings.Contains(filename, "context") {
 		return "context"
 	}
@@ -453,7 +453,7 @@ func inferComponentType(path, content string) string {
 	if strings.Contains(filename, "constraint") {
 		return "constraint"
 	}
-	
+
 	// Analyze content for type hints
 	contentLower := strings.ToLower(content)
 	if strings.Contains(contentLower, "you are") || strings.Contains(contentLower, "your role") {
@@ -462,7 +462,7 @@ func inferComponentType(path, content string) string {
 	if strings.Contains(contentLower, "please") || strings.Contains(contentLower, "analyze") {
 		return "instruction"
 	}
-	
+
 	return "unknown"
 }
 
@@ -492,7 +492,7 @@ func validateCoherence(ctx context.Context, prompt string) (float64, error) {
 	// Implement semantic coherence validation
 	// This would use an LLM to evaluate semantic consistency
 	// For now, return a placeholder score
-	
+
 	// Simple heuristic based on prompt structure
 	sentences := strings.Split(prompt, ".")
 	if len(sentences) < 2 {
@@ -528,11 +528,11 @@ func outputComposeResult(cmd *cobra.Command, result *ComposeResult) error {
 	// Print to stdout
 	fmt.Println("=== Composed Prompt ===")
 	fmt.Println(result.ComposedPrompt)
-	
+
 	if result.CoherenceScore > 0 {
 		fmt.Printf("\nCoherence Score: %.2f\n", result.CoherenceScore)
 	}
-	
+
 	fmt.Printf("Components Used: %d\n", len(result.Components))
 	fmt.Printf("Style: %s\n", result.Style)
 	fmt.Printf("Validation Passed: %t\n", result.ValidationPass)
@@ -544,7 +544,7 @@ func initComponentLibrary() error {
 	// Create component library structure
 	dirs := []string{
 		"components/context",
-		"components/instructions", 
+		"components/instructions",
 		"components/examples",
 		"components/constraints",
 		"components/templates",
@@ -558,11 +558,11 @@ func initComponentLibrary() error {
 
 	// Create sample components
 	samples := map[string]string{
-		"components/context/general.txt": "You are an AI assistant with general knowledge and expertise.",
-		"components/context/technical.txt": "You are a technical expert with deep knowledge in software engineering.",
-		"components/instructions/analyze.txt": "Please analyze the following information and provide detailed insights.",
+		"components/context/general.txt":           "You are an AI assistant with general knowledge and expertise.",
+		"components/context/technical.txt":         "You are a technical expert with deep knowledge in software engineering.",
+		"components/instructions/analyze.txt":      "Please analyze the following information and provide detailed insights.",
 		"components/examples/analysis-example.txt": "Example: Input: Sales data shows 20% increase. Output: This indicates strong market performance.",
-		"components/constraints/format.txt": "Provide your response in a clear, structured format with bullet points.",
+		"components/constraints/format.txt":        "Provide your response in a clear, structured format with bullet points.",
 	}
 
 	for path, content := range samples {
@@ -582,18 +582,18 @@ func initComponentLibrary() error {
 
 func simpleOptimizePrompt(prompt string) string {
 	optimized := prompt
-	
+
 	// Add structure if missing
 	if !strings.Contains(prompt, ":") && !strings.Contains(prompt, "\n") {
 		optimized = "Task: " + optimized + "\n\nPlease provide a detailed response."
 	}
-	
+
 	// Add specificity cues
-	if !strings.Contains(strings.ToLower(prompt), "specific") && 
-	   !strings.Contains(strings.ToLower(prompt), "detailed") {
+	if !strings.Contains(strings.ToLower(prompt), "specific") &&
+		!strings.Contains(strings.ToLower(prompt), "detailed") {
 		optimized += " Please be specific and detailed in your response."
 	}
-	
+
 	return optimized
 }
 
@@ -635,7 +635,7 @@ func init() {
 func runSynthesize(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	task := strings.Join(args, " ")
-	
+
 	// Get synthesis configuration
 	strategy, _ := cmd.Flags().GetString("strategy")
 	examples, _ := cmd.Flags().GetInt("examples")
@@ -648,22 +648,22 @@ func runSynthesize(cmd *cobra.Command, args []string) error {
 	trace, _ := cmd.Flags().GetBool("trace")
 
 	fmt.Printf("🚀 Starting DSPy-style program synthesis for: %s\n", task)
-	fmt.Printf("Strategy: %s | Quality Gates: %t | Multi-objective: %t\n", 
+	fmt.Printf("Strategy: %s | Quality Gates: %t | Multi-objective: %t\n",
 		strategy, qualityGates, multiObjective)
 
 	// Create program synthesizer
 	synthesizer := metaprompt.NewProgramSynthesizer()
-	
+
 	// Create program specification
 	spec := metaprompt.ProgramSpec{
 		Task:     task,
 		Examples: make([]metaprompt.SignatureExample, examples),
 		Style:    "synthesized",
 		Quality: metaprompt.QualityRequirements{
-			MinCoherence:           0.8,
-			MinClarity:            0.8,
-			MinCompleteness:       0.7,
-			RequireOptimization:   multiObjective,
+			MinCoherence:            0.8,
+			MinClarity:              0.8,
+			MinCompleteness:         0.7,
+			RequireOptimization:     multiObjective,
 			StatisticalSignificance: 0.05,
 		},
 		Metadata: map[string]interface{}{
@@ -671,7 +671,7 @@ func runSynthesize(cmd *cobra.Command, args []string) error {
 			"quality_gates":   qualityGates,
 			"multi_objective": multiObjective,
 			"pareto_analysis": paretoAnalysis,
-			"trace":          trace,
+			"trace":           trace,
 		},
 	}
 
@@ -698,7 +698,7 @@ func runSynthesize(cmd *cobra.Command, args []string) error {
 
 	// Quality validation
 	if qualityGates && result.QualityScore < minConfidence {
-		fmt.Printf("⚠️  Warning: Quality score %.2f below threshold %.2f\n", 
+		fmt.Printf("⚠️  Warning: Quality score %.2f below threshold %.2f\n",
 			result.QualityScore, minConfidence)
 	}
 
@@ -706,7 +706,7 @@ func runSynthesize(cmd *cobra.Command, args []string) error {
 	if multiObjective {
 		fmt.Printf("\n🎯 Multi-objective Analysis:\n")
 		fmt.Printf("Accuracy: %.2f | Latency: Fast | Cost: Low\n", result.QualityScore)
-		
+
 		if paretoAnalysis {
 			fmt.Printf("📈 Pareto Analysis: This solution represents a good balance of accuracy/speed/cost\n")
 		}
@@ -730,19 +730,19 @@ func runSynthesize(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("\n✅ Synthesis completed successfully!\n")
 	fmt.Printf("💡 Tip: Use --trace for detailed synthesis information\n")
-	
+
 	return nil
 }
 
 // generateExampleInputs creates example inputs for the synthesis task
 func generateExampleInputs(task string, count int) []metaprompt.SignatureExample {
 	examples := make([]metaprompt.SignatureExample, count)
-	
+
 	// Generate simple example patterns based on task
 	for i := 0; i < count; i++ {
 		examples[i] = metaprompt.SignatureExample{
 			Input: map[string]interface{}{
-				"task": task,
+				"task":  task,
 				"input": fmt.Sprintf("Example input %d", i+1),
 			},
 			Output: map[string]interface{}{
@@ -751,7 +751,7 @@ func generateExampleInputs(task string, count int) []metaprompt.SignatureExample
 			Valid: true,
 		}
 	}
-	
+
 	return examples
 }
 
@@ -791,7 +791,7 @@ func addComponentToLibrary(componentPath, category string) error {
 // listComponents lists all components in the library
 func listComponents() error {
 	fmt.Println("Available components:")
-	
+
 	componentsDir := "components"
 	categories, err := os.ReadDir(componentsDir)
 	if err != nil {
@@ -801,7 +801,7 @@ func listComponents() error {
 	for _, category := range categories {
 		if category.IsDir() {
 			fmt.Printf("  %s/\n", category.Name())
-			
+
 			categoryPath := filepath.Join(componentsDir, category.Name())
 			files, err := os.ReadDir(categoryPath)
 			if err != nil {
@@ -822,16 +822,16 @@ func listComponents() error {
 // importComponents imports components from a URL
 func importComponents(url string) error {
 	fmt.Printf("Importing components from %s\n", url)
-	
+
 	// In a real implementation, this would:
 	// 1. Download the archive from the URL
 	// 2. Extract components
 	// 3. Add them to the library
-	
+
 	// For now, simulate the import
 	fmt.Println("Importing components...")
 	fmt.Println("Added 5 components from archive")
-	
+
 	return nil
 }
 
@@ -842,7 +842,7 @@ func checkCoherence(components []string) error {
 	}
 
 	fmt.Println("Coherence analysis:")
-	
+
 	// Load and analyze components
 	var contents []string
 	for _, comp := range components {
@@ -856,10 +856,10 @@ func checkCoherence(components []string) error {
 	// Simple coherence calculation
 	coherenceScore := calculateSimpleCoherence(contents)
 	styleConsistency := calculateStyleConsistency(contents)
-	
+
 	fmt.Printf("Semantic similarity: %.2f\n", coherenceScore)
 	fmt.Printf("Style consistency: %.2f\n", styleConsistency)
-	
+
 	if coherenceScore >= 0.8 && styleConsistency >= 0.8 {
 		fmt.Println("No conflicts detected")
 	} else if coherenceScore < 0.5 {
@@ -878,7 +878,7 @@ func calculateSimpleCoherence(texts []string) float64 {
 	// Check for semantic similarity based on common tasks
 	hasCommonTopic := false
 	topics := []string{"sentiment", "analyze", "text", "emotional", "tone", "determine"}
-	
+
 	topicCount := 0
 	for _, text := range texts {
 		textLower := strings.ToLower(text)
@@ -889,7 +889,7 @@ func calculateSimpleCoherence(texts []string) float64 {
 			}
 		}
 	}
-	
+
 	if topicCount == len(texts) {
 		hasCommonTopic = true
 	}
@@ -924,7 +924,7 @@ func calculateSimpleCoherence(texts []string) float64 {
 	}
 
 	baseScore := totalOverlap / float64(pairs)
-	
+
 	// Boost score if common topic found
 	if hasCommonTopic {
 		baseScore = 0.85
@@ -966,7 +966,7 @@ func calculateStyleConsistency(texts []string) float64 {
 		for _, s := range sentences {
 			totalLength += len(strings.TrimSpace(s))
 		}
-		
+
 		if len(sentences) > 0 {
 			avgSentenceLength = append(avgSentenceLength, float64(totalLength)/float64(len(sentences)))
 		}
@@ -986,8 +986,8 @@ func calculateStyleConsistency(texts []string) float64 {
 	punctVariance := calculateMetricVariance(punctuationDensity)
 
 	// Convert variance to consistency score (lower variance = higher consistency)
-	consistency := 1.0 - (sentLenVariance + punctVariance) / 2.0
-	
+	consistency := 1.0 - (sentLenVariance+punctVariance)/2.0
+
 	// For similar texts about the same topic, boost consistency
 	hasCommonStyle := true
 	for _, text := range texts {
@@ -998,11 +998,11 @@ func calculateStyleConsistency(texts []string) float64 {
 			break
 		}
 	}
-	
+
 	if hasCommonStyle {
 		consistency = 0.92
 	}
-	
+
 	return math.Max(0.0, math.Min(1.0, consistency))
 }
 
@@ -1040,7 +1040,7 @@ func validateComponentCompatibility(components []PromptComponent) {
 	var domains []string
 	for _, comp := range components {
 		content := strings.ToLower(comp.Content)
-		
+
 		// Detect domains
 		if strings.Contains(content, "software") || strings.Contains(content, "engineering") || strings.Contains(content, "code") {
 			domains = append(domains, "software")
@@ -1055,25 +1055,25 @@ func validateComponentCompatibility(components []PromptComponent) {
 			domains = append(domains, "financial")
 		}
 	}
-	
+
 	// Check for conflicts
 	uniqueDomains := make(map[string]bool)
 	for _, domain := range domains {
 		uniqueDomains[domain] = true
 	}
-	
+
 	if len(uniqueDomains) > 1 {
 		fmt.Println("Warning: Potential incompatibility detected")
 		hasContext := false
 		hasIncompatible := false
-		
+
 		for _, comp := range components {
 			if comp.Type == "context" && !hasContext {
 				fmt.Printf("context.txt expects: %s knowledge\n", detectDomain(comp.Content))
 				hasContext = true
 			}
 		}
-		
+
 		for _, comp := range components {
 			if (comp.Type == "constraint" || comp.Type == "unknown" || comp.Type == "") && !hasIncompatible {
 				if strings.Contains(strings.ToLower(comp.Content), "specialized") {

@@ -59,7 +59,7 @@ func (m *Manager) Discover() error {
 
 	// Look for plugins in PATH
 	paths := strings.Split(os.Getenv("PATH"), string(os.PathListSeparator))
-	
+
 	for _, dir := range paths {
 		if err := m.discoverInDir(dir); err != nil {
 			// Log but don't fail on individual directory errors

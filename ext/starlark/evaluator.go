@@ -27,13 +27,13 @@ func NewEvaluator() *Evaluator {
 // EvalFile executes a Starlark file and returns the result
 func (e *Evaluator) EvalFile(filename string, src []byte) (starlark.StringDict, error) {
 	thread := &starlark.Thread{Name: "pe-starlark"}
-	
+
 	// Execute the Starlark code
 	globals, err := starlark.ExecFile(thread, filename, src, e.globals)
 	if err != nil {
 		return nil, fmt.Errorf("starlark execution error: %w", err)
 	}
-	
+
 	return globals, nil
 }
 
@@ -43,24 +43,24 @@ func (e *Evaluator) EvaluateTest(globals starlark.StringDict, testName string, r
 	if !ok {
 		return nil, fmt.Errorf("test function %q not found", testName)
 	}
-	
+
 	thread := &starlark.Thread{Name: "pe-test"}
-	
+
 	// Call the test function with the response
 	result, err := starlark.Call(thread, testFunc, starlark.Tuple{starlark.String(response)}, nil)
 	if err != nil {
 		return nil, fmt.Errorf("test execution error: %w", err)
 	}
-	
+
 	// Convert result to TestResult
 	return convertToTestResult(result)
 }
 
 // TestResult represents the result of a Starlark test evaluation
 type TestResult struct {
-	Pass    bool              `json:"pass"`
-	Score   float64           `json:"score,omitempty"`
-	Reason  string            `json:"reason,omitempty"`
+	Pass    bool                   `json:"pass"`
+	Score   float64                `json:"score,omitempty"`
+	Reason  string                 `json:"reason,omitempty"`
 	Details map[string]interface{} `json:"details,omitempty"`
 }
 
@@ -71,26 +71,26 @@ func convertToTestResult(val starlark.Value) (*TestResult, error) {
 		return &TestResult{Pass: bool(v)}, nil
 	case *starlark.Dict:
 		result := &TestResult{Details: make(map[string]interface{})}
-		
+
 		// Extract standard fields
 		if pass, found, _ := v.Get(starlark.String("pass")); found {
 			if passVal, ok := pass.(starlark.Bool); ok {
 				result.Pass = bool(passVal)
 			}
 		}
-		
+
 		if score, found, _ := v.Get(starlark.String("score")); found {
 			if scoreVal, ok := score.(starlark.Float); ok {
 				result.Score = float64(scoreVal)
 			}
 		}
-		
+
 		if reason, found, _ := v.Get(starlark.String("reason")); found {
 			if reasonVal, ok := reason.(starlark.String); ok {
 				result.Reason = string(reasonVal)
 			}
 		}
-		
+
 		// Add all other fields to details
 		for _, item := range v.Items() {
 			key := item[0].(starlark.String)
@@ -99,7 +99,7 @@ func convertToTestResult(val starlark.Value) (*TestResult, error) {
 				result.Details[keyStr] = convertStarlarkValue(item[1])
 			}
 		}
-		
+
 		return result, nil
 	default:
 		return nil, fmt.Errorf("unsupported result type: %T", val)
@@ -157,7 +157,7 @@ func builtinContains(thread *starlark.Thread, _ *starlark.Builtin, args starlark
 	if err := starlark.UnpackArgs("contains", args, kwargs, "text", &text, "substr", &substr); err != nil {
 		return nil, err
 	}
-	
+
 	result := strings.Contains(string(text), string(substr))
 	return starlark.Bool(result), nil
 }
@@ -168,7 +168,7 @@ func builtinMinLength(thread *starlark.Thread, _ *starlark.Builtin, args starlar
 	if err := starlark.UnpackArgs("min_length", args, kwargs, "text", &text, "min", &minLen); err != nil {
 		return nil, err
 	}
-	
+
 	minLenInt, _ := minLen.Int64()
 	result := len(string(text)) >= int(minLenInt)
 	return starlark.Bool(result), nil
@@ -180,7 +180,7 @@ func builtinMaxLength(thread *starlark.Thread, _ *starlark.Builtin, args starlar
 	if err := starlark.UnpackArgs("max_length", args, kwargs, "text", &text, "max", &maxLen); err != nil {
 		return nil, err
 	}
-	
+
 	maxLenInt, _ := maxLen.Int64()
 	result := len(string(text)) <= int(maxLenInt)
 	return starlark.Bool(result), nil
@@ -191,7 +191,7 @@ func builtinEquals(thread *starlark.Thread, _ *starlark.Builtin, args starlark.T
 	if err := starlark.UnpackArgs("equals", args, kwargs, "a", &a, "b", &b); err != nil {
 		return nil, err
 	}
-	
+
 	result := string(a) == string(b)
 	return starlark.Bool(result), nil
 }
@@ -201,13 +201,13 @@ func builtinRegexMatch(thread *starlark.Thread, _ *starlark.Builtin, args starla
 	if err := starlark.UnpackArgs("regex_match", args, kwargs, "text", &text, "pattern", &pattern); err != nil {
 		return nil, err
 	}
-	
+
 	// Compile and match the regex
 	regex, err := regexp.Compile(string(pattern))
 	if err != nil {
 		return nil, fmt.Errorf("invalid regex pattern: %w", err)
 	}
-	
+
 	result := regex.MatchString(string(text))
 	return starlark.Bool(result), nil
 }
@@ -217,7 +217,7 @@ func builtinWordCount(thread *starlark.Thread, _ *starlark.Builtin, args starlar
 	if err := starlark.UnpackArgs("word_count", args, kwargs, "text", &text); err != nil {
 		return nil, err
 	}
-	
+
 	words := strings.Fields(string(text))
 	return starlark.MakeInt(len(words)), nil
 }

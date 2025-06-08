@@ -33,12 +33,12 @@ type LossFunction struct {
 
 // OptimizationStep represents a single optimization step
 type OptimizationStep struct {
-	StepSize      float64            `json:"step_size"`
-	Direction     string             `json:"direction"`     // "increase", "decrease", "modify"
-	Component     string             `json:"component"`     // Which part to modify
-	Modification  string             `json:"modification"`  // Specific change to make
-	ExpectedGain  float64            `json:"expected_gain"` // Predicted improvement
-	Confidence    float64            `json:"confidence"`    // Confidence in this step
+	StepSize     float64 `json:"step_size"`
+	Direction    string  `json:"direction"`     // "increase", "decrease", "modify"
+	Component    string  `json:"component"`     // Which part to modify
+	Modification string  `json:"modification"`  // Specific change to make
+	ExpectedGain float64 `json:"expected_gain"` // Predicted improvement
+	Confidence   float64 `json:"confidence"`    // Confidence in this step
 }
 
 // GradientBuffer accumulates gradients over time
@@ -64,8 +64,8 @@ type ConvergenceMetrics struct {
 	CurrentLoss    float64 `json:"current_loss"`
 	LossReduction  float64 `json:"loss_reduction"`
 	GradientNorm   float64 `json:"gradient_norm"`
-	Convergence    float64 `json:"convergence"`    // 0.0 = not converged, 1.0 = fully converged
-	Stability      float64 `json:"stability"`      // How stable the optimization is
+	Convergence    float64 `json:"convergence"`     // 0.0 = not converged, 1.0 = fully converged
+	Stability      float64 `json:"stability"`       // How stable the optimization is
 	IterationsLeft int     `json:"iterations_left"` // Estimated iterations to convergence
 }
 
@@ -340,7 +340,7 @@ func (gc *GradientComputer) formatHistory(history []IterationResult) string {
 		if i >= 3 { // Limit to last 3 iterations
 			break
 		}
-		formatted.WriteString(fmt.Sprintf("Iteration %d: Score %.1f - %s\n", 
+		formatted.WriteString(fmt.Sprintf("Iteration %d: Score %.1f - %s\n",
 			iter.Iteration, iter.Score, truncateString(iter.Feedback, 100)))
 	}
 	return formatted.String()

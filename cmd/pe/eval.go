@@ -242,10 +242,10 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 func runDistributedEval(ctx context.Context, executor *distributed.Executor, config promptfoo.Config, timeout time.Duration, dryRun bool, maxConcurrency int, showProgress bool) (promptfoo.EvaluationResult, error) {
 	// Create tasks for each test case
 	var tasks []distributed.Task
-	
+
 	// Generate a unique evaluation ID
 	evalID := fmt.Sprintf("eval-%d", time.Now().Unix())
-	
+
 	// Create tasks for each prompt-test combination
 	for i, prompt := range config.Prompts {
 		for j, test := range config.Tests {
@@ -254,7 +254,7 @@ func runDistributedEval(ctx context.Context, executor *distributed.Executor, con
 			if len(config.Providers) > 0 {
 				provider = config.Providers[0]
 			}
-			
+
 			task := &EvalTask{
 				id:       fmt.Sprintf("%s-p%d-t%d", evalID, i, j),
 				prompt:   prompt,
@@ -264,15 +264,15 @@ func runDistributedEval(ctx context.Context, executor *distributed.Executor, con
 			tasks = append(tasks, task)
 		}
 	}
-	
+
 	// Submit tasks to executor
 	if err := executor.SubmitBatch(tasks); err != nil {
 		return promptfoo.EvaluationResult{}, fmt.Errorf("failed to submit tasks: %w", err)
 	}
-	
+
 	// Wait for completion
 	executor.Wait()
-	
+
 	// Collect results
 	results := promptfoo.EvaluationResult{
 		EvalID: evalID,
@@ -281,7 +281,7 @@ func runDistributedEval(ctx context.Context, executor *distributed.Executor, con
 		},
 		Config: config,
 	}
-	
+
 	// Build result table from distributed task results
 	allResults := executor.GetAllResults()
 	for _, taskResult := range allResults {
@@ -292,6 +292,6 @@ func runDistributedEval(ctx context.Context, executor *distributed.Executor, con
 		// Convert task result to table row
 		// This is a simplified version - full implementation would properly format results
 	}
-	
+
 	return results, nil
 }

@@ -23,32 +23,32 @@ func NewErrorDrivenRefiner(llmProvider llm.Provider) *ErrorDrivenRefiner {
 
 // ErrorPattern represents a detected failure pattern
 type ErrorPattern struct {
-	PatternID     string   `json:"pattern_id"`
-	ErrorType     string   `json:"error_type"`     // "semantic", "format", "logic", "constraint"
-	Description   string   `json:"description"`
-	Examples      []string `json:"examples"`       // Example failure cases
-	Frequency     float64  `json:"frequency"`      // How often this pattern occurs (0-1)
-	Severity      string   `json:"severity"`       // "low", "medium", "high", "critical"
-	RootCause     string   `json:"root_cause"`     // Underlying cause of the error
-	Triggers      []string `json:"triggers"`       // What conditions trigger this error
+	PatternID   string   `json:"pattern_id"`
+	ErrorType   string   `json:"error_type"` // "semantic", "format", "logic", "constraint"
+	Description string   `json:"description"`
+	Examples    []string `json:"examples"`   // Example failure cases
+	Frequency   float64  `json:"frequency"`  // How often this pattern occurs (0-1)
+	Severity    string   `json:"severity"`   // "low", "medium", "high", "critical"
+	RootCause   string   `json:"root_cause"` // Underlying cause of the error
+	Triggers    []string `json:"triggers"`   // What conditions trigger this error
 }
 
 // FixSuggestion represents an automated fix recommendation
 type FixSuggestion struct {
-	FixID         string   `json:"fix_id"`
-	TargetPattern string   `json:"target_pattern"`   // Which error pattern this fixes
-	FixType       string   `json:"fix_type"`         // "addition", "modification", "removal", "restructuring"
-	Description   string   `json:"description"`
-	Implementation string  `json:"implementation"`   // Specific text changes
-	Confidence    float64  `json:"confidence"`       // Confidence in this fix (0-1)
-	SideEffects   []string `json:"side_effects"`     // Potential negative impacts
-	TestCases     []string `json:"test_cases"`       // Cases to verify the fix
+	FixID          string   `json:"fix_id"`
+	TargetPattern  string   `json:"target_pattern"` // Which error pattern this fixes
+	FixType        string   `json:"fix_type"`       // "addition", "modification", "removal", "restructuring"
+	Description    string   `json:"description"`
+	Implementation string   `json:"implementation"` // Specific text changes
+	Confidence     float64  `json:"confidence"`     // Confidence in this fix (0-1)
+	SideEffects    []string `json:"side_effects"`   // Potential negative impacts
+	TestCases      []string `json:"test_cases"`     // Cases to verify the fix
 }
 
 // RegressionTest represents a test to prevent regression
 type RegressionTest struct {
 	TestID       string `json:"test_id"`
-	TestType     string `json:"test_type"`     // "positive", "negative", "edge_case"
+	TestType     string `json:"test_type"` // "positive", "negative", "edge_case"
 	Input        string `json:"input"`
 	ExpectedType string `json:"expected_type"` // "contains", "format", "semantic"
 	Expected     string `json:"expected"`
@@ -57,34 +57,34 @@ type RegressionTest struct {
 
 // RefinerResult contains the complete error analysis and fixes
 type RefinerResult struct {
-	OriginalPrompt    string             `json:"original_prompt"`
-	RefinedPrompt     string             `json:"refined_prompt"`
-	ErrorPatterns     []ErrorPattern     `json:"error_patterns"`
-	AppliedFixes      []FixSuggestion    `json:"applied_fixes"`
-	RegressionTests   []RegressionTest   `json:"regression_tests"`
-	QualityMetrics    QualityMetrics     `json:"quality_metrics"`
-	ImprovementScore  float64            `json:"improvement_score"`
-	ValidationResults ValidationResults  `json:"validation_results"`
-	Recommendations   []string           `json:"recommendations"`
+	OriginalPrompt    string            `json:"original_prompt"`
+	RefinedPrompt     string            `json:"refined_prompt"`
+	ErrorPatterns     []ErrorPattern    `json:"error_patterns"`
+	AppliedFixes      []FixSuggestion   `json:"applied_fixes"`
+	RegressionTests   []RegressionTest  `json:"regression_tests"`
+	QualityMetrics    QualityMetrics    `json:"quality_metrics"`
+	ImprovementScore  float64           `json:"improvement_score"`
+	ValidationResults ValidationResults `json:"validation_results"`
+	Recommendations   []string          `json:"recommendations"`
 }
 
 // QualityMetrics tracks prompt quality improvements
 type QualityMetrics struct {
-	ErrorReduction     float64 `json:"error_reduction"`      // Reduction in error patterns
-	RobustnessIncrease float64 `json:"robustness_increase"`  // Improvement in robustness
-	ClarityScore       float64 `json:"clarity_score"`        // Overall clarity rating
-	ConsistencyScore   float64 `json:"consistency_score"`    // Response consistency
-	Completeness       float64 `json:"completeness"`         // Requirement coverage
+	ErrorReduction     float64 `json:"error_reduction"`     // Reduction in error patterns
+	RobustnessIncrease float64 `json:"robustness_increase"` // Improvement in robustness
+	ClarityScore       float64 `json:"clarity_score"`       // Overall clarity rating
+	ConsistencyScore   float64 `json:"consistency_score"`   // Response consistency
+	Completeness       float64 `json:"completeness"`        // Requirement coverage
 }
 
 // ValidationResults contains fix validation outcomes
 type ValidationResults struct {
-	FixesValidated   int      `json:"fixes_validated"`
-	FixesSuccessful  int      `json:"fixes_successful"`
-	FixesFailed      int      `json:"fixes_failed"`
-	RegressionsPassed int     `json:"regressions_passed"`
-	RegressionsTotal  int     `json:"regressions_total"`
-	FailedTests      []string `json:"failed_tests"`
+	FixesValidated    int      `json:"fixes_validated"`
+	FixesSuccessful   int      `json:"fixes_successful"`
+	FixesFailed       int      `json:"fixes_failed"`
+	RegressionsPassed int      `json:"regressions_passed"`
+	RegressionsTotal  int      `json:"regressions_total"`
+	FailedTests       []string `json:"failed_tests"`
 }
 
 // RefinePrompt performs comprehensive error analysis and fixing
@@ -273,7 +273,7 @@ TASK: Create an improved version of the prompt that incorporates these fixes whi
 3. Keeping the prompt clear and coherent
 4. Avoiding conflicts between different fixes
 
-Provide ONLY the improved prompt, without additional explanation.`, 
+Provide ONLY the improved prompt, without additional explanation.`,
 		originalPrompt, edr.formatFixSuggestions(appliedFixes))
 
 	options := llm.GenerateOptions{
@@ -383,7 +383,7 @@ func (edr *ErrorDrivenRefiner) formatErrorExamples(examples []string) string {
 	if len(examples) == 0 {
 		return "No specific error examples provided"
 	}
-	
+
 	var formatted strings.Builder
 	for i, example := range examples {
 		if i >= 5 { // Limit to 5 examples
@@ -397,7 +397,7 @@ func (edr *ErrorDrivenRefiner) formatErrorExamples(examples []string) string {
 func (edr *ErrorDrivenRefiner) formatErrorPatterns(patterns []ErrorPattern) string {
 	var formatted strings.Builder
 	for _, pattern := range patterns {
-		formatted.WriteString(fmt.Sprintf("- %s (%s): %s\n", 
+		formatted.WriteString(fmt.Sprintf("- %s (%s): %s\n",
 			pattern.PatternID, pattern.Severity, pattern.Description))
 	}
 	return formatted.String()
@@ -430,7 +430,7 @@ func (edr *ErrorDrivenRefiner) selectBestFixes(fixes []FixSuggestion) []FixSugge
 			selected = append(selected, fix)
 		}
 	}
-	
+
 	// If no high-confidence fixes, take the best one
 	if len(selected) == 0 && len(fixes) > 0 {
 		best := fixes[0]
@@ -441,7 +441,7 @@ func (edr *ErrorDrivenRefiner) selectBestFixes(fixes []FixSuggestion) []FixSugge
 		}
 		selected = append(selected, best)
 	}
-	
+
 	return selected
 }
 
@@ -483,13 +483,13 @@ func (edr *ErrorDrivenRefiner) calculateQualityMetrics(result *RefinerResult) Qu
 			totalSeverity += 1.0
 		}
 	}
-	
+
 	// Error reduction based on applied fixes
 	fixedSeverity := 0.0
 	for range result.AppliedFixes {
 		fixedSeverity += 2.0 // Assume each fix addresses medium severity
 	}
-	
+
 	errorReduction := 0.0
 	if totalSeverity > 0 {
 		errorReduction = fixedSeverity / totalSeverity
@@ -501,16 +501,16 @@ func (edr *ErrorDrivenRefiner) calculateQualityMetrics(result *RefinerResult) Qu
 	return QualityMetrics{
 		ErrorReduction:     errorReduction,
 		RobustnessIncrease: float64(len(result.AppliedFixes)) * 0.2, // 0.2 per fix
-		ClarityScore:       0.8, // Would need actual evaluation
-		ConsistencyScore:   0.8, // Would need actual evaluation  
-		Completeness:       0.85, // Would need actual evaluation
+		ClarityScore:       0.8,                                     // Would need actual evaluation
+		ConsistencyScore:   0.8,                                     // Would need actual evaluation
+		Completeness:       0.85,                                    // Would need actual evaluation
 	}
 }
 
 func (edr *ErrorDrivenRefiner) calculateImprovementScore(result *RefinerResult) float64 {
 	metrics := result.QualityMetrics
 	validation := result.ValidationResults
-	
+
 	// Weighted combination of metrics
 	scoreComponents := []float64{
 		metrics.ErrorReduction * 0.3,
@@ -519,18 +519,18 @@ func (edr *ErrorDrivenRefiner) calculateImprovementScore(result *RefinerResult) 
 		metrics.ConsistencyScore * 0.15,
 		metrics.Completeness * 0.15,
 	}
-	
+
 	baseScore := 0.0
 	for _, component := range scoreComponents {
 		baseScore += component
 	}
-	
+
 	// Apply validation penalty
 	if validation.RegressionsTotal > 0 {
 		successRate := float64(validation.RegressionsPassed) / float64(validation.RegressionsTotal)
 		baseScore *= successRate
 	}
-	
+
 	return baseScore * 10.0 // Scale to 0-10
 }
 
@@ -581,7 +581,7 @@ func (edr *ErrorDrivenRefiner) calculateValidationSuccessRate(validation Validat
 	if total == 0 {
 		return 1.0
 	}
-	
+
 	success := validation.RegressionsPassed + validation.FixesSuccessful
 	return float64(success) / float64(total)
 }

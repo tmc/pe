@@ -31,7 +31,7 @@ func runScriptTest(filename string) error {
 
 	scanner := bufio.NewScanner(strings.NewReader(string(data)))
 	lineNum := 0
-	
+
 	var currentCmd string
 	var expectedOutput []string
 	var assertions []string
@@ -40,7 +40,7 @@ func runScriptTest(filename string) error {
 	for scanner.Scan() {
 		lineNum++
 		line := scanner.Text()
-		
+
 		// Skip empty lines and comments when not in test
 		if !inTest && (strings.TrimSpace(line) == "" || strings.HasPrefix(strings.TrimSpace(line), "#")) {
 			continue
@@ -142,10 +142,10 @@ func executeTest(cmdLine string, expectedOutput []string, assertions []string) e
 	// Execute command
 	cmd := exec.Command(cmdParts[0], cmdParts[1:]...)
 	cmd.Env = append(os.Environ(), env...)
-	
+
 	output, err := cmd.CombinedOutput()
 	outputStr := string(output)
-	
+
 	// Check exit code
 	if err != nil {
 		if expectedOutput == nil && len(assertions) == 0 {

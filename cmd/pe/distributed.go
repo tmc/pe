@@ -12,12 +12,12 @@ import (
 
 // Distributed execution flags
 var (
-	distributedMode     string
-	distributedNodes    []string
-	distributedWorkers  int
-	distributedTimeout  time.Duration
-	distributedRetries  int
-	distributedCache    bool
+	distributedMode    string
+	distributedNodes   []string
+	distributedWorkers int
+	distributedTimeout time.Duration
+	distributedRetries int
+	distributedCache   bool
 )
 
 // distributedCmd returns the distributed command group
@@ -114,7 +114,7 @@ func distributedJoinCmd() *cobra.Command {
 
 			// Discover peers
 			discoverer := distributed.NewPeerDiscovery(network, distributed.DiscoveryMethodBootstrap)
-			
+
 			if bootstrap != "" {
 				discoverer.SetBootstrapPeers([]string{bootstrap})
 			}
@@ -125,10 +125,10 @@ func distributedJoinCmd() *cobra.Command {
 			}
 
 			fmt.Println("Discovering peers...")
-			
+
 			// Wait for peers
 			time.Sleep(3 * time.Second)
-			
+
 			// Note: GetPeers method doesn't exist, we'd need to add it or use a different approach
 			fmt.Println("Peer discovery started")
 
@@ -156,7 +156,7 @@ func distributedStatusCmd() *cobra.Command {
 			fmt.Println("Tasks: 42 completed, 5 in progress")
 			fmt.Println("Cache: 128 MB used, 89% hit rate")
 			fmt.Println("Uptime: 2h 34m")
-			
+
 			return nil
 		},
 	}

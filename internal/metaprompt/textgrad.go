@@ -35,14 +35,14 @@ func NewTextGradOptimizer(provider llm.Provider) *TextGradOptimizer {
 
 // TextualGradient represents a textual gradient for optimization
 type TextualGradient struct {
-	Component    string   `json:"component"`
-	Feedback     string   `json:"feedback"`
-	Suggestions  []string `json:"suggestions"`
-	Confidence   float64  `json:"confidence"`
-	Priority     float64  `json:"priority"`
-	Gradient     string   `json:"gradient"`
-	Magnitude    float64  `json:"magnitude"`
-	Direction    string   `json:"direction"`
+	Component   string   `json:"component"`
+	Feedback    string   `json:"feedback"`
+	Suggestions []string `json:"suggestions"`
+	Confidence  float64  `json:"confidence"`
+	Priority    float64  `json:"priority"`
+	Gradient    string   `json:"gradient"`
+	Magnitude   float64  `json:"magnitude"`
+	Direction   string   `json:"direction"`
 }
 
 // ComputationGraph represents the computation graph for TextGrad
@@ -53,11 +53,11 @@ type ComputationGraph struct {
 
 // GraphNode represents a component in the computation graph
 type GraphNode struct {
-	ID          string                 `json:"id"`
-	Type        string                 `json:"type"` // prompt, response, tool_call, etc.
-	Content     string                 `json:"content"`
-	Gradients   []TextualGradient      `json:"gradients"`
-	Metadata    map[string]interface{} `json:"metadata"`
+	ID        string                 `json:"id"`
+	Type      string                 `json:"type"` // prompt, response, tool_call, etc.
+	Content   string                 `json:"content"`
+	Gradients []TextualGradient      `json:"gradients"`
+	Metadata  map[string]interface{} `json:"metadata"`
 }
 
 // GraphEdge represents a connection between nodes
@@ -72,14 +72,14 @@ type GraphEdge struct {
 func (tg *TextGradOptimizer) OptimizeWithTextGrad(ctx context.Context, cfg Config) (*OptimizationResult, error) {
 	start := time.Now()
 	result := &OptimizationResult{
-		OriginalPrompt: cfg.InitialPrompt,
+		OriginalPrompt:  cfg.InitialPrompt,
 		OptimizedPrompt: cfg.InitialPrompt,
-		Iterations: []IterationResult{},
-		CreatedAt: time.Now(),
+		Iterations:      []IterationResult{},
+		CreatedAt:       time.Now(),
 	}
 
 	currentPrompt := cfg.InitialPrompt
-	
+
 	maxIters := cfg.MaxIterations
 	if maxIters == 0 {
 		maxIters = cfg.Iterations
@@ -113,9 +113,9 @@ func (tg *TextGradOptimizer) OptimizeWithTextGrad(ctx context.Context, cfg Confi
 
 		iteration := IterationResult{
 			Iteration: i + 1,
-			Prompt: improvedPrompt,
-			Score: score,
-			Changes: tg.extractChanges(currentPrompt, improvedPrompt),
+			Prompt:    improvedPrompt,
+			Score:     score,
+			Changes:   tg.extractChanges(currentPrompt, improvedPrompt),
 			Timestamp: time.Now(),
 		}
 		result.Iterations = append(result.Iterations, iteration)
@@ -125,7 +125,7 @@ func (tg *TextGradOptimizer) OptimizeWithTextGrad(ctx context.Context, cfg Confi
 		if convergenceThreshold == 0 {
 			convergenceThreshold = 0.001 // default
 		}
-		if i > 0 && math.Abs(score - result.Iterations[i-1].Score) < convergenceThreshold {
+		if i > 0 && math.Abs(score-result.Iterations[i-1].Score) < convergenceThreshold {
 			break
 		}
 
@@ -210,7 +210,7 @@ Original Prompt: %s
 Gradients to apply:
 %s
 
-Provide only the improved prompt without any explanation.`, 
+Provide only the improved prompt without any explanation.`,
 		prompt, strings.Join(gradientDescriptions, "\n"))
 
 	options := llm.GenerateOptions{

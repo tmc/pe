@@ -27,18 +27,18 @@ other tasks where multiple attempts might yield different results.`,
 }
 
 var (
-	passnN               int
-	passnSamples         int
-	passnProvider        string
-	passnTemperature     float64
-	passnTestFile        string
-	passnOutputFormat    string
-	passnSaveResults     bool
-	passnDataDir         string
-	passnTags            []string
-	passnStrategy        string
-	passnStructuredType  string
-	passnSchema          string
+	passnN              int
+	passnSamples        int
+	passnProvider       string
+	passnTemperature    float64
+	passnTestFile       string
+	passnOutputFormat   string
+	passnSaveResults    bool
+	passnDataDir        string
+	passnTags           []string
+	passnStrategy       string
+	passnStructuredType string
+	passnSchema         string
 )
 
 func init() {
@@ -102,7 +102,7 @@ func runPassN(cmd *cobra.Command, args []string) error {
 	// Generate samples
 	ctx := context.Background()
 	fmt.Printf("Generating %d samples for pass@%d evaluation...\n", passnSamples, passnN)
-	
+
 	samples, err := generator.GenerateSamples(ctx, prompt, passnSamples)
 	if err != nil {
 		return fmt.Errorf("failed to generate samples: %w", err)
@@ -388,7 +388,7 @@ func outputPassNResults(result *metrics.PassAtNResult, evaluation metrics.PassNE
 func containsError(output string) bool {
 	errorIndicators := []string{"error", "exception", "failed", "invalid", "undefined"}
 	lowerOutput := strings.ToLower(output)
-	
+
 	for _, indicator := range errorIndicators {
 		if strings.Contains(lowerOutput, indicator) {
 			return true
@@ -408,12 +408,5 @@ func expandPath(path string) string {
 		path = filepath.Join(home, path[2:])
 	}
 	return path
-}
-
-func truncateString(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	return s[:maxLen] + "..."
 }
 

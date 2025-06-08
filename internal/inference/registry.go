@@ -47,11 +47,11 @@ func (r *Registry) NewProvider(name string, config map[string]interface{}) (Prov
 	r.mu.RLock()
 	factory, ok := r.factories[name]
 	r.mu.RUnlock()
-	
+
 	if !ok {
 		return nil, fmt.Errorf("provider %q not registered", name)
 	}
-	
+
 	return factory(config)
 }
 
@@ -59,7 +59,7 @@ func (r *Registry) NewProvider(name string, config map[string]interface{}) (Prov
 func (r *Registry) Providers() []string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	names := make([]string, 0, len(r.factories))
 	for name := range r.factories {
 		names = append(names, name)
@@ -70,7 +70,7 @@ func (r *Registry) Providers() []string {
 // DefaultClient creates a client with all registered providers.
 func DefaultClient() (*Client, error) {
 	client := NewClient()
-	
+
 	// Register all available providers with default configs
 	for _, name := range Providers() {
 		provider, err := NewProvider(name, nil)
@@ -80,7 +80,7 @@ func DefaultClient() (*Client, error) {
 		}
 		client.Register(name, provider)
 	}
-	
+
 	return client, nil
 }
 

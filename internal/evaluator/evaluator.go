@@ -92,9 +92,9 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 						response = &promptfoo.ProviderResponse{
 							Output: "Dry run response",
 							TokenUsage: &promptfoo.TokenUsage{
-								Total:      10,
-								Prompt:     5,
-								Completion: 5,
+								Total:       10,
+								Prompt:      5,
+								Completion:  5,
 								NumRequests: 1,
 								Details: &promptfoo.CompletionDetails{
 									Reasoning:          0,
@@ -179,7 +179,7 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 		var promptTotal, promptPrompt, promptCompletion, numRequests int32
 		totalCost := 0.0
 		assertPassCount, assertFailCount := 0, 0
-		
+
 		for _, result := range detailedResults {
 			if result.PromptID == promptMetadata[i].ID {
 				if result.Success {
@@ -197,7 +197,7 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 				if result.Response.Cost > 0 {
 					totalCost += result.Response.Cost
 				}
-				
+
 				// Count assertions
 				for _, componentResult := range result.GradingResult.ComponentResults {
 					if componentResult.Pass {
@@ -208,29 +208,29 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 				}
 			}
 		}
-		
+
 		// Create completion details (typically would be populated by the provider)
 		completionDetails := &promptfoo.CompletionDetails{
 			Reasoning:          0,
 			AcceptedPrediction: 0,
 			RejectedPrediction: 0,
 		}
-		
+
 		promptMetadata[i].Metrics = promptfoo.PromptMetrics{
-			Score:            float64(successes),
-			TestPassCount:    successes,
-			TestFailCount:    failures,
-			TestErrorCount:   errors,
-			AssertPassCount:  assertPassCount,
-			AssertFailCount:  assertFailCount,
-			TotalLatencyMs:   totalLatency,
+			Score:           float64(successes),
+			TestPassCount:   successes,
+			TestFailCount:   failures,
+			TestErrorCount:  errors,
+			AssertPassCount: assertPassCount,
+			AssertFailCount: assertFailCount,
+			TotalLatencyMs:  totalLatency,
 			TokenUsage: promptfoo.TokenUsage{
-				Total:         promptTotal,
-				Prompt:        promptPrompt,
-				Completion:    promptCompletion,
-				Cached:        0,
-				NumRequests:   numRequests,
-				Details:       completionDetails,
+				Total:       promptTotal,
+				Prompt:      promptPrompt,
+				Completion:  promptCompletion,
+				Cached:      0,
+				NumRequests: numRequests,
+				Details:     completionDetails,
 			},
 			NamedScores:      make(map[string]float64),
 			NamedScoresCount: make(map[string]int),
@@ -257,12 +257,12 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 				Failures:  failedTests,
 				Errors:    errorTests,
 				TokenUsage: promptfoo.TokenUsage{
-					Total:         totalTokens,
-					Prompt:        promptTokens,
-					Completion:    completionTokens,
-					Cached:        0,
-					NumRequests:   totalNumRequests,
-					Details:       completionDetails,
+					Total:       totalTokens,
+					Prompt:      promptTokens,
+					Completion:  completionTokens,
+					Cached:      0,
+					NumRequests: totalNumRequests,
+					Details:     completionDetails,
 				},
 			},
 		},
@@ -298,10 +298,10 @@ func evaluateAssertions(output string, asserts []promptfoo.Assertion) (bool, pro
 
 	// Create empty token usage with appropriate structure
 	tokenUsage := promptfoo.TokenUsage{
-		Total:      0,
-		Prompt:     0,
-		Completion: 0,
-		Cached:     0,
+		Total:       0,
+		Prompt:      0,
+		Completion:  0,
+		Cached:      0,
 		NumRequests: 1,
 		Details: &promptfoo.CompletionDetails{
 			Reasoning:          0,

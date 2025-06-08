@@ -61,7 +61,7 @@ func runGet(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return runGetModule(cmd)
 	}
-	
+
 	filename := args[0]
 	field := "all"
 	if len(args) > 1 {
@@ -160,12 +160,12 @@ func runGet(cmd *cobra.Command, args []string) error {
 		// Non-JSON output for all
 		fmt.Println("Main prompt:")
 		fmt.Println(p.Main)
-		
+
 		if p.SystemPrompt != "" {
 			fmt.Println("\nSystem prompt:")
 			fmt.Println(p.SystemPrompt)
 		}
-		
+
 		vars := extractVariables(p)
 		if len(vars) > 0 {
 			fmt.Println("\nVariables:")
@@ -173,14 +173,14 @@ func runGet(cmd *cobra.Command, args []string) error {
 				fmt.Printf("  - %s\n", v)
 			}
 		}
-		
+
 		if len(p.Defaults) > 0 {
 			fmt.Println("\nDefaults:")
 			for k, v := range p.Defaults {
 				fmt.Printf("  %s: %s\n", k, v)
 			}
 		}
-		
+
 		variants := getVariants(p)
 		if len(variants) > 0 {
 			fmt.Println("\nVariants:")
@@ -188,7 +188,7 @@ func runGet(cmd *cobra.Command, args []string) error {
 				fmt.Printf("  - %s\n", v)
 			}
 		}
-		
+
 		// Show other sections
 		for name, content := range p.Sections {
 			if !strings.HasPrefix(name, "variant:") && name != "system-prompt" {
@@ -220,7 +220,7 @@ func applyVariant(p *prompt.Prompt, variant string) *prompt.Prompt {
 		SystemPrompt: p.SystemPrompt,
 		Sections:     make(map[string]string),
 	}
-	
+
 	// Copy sections
 	for k, v := range p.Sections {
 		result.Sections[k] = v
@@ -235,12 +235,12 @@ func applyVariant(p *prompt.Prompt, variant string) *prompt.Prompt {
 			if line == "" {
 				continue
 			}
-			
+
 			parts := strings.Fields(line)
 			if len(parts) == 0 {
 				continue
 			}
-			
+
 			switch parts[0] {
 			case "extend-system-prompt":
 				if len(parts) > 1 {
@@ -269,16 +269,16 @@ func applyVariant(p *prompt.Prompt, variant string) *prompt.Prompt {
 			}
 		}
 	}
-	
+
 	return result
 }
 
 func extractVariables(p *prompt.Prompt) []string {
 	// Regular expression to match template variables
 	re := regexp.MustCompile(`\{\{\.(\w+)\}\}`)
-	
+
 	varMap := make(map[string]bool)
-	
+
 	// Extract from main prompt
 	matches := re.FindAllStringSubmatch(p.Main, -1)
 	for _, match := range matches {
@@ -286,7 +286,7 @@ func extractVariables(p *prompt.Prompt) []string {
 			varMap[match[1]] = true
 		}
 	}
-	
+
 	// Extract from system prompt
 	matches = re.FindAllStringSubmatch(p.SystemPrompt, -1)
 	for _, match := range matches {
@@ -294,7 +294,7 @@ func extractVariables(p *prompt.Prompt) []string {
 			varMap[match[1]] = true
 		}
 	}
-	
+
 	// Extract from sections
 	for _, content := range p.Sections {
 		matches = re.FindAllStringSubmatch(content, -1)
@@ -304,26 +304,26 @@ func extractVariables(p *prompt.Prompt) []string {
 			}
 		}
 	}
-	
+
 	// Convert to sorted list
 	var vars []string
 	for v := range varMap {
 		vars = append(vars, v)
 	}
-	
+
 	return vars
 }
 
 func getVariants(p *prompt.Prompt) []string {
 	var variants []string
-	
+
 	for name := range p.Sections {
 		if strings.HasPrefix(name, "variant:") {
 			variant := strings.TrimPrefix(name, "variant:")
 			variants = append(variants, variant)
 		}
 	}
-	
+
 	return variants
 }
 
@@ -333,14 +333,14 @@ func listKeys(p *prompt.Prompt) error {
 	fmt.Println("  system-prompt")
 	fmt.Println("  variables")
 	fmt.Println("  variants")
-	
+
 	// List section names
 	for name := range p.Sections {
 		if !strings.HasPrefix(name, "variant:") && name != "system-prompt" {
 			fmt.Printf("  %s\n", name)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -363,7 +363,7 @@ func getPromptInfo(p *prompt.Prompt) PromptInfo {
 		Variants:     getVariants(p),
 		Shebang:      p.Shebang,
 	}
-	
+
 	// Add non-variant sections
 	info.Sections = make(map[string]string)
 	for name, content := range p.Sections {
@@ -371,11 +371,11 @@ func getPromptInfo(p *prompt.Prompt) PromptInfo {
 			info.Sections[name] = content
 		}
 	}
-	
+
 	if len(info.Sections) == 0 {
 		info.Sections = nil
 	}
-	
+
 	return info
 }
 
@@ -385,26 +385,26 @@ func runGetModule(cmd *cobra.Command) error {
 	if err != nil {
 		return fmt.Errorf("reading go.mod: %w", err)
 	}
-	
+
 	// Simple parsing of go.mod
 	lines := strings.Split(string(data), "\n")
 	inRequire := false
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		
+
 		// Print module line
 		if strings.HasPrefix(line, "module ") {
 			fmt.Println(line)
 			continue
 		}
-		
+
 		// Check for require block
 		if line == "require (" {
 			inRequire = true
 			continue
 		}
-		
+
 		if inRequire {
 			if line == ")" {
 				inRequire = false
@@ -415,12 +415,12 @@ func runGetModule(cmd *cobra.Command) error {
 				fmt.Printf("require %s\n", line)
 			}
 		}
-		
+
 		// Handle single-line require
 		if strings.HasPrefix(line, "require ") {
 			fmt.Println(line)
 		}
 	}
-	
+
 	return nil
 }

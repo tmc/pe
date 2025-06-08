@@ -69,11 +69,11 @@ type PEVersion struct {
 
 // Require represents a required dependency
 type Require struct {
-	Mod        ModulePath
-	Version    string // Version constraint (e.g., "v1.0.0", "v1.2.3-beta.1")
-	Indirect   bool   // Added as indirect dependency
-	Syntax     *RequireSyntax
-	Comment    *Comment
+	Mod      ModulePath
+	Version  string // Version constraint (e.g., "v1.0.0", "v1.2.3-beta.1")
+	Indirect bool   // Added as indirect dependency
+	Syntax   *RequireSyntax
+	Comment  *Comment
 }
 
 // Exclude represents an excluded module version
@@ -114,10 +114,10 @@ type Trust struct {
 
 // Sign represents signing configuration
 type Sign struct {
-	KeyPath   string           // Path to signing key
-	Algorithm string           // Signing algorithm (ed25519, rsa-pss, etc.)
-	HSM       *HSMConfig       // Hardware security module config
-	Policy    *SigningPolicy   // Signing policy
+	KeyPath   string         // Path to signing key
+	Algorithm string         // Signing algorithm (ed25519, rsa-pss, etc.)
+	HSM       *HSMConfig     // Hardware security module config
+	Policy    *SigningPolicy // Signing policy
 	Syntax    *SignSyntax
 	Comment   *Comment
 }
@@ -134,21 +134,21 @@ type Registry struct {
 
 // Security represents security policy configuration
 type Security struct {
-	RequireSignatures bool              // Require all modules to be signed
-	AllowUnsignedDev  bool              // Allow unsigned modules in development
-	ScanContent       bool              // Enable content scanning for bias/toxicity
-	Policies          []SecurityPolicy  // Custom security policies
+	RequireSignatures bool             // Require all modules to be signed
+	AllowUnsignedDev  bool             // Allow unsigned modules in development
+	ScanContent       bool             // Enable content scanning for bias/toxicity
+	Policies          []SecurityPolicy // Custom security policies
 	Syntax            *SecuritySyntax
 	Comment           *Comment
 }
 
 // SecurityPolicy represents a custom security policy
 type SecurityPolicy struct {
-	Name        string
-	Type        string // "vulnerability", "license", "content", "custom"
-	Config      map[string]interface{}
-	Severity    string // "low", "medium", "high", "critical"
-	Action      string // "warn", "fail", "ignore"
+	Name     string
+	Type     string // "vulnerability", "license", "content", "custom"
+	Config   map[string]interface{}
+	Severity string // "low", "medium", "high", "critical"
+	Action   string // "warn", "fail", "ignore"
 }
 
 // HSMConfig represents hardware security module configuration
@@ -184,9 +184,9 @@ type Line interface {
 }
 
 type ModuleSyntax struct {
-	Tok   string
-	Path  string
-	Comm  *Comment
+	Tok  string
+	Path string
+	Comm *Comment
 }
 
 func (m *ModuleSyntax) Comment() *Comment { return m.Comm }
@@ -294,7 +294,7 @@ func Parse(r io.Reader) (*File, error) {
 		}
 
 		// Handle block endings
-		if inBlock != "" && line == "}" {
+		if inBlock != "" && (line == "}" || line == ")") {
 			if err := parseBlock(file, inBlock, blockLines); err != nil {
 				return nil, fmt.Errorf("line %d: %w", lineNum, err)
 			}
@@ -309,17 +309,18 @@ func Parse(r io.Reader) (*File, error) {
 			continue
 		}
 
-		// Parse top-level directives
-		if err := parseDirective(file, line, lineNum); err != nil {
-			return nil, fmt.Errorf("line %d: %w", lineNum, err)
-		}
-
-		// Check for block start
-		if strings.HasSuffix(line, " {") {
+		// Check for block start first
+		if strings.HasSuffix(line, " {") || strings.HasSuffix(line, " (") {
 			parts := strings.Fields(line)
 			if len(parts) >= 1 {
 				inBlock = parts[0]
 			}
+			continue
+		}
+
+		// Parse top-level directives
+		if err := parseDirective(file, line, lineNum); err != nil {
+			return nil, fmt.Errorf("line %d: %w", lineNum, err)
 		}
 	}
 
@@ -564,7 +565,7 @@ func parseExcludeBlock(file *File, lines []string) error {
 	return nil
 }
 
-// parseReplaceBlock parses a replace block  
+// parseReplaceBlock parses a replace block
 func parseReplaceBlock(file *File, lines []string) error {
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -844,7 +845,7 @@ func (f *File) Format() string {
 	// Trust settings
 	for _, trust := range f.Trust {
 		if !trust.ValidFrom.IsZero() && !trust.ValidUntil.IsZero() {
-			fmt.Fprintf(&buf, "trust %s %s valid %s %s\n", 
+			fmt.Fprintf(&buf, "trust %s %s valid %s %s\n",
 				trust.Mod, trust.Fingerprint,
 				trust.ValidFrom.Format("2006-01-02"),
 				trust.ValidUntil.Format("2006-01-02"))

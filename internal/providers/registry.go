@@ -21,10 +21,10 @@ func NewRegistry() *Registry {
 	r := &Registry{
 		factories: make(map[string]ProviderFactory),
 	}
-	
+
 	// Register built-in providers
 	r.registerBuiltinProviders()
-	
+
 	return r
 }
 
@@ -33,11 +33,11 @@ func (r *Registry) registerBuiltinProviders() {
 	r.Register("openai", func(model string, options map[string]interface{}) (llm.Provider, error) {
 		return NewOpenAIProvider(model, options)
 	})
-	
+
 	r.Register("anthropic", func(model string, options map[string]interface{}) (llm.Provider, error) {
 		return NewAnthropicProvider(model, options)
 	})
-	
+
 	// Register mock provider for testing
 	r.Register("mock", func(model string, options map[string]interface{}) (llm.Provider, error) {
 		return NewMockProvider(model, options)
@@ -57,18 +57,18 @@ func (r *Registry) Create(providerSpec string, options map[string]interface{}) (
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Normalize the model name
 	model = NormalizeModelName(providerName, model)
-	
+
 	r.mu.RLock()
 	factory, exists := r.factories[providerName]
 	r.mu.RUnlock()
-	
+
 	if !exists {
 		return nil, fmt.Errorf("unknown provider: %s", providerName)
 	}
-	
+
 	return factory(model, options)
 }
 
@@ -76,12 +76,12 @@ func (r *Registry) Create(providerSpec string, options map[string]interface{}) (
 func (r *Registry) List() []string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	var providers []string
 	for name := range r.factories {
 		providers = append(providers, name)
 	}
-	
+
 	return providers
 }
 
@@ -89,7 +89,7 @@ func (r *Registry) List() []string {
 func (r *Registry) Exists(name string) bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	_, exists := r.factories[name]
 	return exists
 }
@@ -124,11 +124,11 @@ func (r *Registry) ValidateProvider(providerSpec string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	if !r.Exists(providerName) {
 		return fmt.Errorf("unknown provider: %s", providerName)
 	}
-	
+
 	// Validate model is supported (optional check)
 	supportedModels := r.GetSupportedModels()
 	if models, exists := supportedModels[providerName]; exists {
@@ -141,7 +141,7 @@ func (r *Registry) ValidateProvider(providerSpec string) error {
 		// Don't return error for unsupported models, just warn
 		// This allows for newer models that haven't been added to the list yet
 	}
-	
+
 	return nil
 }
 

@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	docAll     bool
-	docShort   bool
+	docAll      bool
+	docShort    bool
 	docExamples bool
 )
 
@@ -50,7 +50,7 @@ func runDoc(cmd *cobra.Command, args []string) error {
 	// Parse the argument: could be "prompt" or "prompt.VARIABLE"
 	arg := args[0]
 	parts := strings.Split(arg, ".")
-	
+
 	if len(parts) == 1 {
 		// Show documentation for a prompt
 		return showPromptDoc(parts[0])
@@ -58,38 +58,38 @@ func runDoc(cmd *cobra.Command, args []string) error {
 		// Show documentation for a specific variable
 		return showVariableDoc(parts[0], parts[1])
 	}
-	
+
 	return fmt.Errorf("invalid documentation path: %s", arg)
 }
 
 func listDocumentedPrompts() error {
 	// Find all .prompt files in current directory and subdirectories
 	var prompts []string
-	
+
 	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		
+
 		if strings.HasSuffix(path, ".prompt") {
 			prompts = append(prompts, path)
 		}
-		
+
 		return nil
 	})
-	
+
 	if err != nil {
 		return fmt.Errorf("walking directory: %w", err)
 	}
-	
+
 	if len(prompts) == 0 {
 		fmt.Println("No prompt files found.")
 		return nil
 	}
-	
+
 	// Sort prompts by name
 	sort.Strings(prompts)
-	
+
 	if docShort {
 		// Just list the prompt files
 		for _, p := range prompts {
@@ -97,26 +97,26 @@ func listDocumentedPrompts() error {
 		}
 		return nil
 	}
-	
+
 	// Show brief documentation for each
 	fmt.Println("PROMPTS")
 	fmt.Println()
-	
+
 	for _, promptPath := range prompts {
 		content, err := os.ReadFile(promptPath)
 		if err != nil {
 			continue
 		}
-		
+
 		p, err := prompt.Parse(string(content))
 		if err != nil {
 			continue
 		}
-		
+
 		// Show prompt name and summary
 		name := strings.TrimSuffix(filepath.Base(promptPath), ".prompt")
 		fmt.Printf("%-20s", name)
-		
+
 		if p.PromptSummary != "" {
 			// Take first line of summary
 			lines := strings.Split(p.PromptSummary, "\n")
@@ -128,7 +128,7 @@ func listDocumentedPrompts() error {
 		}
 		fmt.Println()
 	}
-	
+
 	return nil
 }
 
@@ -138,7 +138,7 @@ func showPromptDoc(promptName string) error {
 	if !strings.HasSuffix(promptPath, ".prompt") {
 		promptPath += ".prompt"
 	}
-	
+
 	content, err := os.ReadFile(promptPath)
 	if err != nil {
 		// Try looking in common directories
@@ -153,23 +153,23 @@ func showPromptDoc(promptName string) error {
 			return fmt.Errorf("prompt not found: %s", promptName)
 		}
 	}
-	
+
 	// Parse the prompt
 	p, err := prompt.Parse(string(content))
 	if err != nil {
 		return fmt.Errorf("parsing prompt: %w", err)
 	}
-	
+
 	// Display documentation
 	fmt.Printf("PROMPT %s\n", promptName)
 	fmt.Printf("(%s)\n\n", promptPath)
-	
+
 	if p.PromptSummary != "" {
 		fmt.Println("SUMMARY")
 		fmt.Println(indentText(p.PromptSummary, "    "))
 		fmt.Println()
 	}
-	
+
 	// Show the main prompt
 	if !docAll {
 		mainPrompt := p.Main
@@ -185,11 +185,11 @@ func showPromptDoc(promptName string) error {
 		fmt.Println(indentText(p.Main, "    "))
 		fmt.Println()
 	}
-	
+
 	// Show variables
 	if len(p.VariableDescriptions) > 0 || len(extractTemplateVars(p.Main)) > 0 {
 		fmt.Println("VARIABLES")
-		
+
 		// Get all variables (from template and descriptions)
 		varMap := make(map[string]bool)
 		for _, v := range extractTemplateVars(p.Main) {
@@ -198,14 +198,14 @@ func showPromptDoc(promptName string) error {
 		for v := range p.VariableDescriptions {
 			varMap[v] = true
 		}
-		
+
 		// Sort variables
 		var vars []string
 		for v := range varMap {
 			vars = append(vars, v)
 		}
 		sort.Strings(vars)
-		
+
 		// Display each variable
 		for _, v := range vars {
 			fmt.Printf("    %s", v)
@@ -219,7 +219,7 @@ func showPromptDoc(promptName string) error {
 		}
 		fmt.Println()
 	}
-	
+
 	// Show defaults
 	if len(p.Defaults) > 0 {
 		fmt.Println("DEFAULTS")
@@ -228,22 +228,22 @@ func showPromptDoc(promptName string) error {
 		}
 		fmt.Println()
 	}
-	
+
 	// Show examples
 	if docExamples && len(p.Examples) > 0 {
 		fmt.Println("EXAMPLES")
-		
+
 		// Sort example names
 		var exampleNames []string
 		for name := range p.Examples {
 			exampleNames = append(exampleNames, name)
 		}
 		sort.Strings(exampleNames)
-		
+
 		for _, name := range exampleNames {
 			example := p.Examples[name]
 			fmt.Printf("    %s\n", name)
-			
+
 			// Show variables for this example
 			for k, v := range example {
 				if k != "ideal-output" {
@@ -258,7 +258,7 @@ func showPromptDoc(promptName string) error {
 		}
 		fmt.Println()
 	}
-	
+
 	// Show available variants
 	var variants []string
 	for name := range p.Sections {
@@ -274,7 +274,7 @@ func showPromptDoc(promptName string) error {
 		}
 		fmt.Println()
 	}
-	
+
 	return nil
 }
 
@@ -284,7 +284,7 @@ func showVariableDoc(promptName, variableName string) error {
 	if !strings.HasSuffix(promptPath, ".prompt") {
 		promptPath += ".prompt"
 	}
-	
+
 	content, err := os.ReadFile(promptPath)
 	if err != nil {
 		// Try looking in common directories
@@ -299,16 +299,16 @@ func showVariableDoc(promptName, variableName string) error {
 			return fmt.Errorf("prompt not found: %s", promptName)
 		}
 	}
-	
+
 	// Parse the prompt
 	p, err := prompt.Parse(string(content))
 	if err != nil {
 		return fmt.Errorf("parsing prompt: %w", err)
 	}
-	
+
 	// Check if variable exists
 	desc, hasDesc := p.VariableDescriptions[variableName]
-	
+
 	// Check if variable is used in template
 	varsInTemplate := extractTemplateVars(p.Main)
 	isUsed := false
@@ -318,14 +318,14 @@ func showVariableDoc(promptName, variableName string) error {
 			break
 		}
 	}
-	
+
 	if !hasDesc && !isUsed {
 		return fmt.Errorf("variable %s not found in %s", variableName, promptName)
 	}
-	
+
 	// Display variable documentation
 	fmt.Printf("var %s.%s\n\n", promptName, variableName)
-	
+
 	if hasDesc {
 		fmt.Println(desc)
 	} else {
@@ -334,12 +334,12 @@ func showVariableDoc(promptName, variableName string) error {
 		fmt.Printf("-- variable-description/%s --\n", variableName)
 		fmt.Println("Description goes here")
 	}
-	
+
 	// Show default value if exists
 	if defaultVal, ok := p.Defaults[variableName]; ok {
 		fmt.Printf("\nDefault: %s\n", defaultVal)
 	}
-	
+
 	// Show example values
 	if docExamples {
 		var examplesShown bool
@@ -353,7 +353,7 @@ func showVariableDoc(promptName, variableName string) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 

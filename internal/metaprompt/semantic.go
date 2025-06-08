@@ -47,14 +47,14 @@ type SemanticDescentConfig struct {
 
 // SemanticResult represents the result of semantic optimization
 type SemanticResult struct {
-	InitialScore     float64           `json:"initial_score"`
-	FinalScore       float64           `json:"final_score"`
-	OptimizedPrompt  string            `json:"optimized_prompt"`
-	Iterations       int               `json:"iterations"`
-	Converged        bool              `json:"converged"`
-	SemanticGradients []SemanticGradient `json:"semantic_gradients"`
-	Duration         time.Duration     `json:"duration"`
-	Trajectory       []SemanticOptimizationStep `json:"trajectory"`
+	InitialScore      float64                    `json:"initial_score"`
+	FinalScore        float64                    `json:"final_score"`
+	OptimizedPrompt   string                     `json:"optimized_prompt"`
+	Iterations        int                        `json:"iterations"`
+	Converged         bool                       `json:"converged"`
+	SemanticGradients []SemanticGradient         `json:"semantic_gradients"`
+	Duration          time.Duration              `json:"duration"`
+	Trajectory        []SemanticOptimizationStep `json:"trajectory"`
 }
 
 // SemanticGradient represents a semantic gradient with directional information
@@ -95,23 +95,23 @@ type SemanticFlow struct {
 
 // SemanticAnalysis represents a comprehensive semantic analysis
 type SemanticAnalysis struct {
-	Components      []SemanticNode  `json:"components"`
-	Flows          []SemanticFlow  `json:"flows"`
-	CoherenceScore float64         `json:"coherence_score"`
-	Ambiguities    []string        `json:"ambiguities"`
-	Strengths      []string        `json:"strengths"`
-	Weaknesses     []string        `json:"weaknesses"`
+	Components     []SemanticNode `json:"components"`
+	Flows          []SemanticFlow `json:"flows"`
+	CoherenceScore float64        `json:"coherence_score"`
+	Ambiguities    []string       `json:"ambiguities"`
+	Strengths      []string       `json:"strengths"`
+	Weaknesses     []string       `json:"weaknesses"`
 }
 
 // SemanticBackpropagation implements semantic backpropagation algorithm
 func (so *SemanticOptimizer) SemanticBackpropagation(ctx context.Context, prompt string, config SemanticConfig) (*SemanticResult, error) {
 	start := time.Now()
-	
+
 	result := &SemanticResult{
 		OptimizedPrompt: prompt,
 		Trajectory:      make([]SemanticOptimizationStep, 0, config.Iterations),
 	}
-	
+
 	// Initial evaluation
 	initialScore, err := so.evaluatePrompt(ctx, prompt, config.Target)
 	if err != nil {
@@ -119,14 +119,14 @@ func (so *SemanticOptimizer) SemanticBackpropagation(ctx context.Context, prompt
 	}
 	result.InitialScore = initialScore
 	result.FinalScore = initialScore
-	
+
 	currentPrompt := prompt
 	currentScore := initialScore
-	
+
 	if config.Verbose {
 		fmt.Printf("Initial score: %.4f\n", initialScore)
 	}
-	
+
 	// Semantic backpropagation iterations
 	for i := 0; i < config.Iterations; i++ {
 		// Compute semantic gradients
@@ -134,19 +134,19 @@ func (so *SemanticOptimizer) SemanticBackpropagation(ctx context.Context, prompt
 		if err != nil {
 			return nil, fmt.Errorf("gradient computation failed at iteration %d: %v", i, err)
 		}
-		
+
 		// Apply semantic gradients to optimize prompt
 		optimizedPrompt, err := so.applySemanticGradients(ctx, currentPrompt, gradients)
 		if err != nil {
 			return nil, fmt.Errorf("gradient application failed at iteration %d: %v", i, err)
 		}
-		
+
 		// Evaluate optimized prompt
 		newScore, err := so.evaluatePrompt(ctx, optimizedPrompt, config.Target)
 		if err != nil {
 			return nil, fmt.Errorf("evaluation failed at iteration %d: %v", i, err)
 		}
-		
+
 		// Record optimization step
 		step := SemanticOptimizationStep{
 			Iteration:   i + 1,
@@ -156,11 +156,11 @@ func (so *SemanticOptimizer) SemanticBackpropagation(ctx context.Context, prompt
 			Improvement: newScore - currentScore,
 		}
 		result.Trajectory = append(result.Trajectory, step)
-		
+
 		if config.Verbose {
 			fmt.Printf("Iteration %d: score %.4f (Δ%.4f)\n", i+1, newScore, newScore-currentScore)
 		}
-		
+
 		// Update current state if improvement
 		if newScore > currentScore {
 			currentPrompt = optimizedPrompt
@@ -168,29 +168,29 @@ func (so *SemanticOptimizer) SemanticBackpropagation(ctx context.Context, prompt
 			result.FinalScore = newScore
 			result.OptimizedPrompt = optimizedPrompt
 		}
-		
+
 		// Store gradients from best iteration
 		if i == 0 || newScore > result.FinalScore {
 			result.SemanticGradients = gradients
 		}
 	}
-	
+
 	result.Iterations = config.Iterations
 	result.Converged = result.FinalScore > result.InitialScore
 	result.Duration = time.Since(start)
-	
+
 	return result, nil
 }
 
 // SemanticGradientDescent implements semantic gradient descent optimization
 func (so *SemanticOptimizer) SemanticGradientDescent(ctx context.Context, prompt string, config SemanticDescentConfig) (*SemanticResult, error) {
 	start := time.Now()
-	
+
 	result := &SemanticResult{
 		OptimizedPrompt: prompt,
 		Trajectory:      make([]SemanticOptimizationStep, 0, config.Iterations),
 	}
-	
+
 	// Initial evaluation
 	initialScore, err := so.evaluatePrompt(ctx, prompt, config.Objective)
 	if err != nil {
@@ -198,11 +198,11 @@ func (so *SemanticOptimizer) SemanticGradientDescent(ctx context.Context, prompt
 	}
 	result.InitialScore = initialScore
 	result.FinalScore = initialScore
-	
+
 	currentPrompt := prompt
 	currentScore := initialScore
 	learningRate := config.LearningRate
-	
+
 	// Gradient descent iterations
 	for i := 0; i < config.Iterations; i++ {
 		// Compute semantic gradients
@@ -210,21 +210,21 @@ func (so *SemanticOptimizer) SemanticGradientDescent(ctx context.Context, prompt
 		if err != nil {
 			return nil, fmt.Errorf("gradient computation failed at iteration %d: %v", i, err)
 		}
-		
+
 		// Apply gradients with learning rate
 		optimizedPrompt, err := so.applyGradientDescent(ctx, currentPrompt, gradients, learningRate)
 		if err != nil {
 			return nil, fmt.Errorf("gradient descent failed at iteration %d: %v", i, err)
 		}
-		
+
 		// Evaluate new prompt
 		newScore, err := so.evaluatePrompt(ctx, optimizedPrompt, config.Objective)
 		if err != nil {
 			return nil, fmt.Errorf("evaluation failed at iteration %d: %v", i, err)
 		}
-		
+
 		improvement := newScore - currentScore
-		
+
 		// Record step
 		step := SemanticOptimizationStep{
 			Iteration:   i + 1,
@@ -234,7 +234,7 @@ func (so *SemanticOptimizer) SemanticGradientDescent(ctx context.Context, prompt
 			Improvement: improvement,
 		}
 		result.Trajectory = append(result.Trajectory, step)
-		
+
 		// Adaptive learning rate
 		if config.AdaptiveLearning {
 			if improvement > 0 {
@@ -244,13 +244,13 @@ func (so *SemanticOptimizer) SemanticGradientDescent(ctx context.Context, prompt
 			}
 			learningRate = math.Max(0.01, math.Min(1.0, learningRate))
 		}
-		
+
 		// Update current state
 		currentPrompt = optimizedPrompt
 		currentScore = newScore
 		result.FinalScore = newScore
 		result.OptimizedPrompt = optimizedPrompt
-		
+
 		// Check convergence
 		if math.Abs(improvement) < config.ConvergenceThreshold {
 			result.Converged = true
@@ -258,11 +258,11 @@ func (so *SemanticOptimizer) SemanticGradientDescent(ctx context.Context, prompt
 			break
 		}
 	}
-	
+
 	if !result.Converged {
 		result.Iterations = config.Iterations
 	}
-	
+
 	result.Duration = time.Since(start)
 	return result, nil
 }
@@ -328,7 +328,7 @@ SEMANTIC GRADIENTS:
 Please provide an optimized version of the prompt that incorporates these gradients.
 Focus on the highest magnitude gradients first.
 
-Return only the optimized prompt without additional explanation.`, 
+Return only the optimized prompt without additional explanation.`,
 		prompt, formatGradientsForApplication(gradients))
 
 	response, err := so.llm.Generate(ctx, optimizationPrompt, llm.GenerateOptions{
@@ -462,18 +462,18 @@ func parseSemanticGradients(response string) ([]SemanticGradient, error) {
 		// Fallback: parse structured text
 		return parseGradientsFromText(response)
 	}
-	
+
 	jsonStr := response[start : end+1]
-	
+
 	var result struct {
 		Gradients []SemanticGradient `json:"gradients"`
 	}
-	
+
 	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
 		// Fallback to text parsing
 		return parseGradientsFromText(response)
 	}
-	
+
 	// Validate and normalize gradients
 	for i := range result.Gradients {
 		if result.Gradients[i].Magnitude < 0 {
@@ -487,7 +487,7 @@ func parseSemanticGradients(response string) ([]SemanticGradient, error) {
 			result.Gradients[i].Confidence = 1
 		}
 	}
-	
+
 	return result.Gradients, nil
 }
 
@@ -495,7 +495,7 @@ func parseGradientsFromText(response string) ([]SemanticGradient, error) {
 	// Basic text parsing fallback
 	gradients := []SemanticGradient{}
 	lines := strings.Split(response, "\n")
-	
+
 	var currentGradient *SemanticGradient
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -505,8 +505,8 @@ func parseGradientsFromText(response string) ([]SemanticGradient, error) {
 			}
 			currentGradient = &SemanticGradient{
 				Component:  strings.TrimSpace(line[10:]),
-				Magnitude:  0.5,  // Default
-				Confidence: 0.7,  // Default
+				Magnitude:  0.5, // Default
+				Confidence: 0.7, // Default
 			}
 		} else if currentGradient != nil {
 			if strings.HasPrefix(strings.ToLower(line), "direction:") {
@@ -524,11 +524,11 @@ func parseGradientsFromText(response string) ([]SemanticGradient, error) {
 			}
 		}
 	}
-	
+
 	if currentGradient != nil {
 		gradients = append(gradients, *currentGradient)
 	}
-	
+
 	// If no gradients parsed, return a default
 	if len(gradients) == 0 {
 		return []SemanticGradient{
@@ -541,7 +541,7 @@ func parseGradientsFromText(response string) ([]SemanticGradient, error) {
 			},
 		}, nil
 	}
-	
+
 	return gradients, nil
 }
 
@@ -549,10 +549,10 @@ func formatGradients(gradients []SemanticGradient) string {
 	if len(gradients) == 0 {
 		return "No gradients computed"
 	}
-	
+
 	result := ""
 	for i, grad := range gradients {
-		result += fmt.Sprintf("%d. %s → %s (mag: %.2f, conf: %.2f)\n", 
+		result += fmt.Sprintf("%d. %s → %s (mag: %.2f, conf: %.2f)\n",
 			i+1, grad.Component, grad.Direction, grad.Magnitude, grad.Confidence)
 	}
 	return strings.TrimSpace(result)
@@ -562,11 +562,11 @@ func formatGradientsForApplication(gradients []SemanticGradient) string {
 	if len(gradients) == 0 {
 		return "No gradients to apply"
 	}
-	
+
 	// Sort gradients by magnitude for prioritization
 	result := ""
 	for i, grad := range gradients {
-		result += fmt.Sprintf("%d. Component: %s\n   Direction: %s\n   Magnitude: %.2f\n   Reasoning: %s\n   Confidence: %.2f\n\n", 
+		result += fmt.Sprintf("%d. Component: %s\n   Direction: %s\n   Magnitude: %.2f\n   Reasoning: %s\n   Confidence: %.2f\n\n",
 			i+1, grad.Component, grad.Direction, grad.Magnitude, grad.Reasoning, grad.Confidence)
 	}
 	return strings.TrimSpace(result)
@@ -575,12 +575,12 @@ func formatGradientsForApplication(gradients []SemanticGradient) string {
 func parseScore(response string) (float64, error) {
 	// Clean response
 	response = strings.TrimSpace(response)
-	
+
 	// Try direct numeric parsing
 	if score, err := strconv.ParseFloat(response, 64); err == nil {
 		return normalizeScore(score), nil
 	}
-	
+
 	// Look for decimal points in the response
 	if idx := strings.Index(response, "."); idx != -1 {
 		// Extract substring around decimal point
@@ -596,7 +596,7 @@ func parseScore(response string) (float64, error) {
 			return normalizeScore(num), nil
 		}
 	}
-	
+
 	// Look for fractions like "8/10"
 	if strings.Contains(response, "/10") {
 		parts := strings.Split(response, "/")
@@ -606,7 +606,7 @@ func parseScore(response string) (float64, error) {
 			}
 		}
 	}
-	
+
 	// Look for percentages
 	if strings.Contains(response, "%") {
 		idx := strings.Index(response, "%")
@@ -621,7 +621,7 @@ func parseScore(response string) (float64, error) {
 			}
 		}
 	}
-	
+
 	// Default fallback
 	return 0.5, fmt.Errorf("could not parse score from response: %s", response)
 }
@@ -650,7 +650,7 @@ func parseSemanticAnalysis(response string) (*SemanticAnalysis, error) {
 	if start == -1 || end == -1 || start > end {
 		// Return default analysis if no JSON found
 		return &SemanticAnalysis{
-			Components:      []SemanticNode{},
+			Components:     []SemanticNode{},
 			Flows:          []SemanticFlow{},
 			CoherenceScore: 0.5,
 			Ambiguities:    []string{"Unable to parse detailed analysis"},
@@ -658,13 +658,13 @@ func parseSemanticAnalysis(response string) (*SemanticAnalysis, error) {
 			Weaknesses:     []string{},
 		}, nil
 	}
-	
+
 	jsonStr := response[start : end+1]
-	
+
 	var analysis SemanticAnalysis
 	if err := json.Unmarshal([]byte(jsonStr), &analysis); err != nil {
 		return &SemanticAnalysis{
-			Components:      []SemanticNode{},
+			Components:     []SemanticNode{},
 			Flows:          []SemanticFlow{},
 			CoherenceScore: 0.5,
 			Ambiguities:    []string{"JSON parsing error: " + err.Error()},
@@ -672,13 +672,13 @@ func parseSemanticAnalysis(response string) (*SemanticAnalysis, error) {
 			Weaknesses:     []string{},
 		}, nil
 	}
-	
+
 	// Validate and normalize coherence score
 	if analysis.CoherenceScore < 0 {
 		analysis.CoherenceScore = 0
 	} else if analysis.CoherenceScore > 1 {
 		analysis.CoherenceScore = 1
 	}
-	
+
 	return &analysis, nil
 }

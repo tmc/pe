@@ -185,17 +185,17 @@ func (p *ModelProvider) ApplyConfigFromVars(vars map[string]interface{}) {
 	if model, ok := vars["model"].(string); ok {
 		p.Model = model
 	}
-	
+
 	if temp, ok := vars["temperature"].(float64); ok {
 		p.Temperature = temp
 	}
-	
+
 	if maxTokens, ok := vars["max_tokens"].(int); ok {
 		p.MaxTokens = maxTokens
 	} else if maxTokens, ok := vars["max_tokens"].(float64); ok {
 		p.MaxTokens = int(maxTokens)
 	}
-	
+
 	if backend, ok := vars["backend"].(string); ok {
 		p.Backend = backend
 	}
@@ -308,7 +308,7 @@ func isKnownProvider(model string) bool {
 	knownPrefixes := []string{
 		"gpt-4", "gpt-3.5", "claude-", "gemini-", "text-bison",
 	}
-	
+
 	for _, prefix := range knownPrefixes {
 		if strings.HasPrefix(model, prefix) {
 			return true
@@ -322,7 +322,7 @@ func parseProviderString(provider string) (backend, model string, temperature fl
 	if provider == "" {
 		return
 	}
-	
+
 	parts := strings.Split(provider, ":")
 	if len(parts) >= 1 {
 		backend = parts[0]
@@ -330,7 +330,7 @@ func parseProviderString(provider string) (backend, model string, temperature fl
 	if len(parts) >= 2 {
 		model = parts[1]
 	}
-	
+
 	// Parse additional parameters
 	for i := 2; i < len(parts); i++ {
 		kv := strings.SplitN(parts[i], "=", 2)
@@ -347,7 +347,7 @@ func parseProviderString(provider string) (backend, model string, temperature fl
 			}
 		}
 	}
-	
+
 	return
 }
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +22,7 @@ func statsCmd() *cobra.Command {
 			return nil
 		},
 	}
-	
+
 	return cmd
 }
 
@@ -41,7 +42,7 @@ func diffCmd() *cobra.Command {
 			return nil
 		},
 	}
-	
+
 	return cmd
 }
 
@@ -59,8 +60,8 @@ func interactiveCmd() *cobra.Command {
 			return nil
 		},
 	}
-	
+
 	cmd.Flags().String("provider", "openai:gpt-4", "LLM provider to use")
-	
+
 	return cmd
 }

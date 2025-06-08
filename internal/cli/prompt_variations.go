@@ -1,3 +1,5 @@
+//go:build ignore
+
 package cli
 
 import (
@@ -14,7 +16,7 @@ import (
 type PromptVariation struct {
 	Name         string                 `yaml:"name" json:"name"`
 	Description  string                 `yaml:"description" json:"description"`
-	Base         string                 `yaml:"base" json:"base"`           // Base variation to extend from
+	Base         string                 `yaml:"base" json:"base"` // Base variation to extend from
 	SystemPrompt string                 `yaml:"system_prompt" json:"system_prompt"`
 	UserPrompt   string                 `yaml:"user_prompt" json:"user_prompt"`
 	Prefill      string                 `yaml:"prefill" json:"prefill"`
@@ -46,10 +48,10 @@ type VariationRegistry struct {
 type VariationPlugin interface {
 	// MatchVariation checks if this plugin can handle a variation name
 	MatchVariation(promptName, variationName string) bool
-	
+
 	// CreateVariation dynamically creates a variation
 	CreateVariation(base *PromptCLI, variationName string) (*PromptVariation, error)
-	
+
 	// ListVariations returns available variations this plugin can create
 	ListVariations(promptName string) []string
 }
@@ -83,7 +85,7 @@ func (r *VariationRegistry) GetVariation(promptName, variationName string) (*Pro
 			return variation, nil
 		}
 	}
-	
+
 	// Check plugins
 	for _, plugin := range r.plugins {
 		if plugin.MatchVariation(promptName, variationName) {
@@ -92,7 +94,7 @@ func (r *VariationRegistry) GetVariation(promptName, variationName string) (*Pro
 			return nil, fmt.Errorf("plugin variations not fully implemented")
 		}
 	}
-	
+
 	return nil, fmt.Errorf("variation '%s' not found for prompt '%s'", variationName, promptName)
 }
 
@@ -103,7 +105,7 @@ func ParsePromptWithVariations(content string, selectedVariation string) (*Promp
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Look for variations in frontmatter
 	if cli.Metadata.Variations != nil {
 		variations, ok := cli.Metadata.Variations.([]interface{})
@@ -113,13 +115,13 @@ func ParsePromptWithVariations(content string, selectedVariation string) (*Promp
 				if !ok {
 					continue
 				}
-				
+
 				var variation PromptVariation
 				yamlData, _ := yaml.Marshal(varMap)
 				if err := yaml.Unmarshal(yamlData, &variation); err != nil {
 					continue
 				}
-				
+
 				if variation.Name == selectedVariation {
 					// Apply variation
 					applyVariation(cli, &variation)
@@ -128,14 +130,14 @@ func ParsePromptWithVariations(content string, selectedVariation string) (*Promp
 			}
 		}
 	}
-	
+
 	// Check for file-based variations
 	if selectedVariation != "" && selectedVariation != "default" {
 		if err := applyFileVariation(cli, selectedVariation); err == nil {
 			// Successfully applied file variation
 		}
 	}
-	
+
 	return cli, nil
 }
 
@@ -152,7 +154,7 @@ func applyVariation(cli *PromptCLI, variation *PromptVariation) {
 			cli.Metadata.SystemPrompt = cli.Metadata.SystemPrompt + "\n\n" + variation.Transform.AppendSystem
 		}
 	}
-	
+
 	// Apply user prompt changes
 	if variation.UserPrompt != "" {
 		cli.Prompt = variation.UserPrompt
@@ -163,7 +165,7 @@ func applyVariation(cli *PromptCLI, variation *PromptVariation) {
 		if variation.Transform.AppendUser != "" {
 			cli.Prompt = cli.Prompt + "\n\n" + variation.Transform.AppendUser
 		}
-		
+
 		// Apply pattern replacements
 		for pattern, replacement := range variation.Transform.ReplacePattern {
 			re, err := regexp.Compile(pattern)
@@ -172,12 +174,12 @@ func applyVariation(cli *PromptCLI, variation *PromptVariation) {
 			}
 		}
 	}
-	
+
 	// Apply prefill
 	if variation.Prefill != "" {
 		cli.Metadata.Prefill = variation.Prefill
 	}
-	
+
 	// Apply settings
 	if variation.Temperature != nil {
 		cli.Metadata.Temperature = *variation.Temperature
@@ -188,7 +190,7 @@ func applyVariation(cli *PromptCLI, variation *PromptVariation) {
 	if variation.Model != "" {
 		cli.Metadata.Model = variation.Model
 	}
-	
+
 	// Merge defaults
 	if variation.Defaults != nil {
 		if cli.Metadata.Defaults == nil {
@@ -198,7 +200,7 @@ func applyVariation(cli *PromptCLI, variation *PromptVariation) {
 			cli.Metadata.Defaults[k] = v
 		}
 	}
-	
+
 	// Update description
 	if variation.Description != "" {
 		cli.Description = fmt.Sprintf("%s (%s variation)", cli.Description, variation.Name)
@@ -214,7 +216,7 @@ func applyFileVariation(cli *PromptCLI, variationName string) error {
 		fmt.Sprintf("%s.%s.yml", cli.Name, variationName),
 		fmt.Sprintf("%s_%s.yml", cli.Name, variationName),
 	}
-	
+
 	for _, file := range possibleFiles {
 		if content, err := os.ReadFile(file); err == nil {
 			var variation PromptVariation
@@ -225,7 +227,7 @@ func applyFileVariation(cli *PromptCLI, variationName string) error {
 			}
 		}
 	}
-	
+
 	return fmt.Errorf("variation file not found")
 }
 
@@ -233,12 +235,12 @@ func applyFileVariation(cli *PromptCLI, variationName string) error {
 func ResolvePromptPath(path string) (promptPath string, variation string) {
 	// Check if path ends with a known variation pattern
 	base := strings.TrimSuffix(path, filepath.Ext(path))
-	
+
 	// Look for variation suffix after last dot or underscore
 	if idx := strings.LastIndex(base, "."); idx > 0 {
 		possibleVariation := base[idx+1:]
 		possibleBase := base[:idx]
-		
+
 		// Check if base file exists
 		for _, ext := range []string{".prompt", ".yaml", ".yml"} {
 			if _, err := os.Stat(possibleBase + ext); err == nil {
@@ -246,12 +248,12 @@ func ResolvePromptPath(path string) (promptPath string, variation string) {
 			}
 		}
 	}
-	
+
 	// Check underscore pattern
 	if idx := strings.LastIndex(base, "_"); idx > 0 {
 		possibleVariation := base[idx+1:]
 		possibleBase := base[:idx]
-		
+
 		// Check if base file exists
 		for _, ext := range []string{".prompt", ".yaml", ".yml"} {
 			if _, err := os.Stat(possibleBase + ext); err == nil {
@@ -259,7 +261,7 @@ func ResolvePromptPath(path string) (promptPath string, variation string) {
 			}
 		}
 	}
-	
+
 	// No variation detected
 	return path, ""
 }
@@ -284,7 +286,7 @@ func (p *StyleVariationPlugin) CreateVariation(base *PromptCLI, variationName st
 		Name:        variationName,
 		Description: fmt.Sprintf("%s style variation", strings.Title(variationName)),
 	}
-	
+
 	switch variationName {
 	case "concise":
 		variation.Transform = &PromptTransform{
@@ -294,20 +296,20 @@ func (p *StyleVariationPlugin) CreateVariation(base *PromptCLI, variationName st
 			},
 		}
 		variation.Temperature = &[]float64{0.5}[0]
-		
+
 	case "detailed":
 		variation.Transform = &PromptTransform{
 			AppendUser: "\n\nProvide a comprehensive and detailed response with examples.",
 		}
 		variation.MaxTokens = &[]int{2000}[0]
-		
+
 	case "academic":
 		variation.Transform = &PromptTransform{
 			PrependSystem: "You are an academic expert. Use formal language and cite sources where appropriate.",
 			AppendUser:    "\n\nStructure your response with clear sections and academic rigor.",
 		}
 		variation.Temperature = &[]float64{0.3}[0]
-		
+
 	case "casual":
 		variation.Transform = &PromptTransform{
 			PrependSystem: "Be friendly and conversational in your responses.",
@@ -318,7 +320,7 @@ func (p *StyleVariationPlugin) CreateVariation(base *PromptCLI, variationName st
 		}
 		variation.Temperature = &[]float64{0.8}[0]
 	}
-	
+
 	return variation, nil
 }
 
@@ -353,12 +355,12 @@ func (p *LanguageVariationPlugin) CreateVariation(base *PromptCLI, variationName
 		"zh-CN": "Simplified Chinese",
 		"zh-TW": "Traditional Chinese",
 	}
-	
+
 	langName, exists := languages[variationName]
 	if !exists {
 		langName = variationName
 	}
-	
+
 	variation := &PromptVariation{
 		Name:        variationName,
 		Description: fmt.Sprintf("%s language variation", langName),
@@ -367,7 +369,7 @@ func (p *LanguageVariationPlugin) CreateVariation(base *PromptCLI, variationName
 			PrependUser:   fmt.Sprintf("Please respond in %s.\n\n", langName),
 		},
 	}
-	
+
 	return variation, nil
 }
 
@@ -397,12 +399,12 @@ func (p *DomainVariationPlugin) CreateVariation(base *PromptCLI, variationName s
 		"education":   "You are an educator. Explain concepts clearly and provide learning scaffolding.",
 		"marketing":   "You are a marketing expert. Focus on audience engagement and brand messaging.",
 	}
-	
+
 	systemPrompt, exists := domainPrompts[variationName]
 	if !exists {
 		return nil, fmt.Errorf("unknown domain: %s", variationName)
 	}
-	
+
 	variation := &PromptVariation{
 		Name:        variationName,
 		Description: fmt.Sprintf("%s domain variation", strings.Title(variationName)),
@@ -411,7 +413,7 @@ func (p *DomainVariationPlugin) CreateVariation(base *PromptCLI, variationName s
 		},
 		Temperature: &[]float64{0.4}[0], // Lower temperature for domain expertise
 	}
-	
+
 	return variation, nil
 }
 

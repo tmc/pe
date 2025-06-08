@@ -46,11 +46,11 @@ func pluginListCmd() *cobra.Command {
 		Short: "List installed plugins",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Fprintln(cmd.OutOrStdout(), "Installed plugins:")
-			
+
 			// Show built-in providers
 			fmt.Fprintln(cmd.OutOrStdout(), "  openai (built-in)")
 			fmt.Fprintln(cmd.OutOrStdout(), "  anthropic (built-in)")
-			
+
 			// Discover external plugins
 			if err := pluginManager.Discover(); err != nil {
 				return fmt.Errorf("failed to discover plugins: %w", err)
@@ -134,9 +134,9 @@ func pluginInstallCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			source := args[0]
-			
+
 			fmt.Fprintf(cmd.OutOrStdout(), "Installing plugin: %s\n", source)
-			
+
 			// Determine source type
 			if strings.HasPrefix(source, "http://") || strings.HasPrefix(source, "https://") {
 				fmt.Fprintf(cmd.OutOrStdout(), "Installing from: %s\n", extractDomain(source))
@@ -153,7 +153,7 @@ func pluginInstallCmd() *cobra.Command {
 				fmt.Fprintf(cmd.OutOrStdout(), "✓ Verified signature\n")
 				fmt.Fprintf(cmd.OutOrStdout(), "✓ Installed successfully\n")
 			}
-			
+
 			return nil
 		},
 	}
@@ -166,14 +166,14 @@ func pluginInfoCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			plugin := args[0]
-			
+
 			// Mock plugin info
 			fmt.Fprintf(cmd.OutOrStdout(), "Plugin: %s\n", plugin)
 			fmt.Fprintf(cmd.OutOrStdout(), "Version: 0.1.0\n")
 			fmt.Fprintf(cmd.OutOrStdout(), "Author: community\n")
 			fmt.Fprintf(cmd.OutOrStdout(), "Description: Local inference with Ollama\n")
 			fmt.Fprintf(cmd.OutOrStdout(), "Models: llama2, mistral, mixtral\n")
-			
+
 			return nil
 		},
 	}
@@ -182,27 +182,27 @@ func pluginInfoCmd() *cobra.Command {
 func pluginConfigCmd() *cobra.Command {
 	var setFlag string
 	var getFlag string
-	
+
 	cmd := &cobra.Command{
 		Use:   "config <plugin>",
 		Short: "Configure a plugin",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			plugin := args[0]
-			
+
 			if setFlag != "" {
 				fmt.Fprintf(cmd.OutOrStdout(), "Updated %s configuration\n", plugin)
 			} else if getFlag != "" {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s: %s\n", getFlag, "http://localhost:11434")
 			}
-			
+
 			return nil
 		},
 	}
-	
+
 	cmd.Flags().StringVar(&setFlag, "set", "", "Set configuration value (key=value)")
 	cmd.Flags().StringVar(&getFlag, "get", "", "Get configuration value")
-	
+
 	return cmd
 }
 
@@ -213,20 +213,20 @@ func pluginCreateCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			pluginName := args[0]
-			
+
 			fmt.Fprintf(cmd.OutOrStdout(), "Creating plugin template: %s\n", pluginName)
-			
+
 			// Create plugin directory structure
 			dirs := []string{
 				pluginName,
 			}
-			
+
 			for _, dir := range dirs {
 				if err := os.MkdirAll(dir, 0755); err != nil {
 					return fmt.Errorf("failed to create directory: %w", err)
 				}
 			}
-			
+
 			// Create plugin files
 			files := map[string]string{
 				filepath.Join(pluginName, "plugin.go"): `package main
@@ -254,13 +254,13 @@ pe_version: ">=1.0.0"
 A custom PE plugin for...
 `,
 			}
-			
+
 			for file, content := range files {
 				if err := os.WriteFile(file, []byte(content), 0644); err != nil {
 					return fmt.Errorf("failed to create file %s: %w", file, err)
 				}
 			}
-			
+
 			return nil
 		},
 	}
@@ -274,17 +274,17 @@ func pluginBuildCmd() *cobra.Command {
 			// Detect plugin name from current directory
 			wd, _ := os.Getwd()
 			pluginName := filepath.Base(wd)
-			
+
 			fmt.Fprintf(cmd.OutOrStdout(), "Building plugin: %s\n", pluginName)
 			fmt.Fprintf(cmd.OutOrStdout(), "Running tests\n")
 			fmt.Fprintf(cmd.OutOrStdout(), "✓ All tests passed\n")
 			fmt.Fprintf(cmd.OutOrStdout(), "Built: %s.so\n", pluginName)
-			
+
 			// Create empty .so file for test
 			if err := os.WriteFile(pluginName+".so", []byte{}, 0755); err != nil {
 				return err
 			}
-			
+
 			return nil
 		},
 	}
@@ -297,13 +297,13 @@ func pluginTestCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			plugin := args[0]
-			
+
 			fmt.Fprintf(cmd.OutOrStdout(), "Testing plugin: %s\n", filepath.Base(plugin))
 			fmt.Fprintf(cmd.OutOrStdout(), "Test 1: Basic inference ✓\n")
 			fmt.Fprintf(cmd.OutOrStdout(), "Test 2: Streaming ✓\n")
 			fmt.Fprintf(cmd.OutOrStdout(), "Test 3: Error handling ✓\n")
 			fmt.Fprintf(cmd.OutOrStdout(), "All tests passed\n")
-			
+
 			return nil
 		},
 	}
@@ -316,12 +316,12 @@ func pluginUpdateCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			plugin := args[0]
-			
+
 			fmt.Fprintf(cmd.OutOrStdout(), "Checking for updates\n")
 			fmt.Fprintf(cmd.OutOrStdout(), "Update available: v0.1.0 → v0.2.0\n")
 			fmt.Fprintf(cmd.OutOrStdout(), "Updating %s\n", plugin)
 			fmt.Fprintf(cmd.OutOrStdout(), "✓ Updated successfully\n")
-			
+
 			return nil
 		},
 	}
@@ -334,17 +334,17 @@ func pluginRemoveCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			plugin := args[0]
-			
+
 			fmt.Fprintf(cmd.OutOrStdout(), "Remove plugin: %s? (y/N)\n", plugin)
-			
+
 			// Read stdin
 			var response string
 			fmt.Fscanln(cmd.InOrStdin(), &response)
-			
+
 			if response == "y" {
 				fmt.Fprintf(cmd.OutOrStdout(), "Removed plugin: %s\n", plugin)
 			}
-			
+
 			return nil
 		},
 	}
@@ -357,16 +357,16 @@ func pluginSearchCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			query := args[0]
-			
+
 			fmt.Fprintf(cmd.OutOrStdout(), "Search results:\n")
-			
+
 			// Mock search results based on query
 			if strings.Contains(query, "local") {
 				fmt.Fprintf(cmd.OutOrStdout(), "  ollama - Local inference with Ollama models\n")
 				fmt.Fprintf(cmd.OutOrStdout(), "  llama-cpp - Direct llama.cpp integration\n")
 				fmt.Fprintf(cmd.OutOrStdout(), "  gpt4all - Run GPT4All models locally\n")
 			}
-			
+
 			return nil
 		},
 	}

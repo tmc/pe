@@ -49,22 +49,22 @@ func (pb *PromptBuilder) BuildPrompt(instruction string, schema *Schema, format 
 	}
 
 	var prompt strings.Builder
-	
+
 	// Main instruction
 	prompt.WriteString(instruction)
 	prompt.WriteString("\n\n")
-	
+
 	// Format-specific instructions
 	prompt.WriteString(formatInstructions)
 	prompt.WriteString("\n\n")
-	
+
 	// Additional constraints
 	if len(schema.Required) > 0 {
 		prompt.WriteString("Required fields: ")
 		prompt.WriteString(strings.Join(schema.Required, ", "))
 		prompt.WriteString("\n\n")
 	}
-	
+
 	// Validation rules
 	validationRules := pb.generateValidationRules(schema)
 	if validationRules != "" {
@@ -151,12 +151,12 @@ Generate the function call arguments:`, functionName, description)
 // BuildMultiStep builds a prompt for multi-step structured output
 func (pb *PromptBuilder) BuildMultiStep(steps []StructuredStep) (string, error) {
 	var prompt strings.Builder
-	
+
 	prompt.WriteString("Complete the following steps in order:\n\n")
-	
+
 	for i, step := range steps {
 		prompt.WriteString(fmt.Sprintf("Step %d: %s\n", i+1, step.Description))
-		
+
 		if step.Schema != nil {
 			formatInstructions, err := pb.formatter.GetPromptInstructions(step.Schema, step.Format)
 			if err != nil {
@@ -165,9 +165,9 @@ func (pb *PromptBuilder) BuildMultiStep(steps []StructuredStep) (string, error) 
 			prompt.WriteString(fmt.Sprintf("Output format for step %d:\n%s\n\n", i+1, formatInstructions))
 		}
 	}
-	
+
 	prompt.WriteString("Provide your response for each step clearly labeled.")
-	
+
 	return prompt.String(), nil
 }
 
@@ -181,22 +181,22 @@ type StructuredStep struct {
 // BuildConditional builds a prompt with conditional structured output
 func (pb *PromptBuilder) BuildConditional(instruction string, conditions []ConditionalOutput) (string, error) {
 	var prompt strings.Builder
-	
+
 	prompt.WriteString(instruction)
 	prompt.WriteString("\n\nBased on your analysis, provide output in one of the following formats:\n\n")
-	
+
 	for _, condition := range conditions {
 		prompt.WriteString(fmt.Sprintf("If %s:\n", condition.Condition))
-		
+
 		formatInstructions, err := pb.formatter.GetPromptInstructions(condition.Schema, condition.Format)
 		if err != nil {
 			return "", err
 		}
-		
+
 		prompt.WriteString(formatInstructions)
 		prompt.WriteString("\n\n")
 	}
-	
+
 	return prompt.String(), nil
 }
 
@@ -211,7 +211,7 @@ type ConditionalOutput struct {
 
 func (pb *PromptBuilder) generateValidationRules(schema *Schema) string {
 	var rules []string
-	
+
 	for name, prop := range schema.Properties {
 		if prop.MinLength != nil {
 			rules = append(rules, fmt.Sprintf("- %s: minimum length %d", name, *prop.MinLength))
@@ -230,7 +230,7 @@ func (pb *PromptBuilder) generateValidationRules(schema *Schema) string {
 			rules = append(rules, fmt.Sprintf("- %s: must be one of [%s]", name, strings.Join(enumStr, ", ")))
 		}
 	}
-	
+
 	return strings.Join(rules, "\n")
 }
 
@@ -260,16 +260,16 @@ func formatAsYAML(data interface{}) (string, error) {
 var CommonSchemas = struct {
 	// Analysis represents a structured analysis output
 	Analysis *Schema
-	
+
 	// CodeGeneration represents code generation output
 	CodeGeneration *Schema
-	
+
 	// DataExtraction represents data extraction output
 	DataExtraction *Schema
-	
+
 	// Classification represents classification output
 	Classification *Schema
-	
+
 	// Summary represents summarization output
 	Summary *Schema
 }{

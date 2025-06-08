@@ -8,16 +8,16 @@ import (
 
 // Prompt represents a parsed prompt file
 type Prompt struct {
-	Shebang               string                     // #!/usr/bin/env pe run --flags
-	Main                  string                     // The main prompt text
-	SystemPrompt          string                     // Optional system prompt
-	Sections              map[string]string          // Named sections like variants, tests, etc.
-	Flags                 map[string]string          // Flags from shebang
-	Defaults              map[string]string          // Default values for variables
-	Config                PromptConfig               // Configuration settings
-	Examples              map[string]map[string]string // Examples: examples["example-1"]["VARIABLE"] = "value"
-	VariableDescriptions  map[string]string          // Variable descriptions: descriptions["VARIABLE"] = "description"
-	PromptSummary         string                     // Summary of what this prompt does
+	Shebang              string                       // #!/usr/bin/env pe run --flags
+	Main                 string                       // The main prompt text
+	SystemPrompt         string                       // Optional system prompt
+	Sections             map[string]string            // Named sections like variants, tests, etc.
+	Flags                map[string]string            // Flags from shebang
+	Defaults             map[string]string            // Default values for variables
+	Config               PromptConfig                 // Configuration settings
+	Examples             map[string]map[string]string // Examples: examples["example-1"]["VARIABLE"] = "value"
+	VariableDescriptions map[string]string            // Variable descriptions: descriptions["VARIABLE"] = "description"
+	PromptSummary        string                       // Summary of what this prompt does
 }
 
 // PromptConfig holds configuration settings
@@ -93,7 +93,6 @@ func Parse(content string) (*Prompt, error) {
 		delete(p.Sections, "prompt-summary")
 	}
 
-
 	// Handle defaults section
 	if defaults, ok := p.Sections["defaults"]; ok {
 		p.ParseDefaults(defaults)
@@ -115,18 +114,18 @@ func Parse(content string) (*Prompt, error) {
 // ParseDefaults parses the defaults section
 func (p *Prompt) ParseDefaults(content string) {
 	scanner := bufio.NewScanner(strings.NewReader(content))
-	
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		
+
 		// Handle single-line format: key1=value1&key2=value2
 		if strings.Contains(line, "&") || strings.Contains(line, "=") {
 			// Remove quotes if the entire line is quoted
 			line = strings.Trim(line, "'\"")
-			
+
 			// Split by & to get key=value pairs
 			pairs := strings.Split(line, "&")
 			for _, pair := range pairs {
@@ -158,7 +157,7 @@ func (p *Prompt) ParseDefaults(content string) {
 func (p *Prompt) parseShebang(shebang string) {
 	// Parse: #!/usr/bin/env pe run --flag=value --flag2=value2
 	parts := strings.Fields(shebang)
-	
+
 	for i, part := range parts {
 		if strings.HasPrefix(part, "--") {
 			if strings.Contains(part, "=") {
@@ -182,7 +181,7 @@ func (p *Prompt) GetVariant(name string) (string, bool) {
 	return content, ok
 }
 
-// GetTest returns a test section content  
+// GetTest returns a test section content
 func (p *Prompt) GetTest(name string) (string, bool) {
 	content, ok := p.Sections["tests/"+name]
 	return content, ok
@@ -285,22 +284,22 @@ func (p *Prompt) Minimal() string {
 // ParseConfig parses the config section
 func (p *Prompt) ParseConfig(content string) {
 	scanner := bufio.NewScanner(strings.NewReader(content))
-	
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		
+
 		// Parse config directives
 		parts := strings.Fields(line)
 		if len(parts) < 2 {
 			continue
 		}
-		
+
 		directive := parts[0]
 		args := strings.Join(parts[1:], " ")
-		
+
 		switch directive {
 		case "prefill":
 			// Handle content reference or direct content
@@ -313,7 +312,7 @@ func (p *Prompt) ParseConfig(content string) {
 				// Direct content - remove quotes
 				p.Config.Prefill = strings.Trim(args, "'\"")
 			}
-			
+
 		case "stop-sequence":
 			// Parse stop sequence (remove quotes)
 			stopSeq := strings.Trim(args, "'\"")
@@ -331,29 +330,29 @@ func (p *Prompt) ParseExamples() {
 			if len(parts) == 3 {
 				exampleName := parts[1]  // "example-1"
 				variableName := parts[2] // "VARIABLE" or "ideal-output"
-				
+
 				// Initialize example map if needed
 				if p.Examples[exampleName] == nil {
 					p.Examples[exampleName] = make(map[string]string)
 				}
-				
+
 				// Store the content
 				p.Examples[exampleName][variableName] = content
-				
+
 				// Remove from sections since we've processed it
 				delete(p.Sections, sectionName)
 			}
 		}
-		
+
 		// Check for variable description sections: "variable-description/VARIABLE"
 		if strings.HasPrefix(sectionName, "variable-description/") {
 			parts := strings.SplitN(sectionName, "/", 2)
 			if len(parts) == 2 {
 				variableName := parts[1] // "VARIABLE"
-				
+
 				// Store the description
 				p.VariableDescriptions[variableName] = content
-				
+
 				// Remove from sections since we've processed it
 				delete(p.Sections, sectionName)
 			}
@@ -376,7 +375,7 @@ func (p *Prompt) GetExample(name string) (variables map[string]string, idealOutp
 	if !exists {
 		return nil, "", false
 	}
-	
+
 	variables = make(map[string]string)
 	for key, value := range example {
 		if key == "ideal-output" {
@@ -385,6 +384,6 @@ func (p *Prompt) GetExample(name string) (variables map[string]string, idealOutp
 			variables[key] = value
 		}
 	}
-	
+
 	return variables, idealOutput, true
 }

@@ -86,7 +86,7 @@ func TestWorkflows(t *testing.T) {
 		// Create test environment
 		tmpDir := t.TempDir()
 		promptFile := filepath.Join(tmpDir, "test.prompt")
-		
+
 		// Write test prompt
 		content := "You are a helpful assistant. Answer concisely."
 		if err := os.WriteFile(promptFile, []byte(content), 0644); err != nil {
@@ -103,7 +103,7 @@ func TestWorkflows(t *testing.T) {
 		// Test basic version control concepts
 		tmpDir := t.TempDir()
 		versionDir := filepath.Join(tmpDir, ".pe", "versions")
-		
+
 		// Create version directory
 		if err := os.MkdirAll(versionDir, 0755); err != nil {
 			t.Fatalf("Failed to create version directory: %v", err)
@@ -125,7 +125,7 @@ func TestWorkflows(t *testing.T) {
 		// Test collaboration features
 		tmpDir := t.TempDir()
 		sharedDir := filepath.Join(tmpDir, ".pe", "shared")
-		
+
 		// Create shared directory
 		if err := os.MkdirAll(sharedDir, 0755); err != nil {
 			t.Fatalf("Failed to create shared directory: %v", err)

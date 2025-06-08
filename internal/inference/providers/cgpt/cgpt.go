@@ -31,7 +31,7 @@ func init() {
 type Provider struct {
 	// Path to cgpt binary (default: uses go run)
 	binaryPath string
-	
+
 	// Whether to use go run instead of a binary
 	useGoRun bool
 }
@@ -45,7 +45,7 @@ func New() *Provider {
 			useGoRun:   false,
 		}
 	}
-	
+
 	// Fall back to go run
 	return &Provider{
 		useGoRun: true,
@@ -71,24 +71,24 @@ func (p *Provider) Complete(ctx context.Context, req inference.Request) (*infere
 	if os.Getenv("PE_TEST_MODE") == "true" || os.Getenv("PE_MOCK_PROVIDER") == "true" {
 		return p.mockResponse(req), nil
 	}
-	
+
 	args := p.buildArgs(req)
-	
+
 	cmd := p.buildCommand(ctx, args...)
-	
+
 	// Capture output
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	
+
 	// Run the command
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("cgpt error: %w\nstderr: %s", err, stderr.String())
 	}
-	
+
 	// Parse the response
 	content := stdout.String()
-	
+
 	return &inference.Response{
 		Content: strings.TrimSpace(content),
 		Model:   req.Model,
@@ -108,34 +108,34 @@ func (p *Provider) Stream(ctx context.Context, req inference.Request) (<-chan in
 	if os.Getenv("PE_TEST_MODE") == "true" || os.Getenv("PE_MOCK_PROVIDER") == "true" {
 		return p.mockStream(ctx, req), nil
 	}
-	
+
 	args := p.buildArgs(req)
-	
+
 	// cgpt streams by default when stdout is a terminal
 	// We'll capture line by line
-	
+
 	cmd := p.buildCommand(ctx, args...)
-	
+
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
-	
+
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create stderr pipe: %w", err)
 	}
-	
+
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("failed to start cgpt: %w", err)
 	}
-	
+
 	chunks := make(chan inference.StreamChunk)
-	
+
 	go func() {
 		defer close(chunks)
 		defer cmd.Wait()
-		
+
 		// Read stderr for any errors
 		var stderrBuf bytes.Buffer
 		go func() {
@@ -144,7 +144,7 @@ func (p *Provider) Stream(ctx context.Context, req inference.Request) (<-chan in
 				stderrBuf.WriteString(scanner.Text() + "\n")
 			}
 		}()
-		
+
 		// Read stdout and send chunks
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
@@ -161,14 +161,14 @@ func (p *Provider) Stream(ctx context.Context, req inference.Request) (<-chan in
 			}:
 			}
 		}
-		
+
 		if err := scanner.Err(); err != nil {
 			chunks <- inference.StreamChunk{
 				Error: fmt.Errorf("read error: %w", err),
 			}
 			return
 		}
-		
+
 		// Check if cgpt had any errors
 		if err := cmd.Wait(); err != nil {
 			chunks <- inference.StreamChunk{
@@ -176,13 +176,13 @@ func (p *Provider) Stream(ctx context.Context, req inference.Request) (<-chan in
 			}
 			return
 		}
-		
+
 		// Send done signal
 		chunks <- inference.StreamChunk{
 			Done: true,
 		}
 	}()
-	
+
 	return chunks, nil
 }
 
@@ -192,7 +192,7 @@ func (p *Provider) Models(ctx context.Context) ([]string, error) {
 	// These are the commonly available ones
 	return []string{
 		"gpt-4",
-		"gpt-4-turbo-preview", 
+		"gpt-4-turbo-preview",
 		"gpt-3.5-turbo",
 		"claude-3-opus",
 		"claude-3-sonnet",
@@ -213,7 +213,7 @@ func (p *Provider) buildCommand(ctx context.Context, args ...string) *exec.Cmd {
 		fullArgs := append([]string{"run", "github.com/tmc/cgpt/cmd/cgpt"}, args...)
 		return exec.CommandContext(ctx, "go", fullArgs...)
 	}
-	
+
 	// Use binary
 	return exec.CommandContext(ctx, p.binaryPath, args...)
 }
@@ -221,11 +221,11 @@ func (p *Provider) buildCommand(ctx context.Context, args ...string) *exec.Cmd {
 // buildArgs builds command line arguments for cgpt.
 func (p *Provider) buildArgs(req inference.Request) []string {
 	var args []string
-	
+
 	// Model selection and backend detection
 	if req.Model != "" {
 		args = append(args, "-m", req.Model)
-		
+
 		// Detect backend based on model name
 		if strings.HasPrefix(req.Model, "gpt-") {
 			args = append(args, "-b", "openai")
@@ -233,37 +233,37 @@ func (p *Provider) buildArgs(req inference.Request) []string {
 			args = append(args, "-b", "anthropic")
 		}
 	}
-	
+
 	// Temperature (cgpt uses -T for temperature)
 	if req.Temperature > 0 {
 		args = append(args, "-T", fmt.Sprintf("%.2f", req.Temperature))
 	}
-	
+
 	// Max tokens (cgpt uses -t for max-tokens)
 	if req.MaxTokens > 0 {
 		args = append(args, "-t", fmt.Sprintf("%d", req.MaxTokens))
 	}
-	
+
 	// System prompt
 	if req.SystemPrompt != "" {
 		args = append(args, "-s", req.SystemPrompt)
 	}
-	
+
 	// Prefill (cgpt uses --prefill for assistant message start)
 	if req.Prefill != "" {
 		args = append(args, "--prefill", req.Prefill)
 	}
-	
+
 	// Stop sequences (cgpt uses --stop for stop sequences)
 	for _, stop := range req.StopSequences {
 		args = append(args, "--stop", stop)
 	}
-	
+
 	// Input (use -i for direct string input)
 	if req.Prompt != "" {
 		args = append(args, "-i", req.Prompt)
 	}
-	
+
 	// Additional options
 	if req.Options != nil {
 		// Handle any cgpt-specific options
@@ -274,7 +274,7 @@ func (p *Provider) buildArgs(req inference.Request) []string {
 			args = append(args, "-v")
 		}
 	}
-	
+
 	return args
 }
 
@@ -292,39 +292,39 @@ func ParseJSONResponse(content string) (map[string]interface{}, error) {
 func (p *Provider) mockResponse(req inference.Request) *inference.Response {
 	// Default responses for common test prompts
 	responses := map[string]string{
-		"What is 2+2?":           "4",
-		"'What is 2+2?'":        "4",
-		`"What is 2+2?"`:        "4",
+		"What is 2+2?":   "4",
+		"'What is 2+2?'": "4",
+		`"What is 2+2?"`: "4",
 		"Explain what a pointer is in one sentence.": "A pointer is a variable that stores the memory address of another variable.",
-		"Translate Hello to Spanish": "Hola",
-		"Test prompt": "Test response",
-		"Generate a random number": "42",
-		"Tell me a story": "Once upon a time...",
-		"Count to 5": "1 2 3 4 5",
-		"Current time?": "The current time is 3:00 PM",
+		"Translate Hello to Spanish":                 "Hola",
+		"Test prompt":                                "Test response",
+		"Generate a random number":                   "42",
+		"Tell me a story":                            "Once upon a time...",
+		"Count to 5":                                 "1 2 3 4 5",
+		"Current time?":                              "The current time is 3:00 PM",
 		"You are a helpful assistant. Explain the concept of recursion.": "As a helpful assistant, I'll explain recursion: a function that calls itself to solve a problem by breaking it down into smaller instances.",
-		"Write a Haskell function that calculates the factorial:": "factorial :: Integer -> Integer\nfactorial 0 = 1\nfactorial n = n * factorial (n - 1)",
+		"Write a Haskell function that calculates the factorial:":        "factorial :: Integer -> Integer\nfactorial 0 = 1\nfactorial n = n * factorial (n - 1)",
 	}
-	
+
 	// Check if prompt ends with expected pattern for file reads
 	content := "Mock response for: " + req.Prompt
-	
+
 	// Strip trailing newline for comparison
 	promptCompare := strings.TrimSpace(req.Prompt)
-	
+
 	// Debug output for testing
 	if os.Getenv("PE_DEBUG") == "true" {
 		fmt.Fprintf(os.Stderr, "DEBUG: Mock received prompt: %q\n", promptCompare)
 		fmt.Fprintf(os.Stderr, "DEBUG: Mock prefill: %q\n", req.Prefill)
 		fmt.Fprintf(os.Stderr, "DEBUG: Mock stop sequences: %v\n", req.StopSequences)
 	}
-	
+
 	// Handle prefill content by prepending it to the response
 	var prefillPrefix string
 	if req.Prefill != "" {
 		prefillPrefix = req.Prefill
 	}
-	
+
 	// Check for exact matches first
 	if resp, ok := responses[promptCompare]; ok {
 		content = resp
@@ -338,12 +338,12 @@ func (p *Provider) mockResponse(req inference.Request) *inference.Response {
 		// Handle template processing - already done by pe run
 		content = "Mock response for templated prompt"
 	}
-	
+
 	// Apply prefill if provided
 	if prefillPrefix != "" {
 		content = prefillPrefix + content
 	}
-	
+
 	// Apply stop sequences by truncating content at first occurrence
 	for _, stop := range req.StopSequences {
 		if idx := strings.Index(content, stop); idx != -1 {
@@ -351,20 +351,20 @@ func (p *Provider) mockResponse(req inference.Request) *inference.Response {
 			break
 		}
 	}
-	
+
 	// Handle JSON output request
 	if req.Options != nil {
 		if v, ok := req.Options["json"].(bool); ok && v {
 			jsonResp := map[string]interface{}{
 				"response": content,
-				"model": req.Model,
-				"tokens": 5,
+				"model":    req.Model,
+				"tokens":   5,
 			}
 			jsonBytes, _ := json.Marshal(jsonResp)
 			content = string(jsonBytes)
 		}
 	}
-	
+
 	return &inference.Response{
 		Content: content,
 		Model:   req.Model,
@@ -373,7 +373,7 @@ func (p *Provider) mockResponse(req inference.Request) *inference.Response {
 		},
 		Metadata: map[string]interface{}{
 			"provider": "cgpt",
-			"mock": true,
+			"mock":     true,
 		},
 	}
 }
@@ -381,10 +381,10 @@ func (p *Provider) mockResponse(req inference.Request) *inference.Response {
 // mockStream generates a mock streaming response for testing
 func (p *Provider) mockStream(ctx context.Context, req inference.Request) <-chan inference.StreamChunk {
 	chunks := make(chan inference.StreamChunk)
-	
+
 	go func() {
 		defer close(chunks)
-		
+
 		// Stream specific responses
 		if strings.Contains(req.Prompt, "Count to 5") {
 			for i := 1; i <= 5; i++ {
@@ -414,10 +414,10 @@ func (p *Provider) mockStream(ctx context.Context, req inference.Request) <-chan
 				}
 			}
 		}
-		
+
 		// Send done signal
 		chunks <- inference.StreamChunk{Done: true}
 	}()
-	
+
 	return chunks
 }

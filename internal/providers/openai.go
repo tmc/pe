@@ -201,7 +201,7 @@ func (p *OpenAIProvider) Generate(ctx context.Context, prompt string, options ll
 	}
 
 	latency := time.Since(startTime)
-	
+
 	// Calculate cost (approximate)
 	cost := calculateOpenAICost(p.model, openaiResp.Usage.PromptTokens, openaiResp.Usage.CompletionTokens)
 
@@ -351,14 +351,14 @@ func calculateOpenAICost(model string, promptTokens, completionTokens int) float
 		input  float64
 		output float64
 	}{
-		"gpt-4":                    {0.03, 0.06},
-		"gpt-4-turbo":              {0.01, 0.03},
-		"gpt-4-turbo-preview":      {0.01, 0.03},
-		"gpt-4-0125-preview":       {0.01, 0.03},
-		"gpt-4-1106-preview":       {0.01, 0.03},
-		"gpt-3.5-turbo":            {0.0015, 0.002},
-		"gpt-3.5-turbo-0125":       {0.0005, 0.0015},
-		"gpt-3.5-turbo-instruct":   {0.0015, 0.002},
+		"gpt-4":                  {0.03, 0.06},
+		"gpt-4-turbo":            {0.01, 0.03},
+		"gpt-4-turbo-preview":    {0.01, 0.03},
+		"gpt-4-0125-preview":     {0.01, 0.03},
+		"gpt-4-1106-preview":     {0.01, 0.03},
+		"gpt-3.5-turbo":          {0.0015, 0.002},
+		"gpt-3.5-turbo-0125":     {0.0005, 0.0015},
+		"gpt-3.5-turbo-instruct": {0.0015, 0.002},
 	}
 
 	cost, exists := costs[model]
@@ -377,7 +377,7 @@ func calculateOpenAICost(model string, promptTokens, completionTokens int) float
 func (p *OpenAIProvider) EvaluatePrompt(ctx context.Context, prompt string, vars map[string]interface{}) (*promptfoo.ProviderResponse, error) {
 	// Convert vars to GenerateOptions
 	options := llm.GenerateOptions{}
-	
+
 	if temp, ok := vars["temperature"].(float64); ok {
 		options.Temperature = &temp
 	}

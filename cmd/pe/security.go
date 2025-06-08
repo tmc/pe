@@ -15,52 +15,52 @@ import (
 
 // SecurityTestResult represents the result of security testing
 type SecurityTestResult struct {
-	TestID         string                    `json:"test_id"`
-	Target         string                    `json:"target"`
-	Timestamp      time.Time                 `json:"timestamp"`
-	OverallRisk    string                    `json:"overall_risk"`
-	TotalTests     int                       `json:"total_tests"`
-	PassedTests    int                       `json:"passed_tests"`
-	FailedTests    int                       `json:"failed_tests"`
-	Categories     map[string]*CategoryResult `json:"categories"`
-	Vulnerabilities []Vulnerability           `json:"vulnerabilities"`
-	Recommendations []string                  `json:"recommendations"`
-	ComplianceReport *ComplianceReport        `json:"compliance_report,omitempty"`
+	TestID           string                     `json:"test_id"`
+	Target           string                     `json:"target"`
+	Timestamp        time.Time                  `json:"timestamp"`
+	OverallRisk      string                     `json:"overall_risk"`
+	TotalTests       int                        `json:"total_tests"`
+	PassedTests      int                        `json:"passed_tests"`
+	FailedTests      int                        `json:"failed_tests"`
+	Categories       map[string]*CategoryResult `json:"categories"`
+	Vulnerabilities  []Vulnerability            `json:"vulnerabilities"`
+	Recommendations  []string                   `json:"recommendations"`
+	ComplianceReport *ComplianceReport          `json:"compliance_report,omitempty"`
 }
 
 // CategoryResult represents results for a specific OWASP category
 type CategoryResult struct {
-	Category     string        `json:"category"`
-	RiskLevel    string        `json:"risk_level"`
-	TestsPassed  int           `json:"tests_passed"`
-	TestsFailed  int           `json:"tests_failed"`
-	Findings     []Finding     `json:"findings"`
-	Mitigations  []string      `json:"mitigations"`
+	Category    string    `json:"category"`
+	RiskLevel   string    `json:"risk_level"`
+	TestsPassed int       `json:"tests_passed"`
+	TestsFailed int       `json:"tests_failed"`
+	Findings    []Finding `json:"findings"`
+	Mitigations []string  `json:"mitigations"`
 }
 
 // Finding represents a security finding
 type Finding struct {
-	ID          string    `json:"id"`
-	Severity    string    `json:"severity"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Evidence    string    `json:"evidence"`
-	CWE         string    `json:"cwe,omitempty"`
-	CVSS        float64   `json:"cvss,omitempty"`
+	ID          string  `json:"id"`
+	Severity    string  `json:"severity"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	Evidence    string  `json:"evidence"`
+	CWE         string  `json:"cwe,omitempty"`
+	CVSS        float64 `json:"cvss,omitempty"`
 }
 
 // Vulnerability represents a detected vulnerability
 type Vulnerability struct {
-	ID           string                 `json:"id"`
-	Type         string                 `json:"type"`
-	Severity     string                 `json:"severity"`
-	Title        string                 `json:"title"`
-	Description  string                 `json:"description"`
-	Impact       string                 `json:"impact"`
-	Remediation  string                 `json:"remediation"`
-	References   []string               `json:"references"`
-	Evidence     map[string]interface{} `json:"evidence"`
-	OWASP        string                 `json:"owasp_category"`
+	ID          string                 `json:"id"`
+	Type        string                 `json:"type"`
+	Severity    string                 `json:"severity"`
+	Title       string                 `json:"title"`
+	Description string                 `json:"description"`
+	Impact      string                 `json:"impact"`
+	Remediation string                 `json:"remediation"`
+	References  []string               `json:"references"`
+	Evidence    map[string]interface{} `json:"evidence"`
+	OWASP       string                 `json:"owasp_category"`
 }
 
 // ComplianceReport represents compliance assessment results
@@ -71,11 +71,11 @@ type ComplianceReport struct {
 
 // StandardResult represents compliance with a specific standard
 type StandardResult struct {
-	Standard     string             `json:"standard"`
-	Compliant    bool               `json:"compliant"`
-	Score        float64            `json:"score"`
-	Requirements map[string]bool    `json:"requirements"`
-	Gaps         []string           `json:"gaps"`
+	Standard     string          `json:"standard"`
+	Compliant    bool            `json:"compliant"`
+	Score        float64         `json:"score"`
+	Requirements map[string]bool `json:"requirements"`
+	Gaps         []string        `json:"gaps"`
 }
 
 // securityCmd returns a cobra.Command for comprehensive security testing
@@ -142,9 +142,9 @@ Advanced Security Features:
 func securityScanCmd() *cobra.Command {
 	var (
 		targetFile string
-		quick     bool
-		provider  string
-		model     string
+		quick      bool
+		provider   string
+		model      string
 	)
 
 	cmd := &cobra.Command{
@@ -168,10 +168,10 @@ func securityScanCmd() *cobra.Command {
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Running security scan...\n")
 			fmt.Fprintf(cmd.OutOrStdout(), "Testing prompt against OWASP LLM Top 10...\n")
-			
+
 			// Quick scan simulation
 			time.Sleep(100 * time.Millisecond)
-			
+
 			fmt.Fprintf(cmd.OutOrStdout(), "Target: %s\n", targetPath)
 			fmt.Fprintf(cmd.OutOrStdout(), "Content length: %d characters\n", len(content))
 			fmt.Fprintf(cmd.OutOrStdout(), "Overall Risk: LOW\n")
@@ -217,10 +217,10 @@ func securityTestCmd() *cobra.Command {
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Testing for prompt injection vulnerabilities...\n")
-			
+
 			// Test simulation
 			time.Sleep(100 * time.Millisecond)
-			
+
 			fmt.Fprintf(cmd.OutOrStdout(), "Category: %s\n", category)
 			fmt.Fprintf(cmd.OutOrStdout(), "Target: %s\n", targetPath)
 			fmt.Fprintf(cmd.OutOrStdout(), "Tests passed: 5/5\n")
@@ -288,10 +288,10 @@ func securityReportCmd() *cobra.Command {
 
 func securityMonitorCmd() *cobra.Command {
 	var (
-		target    string
-		realtime  bool
-		alerts    string
-		provider  string
+		target   string
+		realtime bool
+		alerts   string
+		provider string
 	)
 
 	cmd := &cobra.Command{
@@ -337,11 +337,11 @@ func securityRedteamCmd() *cobra.Command {
 }
 
 // runSecurityTest executes comprehensive security testing
-func runSecurityTest(cmd *cobra.Command, target, targetFile string, categories []string, severity, outputFile, format string, 
+func runSecurityTest(cmd *cobra.Command, target, targetFile string, categories []string, severity, outputFile, format string,
 	adversarial bool, compliance []string, customTests string, adaptive bool, provider, model string) error {
-	
+
 	ctx := context.Background()
-	
+
 	// Load target
 	targetContent, err := loadTarget(target, targetFile)
 	if err != nil {
@@ -353,7 +353,7 @@ func runSecurityTest(cmd *cobra.Command, target, targetFile string, categories [
 	if owaspComplete {
 		categories = []string{
 			"prompt_injection",
-			"insecure_output_handling", 
+			"insecure_output_handling",
 			"training_data_poisoning",
 			"model_denial_of_service",
 			"supply_chain_vulnerabilities",
@@ -374,11 +374,11 @@ func runSecurityTest(cmd *cobra.Command, target, targetFile string, categories [
 	// Initialize security tester
 	config := redteam.SecurityConfig{
 		EnabledCategories: categories,
-		Severity:         severity,
-		AdversarialMode:  adversarial,
+		Severity:          severity,
+		AdversarialMode:   adversarial,
 	}
 	tester := redteam.NewAdvancedSecurityTester(llmProvider, config)
-	
+
 	fmt.Printf("Starting comprehensive security assessment...\n")
 	fmt.Printf("Target: %s\n", getTargetDescription(targetContent))
 	fmt.Printf("Categories: %v\n", categories)
@@ -461,7 +461,7 @@ func runRedTeamAssessment(cmd *cobra.Command, target, intensity, duration, outpu
 				Description: "System may be susceptible to role-playing based jailbreaks",
 				Impact:      "Unauthorized behavior, policy violation",
 				Remediation: "Implement stronger input validation and context isolation",
-				OWASP:      "LLM01",
+				OWASP:       "LLM01",
 			},
 		},
 		Recommendations: []string{
@@ -501,14 +501,14 @@ func getTargetDescription(content string) string {
 func convertToSecurityResult(result interface{}, target string) *SecurityTestResult {
 	// Convert from internal result format
 	return &SecurityTestResult{
-		TestID:      fmt.Sprintf("sec_%d", time.Now().Unix()),
-		Target:      target,
-		Timestamp:   time.Now(),
-		OverallRisk: "Low",
-		TotalTests:  25,
-		PassedTests: 23,
-		FailedTests: 2,
-		Categories:  make(map[string]*CategoryResult),
+		TestID:          fmt.Sprintf("sec_%d", time.Now().Unix()),
+		Target:          target,
+		Timestamp:       time.Now(),
+		OverallRisk:     "Low",
+		TotalTests:      25,
+		PassedTests:     23,
+		FailedTests:     2,
+		Categories:      make(map[string]*CategoryResult),
 		Vulnerabilities: []Vulnerability{},
 		Recommendations: []string{},
 	}
@@ -539,8 +539,8 @@ func assessCompliance(result *SecurityTestResult, standards []string) (*Complian
 				Compliant: true,
 				Score:     0.85,
 				Requirements: map[string]bool{
-					"Governance": true,
-					"Monitoring": true,
+					"Governance":      true,
+					"Monitoring":      true,
 					"Risk Assessment": true,
 				},
 				Gaps: []string{},
@@ -603,13 +603,13 @@ func outputSecurityResult(result *SecurityTestResult, outputFile, format string)
 
 func formatSecurityTable(result *SecurityTestResult) string {
 	var sb strings.Builder
-	
+
 	sb.WriteString("=== PE Security Assessment Report ===\n\n")
 	sb.WriteString(fmt.Sprintf("Test ID: %s\n", result.TestID))
 	sb.WriteString(fmt.Sprintf("Target: %s\n", getTargetDescription(result.Target)))
 	sb.WriteString(fmt.Sprintf("Timestamp: %s\n", result.Timestamp.Format("2006-01-02 15:04:05")))
 	sb.WriteString(fmt.Sprintf("Overall Risk: %s\n", result.OverallRisk))
-	sb.WriteString(fmt.Sprintf("Tests: %d total, %d passed, %d failed\n\n", 
+	sb.WriteString(fmt.Sprintf("Tests: %d total, %d passed, %d failed\n\n",
 		result.TotalTests, result.PassedTests, result.FailedTests))
 
 	if len(result.Vulnerabilities) > 0 {

@@ -1,3 +1,5 @@
+//go:build ignore
+
 package cli
 
 import (
@@ -33,7 +35,7 @@ type PromptContext struct {
 
 // Message represents a conversation message
 type Message struct {
-	Role    string `json:"role"`    // system, user, assistant
+	Role    string `json:"role"` // system, user, assistant
 	Content string `json:"content"`
 }
 
@@ -67,13 +69,13 @@ func (m *PrefillModifier) Apply(ctx *PromptContext) error {
 	if err != nil {
 		return fmt.Errorf("failed to render prefill template: %w", err)
 	}
-	
+
 	if m.Append && ctx.Prefill != "" {
 		ctx.Prefill = ctx.Prefill + "\n" + prefill
 	} else {
 		ctx.Prefill = prefill
 	}
-	
+
 	return nil
 }
 
@@ -92,7 +94,7 @@ func (m *SystemPromptModifier) Apply(ctx *PromptContext) error {
 	if err != nil {
 		return fmt.Errorf("failed to render system prompt template: %w", err)
 	}
-	
+
 	switch m.Mode {
 	case "prepend":
 		ctx.SystemPrompt = systemPrompt + "\n\n" + ctx.SystemPrompt
@@ -101,7 +103,7 @@ func (m *SystemPromptModifier) Apply(ctx *PromptContext) error {
 	default: // replace
 		ctx.SystemPrompt = systemPrompt
 	}
-	
+
 	return nil
 }
 
@@ -120,19 +122,19 @@ func (m *WrapperModifier) Apply(ctx *PromptContext) error {
 	if err != nil {
 		return fmt.Errorf("failed to render before template: %w", err)
 	}
-	
+
 	after, err := renderTemplate(m.After, ctx.Variables)
 	if err != nil {
 		return fmt.Errorf("failed to render after template: %w", err)
 	}
-	
+
 	if before != "" {
 		ctx.UserPrompt = before + "\n\n" + ctx.UserPrompt
 	}
 	if after != "" {
 		ctx.UserPrompt = ctx.UserPrompt + "\n\n" + after
 	}
-	
+
 	return nil
 }
 
@@ -165,7 +167,7 @@ func (m *StyleModifier) Apply(ctx *PromptContext) error {
 	case "cot", "chain-of-thought":
 		ctx.UserPrompt += "\n\nLet's think step by step:"
 		ctx.Prefill = "I'll work through this step-by-step.\n\n"
-		
+
 	case "step-by-step":
 		ctx.UserPrompt = fmt.Sprintf(`Please complete the following task step by step:
 
@@ -175,28 +177,28 @@ Format your response as:
 Step 1: [First step]
 Step 2: [Second step]
 ...`, ctx.UserPrompt)
-		
+
 	case "few-shot":
 		// This would need examples passed in
 		ctx.SystemPrompt += "\n\nYou will be shown examples before the actual task."
-		
+
 	case "structured":
 		ctx.UserPrompt += "\n\nProvide your response in a clear, structured format with appropriate headings and sections."
-		
+
 	case "concise":
 		ctx.SystemPrompt += "\n\nBe concise and direct in your responses. Avoid unnecessary elaboration."
-		
+
 	case "detailed":
 		ctx.SystemPrompt += "\n\nProvide comprehensive, detailed responses with thorough explanations."
-		
+
 	case "code":
 		ctx.SystemPrompt += "\n\nYou are an expert programmer. Format code examples properly and include comments."
 		ctx.UserPrompt += "\n\nProvide complete, working code with explanations."
-		
+
 	default:
 		return fmt.Errorf("unknown style: %s", m.Style)
 	}
-	
+
 	return nil
 }
 
@@ -214,27 +216,27 @@ type ConstraintModifier struct {
 
 func (m *ConstraintModifier) Apply(ctx *PromptContext) error {
 	var constraints []string
-	
+
 	if m.MaxLength > 0 {
 		constraints = append(constraints, fmt.Sprintf("- Maximum length: %d characters", m.MaxLength))
 	}
-	
+
 	if m.Format != "" {
 		constraints = append(constraints, fmt.Sprintf("- Format: %s", m.Format))
 	}
-	
+
 	if len(m.MustInclude) > 0 {
 		constraints = append(constraints, fmt.Sprintf("- Must include: %s", strings.Join(m.MustInclude, ", ")))
 	}
-	
+
 	if len(m.MustExclude) > 0 {
 		constraints = append(constraints, fmt.Sprintf("- Must not include: %s", strings.Join(m.MustExclude, ", ")))
 	}
-	
+
 	if len(constraints) > 0 {
 		ctx.UserPrompt += fmt.Sprintf("\n\nConstraints:\n%s", strings.Join(constraints, "\n"))
 	}
-	
+
 	return nil
 }
 
@@ -252,28 +254,28 @@ type PersonaModifier struct {
 
 func (m *PersonaModifier) Apply(ctx *PromptContext) error {
 	persona := fmt.Sprintf("You are %s", m.Persona)
-	
+
 	if len(m.Expertise) > 0 {
 		persona += fmt.Sprintf(" with expertise in %s", strings.Join(m.Expertise, ", "))
 	}
-	
+
 	if m.Tone != "" {
 		persona += fmt.Sprintf(". Maintain a %s tone", m.Tone)
 	}
-	
+
 	if m.Perspective != "" {
 		persona += fmt.Sprintf(". Approach from a %s perspective", m.Perspective)
 	}
-	
+
 	persona += "."
-	
+
 	// Prepend to system prompt
 	if ctx.SystemPrompt != "" {
 		ctx.SystemPrompt = persona + "\n\n" + ctx.SystemPrompt
 	} else {
 		ctx.SystemPrompt = persona
 	}
-	
+
 	return nil
 }
 
@@ -308,17 +310,17 @@ func (p *PromptCLI) addSubcommand(def SubcommandDef) {
 			if err != nil {
 				return err
 			}
-			
+
 			// Apply modifier and execute
 			return p.executeWithModifier(cmd, args, modifier)
 		},
 	}
-	
+
 	// Add subcommand-specific flags
 	for _, flag := range def.Flags {
 		addFlagToCommand(subCmd, flag)
 	}
-	
+
 	// Inherit parent flags
 	p.cmd.AddCommand(subCmd)
 }
@@ -330,7 +332,7 @@ func createModifier(modType string, config map[string]interface{}, cmd *cobra.Co
 		template, _ := config["template"].(string)
 		append, _ := config["append"].(bool)
 		return &PrefillModifier{Template: template, Append: append}, nil
-		
+
 	case "system":
 		template, _ := config["template"].(string)
 		mode, _ := config["mode"].(string)
@@ -338,24 +340,24 @@ func createModifier(modType string, config map[string]interface{}, cmd *cobra.Co
 			mode = "replace"
 		}
 		return &SystemPromptModifier{Template: template, Mode: mode}, nil
-		
+
 	case "wrap":
 		before, _ := config["before"].(string)
 		after, _ := config["after"].(string)
 		return &WrapperModifier{Before: before, After: after}, nil
-		
+
 	case "style":
 		style, _ := cmd.Flags().GetString("style")
 		if style == "" {
 			style, _ = config["style"].(string)
 		}
 		return &StyleModifier{Style: style}, nil
-		
+
 	case "persona":
 		persona, _ := config["persona"].(string)
 		tone, _ := config["tone"].(string)
 		return &PersonaModifier{Persona: persona, Tone: tone}, nil
-		
+
 	default:
 		return nil, fmt.Errorf("unknown modifier type: %s", modType)
 	}
@@ -371,7 +373,7 @@ func (p *PromptCLI) executeWithModifier(cmd *cobra.Command, args []string, modif
 		MaxTokens:    p.Metadata.MaxTokens,
 		Model:        p.Metadata.Model,
 	}
-	
+
 	// Collect variables from parent flags
 	parentCmd := cmd.Parent()
 	for _, v := range p.Variables {
@@ -381,24 +383,24 @@ func (p *PromptCLI) executeWithModifier(cmd *cobra.Command, args []string, modif
 		}
 		ctx.Variables[v.Name] = value
 	}
-	
+
 	// Render the base prompt
 	tmpl, err := template.New("prompt").Parse(p.Prompt)
 	if err != nil {
 		return err
 	}
-	
+
 	var promptBuf bytes.Buffer
 	if err := tmpl.Execute(&promptBuf, ctx.Variables); err != nil {
 		return err
 	}
 	ctx.UserPrompt = promptBuf.String()
-	
+
 	// Apply the modifier
 	if err := modifier.Apply(ctx); err != nil {
 		return err
 	}
-	
+
 	// Execute the modified prompt
 	return p.executeContext(cmd, ctx)
 }
@@ -407,7 +409,7 @@ func (p *PromptCLI) executeWithModifier(cmd *cobra.Command, args []string, modif
 func (p *PromptCLI) executeContext(cmd *cobra.Command, ctx *PromptContext) error {
 	// Build the final prompt based on the context
 	var finalPrompt string
-	
+
 	if len(ctx.Messages) > 0 {
 		// Use message format
 		// This would be formatted for the specific provider
@@ -419,12 +421,12 @@ func (p *PromptCLI) executeContext(cmd *cobra.Command, ctx *PromptContext) error
 		} else {
 			finalPrompt = ctx.UserPrompt
 		}
-		
+
 		if ctx.Prefill != "" {
 			finalPrompt += fmt.Sprintf("\n\nAssistant: %s", ctx.Prefill)
 		}
 	}
-	
+
 	// Check for dry run
 	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
 		fmt.Println("=== Final Prompt ===")
@@ -435,19 +437,19 @@ func (p *PromptCLI) executeContext(cmd *cobra.Command, ctx *PromptContext) error
 		fmt.Printf("Max Tokens: %d\n", ctx.MaxTokens)
 		return nil
 	}
-	
+
 	// Execute the prompt
 	response, err := p.executePrompt(finalPrompt, ctx.Model, ctx.Temperature, ctx.MaxTokens)
 	if err != nil {
 		return err
 	}
-	
+
 	// Format and output
 	output, err := p.formatOutput(cmd, response)
 	if err != nil {
 		return err
 	}
-	
+
 	fmt.Print(output)
 	return nil
 }
@@ -458,17 +460,17 @@ func renderTemplate(tmpl string, vars map[string]interface{}) (string, error) {
 	if tmpl == "" {
 		return "", nil
 	}
-	
+
 	t, err := template.New("modifier").Parse(tmpl)
 	if err != nil {
 		return "", err
 	}
-	
+
 	var buf bytes.Buffer
 	if err := t.Execute(&buf, vars); err != nil {
 		return "", err
 	}
-	
+
 	return buf.String(), nil
 }
 
@@ -476,21 +478,21 @@ func formatMessages(ctx *PromptContext) string {
 	// This would format messages according to the provider's requirements
 	// For now, simple format
 	var parts []string
-	
+
 	if ctx.SystemPrompt != "" {
 		parts = append(parts, fmt.Sprintf("System: %s", ctx.SystemPrompt))
 	}
-	
+
 	for _, msg := range ctx.Messages {
 		parts = append(parts, fmt.Sprintf("%s: %s", strings.Title(msg.Role), msg.Content))
 	}
-	
+
 	parts = append(parts, fmt.Sprintf("User: %s", ctx.UserPrompt))
-	
+
 	if ctx.Prefill != "" {
 		parts = append(parts, fmt.Sprintf("Assistant: %s", ctx.Prefill))
 	}
-	
+
 	return strings.Join(parts, "\n\n")
 }
 
@@ -528,12 +530,12 @@ type Modifier struct {
 // ApplyModifiers applies a list of modifiers to a prompt
 func ApplyModifiers(prompt string, modifiers []Modifier) (string, error) {
 	result := prompt
-	
+
 	// Group modifiers by type for proper ordering
 	var styleModifiers, lengthModifiers, toneModifiers, audienceModifiers []Modifier
 	var formatModifiers, constraintModifiers, exampleModifiers []Modifier
 	var temperatureModifiers []Modifier
-	
+
 	for _, mod := range modifiers {
 		switch mod.Type {
 		case "style":
@@ -556,50 +558,50 @@ func ApplyModifiers(prompt string, modifiers []Modifier) (string, error) {
 			return "", fmt.Errorf("unknown modifier type: %s", mod.Type)
 		}
 	}
-	
+
 	// Apply modifiers in order: style, length, tone, audience, then constraint, example, format
 	for _, mod := range styleModifiers {
 		result = fmt.Sprintf("%s in a %s style", result, mod.Value)
 	}
-	
+
 	for _, mod := range lengthModifiers {
 		result = fmt.Sprintf("%s (keep it %s)", result, mod.Value)
 	}
-	
+
 	for _, mod := range toneModifiers {
 		result = fmt.Sprintf("%s (use a %s tone)", result, mod.Value)
 	}
-	
+
 	for _, mod := range audienceModifiers {
 		audience := fmt.Sprintf("%s", mod.Value)
 		article := "a"
-		if strings.HasPrefix(strings.ToLower(audience), "a") || 
-		   strings.HasPrefix(strings.ToLower(audience), "e") ||
-		   strings.HasPrefix(strings.ToLower(audience), "i") ||
-		   strings.HasPrefix(strings.ToLower(audience), "o") ||
-		   strings.HasPrefix(strings.ToLower(audience), "u") {
+		if strings.HasPrefix(strings.ToLower(audience), "a") ||
+			strings.HasPrefix(strings.ToLower(audience), "e") ||
+			strings.HasPrefix(strings.ToLower(audience), "i") ||
+			strings.HasPrefix(strings.ToLower(audience), "o") ||
+			strings.HasPrefix(strings.ToLower(audience), "u") {
 			article = "an"
 		}
 		result = fmt.Sprintf("%s (explain it for %s %s)", result, article, audience)
 	}
-	
+
 	// Add constraints
 	for _, mod := range constraintModifiers {
 		result = fmt.Sprintf("%s\n\nConstraint: %s", result, mod.Value)
 	}
-	
+
 	// Add examples
 	for _, mod := range exampleModifiers {
 		result = fmt.Sprintf("%s\n\nExample:\n%s", result, mod.Value)
 	}
-	
+
 	// Add format instructions last
 	for _, mod := range formatModifiers {
 		result = fmt.Sprintf("%s\n\nFormat the response as: %s", result, mod.Value)
 	}
-	
+
 	// Temperature doesn't modify the prompt text
-	
+
 	return result, nil
 }
 
@@ -629,23 +631,23 @@ func ValidateModifier(modifier Modifier) error {
 // ParseModifiers parses modifier strings into Modifier structs
 func ParseModifiers(inputs []string) ([]Modifier, error) {
 	var modifiers []Modifier
-	
+
 	for _, input := range inputs {
 		parts := strings.SplitN(input, ":", 2)
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid modifier format: %s (expected type:value)", input)
 		}
-		
+
 		modType := strings.TrimSpace(parts[0])
 		valueStr := strings.TrimSpace(parts[1])
-		
+
 		if modType == "" {
 			return nil, fmt.Errorf("empty modifier type in: %s", input)
 		}
-		
+
 		// Remove quotes if present
 		valueStr = strings.Trim(valueStr, "\"")
-		
+
 		var value interface{}
 		if modType == "temperature" {
 			temp, err := strconv.ParseFloat(valueStr, 64)
@@ -656,14 +658,14 @@ func ParseModifiers(inputs []string) ([]Modifier, error) {
 		} else {
 			value = valueStr
 		}
-		
+
 		mod := Modifier{Type: modType, Value: value}
 		if err := ValidateModifier(mod); err != nil {
 			return nil, err
 		}
-		
+
 		modifiers = append(modifiers, mod)
 	}
-	
+
 	return modifiers, nil
 }

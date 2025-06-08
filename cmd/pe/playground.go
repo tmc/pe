@@ -39,25 +39,25 @@ type PlaygroundRequest struct {
 
 // PlaygroundResponse represents a response to the web UI
 type PlaygroundResponse struct {
-	ID               string                 `json:"id"`
-	Prompt           string                 `json:"prompt"`
-	Response         string                 `json:"response"`
-	Error            string                 `json:"error,omitempty"`
-	Latency          time.Duration          `json:"latency"`
-	TokensUsed       int                    `json:"tokens_used"`
-	Cost             float64                `json:"cost"`
-	Provider         string                 `json:"provider"`
-	Model            string                 `json:"model"`
-	OptimizedPrompt  string                 `json:"optimized_prompt,omitempty"`
-	Metrics          map[string]interface{} `json:"metrics,omitempty"`
-	Timestamp        time.Time              `json:"timestamp"`
+	ID              string                 `json:"id"`
+	Prompt          string                 `json:"prompt"`
+	Response        string                 `json:"response"`
+	Error           string                 `json:"error,omitempty"`
+	Latency         time.Duration          `json:"latency"`
+	TokensUsed      int                    `json:"tokens_used"`
+	Cost            float64                `json:"cost"`
+	Provider        string                 `json:"provider"`
+	Model           string                 `json:"model"`
+	OptimizedPrompt string                 `json:"optimized_prompt,omitempty"`
+	Metrics         map[string]interface{} `json:"metrics,omitempty"`
+	Timestamp       time.Time              `json:"timestamp"`
 }
 
 // playgroundCmd returns a cobra.Command for the interactive web playground
 func playgroundCmd() *cobra.Command {
 	var (
-		port     int
-		host     string
+		port        int
+		host        string
 		openBrowser bool
 	)
 
@@ -86,7 +86,7 @@ func playgroundCmd() *cobra.Command {
   pe playground --host 0.0.0.0 --port 8080`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			server := NewPlaygroundServer()
-			
+
 			addr := fmt.Sprintf("%s:%d", host, port)
 			fmt.Printf("Starting PE Playground on http://%s\n", addr)
 			fmt.Printf("Advanced features:\n")
@@ -131,7 +131,7 @@ func NewPlaygroundServer() *PlaygroundServer {
 // Start starts the playground server
 func (ps *PlaygroundServer) Start(addr string) error {
 	ps.setupRoutes()
-	
+
 	server := &http.Server{
 		Addr:    addr,
 		Handler: ps.router,
@@ -144,10 +144,10 @@ func (ps *PlaygroundServer) Start(addr string) error {
 func (ps *PlaygroundServer) setupRoutes() {
 	// Static files
 	ps.router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./web/static/"))))
-	
+
 	// Main playground page
 	ps.router.HandleFunc("/", ps.handleIndex).Methods("GET")
-	
+
 	// API endpoints
 	api := ps.router.PathPrefix("/api").Subrouter()
 	api.HandleFunc("/test", ps.handleTest).Methods("POST")
@@ -157,7 +157,7 @@ func (ps *PlaygroundServer) setupRoutes() {
 	api.HandleFunc("/security", ps.handleSecurity).Methods("POST")
 	api.HandleFunc("/components", ps.handleComponents).Methods("GET", "POST")
 	api.HandleFunc("/history", ps.handleHistory).Methods("GET")
-	
+
 	// WebSocket for real-time updates
 	ps.router.HandleFunc("/ws", ps.handleWebSocket)
 }
@@ -655,12 +655,12 @@ func (ps *PlaygroundServer) handleTest(w http.ResponseWriter, r *http.Request) {
 	latency := time.Since(start)
 
 	result := PlaygroundResponse{
-		ID:          generateID(),
-		Prompt:      req.Prompt,
-		Provider:    req.Provider,
-		Model:       req.Model,
-		Latency:     latency,
-		Timestamp:   time.Now(),
+		ID:        generateID(),
+		Prompt:    req.Prompt,
+		Provider:  req.Provider,
+		Model:     req.Model,
+		Latency:   latency,
+		Timestamp: time.Now(),
 	}
 
 	if err != nil {
@@ -725,7 +725,7 @@ func (ps *PlaygroundServer) handleOptimize(w http.ResponseWriter, r *http.Reques
 		Metrics: map[string]interface{}{
 			"improvement_score": optimResult.ImprovementScore,
 			"iterations":        len(optimResult.Iterations),
-			"method":           req.Method,
+			"method":            req.Method,
 		},
 	}
 
@@ -745,18 +745,18 @@ func (ps *PlaygroundServer) handleCompare(w http.ResponseWriter, r *http.Request
 // handleMetrics processes advanced metrics requests
 func (ps *PlaygroundServer) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Generated string `json:"generated"`
-		Reference string `json:"reference"`
+		Generated string   `json:"generated"`
+		Reference string   `json:"reference"`
 		Metrics   []string `json:"metrics"`
 	}
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	results := make(map[string]float64)
-	
+
 	for _, metric := range req.Metrics {
 		switch metric {
 		case "bleu":

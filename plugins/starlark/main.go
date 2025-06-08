@@ -7,14 +7,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
+	"github.com/tmc/pe/internal/evaluator"
+	"github.com/tmc/pe/internal/promptfoo"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
-	"github.com/tmc/pe/internal/evaluator"
-	"github.com/tmc/pe/internal/llm"
-	"github.com/tmc/pe/internal/promptfoo"
 )
 
 // StarlarkEvaluator provides a Starlark-based evaluation engine for PE
@@ -44,10 +42,10 @@ type StarlarkTest struct {
 
 // StarlarkAssertion represents an assertion in a test
 type StarlarkAssertion struct {
-	Type     string
-	Value    interface{}
-	Message  string
-	Weight   float64
+	Type    string
+	Value   interface{}
+	Message string
+	Weight  float64
 }
 
 // NewStarlarkEvaluator creates a new Starlark evaluator instance
@@ -158,9 +156,9 @@ func (e *StarlarkEvaluator) setupBuiltins() {
 		var variables *starlark.Dict
 		var assertions *starlark.List
 
-		if err := starlark.UnpackArgs("test", args, kwargs, 
-			"name", &name, 
-			"input", &input, 
+		if err := starlark.UnpackArgs("test", args, kwargs,
+			"name", &name,
+			"input", &input,
 			"assertions", &assertions,
 			"variables?", &variables,
 			"description?", &description); err != nil {
@@ -462,17 +460,17 @@ func (e *StarlarkEvaluator) toPromptfooConfig() promptfoo.Config {
 // mergeVars merges global and test-specific variables
 func mergeVars(global, local map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
-	
+
 	// Copy global variables
 	for k, v := range global {
 		result[k] = v
 	}
-	
+
 	// Override with local variables
 	for k, v := range local {
 		result[k] = v
 	}
-	
+
 	return result
 }
 
@@ -531,6 +529,6 @@ func main() {
 
 	// Print summary
 	stats := result.Results.Stats
-	fmt.Fprintf(os.Stderr, "\n✅ Evaluation complete: %d passed, %d failed\n", 
+	fmt.Fprintf(os.Stderr, "\n✅ Evaluation complete: %d passed, %d failed\n",
 		stats.Successes, stats.Failures)
 }

@@ -36,13 +36,13 @@ type Template struct {
 
 // Variable describes a template variable
 type Variable struct {
-	Name         string      `yaml:"name" json:"name"`
-	Description  string      `yaml:"description" json:"description"`
-	Type         string      `yaml:"type" json:"type"` // string, number, boolean, array, object
-	Required     bool        `yaml:"required" json:"required"`
-	Default      interface{} `yaml:"default" json:"default"`
-	Examples     []string    `yaml:"examples" json:"examples"`
-	Validation   Validation  `yaml:"validation" json:"validation"`
+	Name        string      `yaml:"name" json:"name"`
+	Description string      `yaml:"description" json:"description"`
+	Type        string      `yaml:"type" json:"type"` // string, number, boolean, array, object
+	Required    bool        `yaml:"required" json:"required"`
+	Default     interface{} `yaml:"default" json:"default"`
+	Examples    []string    `yaml:"examples" json:"examples"`
+	Validation  Validation  `yaml:"validation" json:"validation"`
 }
 
 // Validation contains validation rules for variables
@@ -82,13 +82,13 @@ func NewTemplateLibrary(basePath string) *TemplateLibrary {
 // LoadBuiltinTemplates loads built-in templates
 func (tl *TemplateLibrary) LoadBuiltinTemplates() error {
 	builtinTemplates := getBuiltinTemplates()
-	
+
 	for _, template := range builtinTemplates {
 		if err := tl.AddTemplate(template); err != nil {
 			return fmt.Errorf("failed to load builtin template %s: %v", template.Name, err)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -98,22 +98,22 @@ func (tl *TemplateLibrary) LoadFromDirectory(dir string) error {
 		if err != nil {
 			return err
 		}
-		
+
 		if d.IsDir() {
 			return nil
 		}
-		
+
 		// Only process .yaml and .yml files
 		ext := strings.ToLower(filepath.Ext(path))
 		if ext != ".yaml" && ext != ".yml" {
 			return nil
 		}
-		
+
 		template, err := tl.LoadTemplateFromFile(path)
 		if err != nil {
 			return fmt.Errorf("failed to load template from %s: %v", path, err)
 		}
-		
+
 		return tl.AddTemplate(template)
 	})
 }
@@ -124,12 +124,12 @@ func (tl *TemplateLibrary) LoadTemplateFromFile(filename string) (*Template, err
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var template Template
 	if err := yaml.Unmarshal(data, &template); err != nil {
 		return nil, err
 	}
-	
+
 	// Set defaults
 	if template.CreatedAt.IsZero() {
 		template.CreatedAt = time.Now()
@@ -140,7 +140,7 @@ func (tl *TemplateLibrary) LoadTemplateFromFile(filename string) (*Template, err
 	if template.Version == "" {
 		template.Version = "1.0.0"
 	}
-	
+
 	return &template, nil
 }
 
@@ -149,18 +149,18 @@ func (tl *TemplateLibrary) AddTemplate(template *Template) error {
 	if template.Name == "" {
 		return fmt.Errorf("template name is required")
 	}
-	
+
 	tl.templates[template.Name] = template
-	
+
 	// Update indexes
 	if template.Category != "" {
 		tl.addToIndex("category:"+template.Category, template.Name)
 	}
-	
+
 	for _, tag := range template.Tags {
 		tl.addToIndex("tag:"+tag, template.Name)
 	}
-	
+
 	return nil
 }
 
@@ -170,7 +170,7 @@ func (tl *TemplateLibrary) GetTemplate(name string) (*Template, error) {
 	if !exists {
 		return nil, fmt.Errorf("template not found: %s", name)
 	}
-	
+
 	return template, nil
 }
 
@@ -186,15 +186,15 @@ func (tl *TemplateLibrary) ListTemplates() []*Template {
 // Search searches for templates based on query
 func (tl *TemplateLibrary) Search(query string) []*Template {
 	var results []*Template
-	
+
 	query = strings.ToLower(query)
-	
+
 	for _, template := range tl.templates {
 		if tl.matchesQuery(template, query) {
 			results = append(results, template)
 		}
 	}
-	
+
 	return results
 }
 
@@ -202,13 +202,13 @@ func (tl *TemplateLibrary) Search(query string) []*Template {
 func (tl *TemplateLibrary) GetByCategory(category string) []*Template {
 	names := tl.indexes["category:"+category]
 	templates := make([]*Template, 0, len(names))
-	
+
 	for _, name := range names {
 		if template, exists := tl.templates[name]; exists {
 			templates = append(templates, template)
 		}
 	}
-	
+
 	return templates
 }
 
@@ -216,13 +216,13 @@ func (tl *TemplateLibrary) GetByCategory(category string) []*Template {
 func (tl *TemplateLibrary) GetByTag(tag string) []*Template {
 	names := tl.indexes["tag:"+tag]
 	templates := make([]*Template, 0, len(names))
-	
+
 	for _, name := range names {
 		if template, exists := tl.templates[name]; exists {
 			templates = append(templates, template)
 		}
 	}
-	
+
 	return templates
 }
 
@@ -254,34 +254,34 @@ func (tl *TemplateLibrary) ApplyTemplate(name string, variables map[string]inter
 	if err != nil {
 		return "", err
 	}
-	
+
 	// Validate variables
 	if err := tl.validateVariables(template, variables); err != nil {
 		return "", err
 	}
-	
+
 	// Apply template substitution
 	result := template.Prompt
 	for varName, value := range variables {
 		placeholder := fmt.Sprintf("{{%s}}", varName)
 		result = strings.ReplaceAll(result, placeholder, fmt.Sprintf("%v", value))
 	}
-	
+
 	// Update usage count
 	template.UsageCount++
-	
+
 	return result, nil
 }
 
 // SaveTemplate saves a template to file
 func (tl *TemplateLibrary) SaveTemplate(template *Template, filename string) error {
 	template.UpdatedAt = time.Now()
-	
+
 	data, err := yaml.Marshal(template)
 	if err != nil {
 		return err
 	}
-	
+
 	return os.WriteFile(filename, data, 0644)
 }
 
@@ -291,7 +291,7 @@ func (tl *TemplateLibrary) ExportTemplate(name, format string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	switch strings.ToLower(format) {
 	case "json":
 		return json.MarshalIndent(template, "", "  ")
@@ -343,13 +343,13 @@ func (tl *TemplateLibrary) matchesQuery(template *Template, query string) bool {
 		strings.ToLower(template.Category),
 		strings.ToLower(strings.Join(template.Tags, " ")),
 	}
-	
+
 	for _, field := range fields {
 		if strings.Contains(field, query) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -362,7 +362,7 @@ func (tl *TemplateLibrary) validateVariables(template *Template, variables map[s
 			}
 		}
 	}
-	
+
 	// Validate variable types and constraints
 	for varName, value := range variables {
 		if varDef, exists := template.Variables[varName]; exists {
@@ -371,7 +371,7 @@ func (tl *TemplateLibrary) validateVariables(template *Template, variables map[s
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -382,7 +382,7 @@ func (tl *TemplateLibrary) validateVariable(varDef Variable, value interface{}) 
 		if _, ok := value.(string); !ok {
 			return fmt.Errorf("expected string, got %T", value)
 		}
-		
+
 		str := value.(string)
 		if varDef.Validation.MinLength > 0 && len(str) < varDef.Validation.MinLength {
 			return fmt.Errorf("string too short (min: %d)", varDef.Validation.MinLength)
@@ -390,7 +390,7 @@ func (tl *TemplateLibrary) validateVariable(varDef Variable, value interface{}) 
 		if varDef.Validation.MaxLength > 0 && len(str) > varDef.Validation.MaxLength {
 			return fmt.Errorf("string too long (max: %d)", varDef.Validation.MaxLength)
 		}
-		
+
 	case "number":
 		var num float64
 		switch v := value.(type) {
@@ -401,20 +401,20 @@ func (tl *TemplateLibrary) validateVariable(varDef Variable, value interface{}) 
 		default:
 			return fmt.Errorf("expected number, got %T", value)
 		}
-		
+
 		if varDef.Validation.Min != 0 && num < varDef.Validation.Min {
 			return fmt.Errorf("number too small (min: %f)", varDef.Validation.Min)
 		}
 		if varDef.Validation.Max != 0 && num > varDef.Validation.Max {
 			return fmt.Errorf("number too large (max: %f)", varDef.Validation.Max)
 		}
-		
+
 	case "boolean":
 		if _, ok := value.(bool); !ok {
 			return fmt.Errorf("expected boolean, got %T", value)
 		}
 	}
-	
+
 	return nil
 }
 

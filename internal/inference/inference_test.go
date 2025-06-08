@@ -35,11 +35,11 @@ func (m *MockProvider) Stream(ctx context.Context, req inference.Request) (<-cha
 	if m.streamErr != nil {
 		return nil, m.streamErr
 	}
-	
+
 	chunks := make(chan inference.StreamChunk, 3)
 	go func() {
 		defer close(chunks)
-		
+
 		// Simulate streaming by sending response in chunks
 		parts := []string{"Hello", " ", "world!"}
 		for _, part := range parts {
@@ -52,7 +52,7 @@ func (m *MockProvider) Stream(ctx context.Context, req inference.Request) (<-cha
 			Done: true,
 		}
 	}()
-	
+
 	return chunks, nil
 }
 
@@ -66,31 +66,31 @@ func (m *MockProvider) Close() error {
 
 func TestClient(t *testing.T) {
 	ctx := context.Background()
-	
+
 	// Create client with mock providers
 	client := inference.NewClient()
-	
+
 	mock1 := &MockProvider{
 		name:     "mock1",
 		response: "Response from mock1",
 		models:   []string{"model1", "model2"},
 	}
-	
+
 	mock2 := &MockProvider{
-		name:     "mock2", 
+		name:     "mock2",
 		response: "Response from mock2",
 		models:   []string{"model3"},
 	}
-	
+
 	client.Register("mock1", mock1)
 	client.Register("mock2", mock2)
-	
+
 	// Test listing providers
 	providers := client.Providers()
 	if len(providers) != 2 {
 		t.Errorf("Expected 2 providers, got %d", len(providers))
 	}
-	
+
 	// Test completion with default provider
 	resp, err := client.Complete(ctx, inference.Request{
 		Prompt: "Test prompt",
@@ -102,7 +102,7 @@ func TestClient(t *testing.T) {
 	if resp.Content != "Response from mock1" {
 		t.Errorf("Unexpected response: %s", resp.Content)
 	}
-	
+
 	// Test completion with specific provider
 	resp, err = client.CompleteWith(ctx, "mock2", inference.Request{
 		Prompt: "Test prompt 2",
@@ -113,7 +113,7 @@ func TestClient(t *testing.T) {
 	if resp.Content != "Response from mock2" {
 		t.Errorf("Unexpected response: %s", resp.Content)
 	}
-	
+
 	// Test streaming
 	chunks, err := client.Stream(ctx, inference.Request{
 		Prompt: "Stream test",
@@ -122,7 +122,7 @@ func TestClient(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Stream failed: %v", err)
 	}
-	
+
 	var collected string
 	for chunk := range chunks {
 		if chunk.Error != nil {
@@ -132,11 +132,11 @@ func TestClient(t *testing.T) {
 			collected += chunk.Delta
 		}
 	}
-	
+
 	if collected != "Hello world!" {
 		t.Errorf("Unexpected streamed content: %s", collected)
 	}
-	
+
 	// Test models
 	models, err := client.Models(ctx, "mock1")
 	if err != nil {
@@ -145,7 +145,7 @@ func TestClient(t *testing.T) {
 	if len(models) != 2 {
 		t.Errorf("Expected 2 models, got %d", len(models))
 	}
-	
+
 	// Test invalid provider
 	_, err = client.CompleteWith(ctx, "invalid", inference.Request{})
 	if err == nil {
@@ -155,7 +155,7 @@ func TestClient(t *testing.T) {
 
 func TestCollectStream(t *testing.T) {
 	ctx := context.Background()
-	
+
 	// Create a channel with test data
 	chunks := make(chan inference.StreamChunk, 4)
 	chunks <- inference.StreamChunk{Delta: "Hello"}
@@ -163,12 +163,12 @@ func TestCollectStream(t *testing.T) {
 	chunks <- inference.StreamChunk{Delta: "world!"}
 	chunks <- inference.StreamChunk{Done: true}
 	close(chunks)
-	
+
 	content, err := inference.CollectStream(ctx, chunks)
 	if err != nil {
 		t.Fatalf("CollectStream failed: %v", err)
 	}
-	
+
 	if content != "Hello world!" {
 		t.Errorf("Unexpected content: %s", content)
 	}
@@ -182,7 +182,7 @@ func TestRegistry(t *testing.T) {
 			response: "Test response",
 		}, nil
 	})
-	
+
 	// Check if provider is registered
 	providers := inference.Providers()
 	found := false
@@ -192,17 +192,17 @@ func TestRegistry(t *testing.T) {
 			break
 		}
 	}
-	
+
 	if !found {
 		t.Error("test-provider not found in registry")
 	}
-	
+
 	// Create provider from registry
 	provider, err := inference.NewProvider("test-provider", nil)
 	if err != nil {
 		t.Fatalf("Failed to create provider: %v", err)
 	}
-	
+
 	if provider.Name() != "test-provider" {
 		t.Errorf("Unexpected provider name: %s", provider.Name())
 	}

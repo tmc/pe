@@ -56,7 +56,7 @@ Available types:
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		schemaType := args[0]
-		
+
 		var schema *structured.Schema
 		switch schemaType {
 		case "analysis":
@@ -161,7 +161,7 @@ var structuredValidateCmd = &cobra.Command{
 
 		// Get formatter and plugin
 		formatter := structured.NewFormatter()
-		
+
 		// Try to parse and validate the data
 		var parsedData map[string]interface{}
 		if strings.HasSuffix(args[0], ".yaml") || strings.HasSuffix(args[0], ".yml") {
@@ -193,9 +193,9 @@ to create a complete prompt that will produce structured output.`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		instruction := args[0]
-		
+
 		var schema *structured.Schema
-		
+
 		if len(args) > 1 {
 			// Read schema file
 			data, err := os.ReadFile(args[1])
@@ -249,7 +249,7 @@ Plugins allow you to extend PE with custom output formats and validation logic.`
 
 func init() {
 	structuredCmd.AddCommand(structuredPluginCmd)
-	
+
 	// Plugin subcommands
 	structuredPluginCmd.AddCommand(&cobra.Command{
 		Use:   "list",
@@ -266,7 +266,7 @@ func init() {
 			} {
 				fmt.Printf("  - %s\n", format)
 			}
-			
+
 			return nil
 		},
 	})

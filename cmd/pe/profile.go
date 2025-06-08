@@ -47,7 +47,7 @@ func profileStartCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringSliceVarP(&profileTypes, "type", "t", []string{"cpu"}, 
+	cmd.Flags().StringSliceVarP(&profileTypes, "type", "t", []string{"cpu"},
 		"Profile types: cpu, memory, goroutine, block, mutex")
 	cmd.Flags().StringVarP(&outputDir, "output-dir", "o", "profiles", "Output directory")
 	cmd.Flags().StringVarP(&duration, "duration", "d", "", "Profile duration (e.g., 30s)")
@@ -67,7 +67,7 @@ func profileStopCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringSliceVarP(&profileTypes, "type", "t", []string{}, 
+	cmd.Flags().StringSliceVarP(&profileTypes, "type", "t", []string{},
 		"Profile types to stop (empty = all active)")
 
 	return cmd
@@ -249,12 +249,12 @@ func runProfileStart(cmd *cobra.Command, profileTypes []string, outputDir, durat
 	// Start profiling for each type
 	for _, typeStr := range profileTypes {
 		profileType := observability.ProfileType(typeStr)
-		
+
 		if err := profiler.Start(profileType); err != nil {
 			fmt.Fprintf(cmd.OutOrStderr(), "Failed to start %s profiling: %v\n", typeStr, err)
 			continue
 		}
-		
+
 		fmt.Fprintf(cmd.OutOrStdout(), "Started %s profiling\n", typeStr)
 	}
 
@@ -266,7 +266,7 @@ func runProfileStart(cmd *cobra.Command, profileTypes []string, outputDir, durat
 		}
 
 		fmt.Fprintf(cmd.OutOrStdout(), "Profiling will stop automatically after %v\n", duration)
-		
+
 		go func() {
 			time.Sleep(duration)
 			for _, typeStr := range profileTypes {
@@ -296,12 +296,12 @@ func runProfileStop(cmd *cobra.Command, profileTypes []string) error {
 
 	for _, typeStr := range profileTypes {
 		profileType := observability.ProfileType(typeStr)
-		
+
 		if err := profiler.Stop(profileType); err != nil {
 			fmt.Fprintf(cmd.OutOrStderr(), "Failed to stop %s profiling: %v\n", typeStr, err)
 			continue
 		}
-		
+
 		fmt.Fprintf(cmd.OutOrStdout(), "Stopped %s profiling\n", typeStr)
 	}
 
@@ -310,10 +310,10 @@ func runProfileStop(cmd *cobra.Command, profileTypes []string) error {
 
 func runProfileStatus(cmd *cobra.Command, args []string) error {
 	profiler := observability.GetGlobalProfiler()
-	
+
 	fmt.Fprintf(cmd.OutOrStdout(), "Profiler Status:\n")
 	fmt.Fprintf(cmd.OutOrStdout(), "  Enabled: %t\n", profiler.IsEnabled())
-	
+
 	activeProfiles := profiler.GetActiveProfiles()
 	if len(activeProfiles) > 0 {
 		fmt.Fprintf(cmd.OutOrStdout(), "  Active Profiles:\n")
@@ -342,8 +342,8 @@ func runProfileReport(cmd *cobra.Command, outputFile, format string) error {
 	stats := profiler.CollectSnapshot()
 
 	report := map[string]interface{}{
-		"timestamp": time.Now(),
-		"stats":     stats,
+		"timestamp":       time.Now(),
+		"stats":           stats,
 		"active_profiles": profiler.GetActiveProfiles(),
 	}
 
@@ -353,11 +353,11 @@ func runProfileReport(cmd *cobra.Command, outputFile, format string) error {
 		if err != nil {
 			return err
 		}
-		
+
 		if outputFile != "" {
 			return os.WriteFile(outputFile, data, 0644)
 		}
-		
+
 		fmt.Fprintln(cmd.OutOrStdout(), string(data))
 
 	case "text":
@@ -397,7 +397,7 @@ Active Profiles: %v
 		if outputFile != "" {
 			return os.WriteFile(outputFile, []byte(output), 0644)
 		}
-		
+
 		fmt.Fprint(cmd.OutOrStdout(), output)
 
 	default:
@@ -415,18 +415,18 @@ func runTraceStart(cmd *cobra.Command, outputFile string) error {
 
 	observability.InitGlobalTracer(writer)
 	fmt.Fprintf(cmd.OutOrStdout(), "Started tracing to: %s\n", outputFile)
-	
+
 	return nil
 }
 
 func runTraceStop(cmd *cobra.Command, args []string) error {
 	tracer := observability.GetGlobalTracer()
 	tracer.Disable()
-	
+
 	if err := tracer.Close(); err != nil {
 		return fmt.Errorf("failed to close tracer: %v", err)
 	}
-	
+
 	fmt.Fprintf(cmd.OutOrStdout(), "Stopped tracing\n")
 	return nil
 }
@@ -435,27 +435,27 @@ func runTraceReport(cmd *cobra.Command, traceFile, outputFile, format string) er
 	// For now, just indicate that trace analysis would be implemented here
 	fmt.Fprintf(cmd.OutOrStdout(), "Trace analysis not yet implemented\n")
 	fmt.Fprintf(cmd.OutOrStdout(), "Trace file: %s\n", traceFile)
-	
+
 	if _, err := os.Stat(traceFile); err != nil {
 		return fmt.Errorf("trace file not found: %s", traceFile)
 	}
-	
+
 	// In a real implementation, this would parse the trace file and generate reports
 	report := map[string]interface{}{
 		"trace_file": traceFile,
 		"status":     "analysis_pending",
 		"message":    "Trace analysis functionality will be implemented",
 	}
-	
+
 	data, err := json.MarshalIndent(report, "", "  ")
 	if err != nil {
 		return err
 	}
-	
+
 	if outputFile != "" {
 		return os.WriteFile(outputFile, data, 0644)
 	}
-	
+
 	fmt.Fprintln(cmd.OutOrStdout(), string(data))
 	return nil
 }
@@ -472,21 +472,21 @@ func runMetricsStart(cmd *cobra.Command, outputFile, intervalStr string) error {
 	}
 
 	observability.InitGlobalMetrics(writer)
-	
+
 	fmt.Fprintf(cmd.OutOrStdout(), "Started metrics collection to: %s\n", outputFile)
 	fmt.Fprintf(cmd.OutOrStdout(), "Collection interval: %v\n", interval)
-	
+
 	return nil
 }
 
 func runMetricsStop(cmd *cobra.Command, args []string) error {
 	metrics := observability.GetGlobalMetrics()
 	metrics.Disable()
-	
+
 	if err := metrics.Close(); err != nil {
 		return fmt.Errorf("failed to close metrics: %v", err)
 	}
-	
+
 	fmt.Fprintf(cmd.OutOrStdout(), "Stopped metrics collection\n")
 	return nil
 }
@@ -501,11 +501,11 @@ func runMetricsReport(cmd *cobra.Command, outputFile, format string) error {
 		if err != nil {
 			return err
 		}
-		
+
 		if outputFile != "" {
 			return os.WriteFile(outputFile, data, 0644)
 		}
-		
+
 		fmt.Fprintln(cmd.OutOrStdout(), string(data))
 
 	case "text":
@@ -541,7 +541,7 @@ Counters:
 		if outputFile != "" {
 			return os.WriteFile(outputFile, []byte(output), 0644)
 		}
-		
+
 		fmt.Fprint(cmd.OutOrStdout(), output)
 
 	default:

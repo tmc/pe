@@ -25,62 +25,62 @@ func NewReflectionEngine(llmProvider llm.Provider) *ReflectionEngine {
 
 // SuccessPattern represents a successful prompt engineering pattern
 type SuccessPattern struct {
-	PatternID     string            `json:"pattern_id"`
-	PatternName   string            `json:"pattern_name"`
-	Description   string            `json:"description"`
-	Context       string            `json:"context"`        // When this pattern works well
-	Techniques    []string          `json:"techniques"`     // Specific techniques used
-	Effectiveness float64           `json:"effectiveness"`  // Success rate (0-1)
-	Examples      []string          `json:"examples"`       // Example successful applications
-	Conditions    []string          `json:"conditions"`     // Conditions for success
+	PatternID     string             `json:"pattern_id"`
+	PatternName   string             `json:"pattern_name"`
+	Description   string             `json:"description"`
+	Context       string             `json:"context"`       // When this pattern works well
+	Techniques    []string           `json:"techniques"`    // Specific techniques used
+	Effectiveness float64            `json:"effectiveness"` // Success rate (0-1)
+	Examples      []string           `json:"examples"`      // Example successful applications
+	Conditions    []string           `json:"conditions"`    // Conditions for success
 	Metrics       map[string]float64 `json:"metrics"`       // Performance metrics
 }
 
 // StrategyRecommendation provides guidance on tool/technique selection
 type StrategyRecommendation struct {
-	Scenario      string   `json:"scenario"`       // Type of prompt engineering task
-	Recommended   []string `json:"recommended"`    // Recommended tools/techniques
+	Scenario       string   `json:"scenario"`        // Type of prompt engineering task
+	Recommended    []string `json:"recommended"`     // Recommended tools/techniques
 	NotRecommended []string `json:"not_recommended"` // Tools to avoid
-	Rationale     string   `json:"rationale"`      // Why this strategy works
-	Confidence    float64  `json:"confidence"`     // Confidence in recommendation
-	Alternatives  []string `json:"alternatives"`   // Alternative approaches
+	Rationale      string   `json:"rationale"`       // Why this strategy works
+	Confidence     float64  `json:"confidence"`      // Confidence in recommendation
+	Alternatives   []string `json:"alternatives"`    // Alternative approaches
 }
 
 // KnowledgeItem represents distilled prompt engineering knowledge
 type KnowledgeItem struct {
-	ItemID      string   `json:"item_id"`
-	Category    string   `json:"category"`    // "principle", "technique", "pattern", "pitfall"
-	Title       string   `json:"title"`
-	Content     string   `json:"content"`
-	Importance  float64  `json:"importance"`  // How important this knowledge is (0-1)
-	Confidence  float64  `json:"confidence"`  // Confidence in this knowledge (0-1)
-	Sources     []string `json:"sources"`     // Where this knowledge came from
+	ItemID       string   `json:"item_id"`
+	Category     string   `json:"category"` // "principle", "technique", "pattern", "pitfall"
+	Title        string   `json:"title"`
+	Content      string   `json:"content"`
+	Importance   float64  `json:"importance"`   // How important this knowledge is (0-1)
+	Confidence   float64  `json:"confidence"`   // Confidence in this knowledge (0-1)
+	Sources      []string `json:"sources"`      // Where this knowledge came from
 	Applications []string `json:"applications"` // Where to apply this knowledge
 }
 
 // WorkflowInsight represents improvements to the PE workflow
 type WorkflowInsight struct {
-	InsightID     string   `json:"insight_id"`
-	InsightType   string   `json:"insight_type"`   // "efficiency", "quality", "process"
-	Description   string   `json:"description"`
-	CurrentState  string   `json:"current_state"`  // How things currently work
-	ProposedState string   `json:"proposed_state"` // How they could work better
-	Benefits      []string `json:"benefits"`       // Expected improvements
-	Implementation string  `json:"implementation"` // How to implement this insight
-	Priority      string   `json:"priority"`       // "low", "medium", "high"
+	InsightID      string   `json:"insight_id"`
+	InsightType    string   `json:"insight_type"` // "efficiency", "quality", "process"
+	Description    string   `json:"description"`
+	CurrentState   string   `json:"current_state"`  // How things currently work
+	ProposedState  string   `json:"proposed_state"` // How they could work better
+	Benefits       []string `json:"benefits"`       // Expected improvements
+	Implementation string   `json:"implementation"` // How to implement this insight
+	Priority       string   `json:"priority"`       // "low", "medium", "high"
 }
 
 // ReflectionResult contains the complete meta-analysis
 type ReflectionResult struct {
-	SessionSummary        SessionSummary           `json:"session_summary"`
-	SuccessPatterns       []SuccessPattern         `json:"success_patterns"`
+	SessionSummary          SessionSummary           `json:"session_summary"`
+	SuccessPatterns         []SuccessPattern         `json:"success_patterns"`
 	StrategyRecommendations []StrategyRecommendation `json:"strategy_recommendations"`
-	KnowledgeBase         []KnowledgeItem          `json:"knowledge_base"`
-	WorkflowInsights      []WorkflowInsight        `json:"workflow_insights"`
-	OverallEffectiveness  float64                  `json:"overall_effectiveness"`
-	LearningsExtracted    int                      `json:"learnings_extracted"`
-	Recommendations       []string                 `json:"recommendations"`
-	NextSteps             []string                 `json:"next_steps"`
+	KnowledgeBase           []KnowledgeItem          `json:"knowledge_base"`
+	WorkflowInsights        []WorkflowInsight        `json:"workflow_insights"`
+	OverallEffectiveness    float64                  `json:"overall_effectiveness"`
+	LearningsExtracted      int                      `json:"learnings_extracted"`
+	Recommendations         []string                 `json:"recommendations"`
+	NextSteps               []string                 `json:"next_steps"`
 }
 
 // SessionSummary provides high-level session analysis
@@ -157,24 +157,24 @@ type SessionData struct {
 
 // OptimizationSession represents a single prompt optimization session
 type OptimizationSession struct {
-	SessionID    string                `json:"session_id"`
-	Timestamp    time.Time             `json:"timestamp"`
-	InitialPrompt string               `json:"initial_prompt"`
-	FinalPrompt   string               `json:"final_prompt"`
-	ToolsUsed     []string             `json:"tools_used"`
-	Iterations    []IterationResult    `json:"iterations"`
-	FinalScore    float64              `json:"final_score"`
-	Duration      time.Duration        `json:"duration"`
+	SessionID     string                 `json:"session_id"`
+	Timestamp     time.Time              `json:"timestamp"`
+	InitialPrompt string                 `json:"initial_prompt"`
+	FinalPrompt   string                 `json:"final_prompt"`
+	ToolsUsed     []string               `json:"tools_used"`
+	Iterations    []IterationResult      `json:"iterations"`
+	FinalScore    float64                `json:"final_score"`
+	Duration      time.Duration          `json:"duration"`
 	Metadata      map[string]interface{} `json:"metadata"`
 }
 
 // generateSessionSummary creates high-level session analysis
 func (re *ReflectionEngine) generateSessionSummary(sessionData SessionData) SessionSummary {
 	summary := SessionSummary{
-		TotalPrompts:       len(sessionData.Sessions),
-		ToolsUsed:          []string{},
-		CommonPatterns:     []string{},
-		KeyChallenges:      []string{},
+		TotalPrompts:   len(sessionData.Sessions),
+		ToolsUsed:      []string{},
+		CommonPatterns: []string{},
+		KeyChallenges:  []string{},
 	}
 
 	if len(sessionData.Sessions) == 0 {
@@ -190,7 +190,7 @@ func (re *ReflectionEngine) generateSessionSummary(sessionData SessionData) Sess
 	for _, session := range sessionData.Sessions {
 		totalOptimizations += len(session.Iterations)
 		totalDuration += session.Duration
-		
+
 		if len(session.Iterations) > 0 {
 			firstScore := session.Iterations[0].Score
 			lastScore := session.Iterations[len(session.Iterations)-1].Score
@@ -468,7 +468,7 @@ func (re *ReflectionEngine) calculateOverallEffectiveness(sessionData SessionDat
 			firstScore := session.Iterations[0].Score
 			lastScore := session.Iterations[len(session.Iterations)-1].Score
 			improvement := (lastScore - firstScore) / 10.0 // Normalize to 0-1
-			
+
 			if improvement > 0 {
 				totalEffectiveness += improvement
 				successfulSessions++
@@ -662,11 +662,11 @@ func (re *ReflectionEngine) generateDefaultPatterns() []SuccessPattern {
 func (re *ReflectionEngine) generateDefaultStrategies() []StrategyRecommendation {
 	return []StrategyRecommendation{
 		{
-			Scenario:      "General prompt optimization",
-			Recommended:   []string{"analysis", "iterative_refinement"},
+			Scenario:       "General prompt optimization",
+			Recommended:    []string{"analysis", "iterative_refinement"},
 			NotRecommended: []string{"complex_methods_initially"},
-			Rationale:     "Start simple and build complexity",
-			Confidence:    0.8,
+			Rationale:      "Start simple and build complexity",
+			Confidence:     0.8,
 		},
 	}
 }
@@ -674,12 +674,12 @@ func (re *ReflectionEngine) generateDefaultStrategies() []StrategyRecommendation
 func (re *ReflectionEngine) generateDefaultKnowledge() []KnowledgeItem {
 	return []KnowledgeItem{
 		{
-			ItemID:      "clarity_principle",
-			Category:    "principle",
-			Title:       "Clarity Improves Performance",
-			Content:     "Clear, specific instructions lead to better outputs",
-			Importance:  0.9,
-			Confidence:  0.8,
+			ItemID:       "clarity_principle",
+			Category:     "principle",
+			Title:        "Clarity Improves Performance",
+			Content:      "Clear, specific instructions lead to better outputs",
+			Importance:   0.9,
+			Confidence:   0.8,
 			Applications: []string{"all prompt scenarios"},
 		},
 	}

@@ -61,17 +61,16 @@ Examples:
 }
 
 var (
-	evolveProvider     string
-	evolveGenerations  int
-	evolvePopulation   int
-	evolveMutationRate float64
+	evolveProvider      string
+	evolveGenerations   int
+	evolvePopulation    int
+	evolveMutationRate  float64
 	evolveCrossoverRate float64
-	evolveElitismRate  float64
-	evolveObjectives   string
-	evolveOutput       string
-	evolveVerbose      bool
+	evolveElitismRate   float64
+	evolveObjectives    string
+	evolveOutput        string
+	evolveVerbose       bool
 )
-
 
 func runEvolve(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
@@ -113,7 +112,7 @@ func runEvolve(cmd *cobra.Command, args []string) error {
 
 	// Run evolution
 	ctx := context.Background()
-	
+
 	if evolveVerbose {
 		fmt.Printf("Starting evolutionary optimization...\n")
 		fmt.Printf("Population size: %d\n", evolvePopulation)
@@ -132,9 +131,9 @@ func runEvolve(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Best fitness: %.4f\n", result.BestIndividual.Fitness)
 	fmt.Printf("Generations run: %d\n", len(result.EvolutionHistory))
 	fmt.Printf("Final population diversity: %.4f\n", result.FinalPopulation.Diversity)
-	
+
 	fmt.Printf("\n=== Best Prompt ===\n%s\n", result.BestIndividual.Prompt)
-	
+
 	fmt.Printf("\n=== Objective Scores ===\n")
 	for obj, score := range result.BestIndividual.Objectives {
 		fmt.Printf("  %s: %.4f\n", obj, score)
@@ -181,14 +180,13 @@ func runEvolve(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to marshal results: %w", err)
 		}
-		
+
 		if err := os.WriteFile(evolveOutput, outputData, 0644); err != nil {
 			return fmt.Errorf("failed to write output file: %w", err)
 		}
-		
+
 		fmt.Printf("\nResults saved to: %s\n", evolveOutput)
 	}
 
 	return nil
 }
-

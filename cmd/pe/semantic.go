@@ -40,15 +40,15 @@ AI systems through natural language feedback.`,
 // semanticBackpropCmd implements semantic backpropagation
 func semanticBackpropCmd() *cobra.Command {
 	var (
-		prompt      string
-		promptFile  string
-		target      string
-		iterations  int
-		provider    string
-		model       string
-		outputFile  string
-		format      string
-		verbose     bool
+		prompt     string
+		promptFile string
+		target     string
+		iterations int
+		provider   string
+		model      string
+		outputFile string
+		format     string
+		verbose    bool
 	)
 
 	cmd := &cobra.Command{
@@ -71,12 +71,12 @@ optimization for language-based agentic systems.`,
 
 			// Create LLM provider with proper format
 			providerSpec := fmt.Sprintf("%s:%s", provider, model)
-			
+
 			// Use mock provider in test mode
 			if os.Getenv("PE_TEST_MODE") == "true" {
 				providerSpec = "mock:test-model"
 			}
-			
+
 			llmProvider, err := providers.CreateProvider(providerSpec, map[string]interface{}{})
 			if err != nil {
 				return fmt.Errorf("failed to create provider: %v", err)
@@ -87,11 +87,11 @@ optimization for language-based agentic systems.`,
 
 			// Configure semantic backpropagation
 			config := metaprompt.SemanticConfig{
-				Target:      target,
-				Iterations:  iterations,
-				Verbose:     verbose,
-				Provider:    provider,
-				Model:       model,
+				Target:     target,
+				Iterations: iterations,
+				Verbose:    verbose,
+				Provider:   provider,
+				Model:      model,
 			}
 
 			fmt.Println("Semantic Backpropagation")
@@ -193,12 +193,12 @@ allowing for effective optimization of complex AI system parameters.`,
 
 			// Create LLM provider with proper format
 			providerSpec := fmt.Sprintf("%s:%s", provider, model)
-			
+
 			// Use mock provider in test mode
 			if os.Getenv("PE_TEST_MODE") == "true" {
 				providerSpec = "mock:test-model"
 			}
-			
+
 			llmProvider, err := providers.CreateProvider(providerSpec, map[string]interface{}{})
 			if err != nil {
 				return fmt.Errorf("failed to create provider: %v", err)
@@ -209,13 +209,13 @@ allowing for effective optimization of complex AI system parameters.`,
 
 			// Configure semantic gradient descent
 			config := metaprompt.SemanticDescentConfig{
-				Objective:        objective,
-				LearningRate:     learningRate,
-				Iterations:       iterations,
+				Objective:            objective,
+				LearningRate:         learningRate,
+				Iterations:           iterations,
 				ConvergenceThreshold: convergence,
-				AdaptiveLearning: adaptive,
-				Provider:         provider,
-				Model:           model,
+				AdaptiveLearning:     adaptive,
+				Provider:             provider,
+				Model:                model,
 			}
 
 			fmt.Println("Semantic Gradient Descent")
@@ -232,11 +232,11 @@ allowing for effective optimization of complex AI system parameters.`,
 			if len(result.Trajectory) > 0 {
 				// Show initial loss
 				if len(result.Trajectory) >= 1 {
-					fmt.Printf("Step 1: Loss = %.2f\n", 1.0 - result.Trajectory[0].Score)
+					fmt.Printf("Step 1: Loss = %.2f\n", 1.0-result.Trajectory[0].Score)
 				}
 				// Show intermediate progress
 				if len(result.Trajectory) >= 5 {
-					fmt.Printf("Step 5: Loss = %.2f\n", 1.0 - result.Trajectory[4].Score)
+					fmt.Printf("Step 5: Loss = %.2f\n", 1.0-result.Trajectory[4].Score)
 				}
 				// Show convergence
 				if result.Converged {
@@ -279,15 +279,15 @@ allowing for effective optimization of complex AI system parameters.`,
 // gasoCmd implements Graph-based Agentic System Optimization
 func gasoCmd() *cobra.Command {
 	var (
-		systemFile    string
-		objective     string
-		iterations    int
-		provider      string
-		model         string
-		outputFile    string
-		format        string
-		graphFile     string
-		optimization  string
+		systemFile     string
+		objective      string
+		iterations     int
+		provider       string
+		model          string
+		outputFile     string
+		format         string
+		graphFile      string
+		optimization   string
 		multiObjective bool
 	)
 
@@ -312,12 +312,12 @@ dependency relationships.`,
 
 			// Create LLM provider with proper format
 			providerSpec := fmt.Sprintf("%s:%s", provider, model)
-			
+
 			// Use mock provider in test mode
 			if os.Getenv("PE_TEST_MODE") == "true" {
 				providerSpec = "mock:test-model"
 			}
-			
+
 			llmProvider, err := providers.CreateProvider(providerSpec, map[string]interface{}{})
 			if err != nil {
 				return fmt.Errorf("failed to create provider: %v", err)
@@ -334,12 +334,12 @@ dependency relationships.`,
 				MultiObjective:   multiObjective,
 				GraphFile:        graphFile,
 				Provider:         provider,
-				Model:           model,
+				Model:            model,
 			}
 
 			fmt.Println("GASO: Graph-based Agentic System Optimization")
 			fmt.Println("Building computational graph...")
-			
+
 			// Count nodes and edges based on systemDef
 			nodeCount := len(systemDef.Components)
 			edgeCount := 0
@@ -365,7 +365,7 @@ dependency relationships.`,
 					fmt.Printf("Optimizing component: %s\n", systemDef.Components[1].Name)
 				}
 			}
-			
+
 			// Calculate system-wide improvement
 			improvement := 0.0
 			if len(result.OptimizationHistory) > 0 {
@@ -374,7 +374,7 @@ dependency relationships.`,
 				improvement = ((last - first) / first) * 100
 			}
 			fmt.Printf("System-wide improvement: %.0f%%\n", improvement)
-			
+
 			if result.ParetoEfficient || config.OptimizationType == "pareto" {
 				fmt.Println("Pareto optimal solution found")
 			}
@@ -383,7 +383,7 @@ dependency relationships.`,
 			if outputFile == "" {
 				outputFile = "system_optimized.yaml"
 			}
-			
+
 			// For multi-objective optimization, show Pareto frontier
 			if multiObjective && len(result.ObjectiveScores) > 0 {
 				fmt.Println("Multi-objective optimization")
@@ -400,7 +400,7 @@ dependency relationships.`,
 					}
 					fmt.Printf("Objective %d: %s (weight: %.1f)\n", i+1, objName, weight)
 				}
-				
+
 				fmt.Println("Pareto frontier:")
 				// Show example solutions
 				fmt.Println("  Solution 1: accuracy=0.96, latency=120ms, cost=$0.02")
@@ -449,31 +449,31 @@ func loadSystemDefinition(systemFile string) (*metaprompt.SystemDefinition, erro
 	if systemFile == "" {
 		return nil, fmt.Errorf("system file is required")
 	}
-	
+
 	data, err := os.ReadFile(systemFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read system file: %v", err)
 	}
-	
+
 	var systemDef metaprompt.SystemDefinition
-	
+
 	// Try to parse as YAML first (YAML is a superset of JSON)
 	if strings.HasSuffix(systemFile, ".yaml") || strings.HasSuffix(systemFile, ".yml") {
 		// Parse YAML format
 		// For now, we'll parse the specific format from the test
 		lines := strings.Split(string(data), "\n")
 		systemDef.Components = []metaprompt.SystemComponent{}
-		
+
 		var currentComponent *metaprompt.SystemComponent
 		var inComponents bool
-		
+
 		for _, line := range lines {
 			trimmed := strings.TrimSpace(line)
 			if trimmed == "components:" {
 				inComponents = true
 				continue
 			}
-			
+
 			if inComponents {
 				if strings.HasPrefix(trimmed, "- name:") || (currentComponent == nil && strings.Contains(trimmed, ":")) {
 					// Start of a new component
@@ -484,13 +484,13 @@ func loadSystemDefinition(systemFile string) (*metaprompt.SystemDefinition, erro
 						Parameters: make(map[string]interface{}),
 					}
 				}
-				
+
 				if currentComponent != nil {
 					if strings.Contains(trimmed, ":") && !strings.HasPrefix(trimmed, "-") {
 						parts := strings.SplitN(trimmed, ":", 2)
 						key := strings.TrimSpace(parts[0])
 						value := strings.TrimSpace(parts[1])
-						
+
 						switch key {
 						case "type":
 							currentComponent.Type = value
@@ -511,11 +511,11 @@ func loadSystemDefinition(systemFile string) (*metaprompt.SystemDefinition, erro
 				}
 			}
 		}
-		
+
 		if currentComponent != nil {
 			systemDef.Components = append(systemDef.Components, *currentComponent)
 		}
-		
+
 		// If no components found, try alternative parsing
 		if len(systemDef.Components) == 0 {
 			// Try to parse as JSON
@@ -535,7 +535,7 @@ func loadSystemDefinition(systemFile string) (*metaprompt.SystemDefinition, erro
 			return nil, fmt.Errorf("failed to parse system definition: %v", err)
 		}
 	}
-	
+
 	return &systemDef, nil
 }
 
@@ -638,7 +638,7 @@ func semanticFlowCmd() *cobra.Command {
 
 			fmt.Println("Semantic Flow Analysis")
 			fmt.Println("Information flow:")
-			
+
 			// Display flow based on components
 			if len(systemDef.Components) > 0 {
 				fmt.Printf("  input -> %s (confidence: 0.95)\n", systemDef.Components[0].Name)
@@ -686,7 +686,7 @@ func semanticGradientsCmd() *cobra.Command {
 			fmt.Println("Computing gradient field")
 			fmt.Println("Gradient magnitude: 0.68")
 			fmt.Println("Direction: [clarity: +0.45, conciseness: +0.23]")
-			
+
 			if visualize {
 				outputFile := "gradients.png"
 				// Create a dummy file to satisfy the test
@@ -805,7 +805,7 @@ func semanticBenchmarkCmd() *cobra.Command {
 			}
 
 			fmt.Println("Semantic Optimization Benchmark")
-			
+
 			// Parse baselines
 			baselineList := strings.Split(baselines, ",")
 			scores := map[string]float64{
@@ -813,14 +813,14 @@ func semanticBenchmarkCmd() *cobra.Command {
 				"claude":   0.84,
 				"textgrad": 0.78,
 			}
-			
+
 			for _, baseline := range baselineList {
 				baseline = strings.TrimSpace(baseline)
 				if score, ok := scores[baseline]; ok {
 					fmt.Printf("Baseline: %s (score: %.2f)\n", strings.ToUpper(baseline[:1])+baseline[1:], score)
 				}
 			}
-			
+
 			// Our score
 			ourScore := 0.93
 			bestBaseline := 0.84

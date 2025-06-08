@@ -99,13 +99,13 @@ func runEvalPrompt(cmd *cobra.Command, args []string) error {
 	if err == nil && len(scriptTests) > 0 {
 		// Convert scripttest to YAML format
 		yamlTests := prompt.ConvertScriptTestsToYAML(scriptTests)
-		
+
 		// Create eval config with the converted tests
 		evalConfig := EvalConfig{}
 		if err := yaml.Unmarshal([]byte(yamlTests), &evalConfig); err != nil {
 			return fmt.Errorf("converting scripttest format: %w", err)
 		}
-		
+
 		return runEvalWithConfig(p, evalConfig, filename)
 	}
 
@@ -114,7 +114,7 @@ func runEvalPrompt(cmd *cobra.Command, args []string) error {
 	if err := yaml.Unmarshal([]byte(evalsContent), &evalConfig); err != nil {
 		return fmt.Errorf("parsing evals section: %w", err)
 	}
-	
+
 	return runEvalWithConfig(p, evalConfig, filename)
 }
 
@@ -177,14 +177,14 @@ func generateEvalConfig(p *prompt.Prompt, evalConfig EvalConfig, provider string
 	b.WriteString("prompts:\n")
 	b.WriteString("  - id: main\n")
 	b.WriteString("    raw: |\n")
-	
+
 	// Include system prompt if present
 	if p.SystemPrompt != "" {
 		b.WriteString(indent(p.SystemPrompt, "      "))
 		b.WriteString("\n      \n")
 		b.WriteString("      ---\n      \n")
 	}
-	
+
 	b.WriteString(indent(p.Main, "      "))
 	b.WriteString("\n\n")
 
@@ -198,9 +198,9 @@ func generateEvalConfig(p *prompt.Prompt, evalConfig EvalConfig, provider string
 		if test.Name == "" {
 			test.Name = fmt.Sprintf("test_%d", i+1)
 		}
-		
+
 		b.WriteString(fmt.Sprintf("  - description: %s\n", test.Name))
-		
+
 		// Variables
 		if len(test.Vars) > 0 {
 			b.WriteString("    vars:\n")

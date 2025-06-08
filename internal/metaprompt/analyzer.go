@@ -48,11 +48,11 @@ type CoherenceMetrics struct {
 
 // AnalysisResult contains the complete analysis
 type AnalysisResult struct {
-	AttentionFlows    []AttentionFlow    `json:"attention_flows"`
-	SemanticDrifts    []SemanticDrift    `json:"semantic_drifts"`
-	CoherenceMetrics  CoherenceMetrics   `json:"coherence_metrics"`
-	GradientStrength  float64            `json:"gradient_strength"`
-	OptimizationHints []string           `json:"optimization_hints"`
+	AttentionFlows    []AttentionFlow  `json:"attention_flows"`
+	SemanticDrifts    []SemanticDrift  `json:"semantic_drifts"`
+	CoherenceMetrics  CoherenceMetrics `json:"coherence_metrics"`
+	GradientStrength  float64          `json:"gradient_strength"`
+	OptimizationHints []string         `json:"optimization_hints"`
 }
 
 // AnalyzePromptGradients performs comprehensive gradient analysis
@@ -263,12 +263,12 @@ func (tga *TextGradAnalyzer) computeGradientStrength(flows []AttentionFlow, drif
 	}
 
 	// Calculate coherence strength
-	coherenceStrength := (metrics.LocalCoherence + metrics.GlobalCoherence + 
+	coherenceStrength := (metrics.LocalCoherence + metrics.GlobalCoherence +
 		metrics.LogicalFlow + metrics.Consistency) / 4.0
 
 	// Combine factors
-	gradientStrength := (attentionStrength * attentionWeight) + 
-		((1.0 - driftPenalty) * driftWeight) + 
+	gradientStrength := (attentionStrength * attentionWeight) +
+		((1.0 - driftPenalty) * driftWeight) +
 		(coherenceStrength * coherenceWeight)
 
 	return gradientStrength
@@ -294,7 +294,7 @@ FORMAT:
 2. [Specific hint 2] 
 3. [Specific hint 3]
 4. [Specific hint 4]
-5. [Specific hint 5]`, 
+5. [Specific hint 5]`,
 		analysis.GradientStrength,
 		(analysis.CoherenceMetrics.LocalCoherence+analysis.CoherenceMetrics.GlobalCoherence+
 			analysis.CoherenceMetrics.LogicalFlow+analysis.CoherenceMetrics.Consistency)/4.0,
@@ -352,43 +352,43 @@ func (tga *TextGradAnalyzer) parseCoherenceMetrics(text string) CoherenceMetrics
 func (tga *TextGradAnalyzer) parseOptimizationHints(text string) []string {
 	lines := strings.Split(text, "\n")
 	var hints []string
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "1.") || strings.HasPrefix(line, "2.") || 
-		   strings.HasPrefix(line, "3.") || strings.HasPrefix(line, "4.") || 
-		   strings.HasPrefix(line, "5.") {
+		if strings.HasPrefix(line, "1.") || strings.HasPrefix(line, "2.") ||
+			strings.HasPrefix(line, "3.") || strings.HasPrefix(line, "4.") ||
+			strings.HasPrefix(line, "5.") {
 			hint := strings.TrimSpace(line[2:])
 			if hint != "" {
 				hints = append(hints, hint)
 			}
 		}
 	}
-	
+
 	return hints
 }
 
 func (tga *TextGradAnalyzer) summarizeIssues(analysis *AnalysisResult) string {
 	var issues []string
-	
+
 	if analysis.GradientStrength < 0.6 {
 		issues = append(issues, "Low gradient strength indicates weak prompt-response alignment")
 	}
-	
+
 	if len(analysis.SemanticDrifts) > 0 {
 		issues = append(issues, fmt.Sprintf("Found %d semantic drift patterns", len(analysis.SemanticDrifts)))
 	}
-	
+
 	avgCoherence := (analysis.CoherenceMetrics.LocalCoherence + analysis.CoherenceMetrics.GlobalCoherence +
 		analysis.CoherenceMetrics.LogicalFlow + analysis.CoherenceMetrics.Consistency) / 4.0
 	if avgCoherence < 0.7 {
 		issues = append(issues, "Below-average coherence scores")
 	}
-	
+
 	if len(issues) == 0 {
 		return "No significant issues identified"
 	}
-	
+
 	return strings.Join(issues, "; ")
 }
 

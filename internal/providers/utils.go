@@ -33,23 +33,23 @@ func NewSSEScanner(r io.Reader) *SSEScanner {
 // Scan reads the next SSE event
 func (s *SSEScanner) Scan() bool {
 	s.event = SSEEvent{}
-	
+
 	var lines []string
 	for s.scanner.Scan() {
 		line := s.scanner.Text()
-		
+
 		// Empty line indicates end of event
 		if line == "" {
 			break
 		}
-		
+
 		lines = append(lines, line)
 	}
-	
+
 	if len(lines) == 0 {
 		return false
 	}
-	
+
 	// Parse the event
 	for _, line := range lines {
 		if strings.HasPrefix(line, "event: ") {
@@ -64,7 +64,7 @@ func (s *SSEScanner) Scan() bool {
 			s.event.ID = strings.TrimSpace(strings.TrimPrefix(line, "id: "))
 		}
 	}
-	
+
 	return true
 }
 
@@ -148,14 +148,14 @@ func ParseProviderString(provider string) (providerName, model string, err error
 	if len(parts) != 2 {
 		return "", "", fmt.Errorf("invalid provider format, expected 'provider:model', got '%s'", provider)
 	}
-	
+
 	providerName = strings.TrimSpace(parts[0])
 	model = strings.TrimSpace(parts[1])
-	
+
 	if providerName == "" || model == "" {
 		return "", "", fmt.Errorf("invalid provider format, both provider and model must be specified")
 	}
-	
+
 	return providerName, model, nil
 }
 
@@ -172,7 +172,7 @@ func NormalizeModelName(provider, model string) string {
 		case "gpt-4-latest":
 			return "gpt-4-turbo-preview"
 		}
-		
+
 	case "anthropic":
 		// Handle common Anthropic model aliases
 		switch model {
@@ -188,7 +188,7 @@ func NormalizeModelName(provider, model string) string {
 			return "claude-instant-1.2"
 		}
 	}
-	
+
 	return model
 }
 

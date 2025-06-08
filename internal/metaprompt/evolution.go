@@ -24,23 +24,23 @@ type EvolutionaryOptimizer struct {
 
 // EvolutionConfig holds configuration for evolutionary optimization
 type EvolutionConfig struct {
-	PopulationSize  int     `json:"population_size"`
-	Generations     int     `json:"generations"`
-	MutationRate    float64 `json:"mutation_rate"`
-	CrossoverRate   float64 `json:"crossover_rate"`
-	ElitismRate     float64 `json:"elitism_rate"`
-	Objectives      []string `json:"objectives"`
-	FitnessMetrics  []string `json:"fitness_metrics"`
+	PopulationSize int      `json:"population_size"`
+	Generations    int      `json:"generations"`
+	MutationRate   float64  `json:"mutation_rate"`
+	CrossoverRate  float64  `json:"crossover_rate"`
+	ElitismRate    float64  `json:"elitism_rate"`
+	Objectives     []string `json:"objectives"`
+	FitnessMetrics []string `json:"fitness_metrics"`
 }
 
 // Individual represents a prompt candidate in the population
 type Individual struct {
-	Prompt      string             `json:"prompt"`
-	Fitness     float64            `json:"fitness"`
-	Objectives  map[string]float64 `json:"objectives"`
-	Generation  int                `json:"generation"`
-	Genealogy   []string           `json:"genealogy"`
-	Mutations   []MutationRecord   `json:"mutations"`
+	Prompt     string             `json:"prompt"`
+	Fitness    float64            `json:"fitness"`
+	Objectives map[string]float64 `json:"objectives"`
+	Generation int                `json:"generation"`
+	Genealogy  []string           `json:"genealogy"`
+	Mutations  []MutationRecord   `json:"mutations"`
 }
 
 // MutationRecord tracks the history of mutations applied to an individual
@@ -62,24 +62,24 @@ type Population struct {
 
 // EvolutionResult contains the results of evolutionary optimization
 type EvolutionResult struct {
-	BestIndividual Individual   `json:"best_individual"`
-	FinalPopulation Population  `json:"final_population"`
-	EvolutionHistory []Population `json:"evolution_history"`
-	ParetoFrontier  []Individual `json:"pareto_frontier"`
-	ConvergenceData []float64    `json:"convergence_data"`
-	Config          EvolutionConfig `json:"config"`
+	BestIndividual   Individual      `json:"best_individual"`
+	FinalPopulation  Population      `json:"final_population"`
+	EvolutionHistory []Population    `json:"evolution_history"`
+	ParetoFrontier   []Individual    `json:"pareto_frontier"`
+	ConvergenceData  []float64       `json:"convergence_data"`
+	Config           EvolutionConfig `json:"config"`
 }
 
 // MutationOperator defines different types of mutations
 type MutationOperator string
 
 const (
-	Rephrase  MutationOperator = "rephrase"
-	Expand    MutationOperator = "expand"
-	Prune     MutationOperator = "prune"
-	Reorder   MutationOperator = "reorder"
-	Enhance   MutationOperator = "enhance"
-	Simplify  MutationOperator = "simplify"
+	Rephrase MutationOperator = "rephrase"
+	Expand   MutationOperator = "expand"
+	Prune    MutationOperator = "prune"
+	Reorder  MutationOperator = "reorder"
+	Enhance  MutationOperator = "enhance"
+	Simplify MutationOperator = "simplify"
 )
 
 // NewEvolutionaryOptimizer creates a new evolutionary optimizer
@@ -97,7 +97,7 @@ func NewEvolutionaryOptimizer(provider llm.Provider, config EvolutionConfig) *Ev
 // Evolve performs evolutionary optimization on a prompt
 func (e *EvolutionaryOptimizer) Evolve(ctx context.Context, basePrompt string, config EvolutionConfig) (*EvolutionResult, error) {
 	rand.Seed(time.Now().UnixNano())
-	
+
 	result := &EvolutionResult{
 		Config:           config,
 		EvolutionHistory: make([]Population, 0, config.Generations),
@@ -119,7 +119,7 @@ func (e *EvolutionaryOptimizer) Evolve(ctx context.Context, basePrompt string, c
 
 		// Update population statistics
 		e.updatePopulationStats(&population)
-		
+
 		// Record generation
 		result.EvolutionHistory = append(result.EvolutionHistory, population)
 		result.ConvergenceData = append(result.ConvergenceData, population.BestFitness)
@@ -159,7 +159,7 @@ func (e *EvolutionaryOptimizer) Evolve(ctx context.Context, basePrompt string, c
 
 func (e *EvolutionaryOptimizer) initializePopulation(ctx context.Context, basePrompt string) (Population, error) {
 	individuals := make([]Individual, 0, e.populationSize)
-	
+
 	// Add base prompt as first individual
 	individuals = append(individuals, Individual{
 		Prompt:     basePrompt,
@@ -175,7 +175,7 @@ func (e *EvolutionaryOptimizer) initializePopulation(ctx context.Context, basePr
 		if err != nil {
 			continue // Skip failed variants
 		}
-		
+
 		individuals = append(individuals, Individual{
 			Prompt:     variant,
 			Generation: 0,
@@ -220,7 +220,7 @@ func (e *EvolutionaryOptimizer) evaluatePopulation(ctx context.Context, populati
 			population.Individuals[i].Fitness = 0.0
 			continue
 		}
-		
+
 		population.Individuals[i].Fitness = fitness
 		population.Individuals[i].Objectives = objectives
 	}
@@ -229,7 +229,7 @@ func (e *EvolutionaryOptimizer) evaluatePopulation(ctx context.Context, populati
 
 func (e *EvolutionaryOptimizer) evaluateFitness(ctx context.Context, prompt string) (float64, map[string]float64, error) {
 	objectives := make(map[string]float64)
-	
+
 	// Evaluate each objective
 	totalFitness := 0.0
 	for _, objective := range e.objectives {
@@ -240,16 +240,16 @@ func (e *EvolutionaryOptimizer) evaluateFitness(ctx context.Context, prompt stri
 		objectives[objective] = score
 		totalFitness += score
 	}
-	
+
 	// Average fitness across objectives
 	if len(e.objectives) > 0 {
 		totalFitness /= float64(len(e.objectives))
 	}
-	
+
 	// Add diversity bonus
 	diversityBonus := e.calculateDiversityBonus(prompt)
 	totalFitness += diversityBonus * 0.1
-	
+
 	return totalFitness, objectives, nil
 }
 
@@ -286,23 +286,23 @@ Respond with only a number between 0.0 and 1.0:`, objective, prompt)
 func (e *EvolutionaryOptimizer) heuristicEvaluation(prompt string) float64 {
 	// Simple heuristic based on prompt characteristics
 	score := 0.5
-	
+
 	// Length heuristic (moderate length is better)
 	length := len(prompt)
 	if length > 50 && length < 500 {
 		score += 0.1
 	}
-	
+
 	// Complexity heuristic (some structure is good)
 	if contains(prompt, []string{":", ".", "?", "!"}) {
 		score += 0.1
 	}
-	
+
 	// Specificity heuristic (specific instructions are better)
 	if contains(prompt, []string{"specific", "detailed", "explain", "analyze"}) {
 		score += 0.1
 	}
-	
+
 	return math.Max(0.0, math.Min(1.0, score))
 }
 
@@ -327,14 +327,14 @@ func (e *EvolutionaryOptimizer) updatePopulationStats(population *Population) {
 	// Find best fitness
 	bestFitness := population.Individuals[0].Fitness
 	totalFitness := 0.0
-	
+
 	for _, individual := range population.Individuals {
 		if individual.Fitness > bestFitness {
 			bestFitness = individual.Fitness
 		}
 		totalFitness += individual.Fitness
 	}
-	
+
 	population.BestFitness = bestFitness
 	population.AvgFitness = totalFitness / float64(len(population.Individuals))
 	population.Diversity = e.calculatePopulationDiversity(population.Individuals)
@@ -344,10 +344,10 @@ func (e *EvolutionaryOptimizer) calculatePopulationDiversity(individuals []Indiv
 	if len(individuals) < 2 {
 		return 0.0
 	}
-	
+
 	totalDistance := 0.0
 	comparisons := 0
-	
+
 	for i := 0; i < len(individuals); i++ {
 		for j := i + 1; j < len(individuals); j++ {
 			distance := e.calculatePromptDistance(individuals[i].Prompt, individuals[j].Prompt)
@@ -355,11 +355,11 @@ func (e *EvolutionaryOptimizer) calculatePopulationDiversity(individuals []Indiv
 			comparisons++
 		}
 	}
-	
+
 	if comparisons == 0 {
 		return 0.0
 	}
-	
+
 	return totalDistance / float64(comparisons)
 }
 
@@ -367,21 +367,21 @@ func (e *EvolutionaryOptimizer) calculatePromptDistance(prompt1, prompt2 string)
 	// Simple Levenshtein-inspired distance
 	len1, len2 := len(prompt1), len(prompt2)
 	maxLen := math.Max(float64(len1), float64(len2))
-	
+
 	if maxLen == 0 {
 		return 0.0
 	}
-	
+
 	// Simple character difference ratio
 	minLen := math.Min(float64(len1), float64(len2))
 	commonChars := 0
-	
+
 	for i := 0; i < int(minLen); i++ {
 		if prompt1[i] == prompt2[i] {
 			commonChars++
 		}
 	}
-	
+
 	similarity := float64(commonChars) / maxLen
 	return 1.0 - similarity
 }
@@ -389,12 +389,12 @@ func (e *EvolutionaryOptimizer) calculatePromptDistance(prompt1, prompt2 string)
 func (e *EvolutionaryOptimizer) calculateDiversityBonus(prompt string) float64 {
 	// Bonus for unique characteristics
 	bonus := 0.0
-	
+
 	// Length diversity
 	if len(prompt) > 100 && len(prompt) < 400 {
 		bonus += 0.1
 	}
-	
+
 	return bonus
 }
 
@@ -403,17 +403,17 @@ func (e *EvolutionaryOptimizer) hasConverged(convergenceData []float64, generati
 	if generation < 10 {
 		return false
 	}
-	
+
 	recentGenerations := 5
 	if generation < recentGenerations {
 		return false
 	}
-	
+
 	// Check if fitness has plateaued
 	recent := convergenceData[len(convergenceData)-recentGenerations:]
 	maxRecent := recent[0]
 	minRecent := recent[0]
-	
+
 	for _, fitness := range recent {
 		if fitness > maxRecent {
 			maxRecent = fitness
@@ -422,7 +422,7 @@ func (e *EvolutionaryOptimizer) hasConverged(convergenceData []float64, generati
 			minRecent = fitness
 		}
 	}
-	
+
 	// Converged if improvement is less than 1%
 	improvementThreshold := 0.01
 	return (maxRecent - minRecent) < improvementThreshold
@@ -479,14 +479,14 @@ func (e *EvolutionaryOptimizer) createNextGeneration(ctx context.Context, curren
 func (e *EvolutionaryOptimizer) tournamentSelection(individuals []Individual) Individual {
 	tournamentSize := 3
 	best := individuals[rand.Intn(len(individuals))]
-	
+
 	for i := 1; i < tournamentSize; i++ {
 		candidate := individuals[rand.Intn(len(individuals))]
 		if candidate.Fitness > best.Fitness {
 			best = candidate
 		}
 	}
-	
+
 	return best
 }
 
@@ -512,9 +512,9 @@ Respond with only the new hybrid prompt:`, parent1.Prompt, parent2.Prompt)
 	}
 
 	offspring := Individual{
-		Prompt:    response.Text,
-		Genealogy: []string{parent1.Genealogy[0], parent2.Genealogy[0]},
-		Mutations: []MutationRecord{},
+		Prompt:     response.Text,
+		Genealogy:  []string{parent1.Genealogy[0], parent2.Genealogy[0]},
+		Mutations:  []MutationRecord{},
 		Objectives: make(map[string]float64),
 	}
 
@@ -527,7 +527,7 @@ func (e *EvolutionaryOptimizer) mutate(ctx context.Context, individual Individua
 	operator := operators[rand.Intn(len(operators))]
 
 	mutationPrompt := e.createMutationPrompt(individual.Prompt, operator)
-	
+
 	response, err := e.provider.Generate(ctx, mutationPrompt, llm.GenerateOptions{})
 	if err != nil {
 		return individual, err // No mutation if failed
@@ -564,38 +564,38 @@ func (e *EvolutionaryOptimizer) createMutationPrompt(prompt string, operator Mut
 
 func (e *EvolutionaryOptimizer) extractParetoFrontier(individuals []Individual) []Individual {
 	var frontier []Individual
-	
+
 	for i, candidate := range individuals {
 		dominated := false
-		
+
 		for j, other := range individuals {
 			if i != j && e.dominatesMultiObjective(other, candidate) {
 				dominated = true
 				break
 			}
 		}
-		
+
 		if !dominated {
 			frontier = append(frontier, candidate)
 		}
 	}
-	
+
 	return frontier
 }
 
 func (e *EvolutionaryOptimizer) dominatesMultiObjective(a, b Individual) bool {
 	betterInAny := false
-	
+
 	for objective := range a.Objectives {
 		aValue := a.Objectives[objective]
 		bValue := b.Objectives[objective]
-		
+
 		if aValue > bValue {
 			betterInAny = true
 		} else if aValue < bValue {
 			return false
 		}
 	}
-	
+
 	return betterInAny
 }

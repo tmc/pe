@@ -20,8 +20,8 @@ modules together, similar to go.work files.`,
 
 // Workspace represents a pe.work file
 type Workspace struct {
-	Version string   `yaml:"version"`
-	Use     []string `yaml:"use"`     // Directories containing prompts
+	Version string    `yaml:"version"`
+	Use     []string  `yaml:"use"`     // Directories containing prompts
 	Replace []Replace `yaml:"replace"` // Replace directives
 }
 
@@ -52,27 +52,27 @@ var workUseCmd = &cobra.Command{
 var workEditCmd = &cobra.Command{
 	Use:   "edit",
 	Short: "Edit pe.work file programmatically",
-	Long: `Edit provides a command-line interface for editing pe.work files.`,
-	RunE: runWorkEdit,
+	Long:  `Edit provides a command-line interface for editing pe.work files.`,
+	RunE:  runWorkEdit,
 }
 
 var workSyncCmd = &cobra.Command{
 	Use:   "sync",
 	Short: "Sync workspace prompt dependencies",
-	Long: `Sync ensures all prompts referenced in the workspace are available.`,
-	RunE: runWorkSync,
+	Long:  `Sync ensures all prompts referenced in the workspace are available.`,
+	RunE:  runWorkSync,
 }
 
 var workListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List workspace contents",
-	RunE: runWorkList,
+	RunE:  runWorkList,
 }
 
 // Flags
 var (
-	workRemove  bool
-	workReplace []string
+	workRemove      bool
+	workReplace     []string
 	workDropReplace []string
 )
 
@@ -82,10 +82,10 @@ func init() {
 	workCmd.AddCommand(workEditCmd)
 	workCmd.AddCommand(workSyncCmd)
 	workCmd.AddCommand(workListCmd)
-	
+
 	// Flags for work use
 	workUseCmd.Flags().BoolVarP(&workRemove, "remove", "r", false, "Remove directories from workspace")
-	
+
 	// Flags for work edit
 	workEditCmd.Flags().StringSliceVar(&workReplace, "replace", []string{}, "Add replace directive (old=new)")
 	workEditCmd.Flags().StringSliceVar(&workDropReplace, "dropreplace", []string{}, "Drop replace directive")
@@ -96,22 +96,22 @@ func runWorkInit(cmd *cobra.Command, args []string) error {
 	if _, err := os.Stat("go.work"); err == nil {
 		return fmt.Errorf("go.work already exists")
 	}
-	
+
 	// Create workspace
 	ws := &Workspace{
 		Version: "1",
 		Use:     args,
 	}
-	
+
 	// Normalize paths
 	for i, dir := range ws.Use {
 		ws.Use[i] = filepath.Clean(dir)
 	}
-	
+
 	// Write go.work file in go.work format
 	var content strings.Builder
 	content.WriteString("go 1.21\n")
-	
+
 	if len(ws.Use) > 0 {
 		content.WriteString("\nuse (\n")
 		for _, dir := range ws.Use {
@@ -119,11 +119,11 @@ func runWorkInit(cmd *cobra.Command, args []string) error {
 		}
 		content.WriteString(")\n")
 	}
-	
+
 	if err := os.WriteFile("go.work", []byte(content.String()), 0644); err != nil {
 		return fmt.Errorf("failed to write go.work: %w", err)
 	}
-	
+
 	fmt.Println("Created go.work")
 	return nil
 }
@@ -134,12 +134,12 @@ func runWorkUse(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Normalize paths
 	for i, dir := range args {
 		args[i] = filepath.Clean(dir)
 	}
-	
+
 	if workRemove {
 		// Remove directories
 		ws.Use = removeStrings(ws.Use, args)
@@ -151,7 +151,7 @@ func runWorkUse(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
-	
+
 	// Save workspace
 	return saveWorkspace(ws)
 }
@@ -162,14 +162,14 @@ func runWorkEdit(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Handle replace directives
 	for _, replace := range workReplace {
 		parts := strings.SplitN(replace, "=", 2)
 		if len(parts) != 2 {
 			return fmt.Errorf("invalid replace directive: %s (use old=new)", replace)
 		}
-		
+
 		// Add or update replace
 		found := false
 		for i, r := range ws.Replace {
@@ -186,7 +186,7 @@ func runWorkEdit(cmd *cobra.Command, args []string) error {
 			})
 		}
 	}
-	
+
 	// Handle drop replace
 	for _, drop := range workDropReplace {
 		var newReplace []Replace
@@ -197,7 +197,7 @@ func runWorkEdit(cmd *cobra.Command, args []string) error {
 		}
 		ws.Replace = newReplace
 	}
-	
+
 	// Save workspace
 	return saveWorkspace(ws)
 }
@@ -207,9 +207,9 @@ func runWorkSync(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	fmt.Println("Syncing workspace prompts...")
-	
+
 	// Check each directory
 	for _, dir := range ws.Use {
 		info, err := os.Stat(dir)
@@ -217,28 +217,28 @@ func runWorkSync(cmd *cobra.Command, args []string) error {
 			fmt.Printf("  %s: %v\n", dir, err)
 			continue
 		}
-		
+
 		if !info.IsDir() {
 			fmt.Printf("  %s: not a directory\n", dir)
 			continue
 		}
-		
+
 		// Count prompt files
 		count := 0
 		err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return nil
 			}
-			
+
 			if strings.HasSuffix(path, ".prompt") || strings.HasSuffix(path, ".pe") {
 				count++
 			}
 			return nil
 		})
-		
+
 		fmt.Printf("  %s: %d prompts\n", dir, count)
 	}
-	
+
 	return nil
 }
 
@@ -247,39 +247,39 @@ func runWorkList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	fmt.Println("Workspace directories:")
 	for _, dir := range ws.Use {
 		fmt.Printf("  %s\n", dir)
-		
+
 		// List prompts in directory
 		var prompts []string
 		filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return nil
 			}
-			
+
 			if strings.HasSuffix(path, ".prompt") || strings.HasSuffix(path, ".pe") {
 				rel, _ := filepath.Rel(dir, path)
 				prompts = append(prompts, rel)
 			}
 			return nil
 		})
-		
+
 		if len(prompts) > 0 {
 			for _, p := range prompts {
 				fmt.Printf("    - %s\n", p)
 			}
 		}
 	}
-	
+
 	if len(ws.Replace) > 0 {
 		fmt.Println("\nReplace directives:")
 		for _, r := range ws.Replace {
 			fmt.Printf("  %s => %s\n", r.Old, r.New)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -293,24 +293,24 @@ func loadWorkspace() (*Workspace, error) {
 		}
 		return nil, fmt.Errorf("failed to read go.work: %w", err)
 	}
-	
+
 	// Parse go.work format
 	ws := &Workspace{
 		Version: "1",
 		Use:     []string{},
 	}
-	
+
 	lines := strings.Split(string(data), "\n")
 	inUse := false
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		
+
 		if line == "use (" {
 			inUse = true
 			continue
 		}
-		
+
 		if inUse {
 			if line == ")" {
 				inUse = false
@@ -322,7 +322,7 @@ func loadWorkspace() (*Workspace, error) {
 			}
 		}
 	}
-	
+
 	return ws, nil
 }
 
@@ -330,7 +330,7 @@ func saveWorkspace(ws *Workspace) error {
 	// Write go.work file in go.work format
 	var content strings.Builder
 	content.WriteString("go 1.21\n")
-	
+
 	if len(ws.Use) > 0 {
 		content.WriteString("\nuse (\n")
 		for _, dir := range ws.Use {
@@ -338,11 +338,11 @@ func saveWorkspace(ws *Workspace) error {
 		}
 		content.WriteString(")\n")
 	}
-	
+
 	if err := os.WriteFile("go.work", []byte(content.String()), 0644); err != nil {
 		return fmt.Errorf("failed to write go.work: %w", err)
 	}
-	
+
 	return nil
 }
 

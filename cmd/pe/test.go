@@ -87,7 +87,7 @@ Advanced Features:
 				configFile = args[0]
 			}
 
-			return runAdvancedTest(cmd, configFile, testType, baseline, saveBaseline, 
+			return runAdvancedTest(cmd, configFile, testType, baseline, saveBaseline,
 				iterations, tolerance, outputFile, verbose, provider)
 		},
 	}
@@ -100,7 +100,7 @@ Advanced Features:
 	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for test results")
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
 	cmd.Flags().StringVar(&provider, "provider", "openai", "LLM provider to use for testing")
-	
+
 	// Additional test-driven development flags
 	cmd.Flags().Bool("generate-tests", false, "Generate test cases from prompt examples")
 	cmd.Flags().Bool("statistical-validation", false, "Include statistical significance testing")
@@ -113,7 +113,7 @@ Advanced Features:
 	cmd.Flags().Bool("parallel", true, "Run tests in parallel")
 	cmd.Flags().Int("max-failures", 10, "Maximum failures before stopping")
 	cmd.Flags().String("test-suite", "", "Pre-defined test suite to run")
-	
+
 	// Additional flags for special test types
 	cmd.Flags().String("config-a", "", "First configuration for A/B testing")
 	cmd.Flags().String("config-b", "", "Second configuration for A/B testing")
@@ -124,7 +124,7 @@ Advanced Features:
 	// cmd.AddCommand(crossValidateCmd()) // Commented out to handle cross-validate in parent command
 	cmd.AddCommand(significanceTestCmd())
 	// cmd.AddCommand(abTestCmd()) // Commented out to handle ab-test in parent command
-	
+
 	return cmd
 }
 
@@ -139,56 +139,56 @@ type AdvancedTestConfig struct {
 
 // TestResults contains all test results
 type TestResults struct {
-	Timestamp       time.Time                        `json:"timestamp"`
-	Config          string                           `json:"config"`
-	TestType        string                           `json:"test_type"`
-	PropertyResults []testing.PropertyTestResult     `json:"property_results,omitempty"`
-	RegressionResults []testing.RegressionResult     `json:"regression_results,omitempty"`
-	Summary         TestSummary                      `json:"summary"`
-	Duration        time.Duration                    `json:"duration"`
+	Timestamp         time.Time                    `json:"timestamp"`
+	Config            string                       `json:"config"`
+	TestType          string                       `json:"test_type"`
+	PropertyResults   []testing.PropertyTestResult `json:"property_results,omitempty"`
+	RegressionResults []testing.RegressionResult   `json:"regression_results,omitempty"`
+	Summary           TestSummary                  `json:"summary"`
+	Duration          time.Duration                `json:"duration"`
 }
 
 // TestSummary provides a high-level summary of test results
 type TestSummary struct {
-	TotalTests       int     `json:"total_tests"`
-	PassedTests      int     `json:"passed_tests"`
-	FailedTests      int     `json:"failed_tests"`
-	SuccessRate      float64 `json:"success_rate"`
-	TotalRegressions int     `json:"total_regressions"`
-	TotalImprovements int    `json:"total_improvements"`
+	TotalTests        int     `json:"total_tests"`
+	PassedTests       int     `json:"passed_tests"`
+	FailedTests       int     `json:"failed_tests"`
+	SuccessRate       float64 `json:"success_rate"`
+	TotalRegressions  int     `json:"total_regressions"`
+	TotalImprovements int     `json:"total_improvements"`
 }
 
-func runAdvancedTest(cmd *cobra.Command, configFile, testType, baseline, saveBaseline string, 
+func runAdvancedTest(cmd *cobra.Command, configFile, testType, baseline, saveBaseline string,
 	iterations int, tolerance float64, outputFile string, verbose bool, provider string) error {
-	
+
 	startTime := time.Now()
-	
+
 	// Load test configuration
 	config, err := loadTestConfig(configFile)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %v", err)
 	}
-	
+
 	results := &TestResults{
 		Timestamp: startTime,
 		Config:    configFile,
 		TestType:  testType,
 		Summary:   TestSummary{},
 	}
-	
+
 	ctx := context.Background()
-	
+
 	// Run property-based tests
 	if testType == "property" || testType == "both" {
 		if verbose {
 			fmt.Fprintf(cmd.OutOrStdout(), "Running property-based tests...\n")
 		}
-		
+
 		propertyResults, err := runPropertyTests(ctx, config, iterations, verbose, cmd)
 		if err != nil {
 			return fmt.Errorf("property tests failed: %v", err)
 		}
-		
+
 		results.PropertyResults = propertyResults
 		for _, result := range propertyResults {
 			results.Summary.TotalTests++
@@ -199,22 +199,22 @@ func runAdvancedTest(cmd *cobra.Command, configFile, testType, baseline, saveBas
 			}
 		}
 	}
-	
+
 	// Run regression tests
 	if testType == "regression" || testType == "both" {
 		if baseline == "" && testType == "regression" {
 			return fmt.Errorf("baseline file required for regression testing")
 		}
-		
+
 		if verbose && baseline != "" {
 			fmt.Fprintf(cmd.OutOrStdout(), "Running regression tests...\n")
 		}
-		
+
 		regressionResults, err := runRegressionTests(ctx, config, baseline, tolerance, verbose, cmd)
 		if err != nil {
 			return fmt.Errorf("regression tests failed: %v", err)
 		}
-		
+
 		results.RegressionResults = regressionResults
 		for _, result := range regressionResults {
 			results.Summary.TotalTests++
@@ -227,13 +227,13 @@ func runAdvancedTest(cmd *cobra.Command, configFile, testType, baseline, saveBas
 			results.Summary.TotalImprovements += len(result.Improvements)
 		}
 	}
-	
+
 	// Calculate summary
 	if results.Summary.TotalTests > 0 {
 		results.Summary.SuccessRate = float64(results.Summary.PassedTests) / float64(results.Summary.TotalTests) * 100
 	}
 	results.Duration = time.Since(startTime)
-	
+
 	// Save baseline if requested
 	if saveBaseline != "" {
 		if err := saveCurrentAsBaseline(config, saveBaseline, cmd); err != nil {
@@ -242,20 +242,20 @@ func runAdvancedTest(cmd *cobra.Command, configFile, testType, baseline, saveBas
 			fmt.Fprintf(cmd.OutOrStdout(), "Baseline saved to: %s\n", saveBaseline)
 		}
 	}
-	
+
 	// Output results
 	if err := outputTestResults(results, outputFile, cmd); err != nil {
 		return fmt.Errorf("failed to output results: %v", err)
 	}
-	
+
 	// Print summary
 	printTestSummary(results, cmd)
-	
+
 	// Exit with error code if tests failed
 	if results.Summary.FailedTests > 0 {
 		os.Exit(1)
 	}
-	
+
 	return nil
 }
 
@@ -264,52 +264,52 @@ func loadTestConfig(filename string) (*AdvancedTestConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var config AdvancedTestConfig
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, err
 	}
-	
+
 	// Set defaults
 	if len(config.Providers) == 0 {
 		config.Providers = []string{"openai:gpt-3.5-turbo"}
 	}
-	
+
 	return &config, nil
 }
 
 func runPropertyTests(ctx context.Context, config *AdvancedTestConfig, iterations int, verbose bool, cmd *cobra.Command) ([]testing.PropertyTestResult, error) {
 	var results []testing.PropertyTestResult
-	
+
 	for _, providerSpec := range config.Providers {
 		provider, err := llm.GetProvider(providerSpec)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create provider %s: %v", providerSpec, err)
 		}
-		
+
 		options := llm.GenerateOptions{}
 		if temp, ok := config.Options["temperature"].(float64); ok {
 			options.Temperature = &temp
 		}
-		
+
 		tester := testing.NewPropertyTester(provider, options)
-		
+
 		for _, test := range config.PropertyTests {
 			if verbose {
 				fmt.Fprintf(cmd.OutOrStdout(), "  Running property test: %s with %s\n", test.Name, providerSpec)
 			}
-			
+
 			test.Iterations = iterations // Override with command line value
 			result, err := tester.RunPropertyTest(ctx, test)
 			if err != nil {
 				return nil, fmt.Errorf("property test %s failed: %v", test.Name, err)
 			}
-			
+
 			results = append(results, *result)
-			
+
 			if verbose {
 				if result.Passed {
-					fmt.Fprintf(cmd.OutOrStdout(), "    ✓ PASSED (%d/%d iterations)\n", 
+					fmt.Fprintf(cmd.OutOrStdout(), "    ✓ PASSED (%d/%d iterations)\n",
 						result.Iterations-len(result.Failures), result.Iterations)
 				} else {
 					fmt.Fprintf(cmd.OutOrStdout(), "    ✗ FAILED (%d failures)\n", len(result.Failures))
@@ -317,49 +317,49 @@ func runPropertyTests(ctx context.Context, config *AdvancedTestConfig, iteration
 			}
 		}
 	}
-	
+
 	return results, nil
 }
 
 func runRegressionTests(ctx context.Context, config *AdvancedTestConfig, baseline string, tolerance float64, verbose bool, cmd *cobra.Command) ([]testing.RegressionResult, error) {
 	var results []testing.RegressionResult
-	
+
 	for _, providerSpec := range config.Providers {
 		provider, err := llm.GetProvider(providerSpec)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create provider %s: %v", providerSpec, err)
 		}
-		
+
 		options := llm.GenerateOptions{}
 		if temp, ok := config.Options["temperature"].(float64); ok {
 			options.Temperature = &temp
 		}
-		
+
 		tester := testing.NewRegressionTester(provider, options)
-		
+
 		// Generate current results by running evaluation
 		currentResults, err := generateCurrentResults(ctx, provider, config, options)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate current results: %v", err)
 		}
-		
+
 		for _, test := range config.RegressionTests {
 			if verbose {
 				fmt.Fprintf(cmd.OutOrStdout(), "  Running regression test: %s\n", test.Name)
 			}
-			
+
 			test.Tolerance = tolerance // Override with command line value
 			if test.Baseline == "" {
 				test.Baseline = baseline
 			}
-			
+
 			result, err := tester.RunRegressionTest(ctx, test, currentResults)
 			if err != nil {
 				return nil, fmt.Errorf("regression test %s failed: %v", test.Name, err)
 			}
-			
+
 			results = append(results, *result)
-			
+
 			if verbose {
 				if result.Passed {
 					fmt.Fprintf(cmd.OutOrStdout(), "    ✓ PASSED (no regressions detected)\n")
@@ -369,26 +369,26 @@ func runRegressionTests(ctx context.Context, config *AdvancedTestConfig, baselin
 			}
 		}
 	}
-	
+
 	return results, nil
 }
 
 func generateCurrentResults(ctx context.Context, provider llm.Provider, config *AdvancedTestConfig, options llm.GenerateOptions) (testing.BaselineData, error) {
 	testCases := make(map[string]testing.TestCaseResult)
-	
+
 	for i, prompt := range config.Prompts {
 		testID := fmt.Sprintf("test_%d", i)
-		
+
 		startTime := time.Now()
 		response, err := provider.Generate(ctx, prompt, options)
 		latency := time.Since(startTime)
-		
+
 		success := err == nil
 		score := 1.0
 		if !success {
 			score = 0.0
 		}
-		
+
 		testCase := testing.TestCaseResult{
 			Prompt:   prompt,
 			Response: "",
@@ -402,7 +402,7 @@ func generateCurrentResults(ctx context.Context, provider llm.Provider, config *
 			Score:   score,
 			Success: success,
 		}
-		
+
 		if response != nil {
 			testCase.Response = response.Text
 			testCase.Tokens.Prompt = response.PromptTokens
@@ -410,36 +410,36 @@ func generateCurrentResults(ctx context.Context, provider llm.Provider, config *
 			testCase.Tokens.Total = response.TotalTokens
 			testCase.Cost = response.Cost
 		}
-		
+
 		testCases[testID] = testCase
 	}
-	
+
 	return testing.CreateBaselineFromEvaluation(provider.Name(), provider.Model(), testCases), nil
 }
 
 func saveCurrentAsBaseline(config *AdvancedTestConfig, filename string, cmd *cobra.Command) error {
 	ctx := context.Background()
-	
+
 	// Use first provider for baseline generation
 	if len(config.Providers) == 0 {
 		return fmt.Errorf("no providers configured")
 	}
-	
+
 	provider, err := llm.GetProvider(config.Providers[0])
 	if err != nil {
 		return err
 	}
-	
+
 	options := llm.GenerateOptions{}
 	if temp, ok := config.Options["temperature"].(float64); ok {
 		options.Temperature = &temp
 	}
-	
+
 	baseline, err := generateCurrentResults(ctx, provider, config, options)
 	if err != nil {
 		return err
 	}
-	
+
 	tester := testing.NewRegressionTester(provider, options)
 	return tester.SaveBaseline(filename, baseline)
 }
@@ -449,7 +449,7 @@ func outputTestResults(results *TestResults, outputFile string, cmd *cobra.Comma
 	if err != nil {
 		return err
 	}
-	
+
 	if outputFile != "" {
 		if err := os.WriteFile(outputFile, jsonData, 0644); err != nil {
 			return err
@@ -457,14 +457,14 @@ func outputTestResults(results *TestResults, outputFile string, cmd *cobra.Comma
 		fmt.Fprintf(cmd.OutOrStdout(), "Results saved to: %s\n", outputFile)
 		return nil
 	}
-	
+
 	fmt.Fprintln(cmd.OutOrStdout(), string(jsonData))
 	return nil
 }
 
 func printTestSummary(results *TestResults, cmd *cobra.Command) {
 	fmt.Fprintf(cmd.OutOrStdout(), "\n")
-	
+
 	// Output specific headers based on test type
 	if results.TestType == "regression" {
 		fmt.Fprintf(cmd.OutOrStdout(), "=== Regression Test Results ===\n")
@@ -472,23 +472,23 @@ func printTestSummary(results *TestResults, cmd *cobra.Command) {
 			fmt.Fprintf(cmd.OutOrStdout(), "No regression detected\n")
 		}
 	}
-	
+
 	fmt.Fprintf(cmd.OutOrStdout(), "=== Test Summary ===\n")
 	fmt.Fprintf(cmd.OutOrStdout(), "Total Tests:     %d\n", results.Summary.TotalTests)
 	fmt.Fprintf(cmd.OutOrStdout(), "Passed:          %d\n", results.Summary.PassedTests)
 	fmt.Fprintf(cmd.OutOrStdout(), "Failed:          %d\n", results.Summary.FailedTests)
 	fmt.Fprintf(cmd.OutOrStdout(), "Success Rate:    %.1f%%\n", results.Summary.SuccessRate)
-	
+
 	if results.Summary.TotalRegressions > 0 {
 		fmt.Fprintf(cmd.OutOrStdout(), "Regressions:     %d\n", results.Summary.TotalRegressions)
 	}
-	
+
 	if results.Summary.TotalImprovements > 0 {
 		fmt.Fprintf(cmd.OutOrStdout(), "Improvements:    %d\n", results.Summary.TotalImprovements)
 	}
-	
+
 	fmt.Fprintf(cmd.OutOrStdout(), "Duration:        %v\n", results.Duration)
-	
+
 	if results.Summary.FailedTests > 0 {
 		fmt.Fprintf(cmd.OutOrStdout(), "\n⚠️  Some tests failed. Check the detailed results above.\n")
 	} else {
@@ -497,13 +497,13 @@ func printTestSummary(results *TestResults, cmd *cobra.Command) {
 }
 
 // Helper functions for special test commands
-	
+
 func runGenerateTests(cmd *cobra.Command, promptFile, provider string) error {
 	content, err := os.ReadFile(promptFile)
 	if err != nil {
 		return fmt.Errorf("failed to read prompt file: %v", err)
 	}
-	
+
 	fmt.Fprintf(cmd.OutOrStdout(), "Generated test cases:\n")
 	fmt.Fprintf(cmd.OutOrStdout(), "Test case 1:\n")
 	fmt.Fprintf(cmd.OutOrStdout(), "  Input: %s\n", string(content))
@@ -511,14 +511,14 @@ func runGenerateTests(cmd *cobra.Command, promptFile, provider string) error {
 	fmt.Fprintf(cmd.OutOrStdout(), "\nTest case 2:\n")
 	fmt.Fprintf(cmd.OutOrStdout(), "  Input: Modified %s\n", string(content))
 	fmt.Fprintf(cmd.OutOrStdout(), "  Expected: Varied analysis\n")
-	
+
 	return nil
 }
 
 func runABTest(cmd *cobra.Command, provider string) error {
 	configA, _ := cmd.Flags().GetString("config-a")
 	configB, _ := cmd.Flags().GetString("config-b")
-	
+
 	fmt.Fprintf(cmd.OutOrStdout(), "A/B Test Results\n")
 	fmt.Fprintf(cmd.OutOrStdout(), "================\n\n")
 	fmt.Fprintf(cmd.OutOrStdout(), "Configuration A: %s\n", configA)
@@ -526,7 +526,7 @@ func runABTest(cmd *cobra.Command, provider string) error {
 	fmt.Fprintf(cmd.OutOrStdout(), "\nStatistical Analysis:\n")
 	fmt.Fprintf(cmd.OutOrStdout(), "- A performs 12%% better\n")
 	fmt.Fprintf(cmd.OutOrStdout(), "- 95%% confidence interval\n")
-	
+
 	return nil
 }
 
@@ -538,7 +538,7 @@ func runCrossValidate(cmd *cobra.Command, configFile, provider string) error {
 	fmt.Fprintf(cmd.OutOrStdout(), "Fold 2: 84.8%% accuracy\n")
 	fmt.Fprintf(cmd.OutOrStdout(), "Fold 3: 85.5%% accuracy\n")
 	fmt.Fprintf(cmd.OutOrStdout(), "\nAverage: 85.17%% (±0.29%%)\n")
-	
+
 	return nil
 }
 
@@ -577,7 +577,7 @@ Features:
 			fmt.Printf("Creating test suite: %s\n", name)
 			fmt.Printf("Prompts: %v\n", prompts)
 			fmt.Printf("Assertions: %v\n", assertions)
-			
+
 			// Implementation would generate systematic test cases
 			testSuite := map[string]interface{}{
 				"name":        name,
@@ -637,10 +637,10 @@ Generation Methods:
   pe test generate --source prompts.txt --adversarial --count 20`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Printf("Generating %d test cases from %s\n", count, source)
-			
+
 			// Implementation would use LLM to generate test cases
 			testCases := generateTestCases(source, template, count)
-			
+
 			if outputFile != "" {
 				data, _ := json.MarshalIndent(testCases, "", "  ")
 				return os.WriteFile(outputFile, data, 0644)
@@ -687,10 +687,10 @@ Features:
   pe test cross-validate --methods pe2,apex --folds 10 --statistical`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Printf("Cross-validating methods: %v with %d folds\n", methods, folds)
-			
+
 			// Implementation would perform cross-validation
 			results := performCrossValidation(methods, folds, statistical)
-			
+
 			if outputFile != "" {
 				data, _ := json.MarshalIndent(results, "", "  ")
 				return os.WriteFile(outputFile, data, 0644)
@@ -741,10 +741,10 @@ Statistical Tests:
   pe test significance --baseline control.json --optimized treatment.json --effect-size`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Printf("Testing significance between %s and %s (α=%.3f)\n", baseline, optimized, alpha)
-			
+
 			// Implementation would perform statistical tests
 			results := performSignificanceTests(baseline, optimized, alpha, tests)
-			
+
 			if outputFile != "" {
 				data, _ := json.MarshalIndent(results, "", "  ")
 				return os.WriteFile(outputFile, data, 0644)
@@ -767,13 +767,13 @@ Statistical Tests:
 // abTestCmd performs A/B testing with Bayesian analysis
 func abTestCmd() *cobra.Command {
 	var (
-		groupA      string
-		groupB      string
-		metric      string
-		bayesian    bool
-		outputFile  string
-		power       float64
-		effectSize  float64
+		groupA     string
+		groupB     string
+		metric     string
+		bayesian   bool
+		outputFile string
+		power      float64
+		effectSize float64
 	)
 
 	cmd := &cobra.Command{
@@ -798,10 +798,10 @@ Features:
   pe test ab-test --group-a old.json --group-b new.json --power 0.8 --effect-size 0.2`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Printf("A/B testing: %s vs %s (metric: %s)\n", groupA, groupB, metric)
-			
+
 			// Implementation would perform A/B testing
 			results := performABTest(groupA, groupB, metric, bayesian, power, effectSize)
-			
+
 			if outputFile != "" {
 				data, _ := json.MarshalIndent(results, "", "  ")
 				return os.WriteFile(outputFile, data, 0644)
@@ -827,7 +827,7 @@ Features:
 
 func generateSystematicTests(prompts, assertions []string) []map[string]interface{} {
 	var tests []map[string]interface{}
-	
+
 	for i, prompt := range prompts {
 		for _, assertion := range assertions {
 			test := map[string]interface{}{
@@ -839,13 +839,13 @@ func generateSystematicTests(prompts, assertions []string) []map[string]interfac
 			tests = append(tests, test)
 		}
 	}
-	
+
 	return tests
 }
 
 func generateTestCases(source, template string, count int) []map[string]interface{} {
 	var testCases []map[string]interface{}
-	
+
 	for i := 0; i < count; i++ {
 		testCase := map[string]interface{}{
 			"id":       fmt.Sprintf("generated_test_%d", i),
@@ -855,7 +855,7 @@ func generateTestCases(source, template string, count int) []map[string]interfac
 		}
 		testCases = append(testCases, testCase)
 	}
-	
+
 	return testCases
 }
 

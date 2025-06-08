@@ -102,10 +102,10 @@ Line three`,
 
 			for i, test := range result {
 				expected := tt.expected[i]
-				
+
 				// Check variables
 				if len(test.Variables) != len(expected.Variables) {
-					t.Errorf("Test %d: expected %d variables, got %d", 
+					t.Errorf("Test %d: expected %d variables, got %d",
 						i, len(expected.Variables), len(test.Variables))
 				}
 				for k, v := range expected.Variables {

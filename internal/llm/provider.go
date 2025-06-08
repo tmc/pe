@@ -44,7 +44,7 @@ type StreamResponse struct {
 type Provider interface {
 	// Legacy method for backward compatibility
 	EvaluatePrompt(ctx context.Context, prompt string, vars map[string]interface{}) (*promptfoo.ProviderResponse, error)
-	
+
 	// Enhanced methods for native providers
 	Name() string
 	Model() string
@@ -74,7 +74,7 @@ func GetProvider(backend string) (Provider, error) {
 			return nil, fmt.Errorf("no provider specified and none could be auto-detected (check OPENAI_API_KEY or ANTHROPIC_API_KEY environment variables)")
 		}
 	}
-	
+
 	// Check if we should use mock provider in test mode
 	if os.Getenv("PE_TEST_MODE") == "true" || os.Getenv("PE_MOCK_PROVIDER") == "true" {
 		// Use the registered mock provider from providers package
@@ -83,7 +83,7 @@ func GetProvider(backend string) (Provider, error) {
 			backend = "mock"
 		}
 	}
-	
+
 	// Parse provider:model format
 	provider := backend
 	model := ""
@@ -91,7 +91,7 @@ func GetProvider(backend string) (Provider, error) {
 		provider = backend[:idx]
 		model = backend[idx+1:]
 	}
-	
+
 	switch provider {
 	case "mock":
 		// Use native mock provider through factory
@@ -153,12 +153,12 @@ func detectDefaultProvider() string {
 	if os.Getenv("OPENAI_API_KEY") != "" {
 		return "openai:gpt-4"
 	}
-	
+
 	// Check for Anthropic API key
 	if os.Getenv("ANTHROPIC_API_KEY") != "" {
 		return "anthropic:claude-3-sonnet-20240229"
 	}
-	
+
 	// Fall back to empty string (no provider detected)
 	return ""
 }
@@ -193,7 +193,7 @@ func (p *CGPTProvider) Model() string {
 // Generate generates text using the CGPT provider
 func (p *CGPTProvider) Generate(ctx context.Context, prompt string, options GenerateOptions) (*GenerateResponse, error) {
 	startTime := time.Now()
-	
+
 	// Create CGPT provider configuration
 	provider := cgpt.DefaultProvider()
 	provider.Backend = p.Backend
@@ -299,18 +299,18 @@ func (p *MockProviderProxy) Model() string {
 func (p *MockProviderProxy) Generate(ctx context.Context, prompt string, options GenerateOptions) (*GenerateResponse, error) {
 	// Simulate some processing time
 	time.Sleep(10 * time.Millisecond)
-	
+
 	// Generate mock response based on prompt content
 	responseText := "Mock response for: " + prompt
-	
+
 	// Debug output in test mode
 	if os.Getenv("PE_DEBUG") == "true" {
 		fmt.Fprintf(os.Stderr, "MOCK DEBUG: Received prompt (first 200 chars): %s\n", prompt[:min(200, len(prompt))])
 	}
-	
+
 	// For optimization tests, return appropriate scores
-	if (strings.Contains(prompt, "Rate") && strings.Contains(prompt, "scale of 0.0 to 1.0")) || 
-	   (strings.Contains(prompt, "Evaluate this prompt") && strings.Contains(prompt, "scale from 0.0 to 1.0")) {
+	if (strings.Contains(prompt, "Rate") && strings.Contains(prompt, "scale of 0.0 to 1.0")) ||
+		(strings.Contains(prompt, "Evaluate this prompt") && strings.Contains(prompt, "scale from 0.0 to 1.0")) {
 		// Return improving scores over iterations
 		if strings.Contains(prompt, "Analyze the sentiment of the provided text. Classify as positive") {
 			responseText = "0.92" // Improved score after optimization
@@ -356,7 +356,7 @@ Analyze the sentiment of the given text with improved clarity and specificity.
 
 SCORE: 10.0`
 	}
-	
+
 	return &GenerateResponse{
 		Text:             responseText,
 		PromptTokens:     len(prompt) / 4,

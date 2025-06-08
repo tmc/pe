@@ -39,7 +39,7 @@ type RunAttestation struct {
 	ID        string    `json:"id"`        // Unique identifier
 	Timestamp time.Time `json:"timestamp"` // When the run occurred
 	Version   string    `json:"version"`   // Attestation format version
-	
+
 	// Input
 	Prompt       string                 `json:"prompt"`        // The prompt template
 	Variables    map[string]interface{} `json:"variables"`     // Template variables
@@ -47,13 +47,13 @@ type RunAttestation struct {
 	Model        string                 `json:"model"`         // Model identifier
 	Temperature  float32                `json:"temperature"`   // Temperature setting
 	SystemPrompt string                 `json:"system_prompt"` // System prompt if any
-	
+
 	// Output
 	Response     string        `json:"response"`      // The LLM response
 	TokensUsed   TokenUsage    `json:"tokens_used"`   // Token usage
 	Latency      time.Duration `json:"latency"`       // Response time
 	FinishReason string        `json:"finish_reason"` // Why generation stopped
-	
+
 	// Verification
 	InputHash    string `json:"input_hash"`    // SHA-256 of canonicalized input
 	OutputHash   string `json:"output_hash"`   // SHA-256 of response
@@ -84,16 +84,16 @@ func NewAttestationService(dataDir string) (*AttestationService, error) {
 	if err := os.MkdirAll(storageDir, 0700); err != nil {
 		return nil, fmt.Errorf("creating attestation directory: %w", err)
 	}
-	
+
 	// Initialize key store
 	keyStore := NewKeyStore()
-	
+
 	// For non-macOS systems that have file-based storage, initialize with storage directory
 	// This is handled internally by the platform-specific implementations
-	
+
 	var privateKey ed25519.PrivateKey
 	var publicKey ed25519.PublicKey
-	
+
 	// Check if key exists in secure storage
 	if keyStore.HasPrivateKey() {
 		// Load from secure storage
@@ -110,12 +110,12 @@ func NewAttestationService(dataDir string) (*AttestationService, error) {
 			// Migrate from file to secure storage
 			privateKey = ed25519.PrivateKey(keyData)
 			publicKey = privateKey.Public().(ed25519.PublicKey)
-			
+
 			fmt.Fprintln(os.Stderr, "Migrating signing key to secure storage...")
 			if err := keyStore.MigrateFromFile(privateKey); err != nil {
 				return nil, fmt.Errorf("migrating key to secure storage: %w", err)
 			}
-			
+
 			// Remove old files after successful migration
 			os.Remove(keyFile)
 			os.Remove(filepath.Join(storageDir, "signing.pub"))
@@ -126,7 +126,7 @@ func NewAttestationService(dataDir string) (*AttestationService, error) {
 			if err != nil {
 				return nil, fmt.Errorf("generating key pair: %w", err)
 			}
-			
+
 			// Store in secure storage
 			if err := keyStore.StorePrivateKey(privateKey); err != nil {
 				return nil, fmt.Errorf("storing key in secure storage: %w", err)
@@ -134,7 +134,7 @@ func NewAttestationService(dataDir string) (*AttestationService, error) {
 			fmt.Fprintln(os.Stderr, "✓ New signing key stored securely")
 		}
 	}
-	
+
 	return &AttestationService{
 		privateKey: privateKey,
 		publicKey:  publicKey,
@@ -148,13 +148,13 @@ func NewAttestationService(dataDir string) (*AttestationService, error) {
 func (s *AttestationService) AttestRun(input RunInput, output RunOutput) (*RunAttestation, error) {
 	// Generate unique ID
 	id := generateID()
-	
+
 	// Get previous hash for chaining
 	previousHash, err := s.getLatestHash()
 	if err != nil {
 		return nil, fmt.Errorf("getting previous hash: %w", err)
 	}
-	
+
 	// Create attestation
 	attestation := &RunAttestation{
 		ID:           id,
@@ -177,23 +177,23 @@ func (s *AttestationService) AttestRun(input RunInput, output RunOutput) (*RunAt
 		PreviousHash: previousHash,
 		PublicKey:    base64.StdEncoding.EncodeToString(s.publicKey),
 	}
-	
+
 	// Compute hashes
 	attestation.InputHash = s.hashInput(input)
 	attestation.OutputHash = s.hashOutput(output)
-	
+
 	// Sign the attestation
 	signature, err := s.sign(attestation)
 	if err != nil {
 		return nil, fmt.Errorf("signing attestation: %w", err)
 	}
 	attestation.Signature = base64.StdEncoding.EncodeToString(signature)
-	
+
 	// Append to chain
 	if err := s.appendToChain(attestation); err != nil {
 		return nil, fmt.Errorf("appending to chain: %w", err)
 	}
-	
+
 	return attestation, nil
 }
 
@@ -204,19 +204,19 @@ func (s *AttestationService) Verify(attestation *RunAttestation) error {
 	if err != nil {
 		return fmt.Errorf("decoding public key: %w", err)
 	}
-	
+
 	// Decode signature
 	signature, err := base64.StdEncoding.DecodeString(attestation.Signature)
 	if err != nil {
 		return fmt.Errorf("decoding signature: %w", err)
 	}
-	
+
 	// Verify signature
 	message := s.getSigningMessage(attestation)
 	if !ed25519.Verify(ed25519.PublicKey(publicKey), message, signature) {
 		return fmt.Errorf("invalid signature")
 	}
-	
+
 	// Verify hashes
 	input := RunInput{
 		Prompt:       attestation.Prompt,
@@ -226,11 +226,11 @@ func (s *AttestationService) Verify(attestation *RunAttestation) error {
 		Temperature:  attestation.Temperature,
 		SystemPrompt: attestation.SystemPrompt,
 	}
-	
+
 	if computedHash := s.hashInput(input); computedHash != attestation.InputHash {
 		return fmt.Errorf("input hash mismatch")
 	}
-	
+
 	output := RunOutput{
 		Response:         attestation.Response,
 		PromptTokens:     attestation.TokensUsed.Prompt,
@@ -239,11 +239,11 @@ func (s *AttestationService) Verify(attestation *RunAttestation) error {
 		Latency:          attestation.Latency,
 		FinishReason:     attestation.FinishReason,
 	}
-	
+
 	if computedHash := s.hashOutput(output); computedHash != attestation.OutputHash {
 		return fmt.Errorf("output hash mismatch")
 	}
-	
+
 	return nil
 }
 
@@ -257,33 +257,33 @@ func (s *AttestationService) VerifyChain() error {
 		return fmt.Errorf("opening chain file: %w", err)
 	}
 	defer file.Close()
-	
+
 	decoder := json.NewDecoder(file)
 	var previousHash string
 	lineNum := 0
-	
+
 	for decoder.More() {
 		lineNum++
 		var attestation RunAttestation
 		if err := decoder.Decode(&attestation); err != nil {
 			return fmt.Errorf("decoding attestation at line %d: %w", lineNum, err)
 		}
-		
+
 		// Verify individual attestation
 		if err := s.Verify(&attestation); err != nil {
 			return fmt.Errorf("verifying attestation %s at line %d: %w", attestation.ID, lineNum, err)
 		}
-		
+
 		// Verify chain linkage
 		if attestation.PreviousHash != previousHash {
 			return fmt.Errorf("broken chain at attestation %s: expected previous hash %s, got %s",
 				attestation.ID, previousHash, attestation.PreviousHash)
 		}
-		
+
 		// Update previous hash for next iteration
 		previousHash = s.computeAttestationHash(&attestation)
 	}
-	
+
 	return nil
 }
 
@@ -298,16 +298,16 @@ func (s *AttestationService) GenerateNewKeyPair() error {
 	if err != nil {
 		return fmt.Errorf("generating key pair: %w", err)
 	}
-	
+
 	// Store in secure storage
 	if err := s.keyStore.StorePrivateKey(privateKey); err != nil {
 		return fmt.Errorf("storing key in secure storage: %w", err)
 	}
-	
+
 	// Update service keys
 	s.privateKey = privateKey
 	s.publicKey = publicKey
-	
+
 	fmt.Fprintln(os.Stderr, "✓ New key pair generated and stored securely")
 	return nil
 }
@@ -324,7 +324,7 @@ func (s *AttestationService) hashInput(input RunInput) string {
 		"temperature":   input.Temperature,
 		"system_prompt": input.SystemPrompt,
 	})
-	
+
 	hash := sha256.Sum256(data)
 	return base64.StdEncoding.EncodeToString(hash[:])
 }
@@ -339,7 +339,7 @@ func (s *AttestationService) hashOutput(output RunOutput) string {
 		"latency":           output.Latency.Nanoseconds(),
 		"finish_reason":     output.FinishReason,
 	})
-	
+
 	hash := sha256.Sum256(data)
 	return base64.StdEncoding.EncodeToString(hash[:])
 }
@@ -375,10 +375,10 @@ func (s *AttestationService) getLatestHash() (string, error) {
 		return "", err
 	}
 	defer file.Close()
-	
+
 	var lastAttestation *RunAttestation
 	decoder := json.NewDecoder(file)
-	
+
 	for decoder.More() {
 		var attestation RunAttestation
 		if err := decoder.Decode(&attestation); err != nil {
@@ -386,11 +386,11 @@ func (s *AttestationService) getLatestHash() (string, error) {
 		}
 		lastAttestation = &attestation
 	}
-	
+
 	if lastAttestation == nil {
 		return "", nil // Empty chain
 	}
-	
+
 	return s.computeAttestationHash(lastAttestation), nil
 }
 
@@ -405,14 +405,14 @@ func (s *AttestationService) appendToChain(attestation *RunAttestation) error {
 	if err := os.MkdirAll(filepath.Dir(s.chainFile), 0700); err != nil {
 		return err
 	}
-	
+
 	// Open file for appending
 	file, err := os.OpenFile(s.chainFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	
+
 	// Write attestation as single line
 	encoder := json.NewEncoder(file)
 	encoder.SetEscapeHTML(false)

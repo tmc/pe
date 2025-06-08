@@ -13,12 +13,12 @@ import (
 
 // PromptComposer implements advanced prompt composition techniques with DSPy-style features
 type PromptComposer struct {
-	styleHandlers    map[string]StyleHandler
-	signatureRegistry *SignatureRegistry
+	styleHandlers      map[string]StyleHandler
+	signatureRegistry  *SignatureRegistry
 	programSynthesizer *ProgramSynthesizer
 	parameterOptimizer *ParameterOptimizerEngine
-	qualityGates      *QualityGateManager
-	llmProvider       llm.Provider
+	qualityGates       *QualityGateManager
+	llmProvider        llm.Provider
 }
 
 // StyleHandler defines the interface for style-specific composition logic
@@ -41,11 +41,11 @@ func NewPromptComposer() *PromptComposer {
 	return &PromptComposer{
 		styleHandlers: map[string]StyleHandler{
 			"default":        &DefaultStyleHandler{},
-			"cot":           &ChainOfThoughtHandler{},
-			"few-shot":      &FewShotHandler{},
-			"structured":    &StructuredHandler{},
+			"cot":            &ChainOfThoughtHandler{},
+			"few-shot":       &FewShotHandler{},
+			"structured":     &StructuredHandler{},
 			"conversational": &ConversationalHandler{},
-			"dspy":          &DSPyHandler{},
+			"dspy":           &DSPyHandler{},
 		},
 		signatureRegistry:  NewSignatureRegistry(),
 		programSynthesizer: NewProgramSynthesizer(),
@@ -67,7 +67,7 @@ func NewPromptComposerWithLLM(llmProvider llm.Provider) *PromptComposer {
 func (pc *PromptComposer) Compose(ctx context.Context, components []interface{}, config interface{}) (*ComposeResult, error) {
 	// Extract configuration
 	composeConfig := pc.extractConfig(config)
-	
+
 	// Validate component signatures if available
 	if err := pc.validateComponentSignatures(components); err != nil {
 		return nil, fmt.Errorf("signature validation failed: %w", err)
@@ -130,8 +130,8 @@ func (pc *PromptComposer) extractConfig(config interface{}) *EnhancedComposeConf
 		ComposeConfig: ComposeConfig{
 			Style: "default",
 		},
-		QualityGates:        false,
-		ProgramSynthesis:    false,
+		QualityGates:          false,
+		ProgramSynthesis:      false,
 		ParameterOptimization: false,
 	}
 
@@ -183,7 +183,7 @@ func (pc *PromptComposer) validateComponentSignatures(components []interface{}) 
 func (pc *PromptComposer) synthesizeProgram(ctx context.Context, components []interface{}, config *EnhancedComposeConfig) (*ComposeResult, error) {
 	// Create program specification from components
 	spec := pc.createProgramSpec(components, config)
-	
+
 	// Synthesize the program
 	synthesisResult, err := pc.programSynthesizer.SynthesizePrompt(ctx, spec)
 	if err != nil {
@@ -197,9 +197,9 @@ func (pc *PromptComposer) synthesizeProgram(ctx context.Context, components []in
 		Style:          "synthesized",
 		ValidationPass: synthesisResult.QualityScore > 0.7,
 		Metadata: map[string]interface{}{
-			"synthesis_strategy": synthesisResult.Strategy,
+			"synthesis_strategy":   synthesisResult.Strategy,
 			"synthesis_confidence": synthesisResult.Confidence,
-			"synthesis_quality": synthesisResult.QualityScore,
+			"synthesis_quality":    synthesisResult.QualityScore,
 			"synthesis_iterations": synthesisResult.Iterations,
 		},
 	}
@@ -215,9 +215,9 @@ func (pc *PromptComposer) createProgramSpec(components []interface{}, config *En
 		Examples:    []SignatureExample{},
 		Constraints: []string{},
 		Quality: QualityRequirements{
-			MinCoherence:      0.7,
-			MinClarity:        0.7,
-			MinCompleteness:   0.6,
+			MinCoherence:        0.7,
+			MinClarity:          0.7,
+			MinCompleteness:     0.6,
 			RequireOptimization: config.ParameterOptimization,
 		},
 		Metadata: make(map[string]interface{}),
@@ -246,7 +246,7 @@ func (pc *PromptComposer) optimizeParameters(ctx context.Context, components []i
 
 // ComposeConfig represents configuration for prompt composition
 type ComposeConfig struct {
-	Components      []string               `json:"components"`
+	Components     []string               `json:"components"`
 	Style          string                 `json:"style"`
 	Target         string                 `json:"target"`
 	Coherence      bool                   `json:"coherence"`
@@ -258,12 +258,12 @@ type ComposeConfig struct {
 // EnhancedComposeConfig extends ComposeConfig with DSPy-style features
 type EnhancedComposeConfig struct {
 	ComposeConfig
-	QualityGates          bool   `json:"quality_gates"`
-	ProgramSynthesis      bool   `json:"program_synthesis"`
-	ParameterOptimization bool   `json:"parameter_optimization"`
-	SignatureValidation   bool   `json:"signature_validation"`
-	MultiStageOptimization bool  `json:"multi_stage_optimization"`
-	StatisticalValidation bool   `json:"statistical_validation"`
+	QualityGates           bool `json:"quality_gates"`
+	ProgramSynthesis       bool `json:"program_synthesis"`
+	ParameterOptimization  bool `json:"parameter_optimization"`
+	SignatureValidation    bool `json:"signature_validation"`
+	MultiStageOptimization bool `json:"multi_stage_optimization"`
+	StatisticalValidation  bool `json:"statistical_validation"`
 }
 
 // ComposerOptimizationResult contains optimization results specific to composition
@@ -280,7 +280,7 @@ type DefaultStyleHandler struct{}
 
 func (d *DefaultStyleHandler) Compose(ctx context.Context, components []interface{}, config interface{}) (*ComposeResult, error) {
 	var parts []string
-	
+
 	for _, comp := range components {
 		if component, ok := comp.(PromptComponent); ok {
 			// Add section headers based on component type
@@ -301,7 +301,7 @@ func (d *DefaultStyleHandler) Compose(ctx context.Context, components []interfac
 	}
 
 	composedPrompt := strings.Join(parts, "\n")
-	
+
 	return &ComposeResult{
 		ComposedPrompt: composedPrompt,
 		Components:     components,
@@ -465,7 +465,7 @@ func (s *StructuredHandler) Compose(ctx context.Context, components []interface{
 		Components:     components,
 		Metadata: map[string]interface{}{
 			"output_style": "structured",
-			"format_type": "markdown",
+			"format_type":  "markdown",
 		},
 	}, nil
 }
@@ -500,7 +500,7 @@ func (c *ConversationalHandler) Compose(ctx context.Context, components []interf
 		ComposedPrompt: composedPrompt,
 		Components:     components,
 		Metadata: map[string]interface{}{
-			"tone": "conversational",
+			"tone":  "conversational",
 			"style": "informal",
 		},
 	}, nil
@@ -508,33 +508,33 @@ func (c *ConversationalHandler) Compose(ctx context.Context, components []interf
 
 // PromptComponent represents a reusable prompt component
 type PromptComponent struct {
-	Type        string                 `json:"type"`
-	Content     string                 `json:"content"`
-	Category    string                 `json:"category"`
-	Metadata    map[string]interface{} `json:"metadata"`
-	Verified    bool                   `json:"verified"`
-	Dependencies []string              `json:"dependencies,omitempty"`
-	Signature   *ComponentSignature    `json:"signature,omitempty"`
-	Quality     *QualityMetrics        `json:"quality,omitempty"`
+	Type         string                 `json:"type"`
+	Content      string                 `json:"content"`
+	Category     string                 `json:"category"`
+	Metadata     map[string]interface{} `json:"metadata"`
+	Verified     bool                   `json:"verified"`
+	Dependencies []string               `json:"dependencies,omitempty"`
+	Signature    *ComponentSignature    `json:"signature,omitempty"`
+	Quality      *QualityMetrics        `json:"quality,omitempty"`
 }
 
 // === DSPy-Style Signature System ===
 
 // ComponentSignature defines type-safe interfaces for prompt components
 type ComponentSignature struct {
-	Name        string                 `json:"name"`
-	InputSchema Schema                 `json:"input_schema"`
-	OutputSchema Schema                `json:"output_schema"`
-	Constraints []string               `json:"constraints"`
-	Examples    []SignatureExample     `json:"examples"`
-	Metadata    map[string]interface{} `json:"metadata"`
+	Name         string                 `json:"name"`
+	InputSchema  Schema                 `json:"input_schema"`
+	OutputSchema Schema                 `json:"output_schema"`
+	Constraints  []string               `json:"constraints"`
+	Examples     []SignatureExample     `json:"examples"`
+	Metadata     map[string]interface{} `json:"metadata"`
 }
 
 // Schema defines the structure and types for component inputs/outputs
 type Schema struct {
-	Type       string            `json:"type"`
+	Type       string              `json:"type"`
 	Properties map[string]Property `json:"properties"`
-	Required   []string          `json:"required"`
+	Required   []string            `json:"required"`
 }
 
 // Property defines individual schema properties
@@ -580,14 +580,14 @@ func (sr *SignatureRegistry) ValidateComponent(component PromptComponent) error 
 	if component.Signature == nil {
 		return nil // No signature to validate against
 	}
-	
+
 	signature := component.Signature
-	
+
 	// Validate component content against schema
 	if err := sr.validateAgainstSchema(component.Content, signature.InputSchema); err != nil {
 		return fmt.Errorf("component validation failed: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -604,7 +604,7 @@ func (sr *SignatureRegistry) validateAgainstSchema(content string, schema Schema
 
 // ProgramSynthesizer implements automated prompt construction
 type ProgramSynthesizer struct {
-	llmProvider      llm.Provider
+	llmProvider         llm.Provider
 	synthesisStrategies map[string]SynthesisStrategy
 	optimizationHistory []SynthesisResult
 }
@@ -630,14 +630,14 @@ type ProgramSpec struct {
 
 // SynthesisResult contains the generated prompt program
 type SynthesisResult struct {
-	Program       string                 `json:"program"`
-	Components    []PromptComponent      `json:"components"`
-	Strategy      string                 `json:"strategy"`
-	Confidence    float64                `json:"confidence"`
-	QualityScore  float64                `json:"quality_score"`
-	Iterations    int                    `json:"iterations"`
-	Duration      time.Duration          `json:"duration"`
-	Metadata      map[string]interface{} `json:"metadata"`
+	Program      string                 `json:"program"`
+	Components   []PromptComponent      `json:"components"`
+	Strategy     string                 `json:"strategy"`
+	Confidence   float64                `json:"confidence"`
+	QualityScore float64                `json:"quality_score"`
+	Iterations   int                    `json:"iterations"`
+	Duration     time.Duration          `json:"duration"`
+	Metadata     map[string]interface{} `json:"metadata"`
 }
 
 // NewProgramSynthesizer creates a new program synthesizer
@@ -646,34 +646,34 @@ func NewProgramSynthesizer() *ProgramSynthesizer {
 		synthesisStrategies: make(map[string]SynthesisStrategy),
 		optimizationHistory: make([]SynthesisResult, 0),
 	}
-	
+
 	// Register default synthesis strategies
 	ps.synthesisStrategies["template"] = &TemplateSynthesisStrategy{}
 	ps.synthesisStrategies["evolutionary"] = &EvolutionarySynthesisStrategy{}
 	ps.synthesisStrategies["neural"] = &NeuralSynthesisStrategy{}
-	
+
 	return ps
 }
 
 // SynthesizePrompt generates a prompt program from specification
 func (ps *ProgramSynthesizer) SynthesizePrompt(ctx context.Context, spec ProgramSpec) (*SynthesisResult, error) {
 	startTime := time.Now()
-	
+
 	// Select best synthesis strategy based on specification
 	strategy := ps.selectStrategy(spec)
-	
+
 	// Synthesize the program
 	result, err := strategy.Synthesize(ctx, spec)
 	if err != nil {
 		return nil, fmt.Errorf("synthesis failed: %w", err)
 	}
-	
+
 	result.Duration = time.Since(startTime)
 	result.Strategy = strategy.GetName()
-	
+
 	// Store in optimization history
 	ps.optimizationHistory = append(ps.optimizationHistory, *result)
-	
+
 	return result, nil
 }
 
@@ -692,18 +692,18 @@ func (ps *ProgramSynthesizer) selectStrategy(spec ProgramSpec) SynthesisStrategy
 
 // QualityGateManager implements statistical quality gates
 type QualityGateManager struct {
-	gates []QualityGate
+	gates   []QualityGate
 	metrics *ComposerQualityMetrics
 }
 
 // QualityGate defines quality criteria that must be met
 type QualityGate struct {
-	Name        string                 `json:"name"`
-	Type        string                 `json:"type"` // "threshold", "statistical", "comparative"
-	Metric      string                 `json:"metric"`
-	Threshold   float64                `json:"threshold"`
-	Required    bool                   `json:"required"`
-	Metadata    map[string]interface{} `json:"metadata"`
+	Name      string                 `json:"name"`
+	Type      string                 `json:"type"` // "threshold", "statistical", "comparative"
+	Metric    string                 `json:"metric"`
+	Threshold float64                `json:"threshold"`
+	Required  bool                   `json:"required"`
+	Metadata  map[string]interface{} `json:"metadata"`
 }
 
 // ComposerQualityMetrics tracks quality measurements for composition
@@ -718,10 +718,10 @@ type ComposerQualityMetrics struct {
 
 // QualityRequirements specifies quality criteria for synthesis
 type QualityRequirements struct {
-	MinCoherence      float64 `json:"min_coherence"`
-	MinClarity        float64 `json:"min_clarity"`
-	MinCompleteness   float64 `json:"min_completeness"`
-	RequireOptimization bool   `json:"require_optimization"`
+	MinCoherence            float64 `json:"min_coherence"`
+	MinClarity              float64 `json:"min_clarity"`
+	MinCompleteness         float64 `json:"min_completeness"`
+	RequireOptimization     bool    `json:"require_optimization"`
 	StatisticalSignificance float64 `json:"statistical_significance"`
 }
 
@@ -738,7 +738,7 @@ func NewQualityGateManager() *QualityGateManager {
 			},
 			{
 				Name:      "clarity_gate",
-				Type:      "threshold", 
+				Type:      "threshold",
 				Metric:    "clarity",
 				Threshold: 0.75,
 				Required:  true,
@@ -757,37 +757,37 @@ func (qgm *QualityGateManager) EvaluateQuality(ctx context.Context, result *Comp
 		OverallScore: 0.0,
 		GateResults:  make(map[string]bool),
 		Passed:       true,
-		Metrics:      &ComposerQualityMetrics{
+		Metrics: &ComposerQualityMetrics{
 			StatisticalTests: make(map[string]float64),
 			CustomMetrics:    make(map[string]interface{}),
 		},
 	}
-	
+
 	// Evaluate each quality gate
 	var totalScore float64
 	for _, gate := range qgm.gates {
 		passed, score := qgm.evaluateGate(gate, result)
 		evaluation.GateResults[gate.Name] = passed
-		
+
 		if gate.Required && !passed {
 			evaluation.Passed = false
 		}
-		
+
 		totalScore += score
 	}
-	
+
 	evaluation.OverallScore = totalScore / float64(len(qgm.gates))
-	
+
 	return evaluation, nil
 }
 
 // QualityEvaluation contains quality assessment results
 type QualityEvaluation struct {
-	OverallScore float64                  `json:"overall_score"`
-	GateResults  map[string]bool          `json:"gate_results"`
-	Passed       bool                     `json:"passed"`
-	Metrics      *ComposerQualityMetrics  `json:"metrics"`
-	Recommendations []string              `json:"recommendations"`
+	OverallScore    float64                 `json:"overall_score"`
+	GateResults     map[string]bool         `json:"gate_results"`
+	Passed          bool                    `json:"passed"`
+	Metrics         *ComposerQualityMetrics `json:"metrics"`
+	Recommendations []string                `json:"recommendations"`
 }
 
 // evaluateGate checks a single quality gate
@@ -814,30 +814,30 @@ func (qgm *QualityGateManager) calculateCoherence(prompt string) float64 {
 	if len(sentences) <= 1 {
 		return 1.0
 	}
-	
+
 	// Look for coherence indicators
 	indicators := []string{"therefore", "however", "additionally", "furthermore", "consequently"}
 	score := 0.0
-	
+
 	for _, indicator := range indicators {
 		if strings.Contains(strings.ToLower(prompt), indicator) {
 			score += 0.2
 		}
 	}
-	
+
 	// Penalize excessive length variation
 	var lengths []int
 	for _, sentence := range sentences {
 		lengths = append(lengths, len(strings.TrimSpace(sentence)))
 	}
-	
+
 	if len(lengths) > 1 {
 		variance := calculateVariance(lengths)
 		normalizedVariance := variance / 1000.0 // Normalize
-		score = math.Max(0.0, score - normalizedVariance)
+		score = math.Max(0.0, score-normalizedVariance)
 	}
-	
-	return math.Min(1.0, score + 0.5) // Base score + indicators
+
+	return math.Min(1.0, score+0.5) // Base score + indicators
 }
 
 // calculateClarity measures prompt clarity
@@ -845,25 +845,25 @@ func (qgm *QualityGateManager) calculateClarity(prompt string) float64 {
 	// Simple clarity metrics
 	clarityIndicators := []string{"please", "analyze", "provide", "explain", "describe"}
 	vagueWords := []string{"some", "maybe", "perhaps", "might", "could"}
-	
+
 	clarityScore := 0.0
 	vagueScore := 0.0
-	
+
 	promptLower := strings.ToLower(prompt)
-	
+
 	for _, indicator := range clarityIndicators {
 		if strings.Contains(promptLower, indicator) {
 			clarityScore += 0.1
 		}
 	}
-	
+
 	for _, vague := range vagueWords {
 		if strings.Contains(promptLower, vague) {
 			vagueScore += 0.1
 		}
 	}
-	
-	return math.Max(0.0, math.Min(1.0, 0.5 + clarityScore - vagueScore))
+
+	return math.Max(0.0, math.Min(1.0, 0.5+clarityScore-vagueScore))
 }
 
 // calculateCompleteness measures component completeness
@@ -872,7 +872,7 @@ func (qgm *QualityGateManager) calculateCompleteness(result *ComposeResult) floa
 	hasContext := false
 	hasInstruction := false
 	hasExample := false
-	
+
 	for _, comp := range result.Components {
 		switch comp.(PromptComponent).Type {
 		case "context":
@@ -883,7 +883,7 @@ func (qgm *QualityGateManager) calculateCompleteness(result *ComposeResult) floa
 			hasExample = true
 		}
 	}
-	
+
 	score := 0.0
 	if hasContext {
 		score += 0.4
@@ -894,7 +894,7 @@ func (qgm *QualityGateManager) calculateCompleteness(result *ComposeResult) floa
 	if hasExample {
 		score += 0.2
 	}
-	
+
 	return score
 }
 
@@ -903,21 +903,21 @@ func calculateVariance(values []int) float64 {
 	if len(values) == 0 {
 		return 0
 	}
-	
+
 	// Calculate mean
 	sum := 0
 	for _, v := range values {
 		sum += v
 	}
 	mean := float64(sum) / float64(len(values))
-	
+
 	// Calculate variance
 	sumSquares := 0.0
 	for _, v := range values {
 		diff := float64(v) - mean
 		sumSquares += diff * diff
 	}
-	
+
 	return sumSquares / float64(len(values))
 }
 
@@ -925,10 +925,10 @@ func calculateVariance(values []int) float64 {
 
 // ParameterOptimizerEngine implements algorithmic parameter tuning
 type ParameterOptimizerEngine struct {
-	llmProvider     llm.Provider
-	optimizers      map[string]ComposerOptimizer
-	history         []OptimizationRun
-	bestParameters  map[string]interface{}
+	llmProvider    llm.Provider
+	optimizers     map[string]ComposerOptimizer
+	history        []OptimizationRun
+	bestParameters map[string]interface{}
 }
 
 // ComposerOptimizer interface for different optimization algorithms
@@ -942,20 +942,20 @@ type ObjectiveFunction func(parameters map[string]interface{}) (float64, error)
 
 // ParameterBounds defines valid parameter ranges
 type ParameterBounds struct {
-	Continuous map[string][2]float64   `json:"continuous"`
-	Discrete   map[string][]interface{} `json:"discrete"`
-	Categorical map[string][]string     `json:"categorical"`
+	Continuous  map[string][2]float64    `json:"continuous"`
+	Discrete    map[string][]interface{} `json:"discrete"`
+	Categorical map[string][]string      `json:"categorical"`
 }
 
 // OptimizationRun tracks a complete optimization session
 type OptimizationRun struct {
-	ID          string                 `json:"id"`
-	Parameters  map[string]interface{} `json:"parameters"`
-	Score       float64                `json:"score"`
-	Iterations  int                    `json:"iterations"`
-	Strategy    string                 `json:"strategy"`
-	Timestamp   time.Time              `json:"timestamp"`
-	Metadata    map[string]interface{} `json:"metadata"`
+	ID         string                 `json:"id"`
+	Parameters map[string]interface{} `json:"parameters"`
+	Score      float64                `json:"score"`
+	Iterations int                    `json:"iterations"`
+	Strategy   string                 `json:"strategy"`
+	Timestamp  time.Time              `json:"timestamp"`
+	Metadata   map[string]interface{} `json:"metadata"`
 }
 
 // NewParameterOptimizer creates a new parameter optimizer
@@ -965,12 +965,12 @@ func NewParameterOptimizerEngine() *ParameterOptimizerEngine {
 		history:        make([]OptimizationRun, 0),
 		bestParameters: make(map[string]interface{}),
 	}
-	
+
 	// Register optimization algorithms
 	po.optimizers["bayesian"] = &BayesianOptimizer{}
 	po.optimizers["grid"] = &GridSearchOptimizer{}
 	po.optimizers["genetic"] = &GeneticOptimizer{}
-	
+
 	return po
 }
 
@@ -979,7 +979,7 @@ func (po *ParameterOptimizerEngine) OptimizeCompositionParameters(ctx context.Co
 	// Define parameter bounds for composition
 	bounds := ParameterBounds{
 		Continuous: map[string][2]float64{
-			"temperature":    {0.0, 1.0},
+			"temperature":      {0.0, 1.0},
 			"coherence_weight": {0.0, 1.0},
 			"clarity_weight":   {0.0, 1.0},
 		},
@@ -987,23 +987,23 @@ func (po *ParameterOptimizerEngine) OptimizeCompositionParameters(ctx context.Co
 			"style": {"cot", "few-shot", "structured", "conversational"},
 		},
 	}
-	
+
 	// Define objective function
 	objective := func(params map[string]interface{}) (float64, error) {
 		// Simulate composition with these parameters and return quality score
 		return po.evaluateParameterSet(ctx, params, spec)
 	}
-	
+
 	// Run optimization
 	optimizer := po.optimizers["bayesian"]
 	result, err := optimizer.Optimize(ctx, objective, bounds)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Store best parameters
 	po.bestParameters = result.BestParameters
-	
+
 	return result.BestParameters, nil
 }
 
@@ -1011,16 +1011,16 @@ func (po *ParameterOptimizerEngine) OptimizeCompositionParameters(ctx context.Co
 func (po *ParameterOptimizerEngine) evaluateParameterSet(ctx context.Context, params map[string]interface{}, spec ProgramSpec) (float64, error) {
 	// This would run actual composition with the parameters and measure quality
 	// For now, return a simulated score based on parameter values
-	
+
 	score := 0.5 // Base score
-	
+
 	if temp, ok := params["temperature"]; ok {
 		if tempVal, ok := temp.(float64); ok {
 			// Optimal temperature around 0.3
-			score += (1.0 - math.Abs(tempVal - 0.3)) * 0.2
+			score += (1.0 - math.Abs(tempVal-0.3)) * 0.2
 		}
 	}
-	
+
 	if style, ok := params["style"]; ok {
 		if styleVal, ok := style.(string); ok {
 			// Bonus for chain-of-thought style
@@ -1029,7 +1029,7 @@ func (po *ParameterOptimizerEngine) evaluateParameterSet(ctx context.Context, pa
 			}
 		}
 	}
-	
+
 	return math.Min(1.0, score), nil
 }
 
@@ -1041,7 +1041,7 @@ type TemplateSynthesisStrategy struct{}
 func (t *TemplateSynthesisStrategy) Synthesize(ctx context.Context, spec ProgramSpec) (*SynthesisResult, error) {
 	// Simple template-based synthesis
 	program := fmt.Sprintf("Task: %s\n\nPlease provide a detailed response.", spec.Task)
-	
+
 	return &SynthesisResult{
 		Program:      program,
 		Components:   []PromptComponent{},
@@ -1052,7 +1052,7 @@ func (t *TemplateSynthesisStrategy) Synthesize(ctx context.Context, spec Program
 	}, nil
 }
 
-func (t *TemplateSynthesisStrategy) GetName() string { return "template" }
+func (t *TemplateSynthesisStrategy) GetName() string    { return "template" }
 func (t *TemplateSynthesisStrategy) GetComplexity() int { return 1 }
 
 // EvolutionarySynthesisStrategy uses evolutionary algorithms
@@ -1061,7 +1061,7 @@ type EvolutionarySynthesisStrategy struct{}
 func (e *EvolutionarySynthesisStrategy) Synthesize(ctx context.Context, spec ProgramSpec) (*SynthesisResult, error) {
 	// Simplified evolutionary synthesis
 	program := fmt.Sprintf("You are an expert in %s. %s Please provide comprehensive analysis.", spec.Task, spec.Task)
-	
+
 	return &SynthesisResult{
 		Program:      program,
 		Components:   []PromptComponent{},
@@ -1072,7 +1072,7 @@ func (e *EvolutionarySynthesisStrategy) Synthesize(ctx context.Context, spec Pro
 	}, nil
 }
 
-func (e *EvolutionarySynthesisStrategy) GetName() string { return "evolutionary" }
+func (e *EvolutionarySynthesisStrategy) GetName() string    { return "evolutionary" }
 func (e *EvolutionarySynthesisStrategy) GetComplexity() int { return 3 }
 
 // NeuralSynthesisStrategy uses neural program synthesis
@@ -1080,9 +1080,9 @@ type NeuralSynthesisStrategy struct{}
 
 func (n *NeuralSynthesisStrategy) Synthesize(ctx context.Context, spec ProgramSpec) (*SynthesisResult, error) {
 	// Advanced neural synthesis (simplified for this implementation)
-	program := fmt.Sprintf("# Task: %s\n\n## Context\n%s\n\n## Instructions\nAnalyze and provide detailed insights.\n\n## Output Format\nStructured response with clear reasoning.", 
+	program := fmt.Sprintf("# Task: %s\n\n## Context\n%s\n\n## Instructions\nAnalyze and provide detailed insights.\n\n## Output Format\nStructured response with clear reasoning.",
 		spec.Task, "You are an expert analyst.")
-	
+
 	return &SynthesisResult{
 		Program:      program,
 		Components:   []PromptComponent{},
@@ -1093,7 +1093,7 @@ func (n *NeuralSynthesisStrategy) Synthesize(ctx context.Context, spec ProgramSp
 	}, nil
 }
 
-func (n *NeuralSynthesisStrategy) GetName() string { return "neural" }
+func (n *NeuralSynthesisStrategy) GetName() string    { return "neural" }
 func (n *NeuralSynthesisStrategy) GetComplexity() int { return 5 }
 
 // === Optimization Algorithm Implementations ===
@@ -1105,7 +1105,7 @@ func (b *BayesianOptimizer) Optimize(ctx context.Context, objective ObjectiveFun
 	// Simplified Bayesian optimization
 	bestParams := make(map[string]interface{})
 	bestScore := 0.0
-	
+
 	// Sample a few parameter combinations
 	for i := 0; i < 5; i++ {
 		params := b.sampleParameters(bounds)
@@ -1113,13 +1113,13 @@ func (b *BayesianOptimizer) Optimize(ctx context.Context, objective ObjectiveFun
 		if err != nil {
 			continue
 		}
-		
+
 		if score > bestScore {
 			bestScore = score
 			bestParams = params
 		}
 	}
-	
+
 	return &ComposerOptimizationResult{
 		BestParameters: bestParams,
 		BestScore:      bestScore,
@@ -1133,7 +1133,7 @@ func (b *BayesianOptimizer) GetName() string { return "bayesian" }
 
 func (b *BayesianOptimizer) sampleParameters(bounds ParameterBounds) map[string]interface{} {
 	params := make(map[string]interface{})
-	
+
 	// Sample continuous parameters
 	for name, bound := range bounds.Continuous {
 		min, max := bound[0], bound[1]
@@ -1142,7 +1142,7 @@ func (b *BayesianOptimizer) sampleParameters(bounds ParameterBounds) map[string]
 		randVal := float64(randBytes[0]) / 255.0
 		params[name] = min + randVal*(max-min)
 	}
-	
+
 	// Sample categorical parameters
 	for name, options := range bounds.Categorical {
 		randBytes := make([]byte, 1)
@@ -1150,7 +1150,7 @@ func (b *BayesianOptimizer) sampleParameters(bounds ParameterBounds) map[string]
 		idx := int(randBytes[0]) % len(options)
 		params[name] = options[idx]
 	}
-	
+
 	return params
 }
 
@@ -1161,22 +1161,22 @@ func (g *GridSearchOptimizer) Optimize(ctx context.Context, objective ObjectiveF
 	// Simplified grid search
 	bestParams := make(map[string]interface{})
 	bestScore := 0.0
-	
+
 	// Generate grid points (simplified)
 	gridPoints := g.generateGrid(bounds, 3) // 3 points per dimension
-	
+
 	for _, params := range gridPoints {
 		score, err := objective(params)
 		if err != nil {
 			continue
 		}
-		
+
 		if score > bestScore {
 			bestScore = score
 			bestParams = params
 		}
 	}
-	
+
 	return &ComposerOptimizationResult{
 		BestParameters: bestParams,
 		BestScore:      bestScore,
@@ -1190,26 +1190,26 @@ func (g *GridSearchOptimizer) GetName() string { return "grid_search" }
 
 func (g *GridSearchOptimizer) generateGrid(bounds ParameterBounds, points int) []map[string]interface{} {
 	var grid []map[string]interface{}
-	
+
 	// Simple grid generation (single continuous parameter for demo)
 	for name, bound := range bounds.Continuous {
 		min, max := bound[0], bound[1]
 		step := (max - min) / float64(points-1)
-		
+
 		for i := 0; i < points; i++ {
 			params := make(map[string]interface{})
 			params[name] = min + float64(i)*step
-			
+
 			// Add default categorical values
 			for catName, options := range bounds.Categorical {
 				params[catName] = options[0]
 			}
-			
+
 			grid = append(grid, params)
 		}
 		break // Only handle first continuous parameter for simplicity
 	}
-	
+
 	return grid
 }
 
@@ -1220,16 +1220,16 @@ func (g *GeneticOptimizer) Optimize(ctx context.Context, objective ObjectiveFunc
 	// Simplified genetic algorithm
 	populationSize := 10
 	generations := 5
-	
+
 	// Initialize population
 	population := make([]map[string]interface{}, populationSize)
 	for i := 0; i < populationSize; i++ {
 		population[i] = g.randomParameters(bounds)
 	}
-	
+
 	bestParams := population[0]
 	bestScore := 0.0
-	
+
 	// Evolve population
 	for gen := 0; gen < generations; gen++ {
 		// Evaluate population
@@ -1246,7 +1246,7 @@ func (g *GeneticOptimizer) Optimize(ctx context.Context, objective ObjectiveFunc
 				}
 			}
 		}
-		
+
 		// Simple selection and mutation (very basic implementation)
 		newPopulation := make([]map[string]interface{}, populationSize)
 		for i := 0; i < populationSize; i++ {
@@ -1259,10 +1259,10 @@ func (g *GeneticOptimizer) Optimize(ctx context.Context, objective ObjectiveFunc
 			}
 			newPopulation[i] = g.mutate(population[bestIdx], bounds)
 		}
-		
+
 		population = newPopulation
 	}
-	
+
 	return &ComposerOptimizationResult{
 		BestParameters: bestParams,
 		BestScore:      bestScore,
@@ -1276,7 +1276,7 @@ func (g *GeneticOptimizer) GetName() string { return "genetic" }
 
 func (g *GeneticOptimizer) randomParameters(bounds ParameterBounds) map[string]interface{} {
 	params := make(map[string]interface{})
-	
+
 	for name, bound := range bounds.Continuous {
 		min, max := bound[0], bound[1]
 		randBytes := make([]byte, 8)
@@ -1284,14 +1284,14 @@ func (g *GeneticOptimizer) randomParameters(bounds ParameterBounds) map[string]i
 		randVal := float64(randBytes[0]) / 255.0
 		params[name] = min + randVal*(max-min)
 	}
-	
+
 	for name, options := range bounds.Categorical {
 		randBytes := make([]byte, 1)
 		rand.Read(randBytes)
 		idx := int(randBytes[0]) % len(options)
 		params[name] = options[idx]
 	}
-	
+
 	return params
 }
 
@@ -1300,7 +1300,7 @@ func (g *GeneticOptimizer) mutate(params map[string]interface{}, bounds Paramete
 	for k, v := range params {
 		mutated[k] = v
 	}
-	
+
 	// Simple mutation: slightly modify continuous parameters
 	for name, bound := range bounds.Continuous {
 		if val, ok := mutated[name].(float64); ok {
@@ -1309,13 +1309,13 @@ func (g *GeneticOptimizer) mutate(params map[string]interface{}, bounds Paramete
 			randBytes := make([]byte, 1)
 			rand.Read(randBytes)
 			direction := float64(randBytes[0])/255.0 - 0.5 // -0.5 to 0.5
-			
+
 			newVal := val + direction*mutation
 			newVal = math.Max(min, math.Min(max, newVal))
 			mutated[name] = newVal
 		}
 	}
-	
+
 	return mutated
 }
 
@@ -1327,7 +1327,7 @@ type DSPyHandler struct{}
 func (d *DSPyHandler) Compose(ctx context.Context, components []interface{}, config interface{}) (*ComposeResult, error) {
 	var parts []string
 	var signatures []*ComponentSignature
-	
+
 	// Process components with signature validation
 	for _, comp := range components {
 		if component, ok := comp.(PromptComponent); ok {
@@ -1335,7 +1335,7 @@ func (d *DSPyHandler) Compose(ctx context.Context, components []interface{}, con
 			if component.Signature != nil {
 				signatures = append(signatures, component.Signature)
 			}
-			
+
 			// DSPy-style composition with type annotations
 			switch component.Type {
 			case "context":
@@ -1351,15 +1351,15 @@ func (d *DSPyHandler) Compose(ctx context.Context, components []interface{}, con
 			}
 		}
 	}
-	
+
 	// Add DSPy-style reasoning chain
 	parts = append(parts, "## Reasoning\nLet's approach this step-by-step with clear reasoning:")
-	
+
 	// Add type-safe output specification
 	parts = append(parts, "## Output\nProvide your response following the specified format and constraints.")
-	
+
 	composedPrompt := strings.Join(parts, "\n\n")
-	
+
 	return &ComposeResult{
 		ComposedPrompt: composedPrompt,
 		Components:     components,
@@ -1372,5 +1372,5 @@ func (d *DSPyHandler) Compose(ctx context.Context, components []interface{}, con
 }
 
 // Helper functions for pointer creation (composer-specific)
-func composerIntPtr(i int) *int { return &i }
+func composerIntPtr(i int) *int           { return &i }
 func composerFloatPtr(f float64) *float64 { return &f }

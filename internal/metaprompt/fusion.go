@@ -22,29 +22,29 @@ type FusionOptimizer struct {
 type ConsensusStrategy string
 
 const (
-	WeightedVoting   ConsensusStrategy = "weighted"
-	ReflectionBased  ConsensusStrategy = "reflection"
-	AdaptiveWeights  ConsensusStrategy = "adaptive"
-	ParetoOptimal    ConsensusStrategy = "pareto"
+	WeightedVoting  ConsensusStrategy = "weighted"
+	ReflectionBased ConsensusStrategy = "reflection"
+	AdaptiveWeights ConsensusStrategy = "adaptive"
+	ParetoOptimal   ConsensusStrategy = "pareto"
 )
 
 // FusionResult represents the result of multi-model consensus optimization
 type FusionResult struct {
-	OptimizedPrompt  string                 `json:"optimized_prompt"`
-	ConsensusScore   float64                `json:"consensus_score"`
-	ModelResults     map[string]interface{} `json:"model_results"`
-	OptimalWeights   map[string]float64     `json:"optimal_weights"`
-	ConvergenceData  []float64              `json:"convergence_data"`
-	ParetoFrontier   []PromptCandidate      `json:"pareto_frontier,omitempty"`
+	OptimizedPrompt string                 `json:"optimized_prompt"`
+	ConsensusScore  float64                `json:"consensus_score"`
+	ModelResults    map[string]interface{} `json:"model_results"`
+	OptimalWeights  map[string]float64     `json:"optimal_weights"`
+	ConvergenceData []float64              `json:"convergence_data"`
+	ParetoFrontier  []PromptCandidate      `json:"pareto_frontier,omitempty"`
 }
 
 // PromptCandidate represents a candidate prompt with multi-objective metrics
 type PromptCandidate struct {
-	Prompt    string             `json:"prompt"`
-	Accuracy  float64            `json:"accuracy"`
-	Latency   float64            `json:"latency"`
-	Cost      float64            `json:"cost"`
-	Metrics   map[string]float64 `json:"metrics"`
+	Prompt   string             `json:"prompt"`
+	Accuracy float64            `json:"accuracy"`
+	Latency  float64            `json:"latency"`
+	Cost     float64            `json:"cost"`
+	Metrics  map[string]float64 `json:"metrics"`
 }
 
 // NewFusionOptimizer creates a new multi-model consensus optimizer
@@ -53,7 +53,7 @@ func NewFusionOptimizer(providers []llm.Provider, strategy ConsensusStrategy) *F
 	for _, provider := range providers {
 		weights[provider.Name()] = 1.0 / float64(len(providers))
 	}
-	
+
 	return &FusionOptimizer{
 		providers: providers,
 		weights:   weights,
@@ -76,7 +76,7 @@ func (f *FusionOptimizer) OptimizeWithConsensus(ctx context.Context, prompt stri
 		// Generate improvements from each model
 		var wg sync.WaitGroup
 		resultsChan := make(chan ModelImprovement, len(f.providers))
-		
+
 		for _, provider := range f.providers {
 			wg.Add(1)
 			go func(p llm.Provider) {
@@ -87,7 +87,7 @@ func (f *FusionOptimizer) OptimizeWithConsensus(ctx context.Context, prompt stri
 				}
 			}(provider)
 		}
-		
+
 		go func() {
 			wg.Wait()
 			close(resultsChan)
@@ -145,14 +145,14 @@ func (f *FusionOptimizer) OptimizeWithConsensus(ctx context.Context, prompt stri
 
 // ModelImprovement represents an improvement suggested by a model
 type ModelImprovement struct {
-	Provider        string             `json:"provider"`
-	Prompt          string             `json:"prompt"`
-	Accuracy        float64            `json:"accuracy"`
-	Latency         float64            `json:"latency"`
-	Cost            float64            `json:"cost"`
-	ConsensusScore  float64            `json:"consensus_score"`
-	Metrics         map[string]float64 `json:"metrics"`
-	Reasoning       string             `json:"reasoning"`
+	Provider       string             `json:"provider"`
+	Prompt         string             `json:"prompt"`
+	Accuracy       float64            `json:"accuracy"`
+	Latency        float64            `json:"latency"`
+	Cost           float64            `json:"cost"`
+	ConsensusScore float64            `json:"consensus_score"`
+	Metrics        map[string]float64 `json:"metrics"`
+	Reasoning      string             `json:"reasoning"`
 }
 
 // ConsensusResult represents the result of applying a consensus strategy
@@ -195,12 +195,12 @@ Focus on improving accuracy while maintaining efficiency.`, prompt, objective)
 	}
 
 	var improvement struct {
-		ImprovedPrompt   string             `json:"improved_prompt"`
-		AccuracyScore    float64            `json:"accuracy_score"`
-		LatencyEstimate  float64            `json:"latency_estimate"`
-		CostEstimate     float64            `json:"cost_estimate"`
-		Reasoning        string             `json:"reasoning"`
-		Metrics          map[string]float64 `json:"metrics"`
+		ImprovedPrompt  string             `json:"improved_prompt"`
+		AccuracyScore   float64            `json:"accuracy_score"`
+		LatencyEstimate float64            `json:"latency_estimate"`
+		CostEstimate    float64            `json:"cost_estimate"`
+		Reasoning       string             `json:"reasoning"`
+		Metrics         map[string]float64 `json:"metrics"`
 	}
 
 	if err := json.Unmarshal([]byte(response.Text), &improvement); err != nil {
@@ -256,7 +256,7 @@ func (f *FusionOptimizer) weightedVoting(improvements []ModelImprovement) (Conse
 	for _, improvement := range improvements {
 		weight := f.weights[improvement.Provider]
 		score := weight * improvement.ConsensusScore
-		
+
 		if score > bestScore {
 			bestScore = score
 			bestImprovement = improvement
@@ -280,7 +280,7 @@ func (f *FusionOptimizer) reflectionBasedConsensus(improvements []ModelImproveme
 	}
 
 	improvementsJson, _ := json.MarshalIndent(improvements, "", "  ")
-	
+
 	reflectionPrompt := fmt.Sprintf(`
 You are a meta-prompt engineer. Analyze these improvements from multiple AI models and synthesize the best combined approach.
 
@@ -346,7 +346,7 @@ func (f *FusionOptimizer) paretoOptimalConsensus(improvements []ModelImprovement
 	if len(paretoOptimal) == 0 {
 		return f.weightedVoting(improvements)
 	}
-	
+
 	// Return the best balanced option from Pareto frontier
 	best := paretoOptimal[0]
 	return ConsensusResult{
@@ -362,17 +362,17 @@ func (f *FusionOptimizer) paretoOptimalConsensus(improvements []ModelImprovement
 func (f *FusionOptimizer) updateAdaptiveWeights(improvements []ModelImprovement, consensus ConsensusResult) {
 	// Update weights based on how close each improvement was to the consensus
 	learningRate := 0.1
-	
+
 	for _, improvement := range improvements {
 		// Calculate similarity to consensus
 		similarity := f.calculateSimilarity(improvement, consensus)
-		
+
 		// Update weight using exponential moving average
 		currentWeight := f.weights[improvement.Provider]
 		newWeight := currentWeight + learningRate*(similarity-currentWeight)
 		f.weights[improvement.Provider] = math.Max(0.01, math.Min(1.0, newWeight))
 	}
-	
+
 	// Normalize weights
 	f.normalizeWeights()
 }
@@ -388,7 +388,7 @@ func (f *FusionOptimizer) normalizeWeights() {
 	for _, weight := range f.weights {
 		total += weight
 	}
-	
+
 	if total > 0 {
 		for provider, weight := range f.weights {
 			f.weights[provider] = weight / total
@@ -398,95 +398,95 @@ func (f *FusionOptimizer) normalizeWeights() {
 
 func (f *FusionOptimizer) calculateParetoFrontier(candidates []PromptCandidate) []PromptCandidate {
 	var frontier []PromptCandidate
-	
+
 	for i, candidate := range candidates {
 		dominated := false
-		
+
 		for j, other := range candidates {
 			if i != j && f.dominates(other, candidate) {
 				dominated = true
 				break
 			}
 		}
-		
+
 		if !dominated {
 			frontier = append(frontier, candidate)
 		}
 	}
-	
+
 	return frontier
 }
 
 func (f *FusionOptimizer) dominates(a, b PromptCandidate) bool {
 	// A dominates B if A is better in at least one objective and not worse in any
 	betterInOne := false
-	
+
 	// Higher accuracy is better
 	if a.Accuracy > b.Accuracy {
 		betterInOne = true
 	} else if a.Accuracy < b.Accuracy {
 		return false
 	}
-	
+
 	// Lower latency is better
 	if a.Latency < b.Latency {
 		betterInOne = true
 	} else if a.Latency > b.Latency {
 		return false
 	}
-	
+
 	// Lower cost is better
 	if a.Cost < b.Cost {
 		betterInOne = true
 	} else if a.Cost > b.Cost {
 		return false
 	}
-	
+
 	return betterInOne
 }
 
 func (f *FusionOptimizer) findParetoOptimal(improvements []ModelImprovement) []ModelImprovement {
 	var optimal []ModelImprovement
-	
+
 	for i, improvement := range improvements {
 		dominated := false
-		
+
 		for j, other := range improvements {
 			if i != j && f.improvementDominates(other, improvement) {
 				dominated = true
 				break
 			}
 		}
-		
+
 		if !dominated {
 			optimal = append(optimal, improvement)
 		}
 	}
-	
+
 	return optimal
 }
 
 func (f *FusionOptimizer) improvementDominates(a, b ModelImprovement) bool {
 	betterInOne := false
-	
+
 	if a.Accuracy > b.Accuracy {
 		betterInOne = true
 	} else if a.Accuracy < b.Accuracy {
 		return false
 	}
-	
+
 	if a.Latency < b.Latency {
 		betterInOne = true
 	} else if a.Latency > b.Latency {
 		return false
 	}
-	
+
 	if a.Cost < b.Cost {
 		betterInOne = true
 	} else if a.Cost > b.Cost {
 		return false
 	}
-	
+
 	return betterInOne
 }
 

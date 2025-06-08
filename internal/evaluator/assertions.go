@@ -43,11 +43,11 @@ const (
 	AssertionTokens  AssertionType = "tokens"
 
 	// Advanced assertions
-	AssertionJSON      AssertionType = "json"
-	AssertionSQL       AssertionType = "sql"
-	AssertionCode      AssertionType = "code"
-	AssertionStructure AssertionType = "structure"
-	AssertionPassAtN   AssertionType = "pass-at-n"
+	AssertionJSON             AssertionType = "json"
+	AssertionSQL              AssertionType = "sql"
+	AssertionCode             AssertionType = "code"
+	AssertionStructure        AssertionType = "structure"
+	AssertionPassAtN          AssertionType = "pass-at-n"
 	AssertionStructuredOutput AssertionType = "structured-output"
 )
 
@@ -65,14 +65,14 @@ type Assertion struct {
 
 // AssertionResult represents the result of evaluating an assertion
 type AssertionResult struct {
-	Type      AssertionType `json:"type"`
-	Passed    bool          `json:"passed"`
-	Score     float64       `json:"score"`
-	Expected  interface{}   `json:"expected,omitempty"`
-	Actual    interface{}   `json:"actual,omitempty"`
-	Message   string        `json:"message"`
-	Duration  time.Duration `json:"duration"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	Type     AssertionType          `json:"type"`
+	Passed   bool                   `json:"passed"`
+	Score    float64                `json:"score"`
+	Expected interface{}            `json:"expected,omitempty"`
+	Actual   interface{}            `json:"actual,omitempty"`
+	Message  string                 `json:"message"`
+	Duration time.Duration          `json:"duration"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // AssertionEvaluator handles evaluation of different assertion types
@@ -90,7 +90,7 @@ func NewAssertionEvaluator(llmProvider llm.Provider) *AssertionEvaluator {
 // EvaluateAssertion evaluates a single assertion against an output
 func (ae *AssertionEvaluator) EvaluateAssertion(ctx context.Context, assertion Assertion, output string, metadata map[string]interface{}) (*AssertionResult, error) {
 	start := time.Now()
-	
+
 	result := &AssertionResult{
 		Type:     assertion.Type,
 		Duration: time.Since(start),
@@ -243,10 +243,10 @@ func (ae *AssertionEvaluator) evaluateMatches(assertion Assertion, output string
 
 func (ae *AssertionEvaluator) evaluateLength(assertion Assertion, output string) *AssertionResult {
 	length := len(output)
-	
+
 	var passed bool
 	var message string
-	
+
 	if assertion.Min != nil && assertion.Max != nil {
 		passed = length >= int(*assertion.Min) && length <= int(*assertion.Max)
 		message = fmt.Sprintf("Expected length between %d and %d, got %d", int(*assertion.Min), int(*assertion.Max), length)
@@ -318,7 +318,7 @@ func (ae *AssertionEvaluator) evaluateReadability(assertion Assertion, output st
 	// Simple readability score based on sentence and word length
 	sentences := strings.Split(output, ".")
 	words := strings.Fields(output)
-	
+
 	if len(sentences) == 0 || len(words) == 0 {
 		return &AssertionResult{
 			Type:    assertion.Type,
@@ -330,13 +330,13 @@ func (ae *AssertionEvaluator) evaluateReadability(assertion Assertion, output st
 
 	avgWordsPerSentence := float64(len(words)) / float64(len(sentences))
 	avgSyllablesPerWord := ae.estimateSyllables(output) / float64(len(words))
-	
+
 	// Simplified Flesch Reading Ease approximation
 	readabilityScore := 206.835 - (1.015 * avgWordsPerSentence) - (84.6 * avgSyllablesPerWord)
-	
+
 	// Normalize to 0-1 scale
 	normalizedScore := math.Max(0, math.Min(1, readabilityScore/100))
-	
+
 	var passed bool
 	if assertion.Min != nil && assertion.Max != nil {
 		passed = normalizedScore >= *assertion.Min && normalizedScore <= *assertion.Max
@@ -362,7 +362,7 @@ func (ae *AssertionEvaluator) evaluateReadability(assertion Assertion, output st
 func (ae *AssertionEvaluator) estimateSyllables(text string) float64 {
 	words := strings.Fields(strings.ToLower(text))
 	totalSyllables := 0
-	
+
 	for _, word := range words {
 		syllables := 1 // Minimum one syllable per word
 		vowels := regexp.MustCompile(`[aeiou]`)
@@ -379,7 +379,7 @@ func (ae *AssertionEvaluator) estimateSyllables(text string) float64 {
 		}
 		totalSyllables += syllables
 	}
-	
+
 	return float64(totalSyllables)
 }
 
@@ -497,7 +497,7 @@ REASONING: [brief explanation]`, criteria, output)
 		Message: fmt.Sprintf("LLM Judge Score: %.1f/10 - %s", score, reasoning),
 		Metadata: map[string]interface{}{
 			"reasoning": reasoning,
-			"criteria": criteria,
+			"criteria":  criteria,
 		},
 	}
 }
@@ -536,10 +536,10 @@ func (ae *AssertionEvaluator) evaluateLatency(assertion Assertion, metadata map[
 	}
 
 	latencyMs := float64(latency.Milliseconds())
-	
+
 	var passed bool
 	var message string
-	
+
 	if assertion.Max != nil {
 		maxMs := *assertion.Max * 1000 // Convert seconds to milliseconds
 		passed = latencyMs <= maxMs
@@ -576,7 +576,7 @@ func (ae *AssertionEvaluator) evaluateCost(assertion Assertion, metadata map[str
 
 	var passed bool
 	var message string
-	
+
 	if assertion.Max != nil {
 		passed = cost <= *assertion.Max
 		message = fmt.Sprintf("Expected cost <= $%.4f, got $%.4f", *assertion.Max, cost)
@@ -612,7 +612,7 @@ func (ae *AssertionEvaluator) evaluateTokens(assertion Assertion, metadata map[s
 
 	var passed bool
 	var message string
-	
+
 	if assertion.Max != nil {
 		passed = float64(tokens) <= *assertion.Max
 		message = fmt.Sprintf("Expected tokens <= %.0f, got %d", *assertion.Max, tokens)
@@ -643,7 +643,7 @@ func (ae *AssertionEvaluator) evaluateTokens(assertion Assertion, metadata map[s
 func (ae *AssertionEvaluator) evaluateJSON(assertion Assertion, output string) *AssertionResult {
 	var jsonData interface{}
 	err := json.Unmarshal([]byte(output), &jsonData)
-	
+
 	if err != nil {
 		return &AssertionResult{
 			Type:    assertion.Type,
@@ -805,7 +805,7 @@ func (ae *AssertionEvaluator) evaluatePassAtN(ctx context.Context, assertion Ass
 	if nVal, ok := assertion.Config["n"].(float64); ok {
 		n = int(nVal)
 	}
-	
+
 	// Get samples - either from metadata or use the single output
 	var samples []string
 	if samplesVal, ok := metadata["samples"].([]string); ok {
@@ -821,13 +821,13 @@ func (ae *AssertionEvaluator) evaluatePassAtN(ctx context.Context, assertion Ass
 		// If no samples provided, use the single output
 		samples = []string{output}
 	}
-	
+
 	// Get test cases from config
 	testCases, hasTestCases := assertion.Config["test_cases"].([]interface{})
-	
+
 	// Create advanced metrics instance
 	am := NewAdvancedMetrics(ae.llm)
-	
+
 	var result *PassAtNResult
 	if hasTestCases {
 		// Convert test cases to proper format
@@ -844,7 +844,7 @@ func (ae *AssertionEvaluator) evaluatePassAtN(ctx context.Context, assertion Ass
 			// Default: check if code is non-empty and appears syntactically valid
 			return len(strings.TrimSpace(code)) > 0 && !strings.Contains(code, "error")
 		}
-		
+
 		// If a custom validation prompt is provided, use LLM-based validation
 		if validationPrompt, ok := assertion.Config["validation_prompt"].(string); ok {
 			testFunc = func(code string) bool {
@@ -856,29 +856,29 @@ func (ae *AssertionEvaluator) evaluatePassAtN(ctx context.Context, assertion Ass
 					return false
 				}
 				return strings.Contains(strings.ToUpper(response.Text), "YES") ||
-					   strings.Contains(strings.ToUpper(response.Text), "PASS") ||
-					   strings.Contains(strings.ToUpper(response.Text), "TRUE")
+					strings.Contains(strings.ToUpper(response.Text), "PASS") ||
+					strings.Contains(strings.ToUpper(response.Text), "TRUE")
 			}
 		}
-		
+
 		result = am.CalculatePassAtN(n, samples, testFunc)
 	}
-	
+
 	// Determine if assertion passes based on threshold
 	threshold := 0.5
 	if assertion.Threshold != nil {
 		threshold = *assertion.Threshold
 	}
-	
+
 	passed := result.PassRate >= threshold
-	
+
 	return &AssertionResult{
-		Type:    assertion.Type,
-		Passed:  passed,
-		Score:   result.PassRate,
+		Type:     assertion.Type,
+		Passed:   passed,
+		Score:    result.PassRate,
 		Expected: fmt.Sprintf("pass@%d >= %.2f", n, threshold),
-		Actual:  result.PassRate,
-		Message: fmt.Sprintf("Pass@%d rate: %.2f%% (%d/%d samples passed)", n, result.PassRate*100, result.NumPassed, result.NumSamples),
+		Actual:   result.PassRate,
+		Message:  fmt.Sprintf("Pass@%d rate: %.2f%% (%d/%d samples passed)", n, result.PassRate*100, result.NumPassed, result.NumSamples),
 		Metadata: map[string]interface{}{
 			"n":              n,
 			"pass_rate":      result.PassRate,

@@ -42,13 +42,13 @@ type MetricConfig struct {
 
 // MetricResult represents the result of a metric evaluation
 type MetricResult struct {
-	Name        string                 `json:"name"`
-	Score       float64                `json:"score"`
-	Pass        bool                   `json:"pass"`
-	Reason      string                 `json:"reason"`
-	Details     map[string]interface{} `json:"details"`
-	Latency     time.Duration          `json:"latency"`
-	Error       string                 `json:"error,omitempty"`
+	Name    string                 `json:"name"`
+	Score   float64                `json:"score"`
+	Pass    bool                   `json:"pass"`
+	Reason  string                 `json:"reason"`
+	Details map[string]interface{} `json:"details"`
+	Latency time.Duration          `json:"latency"`
+	Error   string                 `json:"error,omitempty"`
 }
 
 // MetricEvaluator evaluates custom metrics
@@ -68,7 +68,7 @@ func NewMetricEvaluator(configs []MetricConfig, providers map[string]llm.Provide
 // EvaluateAll evaluates all configured metrics for a given prompt and response
 func (m *MetricEvaluator) EvaluateAll(ctx context.Context, prompt, response string, metadata map[string]interface{}) ([]MetricResult, error) {
 	var results []MetricResult
-	
+
 	for _, config := range m.configs {
 		result, err := m.evaluateMetric(ctx, config, prompt, response, metadata)
 		if err != nil {
@@ -81,7 +81,7 @@ func (m *MetricEvaluator) EvaluateAll(ctx context.Context, prompt, response stri
 		}
 		results = append(results, result)
 	}
-	
+
 	return results, nil
 }
 
@@ -108,7 +108,7 @@ func (m *MetricEvaluator) evaluateMetric(ctx context.Context, config MetricConfi
 // evaluateBuiltinMetric evaluates built-in metrics
 func (m *MetricEvaluator) evaluateBuiltinMetric(config MetricConfig, prompt, response string, metadata map[string]interface{}) (MetricResult, error) {
 	start := time.Now()
-	
+
 	switch config.Name {
 	case "length":
 		return m.evaluateLengthMetric(config, response, time.Since(start))
@@ -135,14 +135,14 @@ func (m *MetricEvaluator) evaluateBuiltinMetric(config MetricConfig, prompt, res
 // evaluateLengthMetric evaluates response length
 func (m *MetricEvaluator) evaluateLengthMetric(config MetricConfig, response string, latency time.Duration) (MetricResult, error) {
 	length := len(response)
-	
+
 	minLength := int(config.Config["min"].(float64))
 	maxLength := int(config.Config["max"].(float64))
-	
+
 	pass := length >= minLength && length <= maxLength
 	score := 1.0
 	reason := fmt.Sprintf("Length: %d characters", length)
-	
+
 	if !pass {
 		if length < minLength {
 			score = float64(length) / float64(minLength)
@@ -152,7 +152,7 @@ func (m *MetricEvaluator) evaluateLengthMetric(config MetricConfig, response str
 			reason += fmt.Sprintf(" (above maximum %d)", maxLength)
 		}
 	}
-	
+
 	return MetricResult{
 		Name:    config.Name,
 		Score:   score,
@@ -171,14 +171,14 @@ func (m *MetricEvaluator) evaluateLengthMetric(config MetricConfig, response str
 func (m *MetricEvaluator) evaluateWordCountMetric(config MetricConfig, response string, latency time.Duration) (MetricResult, error) {
 	words := strings.Fields(response)
 	wordCount := len(words)
-	
+
 	minWords := int(config.Config["min"].(float64))
 	maxWords := int(config.Config["max"].(float64))
-	
+
 	pass := wordCount >= minWords && wordCount <= maxWords
 	score := 1.0
 	reason := fmt.Sprintf("Word count: %d", wordCount)
-	
+
 	if !pass {
 		if wordCount < minWords {
 			score = float64(wordCount) / float64(minWords)
@@ -188,7 +188,7 @@ func (m *MetricEvaluator) evaluateWordCountMetric(config MetricConfig, response 
 			reason += fmt.Sprintf(" (above maximum %d)", maxWords)
 		}
 	}
-	
+
 	return MetricResult{
 		Name:    config.Name,
 		Score:   score,
@@ -208,36 +208,36 @@ func (m *MetricEvaluator) evaluateSentimentMetric(config MetricConfig, response 
 	// Simplified sentiment analysis using keyword matching
 	positiveWords := []string{"good", "great", "excellent", "amazing", "wonderful", "fantastic", "positive", "happy", "love"}
 	negativeWords := []string{"bad", "terrible", "awful", "horrible", "negative", "sad", "hate", "wrong", "fail"}
-	
+
 	response = strings.ToLower(response)
 	positiveCount := 0
 	negativeCount := 0
-	
+
 	for _, word := range positiveWords {
 		if strings.Contains(response, word) {
 			positiveCount++
 		}
 	}
-	
+
 	for _, word := range negativeWords {
 		if strings.Contains(response, word) {
 			negativeCount++
 		}
 	}
-	
+
 	// Calculate sentiment score (-1 to 1)
 	sentimentScore := 0.0
 	if positiveCount+negativeCount > 0 {
 		sentimentScore = float64(positiveCount-negativeCount) / float64(positiveCount+negativeCount)
 	}
-	
+
 	// Check against threshold
 	targetSentiment := config.Config["target"].(string)
 	threshold := config.Threshold
-	
+
 	pass := false
 	reason := fmt.Sprintf("Sentiment score: %.2f", sentimentScore)
-	
+
 	switch targetSentiment {
 	case "positive":
 		pass = sentimentScore >= threshold
@@ -246,7 +246,7 @@ func (m *MetricEvaluator) evaluateSentimentMetric(config MetricConfig, response 
 	case "neutral":
 		pass = math.Abs(sentimentScore) <= threshold
 	}
-	
+
 	return MetricResult{
 		Name:    config.Name,
 		Score:   math.Abs(sentimentScore),
@@ -267,12 +267,12 @@ func (m *MetricEvaluator) evaluateReadabilityMetric(config MetricConfig, respons
 	sentences := strings.Split(response, ". ")
 	words := strings.Fields(response)
 	syllables := 0
-	
+
 	// Approximate syllable count
 	for _, word := range words {
 		syllables += countSyllables(word)
 	}
-	
+
 	if len(sentences) == 0 || len(words) == 0 {
 		return MetricResult{
 			Name:    config.Name,
@@ -282,22 +282,22 @@ func (m *MetricEvaluator) evaluateReadabilityMetric(config MetricConfig, respons
 			Latency: latency,
 		}, nil
 	}
-	
+
 	// Flesch Reading Ease formula
 	avgSentenceLength := float64(len(words)) / float64(len(sentences))
 	avgSyllablesPerWord := float64(syllables) / float64(len(words))
-	
+
 	fleschScore := 206.835 - (1.015 * avgSentenceLength) - (84.6 * avgSyllablesPerWord)
-	
+
 	// Convert to grade level (approximate)
 	gradeLevel := (0.39 * avgSentenceLength) + (11.8 * avgSyllablesPerWord) - 15.59
-	
+
 	minGrade := config.Config["min_grade_level"].(float64)
 	maxGrade := config.Config["max_grade_level"].(float64)
-	
+
 	pass := gradeLevel >= minGrade && gradeLevel <= maxGrade
 	score := 1.0
-	
+
 	if !pass {
 		if gradeLevel < minGrade {
 			score = gradeLevel / minGrade
@@ -305,7 +305,7 @@ func (m *MetricEvaluator) evaluateReadabilityMetric(config MetricConfig, respons
 			score = maxGrade / gradeLevel
 		}
 	}
-	
+
 	return MetricResult{
 		Name:    config.Name,
 		Score:   score,
@@ -313,12 +313,12 @@ func (m *MetricEvaluator) evaluateReadabilityMetric(config MetricConfig, respons
 		Reason:  fmt.Sprintf("Grade level: %.1f (Flesch: %.1f)", gradeLevel, fleschScore),
 		Latency: latency,
 		Details: map[string]interface{}{
-			"grade_level":             gradeLevel,
-			"flesch_score":            fleschScore,
-			"avg_sentence_length":     avgSentenceLength,
-			"avg_syllables_per_word":  avgSyllablesPerWord,
-			"min_grade":               minGrade,
-			"max_grade":               maxGrade,
+			"grade_level":            gradeLevel,
+			"flesch_score":           fleschScore,
+			"avg_sentence_length":    avgSentenceLength,
+			"avg_syllables_per_word": avgSyllablesPerWord,
+			"min_grade":              minGrade,
+			"max_grade":              maxGrade,
 		},
 	}, nil
 }
@@ -326,22 +326,22 @@ func (m *MetricEvaluator) evaluateReadabilityMetric(config MetricConfig, respons
 // evaluateToxicityMetric evaluates toxicity (simplified)
 func (m *MetricEvaluator) evaluateToxicityMetric(config MetricConfig, response string, latency time.Duration) (MetricResult, error) {
 	toxicWords := []string{"hate", "stupid", "idiot", "kill", "die", "dumb", "moron", "loser", "pathetic"}
-	
+
 	response = strings.ToLower(response)
 	toxicCount := 0
-	
+
 	for _, word := range toxicWords {
 		if strings.Contains(response, word) {
 			toxicCount++
 		}
 	}
-	
+
 	toxicityScore := float64(toxicCount) / float64(len(strings.Fields(response)))
 	threshold := config.Threshold
-	
+
 	pass := toxicityScore <= threshold
 	score := 1.0 - toxicityScore
-	
+
 	return MetricResult{
 		Name:    config.Name,
 		Score:   score,
@@ -368,31 +368,31 @@ func (m *MetricEvaluator) evaluateCoherenceMetric(config MetricConfig, response 
 			Latency: latency,
 		}, nil
 	}
-	
+
 	// Simple coherence check based on transition words and repetition
 	transitionWords := []string{"however", "therefore", "additionally", "furthermore", "moreover", "consequently", "thus", "hence"}
-	
+
 	transitionCount := 0
 	for _, word := range transitionWords {
 		if strings.Contains(strings.ToLower(response), word) {
 			transitionCount++
 		}
 	}
-	
+
 	// Check for excessive repetition
 	words := strings.Fields(strings.ToLower(response))
 	wordCount := make(map[string]int)
 	for _, word := range words {
 		wordCount[word]++
 	}
-	
+
 	repetitionScore := 0.0
 	for _, count := range wordCount {
 		if count > 1 {
 			repetitionScore += float64(count-1) / float64(len(words))
 		}
 	}
-	
+
 	coherenceScore := (float64(transitionCount) / float64(len(sentences))) - repetitionScore
 	if coherenceScore < 0 {
 		coherenceScore = 0
@@ -400,9 +400,9 @@ func (m *MetricEvaluator) evaluateCoherenceMetric(config MetricConfig, response 
 	if coherenceScore > 1 {
 		coherenceScore = 1
 	}
-	
+
 	pass := coherenceScore >= config.Threshold
-	
+
 	return MetricResult{
 		Name:    config.Name,
 		Score:   coherenceScore,
@@ -410,10 +410,10 @@ func (m *MetricEvaluator) evaluateCoherenceMetric(config MetricConfig, response 
 		Reason:  fmt.Sprintf("Coherence score: %.2f", coherenceScore),
 		Latency: latency,
 		Details: map[string]interface{}{
-			"coherence_score":   coherenceScore,
-			"transition_words":  transitionCount,
-			"repetition_score":  repetitionScore,
-			"sentences":         len(sentences),
+			"coherence_score":  coherenceScore,
+			"transition_words": transitionCount,
+			"repetition_score": repetitionScore,
+			"sentences":        len(sentences),
 		},
 	}, nil
 }
@@ -423,21 +423,21 @@ func (m *MetricEvaluator) evaluateRelevanceMetric(config MetricConfig, prompt, r
 	// Simple relevance based on keyword overlap
 	promptWords := extractKeywords(strings.ToLower(prompt))
 	responseWords := extractKeywords(strings.ToLower(response))
-	
+
 	overlap := 0
 	for word := range promptWords {
 		if responseWords[word] {
 			overlap++
 		}
 	}
-	
+
 	relevanceScore := 0.0
 	if len(promptWords) > 0 {
 		relevanceScore = float64(overlap) / float64(len(promptWords))
 	}
-	
+
 	pass := relevanceScore >= config.Threshold
-	
+
 	return MetricResult{
 		Name:    config.Name,
 		Score:   relevanceScore,
@@ -455,7 +455,7 @@ func (m *MetricEvaluator) evaluateRelevanceMetric(config MetricConfig, prompt, r
 // evaluatePythonMetric evaluates using Python script
 func (m *MetricEvaluator) evaluatePythonMetric(ctx context.Context, config MetricConfig, prompt, response string, metadata map[string]interface{}) (MetricResult, error) {
 	start := time.Now()
-	
+
 	// Create input data for the script
 	input := map[string]interface{}{
 		"prompt":   prompt,
@@ -463,27 +463,27 @@ func (m *MetricEvaluator) evaluatePythonMetric(ctx context.Context, config Metri
 		"metadata": metadata,
 		"config":   config.Config,
 	}
-	
+
 	inputJSON, err := json.Marshal(input)
 	if err != nil {
 		return MetricResult{}, fmt.Errorf("error marshaling input: %v", err)
 	}
-	
+
 	// Execute Python script
 	cmd := exec.CommandContext(ctx, "python3", "-c", config.Script)
 	cmd.Stdin = strings.NewReader(string(inputJSON))
-	
+
 	output, err := cmd.Output()
 	if err != nil {
 		return MetricResult{}, fmt.Errorf("error executing Python script: %v", err)
 	}
-	
+
 	// Parse result
 	var result map[string]interface{}
 	if err := json.Unmarshal(output, &result); err != nil {
 		return MetricResult{}, fmt.Errorf("error parsing Python script output: %v", err)
 	}
-	
+
 	return MetricResult{
 		Name:    config.Name,
 		Score:   result["score"].(float64),
@@ -497,20 +497,20 @@ func (m *MetricEvaluator) evaluatePythonMetric(ctx context.Context, config Metri
 // evaluateScriptMetric evaluates using external script
 func (m *MetricEvaluator) evaluateScriptMetric(ctx context.Context, config MetricConfig, prompt, response string, metadata map[string]interface{}) (MetricResult, error) {
 	start := time.Now()
-	
+
 	// Execute script with arguments
 	cmd := exec.CommandContext(ctx, config.Script, prompt, response)
 	output, err := cmd.Output()
 	if err != nil {
 		return MetricResult{}, fmt.Errorf("error executing script: %v", err)
 	}
-	
+
 	// Parse result (expecting JSON output)
 	var result map[string]interface{}
 	if err := json.Unmarshal(output, &result); err != nil {
 		return MetricResult{}, fmt.Errorf("error parsing script output: %v", err)
 	}
-	
+
 	return MetricResult{
 		Name:    config.Name,
 		Score:   result["score"].(float64),
@@ -524,12 +524,12 @@ func (m *MetricEvaluator) evaluateScriptMetric(ctx context.Context, config Metri
 // evaluateLLMMetric evaluates using another LLM as judge
 func (m *MetricEvaluator) evaluateLLMMetric(ctx context.Context, config MetricConfig, prompt, response string, metadata map[string]interface{}) (MetricResult, error) {
 	start := time.Now()
-	
+
 	provider, exists := m.providers[config.Judge]
 	if !exists {
 		return MetricResult{}, fmt.Errorf("judge provider not found: %s", config.Judge)
 	}
-	
+
 	// Create judge prompt
 	judgePrompt := fmt.Sprintf(`%s
 
@@ -542,13 +542,13 @@ Please evaluate the response according to the criteria and provide a JSON respon
 - reason: explanation of the evaluation
 
 JSON Response:`, config.Prompt, prompt, response)
-	
+
 	// Evaluate with judge
 	judgeResponse, err := provider.EvaluatePrompt(ctx, judgePrompt, map[string]interface{}{})
 	if err != nil {
 		return MetricResult{}, fmt.Errorf("error evaluating with judge: %v", err)
 	}
-	
+
 	// Parse judge response
 	var result map[string]interface{}
 	if err := json.Unmarshal([]byte(judgeResponse.Output), &result); err != nil {
@@ -562,7 +562,7 @@ JSON Response:`, config.Prompt, prompt, response)
 			return MetricResult{}, fmt.Errorf("error parsing judge response: %v", err)
 		}
 	}
-	
+
 	return MetricResult{
 		Name:    config.Name,
 		Score:   result["score"].(float64),
@@ -585,16 +585,16 @@ func (m *MetricEvaluator) evaluateRegexMetric(config MetricConfig, prompt, respo
 	if err != nil {
 		return MetricResult{}, fmt.Errorf("invalid regex pattern: %v", err)
 	}
-	
+
 	matches := re.FindAllString(response, -1)
 	matchCount := len(matches)
-	
+
 	pass := matchCount > 0
 	score := 0.0
 	if pass {
 		score = 1.0
 	}
-	
+
 	// Check for expected count if specified
 	if expectedCount, exists := config.Config["expected_count"]; exists {
 		expected := int(expectedCount.(float64))
@@ -603,7 +603,7 @@ func (m *MetricEvaluator) evaluateRegexMetric(config MetricConfig, prompt, respo
 			score = math.Min(1.0, float64(matchCount)/float64(expected))
 		}
 	}
-	
+
 	return MetricResult{
 		Name:    config.Name,
 		Score:   score,
@@ -626,7 +626,7 @@ func countSyllables(word string) int {
 	vowels := "aeiouy"
 	syllableCount := 0
 	previousWasVowel := false
-	
+
 	for _, char := range word {
 		isVowel := strings.ContainsRune(vowels, char)
 		if isVowel && !previousWasVowel {
@@ -634,17 +634,17 @@ func countSyllables(word string) int {
 		}
 		previousWasVowel = isVowel
 	}
-	
+
 	// Handle silent 'e'
 	if strings.HasSuffix(word, "e") && syllableCount > 1 {
 		syllableCount--
 	}
-	
+
 	// Ensure at least one syllable
 	if syllableCount == 0 {
 		syllableCount = 1
 	}
-	
+
 	return syllableCount
 }
 
@@ -663,39 +663,39 @@ func extractKeywords(text string) map[string]bool {
 		"him": true, "her": true, "us": true, "them": true, "my": true, "your": true,
 		"his": true, "our": true, "their": true,
 	}
-	
+
 	words := strings.Fields(text)
 	keywords := make(map[string]bool)
-	
+
 	for _, word := range words {
 		// Remove punctuation
 		word = regexp.MustCompile(`[^\w]`).ReplaceAllString(word, "")
 		word = strings.ToLower(word)
-		
+
 		// Skip if stop word or too short
 		if len(word) < 3 || stopWords[word] {
 			continue
 		}
-		
+
 		keywords[word] = true
 	}
-	
+
 	return keywords
 }
 
 // evaluatePassAtNMetric evaluates pass@n metric for code generation tasks
 func (m *MetricEvaluator) evaluatePassAtNMetric(ctx context.Context, config MetricConfig, prompt, response string, metadata map[string]interface{}) (MetricResult, error) {
 	_ = time.Now() // start
-	
+
 	// Get configuration parameters
 	n := 1
 	if nVal, ok := config.Config["n"].(float64); ok {
 		n = int(nVal)
 	}
-	
+
 	// Get test cases from config
 	testCases, hasTestCases := config.Config["test_cases"].([]interface{})
-	
+
 	// Get samples - either from metadata or generate multiple samples
 	var samples []string
 	if samplesVal, ok := metadata["samples"].([]string); ok {
@@ -711,10 +711,10 @@ func (m *MetricEvaluator) evaluatePassAtNMetric(ctx context.Context, config Metr
 		// If no samples provided, use the single response
 		samples = []string{response}
 	}
-	
+
 	// Create advanced metrics instance
 	am := NewAdvancedMetrics(m.providers[config.Config["provider"].(string)])
-	
+
 	var result *PassAtNResult
 	if hasTestCases {
 		// Convert test cases to proper format
@@ -731,7 +731,7 @@ func (m *MetricEvaluator) evaluatePassAtNMetric(ctx context.Context, config Metr
 			// Default: check if code is non-empty and appears syntactically valid
 			return len(strings.TrimSpace(code)) > 0 && !strings.Contains(code, "error")
 		}
-		
+
 		// If a custom validation prompt is provided, use LLM-based validation
 		if validationPrompt, ok := config.Config["validation_prompt"].(string); ok {
 			testFunc = func(code string) bool {
@@ -743,22 +743,22 @@ func (m *MetricEvaluator) evaluatePassAtNMetric(ctx context.Context, config Metr
 					return false
 				}
 				return strings.Contains(strings.ToUpper(response.Text), "YES") ||
-					   strings.Contains(strings.ToUpper(response.Text), "PASS") ||
-					   strings.Contains(strings.ToUpper(response.Text), "TRUE")
+					strings.Contains(strings.ToUpper(response.Text), "PASS") ||
+					strings.Contains(strings.ToUpper(response.Text), "TRUE")
 			}
 		}
-		
+
 		result = am.CalculatePassAtN(n, samples, testFunc)
 	}
-	
+
 	// Determine if metric passes based on threshold
 	threshold := 0.5
 	if config.Threshold > 0 {
 		threshold = config.Threshold
 	}
-	
+
 	pass := result.PassRate >= threshold
-	
+
 	return MetricResult{
 		Name:    config.Name,
 		Score:   result.PassRate,

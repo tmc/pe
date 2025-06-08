@@ -24,7 +24,7 @@ func main() {
 					"usage":       "pe promptfoo import <config.yaml>",
 				},
 				{
-					"name":        "export", 
+					"name":        "export",
 					"description": "Export to promptfoo format",
 					"usage":       "pe promptfoo export <config.yaml>",
 				},
@@ -35,7 +35,7 @@ func main() {
 				},
 			},
 		}
-		
+
 		data, _ := json.Marshal(info)
 		fmt.Println(string(data))
 		os.Exit(0)

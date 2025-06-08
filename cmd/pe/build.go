@@ -79,51 +79,51 @@ type buildMetadata struct {
 
 func runBuild(cmd *cobra.Command, args []string) error {
 	input := args[0]
-	
+
 	// Print specific message for config files
 	fmt.Println("Building optimized prompt")
 	if strings.HasSuffix(input, ".yaml") || strings.HasSuffix(input, ".yml") {
 		fmt.Printf("Building prompts from %s\n", input)
 	}
 	fmt.Println("Analyzing requirements")
-	
+
 	// Handle environment-specific configs
 	if env := os.Getenv("PE_ENV"); env != "" {
 		fmt.Printf("Environment: %s\n", env)
 		fmt.Println("Loading " + env + " settings")
 	}
-	
+
 	// Determine if input is directory (for bundle)
 	info, err := os.Stat(input)
 	if err != nil {
 		return fmt.Errorf("cannot access input: %w", err)
 	}
-	
+
 	if info.IsDir() && buildBundle {
 		return buildPromptBundle(input)
 	}
-	
+
 	// Load config or prompt
 	var config buildConfig
 	var prompt string
-	
+
 	if strings.HasSuffix(input, ".yaml") || strings.HasSuffix(input, ".yml") {
 		data, err := os.ReadFile(input)
 		if err != nil {
 			return fmt.Errorf("failed to read config: %w", err)
 		}
-		
+
 		if err := yaml.Unmarshal(data, &config); err != nil {
 			return fmt.Errorf("failed to parse config: %w", err)
 		}
-		
+
 		if config.Prompt == "" {
 			fmt.Fprintln(os.Stderr, "Build failed")
 			fmt.Fprintln(os.Stderr, "Validation error")
 			fmt.Println("Missing required field: prompt")
 			return fmt.Errorf("missing required field: prompt")
 		}
-		
+
 		prompt = config.Prompt
 	} else {
 		// Plain text prompt file
@@ -133,7 +133,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		}
 		prompt = string(data)
 	}
-	
+
 	// Handle multiple targets
 	if len(buildTargets) > 0 {
 		fmt.Println("Building for multiple targets")
@@ -150,7 +150,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		}
 		return nil
 	}
-	
+
 	// Single target optimization
 	if buildTarget != "" {
 		fmt.Printf("Target provider: %s\n", buildTarget)
@@ -160,7 +160,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		buildTarget = config.Provider
 		prompt = optimizeForProvider(prompt, config.Provider)
 	}
-	
+
 	// Minification
 	if buildMinify {
 		fmt.Println("Minifying prompt")
@@ -172,7 +172,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Minified tokens: %d\n", minifiedTokens)
 		fmt.Printf("Reduction: %.0f%%\n", reduction)
 	}
-	
+
 	// Validation
 	if buildValidate {
 		fmt.Println("Validation checks:")
@@ -181,25 +181,25 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		fmt.Println("✓ No bias detected")
 		fmt.Println("✓ Security scan passed")
 		fmt.Println("Validation passed")
-		
+
 		// Create dist directory and tar.gz file for validated builds
 		if err := os.MkdirAll("dist", 0755); err != nil {
 			return fmt.Errorf("failed to create dist directory: %w", err)
 		}
-		
+
 		// Create tar.gz file with the validated prompt
 		tarFile, err := os.Create("dist/prompts.tar.gz")
 		if err != nil {
 			return fmt.Errorf("failed to create tar file: %w", err)
 		}
 		defer tarFile.Close()
-		
+
 		gzWriter := gzip.NewWriter(tarFile)
 		defer gzWriter.Close()
-		
+
 		tarWriter := tar.NewWriter(gzWriter)
 		defer tarWriter.Close()
-		
+
 		// Add the prompt to the tar
 		header := &tar.Header{
 			Name:    "prompt.txt",
@@ -207,21 +207,21 @@ func runBuild(cmd *cobra.Command, args []string) error {
 			Mode:    0644,
 			ModTime: time.Now(),
 		}
-		
+
 		if err := tarWriter.WriteHeader(header); err != nil {
 			return fmt.Errorf("failed to write tar header: %w", err)
 		}
-		
+
 		if _, err := tarWriter.Write([]byte(prompt)); err != nil {
 			return fmt.Errorf("failed to write tar content: %w", err)
 		}
 	}
-	
+
 	// Add production mode marker if in production environment
 	if os.Getenv("PE_ENV") == "production" {
 		prompt = prompt + "\n\n[Production mode]"
 	}
-	
+
 	// Determine output file
 	outputFile := buildOutput
 	if outputFile == "" {
@@ -229,12 +229,12 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	} else {
 		fmt.Printf("Building to: %s\n", outputFile)
 	}
-	
+
 	// Write main output
 	if err := os.WriteFile(outputFile, []byte(prompt), 0644); err != nil {
 		return fmt.Errorf("failed to write output: %w", err)
 	}
-	
+
 	// Compression
 	if buildCompress {
 		fmt.Println("Compressing prompt")
@@ -249,7 +249,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		ratio := float64(originalSize) / float64(compressedSize)
 		fmt.Printf("Compression ratio: %.1f:1\n", ratio)
 	}
-	
+
 	// Write metadata if requested
 	if buildWithMetadata {
 		metadata := buildMetadata{
@@ -259,22 +259,22 @@ func runBuild(cmd *cobra.Command, args []string) error {
 			Provider:  buildTarget,
 			Model:     config.Model,
 		}
-		
+
 		metadataFile := strings.TrimSuffix(outputFile, filepath.Ext(outputFile)) + "_metadata.json"
 		if buildOutput == "" {
 			metadataFile = "prompt_build_metadata.json"
 		}
-		
+
 		data, err := json.MarshalIndent(metadata, "", "  ")
 		if err != nil {
 			return err
 		}
-		
+
 		if err := os.WriteFile(metadataFile, data, 0644); err != nil {
 			return err
 		}
 	}
-	
+
 	// Create JSON output only for default builds (no specific output)
 	if buildOutput == "" {
 		// Also create metadata for default builds
@@ -285,10 +285,10 @@ func runBuild(cmd *cobra.Command, args []string) error {
 			Provider:  buildTarget,
 			Model:     config.Model,
 		}
-		
+
 		metadataData, _ := json.MarshalIndent(metadata, "", "  ")
 		os.WriteFile("prompt_build_metadata.json", metadataData, 0644)
-		
+
 		// Create JSON output
 		jsonOutput := map[string]interface{}{
 			"prompt":   prompt,
@@ -298,16 +298,16 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		data, _ := json.MarshalIndent(jsonOutput, "", "  ")
 		os.WriteFile("prompt_build.json", data, 0644)
 	}
-	
+
 	fmt.Println("Optimization complete")
 	fmt.Println("✓ Built successfully")
-	
+
 	return nil
 }
 
 func buildPromptBundle(dir string) error {
 	fmt.Println("Creating prompt bundle")
-	
+
 	// Count components
 	components := 0
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -322,54 +322,54 @@ func buildPromptBundle(dir string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	fmt.Printf("Including %d components\n", components)
 	fmt.Println("Resolving dependencies")
-	
+
 	// Create tar.gz bundle
 	bundleFile, err := os.Create("prompt_bundle.tar.gz")
 	if err != nil {
 		return err
 	}
 	defer bundleFile.Close()
-	
+
 	gzWriter := gzip.NewWriter(bundleFile)
 	defer gzWriter.Close()
-	
+
 	tarWriter := tar.NewWriter(gzWriter)
 	defer tarWriter.Close()
-	
+
 	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		
+
 		if info.IsDir() {
 			return nil
 		}
-		
+
 		file, err := os.Open(path)
 		if err != nil {
 			return err
 		}
 		defer file.Close()
-		
+
 		relPath, err := filepath.Rel(dir, path)
 		if err != nil {
 			return err
 		}
-		
+
 		header := &tar.Header{
 			Name:    relPath,
 			Size:    info.Size(),
 			Mode:    int64(info.Mode()),
 			ModTime: info.ModTime(),
 		}
-		
+
 		if err := tarWriter.WriteHeader(header); err != nil {
 			return err
 		}
-		
+
 		_, err = io.Copy(tarWriter, file)
 		return err
 	})
@@ -419,16 +419,16 @@ func compressFile(filename string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	output, err := os.Create(filename + ".gz")
 	if err != nil {
 		return err
 	}
 	defer output.Close()
-	
+
 	gzWriter := gzip.NewWriter(output)
 	defer gzWriter.Close()
-	
+
 	_, err = gzWriter.Write(input)
 	return err
 }

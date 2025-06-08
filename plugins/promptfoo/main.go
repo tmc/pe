@@ -25,7 +25,7 @@ func main() {
 					"usage":       "pe promptfoo import <config.yaml>",
 				},
 				{
-					"name":        "export", 
+					"name":        "export",
 					"description": "Export to promptfoo format",
 					"usage":       "pe promptfoo export <config.yaml>",
 				},
@@ -36,7 +36,7 @@ func main() {
 				},
 			},
 		}
-		
+
 		data, _ := json.Marshal(info)
 		fmt.Println(string(data))
 		os.Exit(0)
@@ -286,10 +286,10 @@ func convertFromPromptfoo(config *promptfoo.Config) map[string]interface{} {
 	// TODO: Implement full conversion logic
 	// For now, return a basic structure
 	return map[string]interface{}{
-		"version": "1.0",
-		"prompts": config.Prompts,
-		"providers": config.Providers,
-		"tests": config.Tests,
+		"version":     "1.0",
+		"prompts":     config.Prompts,
+		"providers":   config.Providers,
+		"tests":       config.Tests,
 		"defaultTest": config.DefaultTest,
 		"description": config.Description,
 	}
@@ -299,7 +299,7 @@ func convertToPromptfoo(peConfig map[string]interface{}) *promptfoo.Config {
 	// TODO: Implement full conversion logic
 	// For now, return a basic structure
 	config := &promptfoo.Config{}
-	
+
 	// Convert prompts if present
 	if prompts, ok := peConfig["prompts"]; ok {
 		// Handle different prompt formats
@@ -314,7 +314,7 @@ func convertToPromptfoo(peConfig map[string]interface{}) *promptfoo.Config {
 			config.Prompts = v
 		}
 	}
-	
+
 	// Convert providers if present
 	if providers, ok := peConfig["providers"]; ok {
 		switch v := providers.(type) {
@@ -328,7 +328,7 @@ func convertToPromptfoo(peConfig map[string]interface{}) *promptfoo.Config {
 			config.Providers = v
 		}
 	}
-	
+
 	// Convert tests if present - simplified for now
 	if tests, ok := peConfig["tests"]; ok {
 		switch v := tests.(type) {
@@ -344,6 +344,6 @@ func convertToPromptfoo(peConfig map[string]interface{}) *promptfoo.Config {
 			}
 		}
 	}
-	
+
 	return config
 }

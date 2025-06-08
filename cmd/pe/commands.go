@@ -205,10 +205,10 @@ func runVetPrompts(cmd *cobra.Command, args []string) error {
 		if vetProvider != "" {
 			evalArgs = append(evalArgs, "--provider", vetProvider)
 		}
-		
+
 		evalCmd := evalPromptCmd
 		evalCmd.SetArgs(evalArgs)
-		
+
 		if err := evalCmd.Execute(); err != nil {
 			if !vetQuiet {
 				fmt.Printf("FAIL: %v\n", err)

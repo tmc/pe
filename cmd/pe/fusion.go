@@ -39,16 +39,16 @@ Example usage:
 }
 
 var (
-	fusionProviders        []string
-	fusionStrategy         string
-	fusionIterations       int
-	fusionConsensusThresh  float64
-	fusionMultiObjective   bool
-	fusionParetoOptimal    bool
-	fusionOutputFile       string
-	fusionVerbose          bool
-	fusionAdaptiveWeights  bool
-	fusionCrossValidation  bool
+	fusionProviders       []string
+	fusionStrategy        string
+	fusionIterations      int
+	fusionConsensusThresh float64
+	fusionMultiObjective  bool
+	fusionParetoOptimal   bool
+	fusionOutputFile      string
+	fusionVerbose         bool
+	fusionAdaptiveWeights bool
+	fusionCrossValidation bool
 )
 
 func init() {
@@ -70,7 +70,7 @@ func runFusion(cmd *cobra.Command, args []string) error {
 	}
 
 	promptFile := args[0]
-	
+
 	// Read prompt content
 	promptContent, err := os.ReadFile(promptFile)
 	if err != nil {
@@ -154,13 +154,13 @@ func runFusion(cmd *cobra.Command, args []string) error {
 	if fusionOutputFile != "" {
 		// Create output structure
 		output := map[string]interface{}{
-			"original_prompt":    string(promptContent),
-			"optimized_prompt":   result.OptimizedPrompt,
-			"consensus_score":    result.ConsensusScore,
+			"original_prompt":     string(promptContent),
+			"optimized_prompt":    result.OptimizedPrompt,
+			"consensus_score":     result.ConsensusScore,
 			"overall_improvement": 0.0, // Calculate from convergence data
-			"model_weights":      result.OptimalWeights,
-			"model_results":      result.ModelResults,
-			"optimization_time":  elapsed.String(),
+			"model_weights":       result.OptimalWeights,
+			"model_results":       result.ModelResults,
+			"optimization_time":   elapsed.String(),
 			"config": map[string]interface{}{
 				"providers":  fusionProviders,
 				"strategy":   fusionStrategy,
@@ -180,7 +180,7 @@ func runFusion(cmd *cobra.Command, args []string) error {
 		fmt.Printf("\nResults saved to: %s\n", fusionOutputFile)
 	}
 
-	// Display Pareto frontier if multi-objective optimization was used  
+	// Display Pareto frontier if multi-objective optimization was used
 	if fusionMultiObjective && len(result.ParetoFrontier) > 0 {
 		fmt.Printf("\n=== Pareto Frontier ===\n")
 		fmt.Printf("Found %d Pareto-optimal solutions\n", len(result.ParetoFrontier))
@@ -189,7 +189,7 @@ func runFusion(cmd *cobra.Command, args []string) error {
 				fmt.Printf("  ... and %d more\n", len(result.ParetoFrontier)-3)
 				break
 			}
-			fmt.Printf("  %d. Accuracy: %.3f, Latency: %.1fms, Cost: $%.4f\n", 
+			fmt.Printf("  %d. Accuracy: %.3f, Latency: %.1fms, Cost: $%.4f\n",
 				i+1, candidate.Accuracy, candidate.Latency, candidate.Cost)
 		}
 	}
