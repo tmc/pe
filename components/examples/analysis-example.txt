@@ -1,0 +1,1 @@
+Example: Input: Sales data shows 20% increase. Output: This indicates strong market performance.
