@@ -29,6 +29,9 @@ var (
 	runSystem      string
 	runVars        map[string]string
 	runExample     string
+	runProvider    string
+	runStream      bool
+	runJSON        bool
 )
 
 // ExecutionLog represents a complete execution record
@@ -129,6 +132,10 @@ func writeExecutionLog(log ExecutionLog) error {
 	// Get home directory
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
+		// In test mode or environments without $HOME, skip logging
+		if os.Getenv("PE_TEST_MODE") == "true" || os.Getenv("HOME") == "" {
+			return nil
+		}
 		return err
 	}
 
@@ -219,6 +226,9 @@ Examples:
 	cmd.Flags().StringVarP(&runSystem, "system", "s", "", "System prompt")
 	cmd.Flags().StringToStringVar(&runVars, "var", nil, "Template variables (can be repeated)")
 	cmd.Flags().StringVarP(&runExample, "example", "e", "", "Run with example variables (e.g., example-1)")
+	cmd.Flags().StringVar(&runProvider, "provider", "", "Provider to use (e.g., openai, anthropic, cgpt)")
+	cmd.Flags().BoolVar(&runStream, "stream", false, "Enable streaming output")
+	cmd.Flags().BoolVar(&runJSON, "json", false, "Output in JSON format")
 
 	return cmd
 }
@@ -360,7 +370,10 @@ func runPrompt(cmd *cobra.Command, args []string) error {
 		execLog.Processing.SubcommandCalls = currentSubcommandCalls
 		if err := writeExecutionLog(execLog); err != nil {
 			// Don't fail the command if logging fails, just print warning
-			fmt.Fprintf(os.Stderr, "Warning: Failed to write execution log: %v\n", err)
+			// Only print warning if not in test mode
+			if os.Getenv("PE_TEST_MODE") != "true" {
+				fmt.Fprintf(os.Stderr, "Warning: Failed to write execution log: %v\n", err)
+			}
 		}
 	}()
 
@@ -469,9 +482,11 @@ func runPrompt(cmd *cobra.Command, args []string) error {
 	// Create inference client
 	client := inference.NewClient()
 
-	// Use cgpt provider by default (simplified)
-	provider := cgpt.New()
-	client.Register("cgpt", provider)
+	// Register providers
+	registerProviders(client)
+
+	// Determine which provider to use
+	providerName := determineProvider(runProvider)
 
 	// Set up the request
 	req := inference.Request{
@@ -482,8 +497,9 @@ func runPrompt(cmd *cobra.Command, args []string) error {
 		SystemPrompt:  runSystem,
 		Prefill:       prefill,
 		StopSequences: stopSequences,
-		Stream:        true,
+		Stream:        runStream,
 		Options:       make(map[string]interface{}),
+		Provider:      providerName,
 	}
 
 	// Log environment details
@@ -501,10 +517,41 @@ func runPrompt(cmd *cobra.Command, args []string) error {
 	}
 
 	// Execute the inference and capture output
-	output, err := executeAndCaptureOutput(ctx, client, req)
-	if err != nil {
-		execLog.Error = err.Error()
-		return err
+	var output string
+	var err error
+
+	if runJSON {
+		// For JSON output, always capture full response
+		resp, respErr := client.Complete(ctx, req)
+		if respErr != nil {
+			execLog.Error = respErr.Error()
+			return respErr
+		}
+		output = resp.Content
+		// Output as JSON
+		jsonResp := map[string]interface{}{
+			"response": output,
+			"model":    resp.Model,
+			"tokens":   resp.TokensUsed,
+		}
+		jsonBytes, _ := json.MarshalIndent(jsonResp, "", "  ")
+		fmt.Println(string(jsonBytes))
+	} else if runStream {
+		// For streaming, output directly without capturing
+		if streamErr := streamResponse(ctx, client, req); streamErr != nil {
+			execLog.Error = streamErr.Error()
+			return streamErr
+		}
+		output = "[streamed output]"
+	} else {
+		// Regular execution with captured output
+		output, err = executeAndCaptureOutput(ctx, client, req)
+		if err != nil {
+			execLog.Error = err.Error()
+			return err
+		}
+		// Print the output
+		fmt.Print(output)
 	}
 
 	// Log output details
@@ -517,9 +564,6 @@ func runPrompt(cmd *cobra.Command, args []string) error {
 
 	// Mark as successful
 	execLog.Success = true
-
-	// Print the output
-	fmt.Print(output)
 
 	return nil
 }
