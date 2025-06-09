@@ -1,0 +1,47 @@
+Solve the following math problem step by step: {{EXPRESSION}}
+
+-- variant:pirate --
+prepend pe://basic/speak-like-a-pirate
+
+-- examples/example-1/EXPRESSION --
+15 + 27
+-- examples/example-1/ideal-output --
+Let me solve this addition problem step by step:
+
+1) First, let's align the numbers:
+   15
+  +27
+
+2) Start with the ones column (right side):
+   5 + 7 = 12
+   Write down 2, carry the 1 to the tens column
+
+3) Now add the tens column (left side):
+   1 (carried) + 1 + 2 = 4
+
+4) Putting it together:
+   15 + 27 = 42
+
+Therefore, 15 + 27 = 42
+
+-- examples/example-2/EXPRESSION --
+22 × 13
+-- examples/example-2/ideal-output --
+Let me help you solve 22 × 13 step by step.
+
+Method 1 (Standard multiplication):
+1) First, let's align the numbers:
+   22
+   13
+   ___
+
+2) Multiply 22 by 3 (the ones digit of 13):
+   22 × 3 = 66
+
+3) Multiply 22 by 10 (the tens digit of 13):
+   22 × 10 = 220
+
+4) Add the results:
+   220 + 66 = 286
+
+Therefore, 22 × 13 = 286
