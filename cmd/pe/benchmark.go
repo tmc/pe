@@ -57,6 +57,7 @@ func benchmarkCmd() *cobra.Command {
 	var outputFormat string
 	var iterations int
 	var concurrency int
+	var goBenchFormat bool
 
 	cmd := &cobra.Command{
 		Use:   "benchmark [config_file]",
@@ -76,7 +77,7 @@ func benchmarkCmd() *cobra.Command {
 				}
 			}
 
-			return runBenchmark(cmd, configFile, outputFile, outputFormat, iterations, concurrency)
+			return runBenchmark(cmd, configFile, outputFile, outputFormat, iterations, concurrency, goBenchFormat)
 		},
 	}
 
@@ -85,11 +86,12 @@ func benchmarkCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&outputFormat, "format", "f", "json", "Output format: 'json', 'yaml', 'csv', or 'text'")
 	cmd.Flags().IntVarP(&iterations, "iterations", "i", 3, "Number of times to run each prompt")
 	cmd.Flags().IntVarP(&concurrency, "concurrency", "n", 1, "Number of concurrent benchmark runs")
+	cmd.Flags().BoolVar(&goBenchFormat, "go-bench", false, "Output in Go benchmark format (compatible with golang.org/x/perf tools)")
 
 	return cmd
 }
 
-func runBenchmark(cmd *cobra.Command, configFile, outputFile, outputFormat string, iterations, concurrency int) error {
+func runBenchmark(cmd *cobra.Command, configFile, outputFile, outputFormat string, iterations, concurrency int, goBenchFormat bool) error {
 	// Read config file
 	data, err := os.ReadFile(configFile)
 	if err != nil {
@@ -238,6 +240,15 @@ func runBenchmark(cmd *cobra.Command, configFile, outputFile, outputFormat strin
 	output, err := formatBenchmarkResults(allResults, summaries, outputFormat)
 	if err != nil {
 		return fmt.Errorf("error formatting results: %v", err)
+	}
+
+	// Output in Go benchmark format if requested
+	if goBenchFormat {
+		goBenchOutput := formatAsGoBenchmarks(summaries)
+		if goBenchOutput != "" {
+			fmt.Fprint(cmd.OutOrStdout(), goBenchOutput)
+		}
+		return nil // Skip regular output when using Go benchmark format
 	}
 
 	// Write to output file or stdout
@@ -473,4 +484,49 @@ func percentile(sortedData []float64, p float64) float64 {
 	lower := sortedData[positionInt]
 	upper := sortedData[positionInt+1]
 	return lower + (upper-lower)*positionFrac
+}
+
+// formatAsGoBenchmarks converts PE benchmark summaries to Go benchmark format
+// Compatible with golang.org/x/perf/cmd/benchstat and other Go perf tools
+func formatAsGoBenchmarks(summaries []BenchmarkSummary) string {
+	var buf strings.Builder
+	
+	for _, s := range summaries {
+		// Create benchmark name following Go conventions
+		// Replace spaces and special chars with valid identifier chars
+		promptName := strings.ReplaceAll(s.Prompt, " ", "")
+		promptName = strings.ReplaceAll(promptName, "?", "")
+		promptName = strings.ReplaceAll(promptName, "!", "")
+		promptName = strings.ReplaceAll(promptName, ".", "")
+		promptName = strings.ReplaceAll(promptName, ",", "")
+		if promptName == "" {
+			promptName = "Prompt"
+		}
+		
+		providerName := strings.ReplaceAll(s.Provider, ":", "_")
+		providerName = strings.ReplaceAll(providerName, "-", "_")
+		
+		benchmarkName := fmt.Sprintf("Benchmark%s_%s", promptName, providerName)
+		
+		// Calculate iterations (assume 1 for now, could be made configurable)
+		iterations := 1
+		
+		// Convert latency from ms to ns for Go benchmark format
+		latencyNs := s.AvgLatencyMs * 1_000_000
+		
+		// Calculate tokens per second (throughput)
+		tokensPerSecond := (s.AvgTokensOutput / s.AvgLatencyMs) * 1000
+		
+		// Format: BenchmarkName iterations ns/op [other metrics]
+		buf.WriteString(fmt.Sprintf("%s\t%d\t%.0f ns/op\t%.2f tokens/s\t%.0f tokens/op\t$%.6f/op\n",
+			benchmarkName,
+			iterations,
+			latencyNs,
+			tokensPerSecond,
+			s.AvgTokensTotal,
+			s.TotalCost,
+		))
+	}
+	
+	return buf.String()
 }
