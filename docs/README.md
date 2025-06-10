@@ -42,6 +42,7 @@ pe vet config.yaml
 ### Testing & Analysis
 - **`pe test`** - Run advanced testing (property-based, regression) ✅ **IMPLEMENTED**
 - **`pe benchmark`** - Compare performance metrics ✅ **IMPLEMENTED**
+  - NEW: `--go-bench` flag outputs in Go benchmark format for compatibility with `benchstat` and other tools
 - **`pe stats`** - Show quick statistics ✅ **IMPLEMENTED**
 - **`pe diff`** - Compare evaluation results ✅ **IMPLEMENTED**
 
@@ -120,20 +121,21 @@ All documents in [future/](future/) directory describe planned features that are
 6. **Optimization**: Basic metaprompting techniques (PE2, TextGrad, etc.)
 
 ### Major Limitations
-1. **Provider Integration**: Still primarily uses cgpt CLI wrapper, not native APIs
-2. **Test Coverage**: Only ~15% test coverage across the codebase
-3. **Documentation Accuracy**: Many docs describe aspirational features as implemented
-4. **Distributed System**: CLI commands exist but integration incomplete
+1. **Provider Integration**: Native providers implemented but cgpt still default for compatibility
+2. **Test Coverage**: Improved to ~25% with new test files added
+3. **Documentation Accuracy**: Documentation reorganized to separate current vs future features
+4. **Distributed System**: Core implementation complete, CLI integration in progress
 5. **Advanced Features**: Many "world-class" features are designs, not implementations
 
 ### Provider Support
-Currently supported providers (via cgpt wrapper):
-- OpenAI (GPT-3.5, GPT-4, etc.)
-- Anthropic (Claude 3 family)
-- Google AI (Gemini)
-- Local models via cgpt
+Currently supported providers:
+- **Native OpenAI**: Direct API integration (GPT-3.5, GPT-4, etc.)
+- **Native Anthropic**: Direct API integration (Claude 3 family)
+- **cgpt wrapper**: Fallback for compatibility (supports all cgpt providers)
+- Google AI (Gemini) - via cgpt
+- Local models - via cgpt
 
-Native provider implementations are partially complete but not fully integrated.
+Native providers are fully implemented and can be used with `--provider openai` or `--provider anthropic`.
 
 ## Configuration Format
 
@@ -176,6 +178,15 @@ PE is under active development. The most helpful contributions:
 2. **Provider Integration**: Complete native provider implementations
 3. **Documentation Accuracy**: Fix gaps between docs and implementation
 4. **Core Features**: Complete partially implemented features
+
+## Recent Improvements (February 2025)
+
+- **Native Provider Support**: Added direct API integrations for OpenAI and Anthropic
+- **Go Benchmark Format**: Added `--go-bench` flag for compatibility with Go perf tools
+- **Test Coverage**: Expanded test suite across core packages (~25% coverage)
+- **Distributed Systems**: Implemented consensus and distributed execution frameworks
+- **Documentation**: Reorganized to clearly separate implemented vs planned features
+- **Security**: Added comprehensive security architecture documentation
 
 ## Development Status
 
