@@ -523,7 +523,7 @@ func runPrompt(cmd *cobra.Command, args []string) error {
 
 	if runJSON {
 		// For JSON output, always capture full response
-		resp, respErr := client.CompleteWithProvider(ctx, providerName, req)
+		resp, respErr := client.CompleteWith(ctx, providerName, req)
 		if respErr != nil {
 			execLog.Error = respErr.Error()
 			return respErr
@@ -1048,4 +1048,62 @@ func applyShebangFlags(flags map[string]string) {
 			runSystem = value
 		}
 	}
+}
+
+// registerProviders registers all available providers with the client
+func registerProviders(client *inference.Client) {
+	// Register native providers
+	client.Register("openai", openai.New())
+	client.Register("anthropic", anthropic.New())
+	client.Register("cgpt", cgpt.New())
+}
+
+// determineProvider determines which provider to use based on flags and environment
+func determineProvider(providerFlag string) string {
+	// If explicitly specified, use that
+	if providerFlag != "" {
+		return providerFlag
+	}
+
+	// Check if we should use native providers
+	if os.Getenv("PE_FORCE_NATIVE") == "true" || os.Getenv("PE_USE_NATIVE_PROVIDERS") == "true" {
+		// Check for API keys and prefer native providers
+		if os.Getenv("ANTHROPIC_API_KEY") != "" {
+			return "anthropic"
+		}
+		if os.Getenv("OPENAI_API_KEY") != "" {
+			return "openai"
+		}
+	}
+
+	// Auto-detect based on available API keys
+	if os.Getenv("ANTHROPIC_API_KEY") != "" {
+		return "anthropic"
+	}
+	if os.Getenv("OPENAI_API_KEY") != "" {
+		return "openai"
+	}
+
+	// Default to cgpt for backward compatibility
+	return "cgpt"
+}
+
+// executeAndCaptureOutputWithProvider executes inference with a specific provider
+func executeAndCaptureOutputWithProvider(ctx context.Context, client *inference.Client, providerName string, req inference.Request) (string, error) {
+	resp, err := client.CompleteWith(ctx, providerName, req)
+	if err != nil {
+		return "", fmt.Errorf("inference failed: %w", err)
+	}
+	return resp.Content, nil
+}
+
+// streamResponseWithProvider streams response with a specific provider
+func streamResponseWithProvider(ctx context.Context, client *inference.Client, providerName string, req inference.Request) error {
+	chunks, err := client.StreamWith(ctx, providerName, req)
+	if err != nil {
+		return fmt.Errorf("failed to start streaming: %w", err)
+	}
+
+	// Stream to stdout
+	return inference.StreamToWriter(ctx, chunks, os.Stdout)
 }
