@@ -16,12 +16,13 @@ PE implements breakthrough research from 2024-2025:
 - **Multiple Optimization Methods**: PE2, APEX, multistage, reflection, and evolutionary approaches
 
 ### Core Capabilities
-- **Multi-Provider Support**: Currently supports cgpt CLI with extensible provider interface (⚠️ native providers in development)
+- **Multi-Provider Support**: Native OpenAI and Anthropic providers, plus cgpt CLI for compatibility
 - **Advanced Evaluation**: Pass@N metrics, structured output validation, comprehensive assertions
 - **Unix Pipeline Philosophy**: Composable commands for streaming prompt processing
-- **Performance**: Native Go implementation for speed and efficiency
+- **Performance**: Native Go implementation with Go benchmark format support
 - **Module Management**: Go-style module system (mod init/download/tidy/vendor)
 - **Security Testing**: OWASP LLM Top 10 coverage via redteam module
+- **Distributed Execution**: Consensus and distributed evaluation frameworks
 
 ## 🎯 Quick Start
 
@@ -272,16 +273,17 @@ PE follows Go's philosophy: simple, composable tools that do one thing well:
 - **Familiar Patterns**: `pe.mod` files work like `go.mod`. Commands compose via pipes.
 - **No Magic**: Everything is explicit and inspectable.
 
-See [docs/DESIGN_PHILOSOPHY.md](docs/DESIGN_PHILOSOPHY.md) for more details.
+See [docs/future/DESIGN_PHILOSOPHY.md](docs/future/DESIGN_PHILOSOPHY.md) for more details.
 
 ## 📚 Documentation
 
-- [Design Philosophy](docs/DESIGN_PHILOSOPHY.md)
-- [Prompt Format Specification](docs/PROMPT_FORMAT_SPEC.md)
+- **[Documentation Overview](docs/README.md)** - Start here for accurate implementation status
 - [Getting Started](docs/GETTING_STARTED.md)
+- [Command Reference](docs/COMMANDS.md)
+- [Architecture](docs/ARCHITECTURE.md)
 - [API Reference](docs/API_REFERENCE.md)
-- [Research Foundations](docs/RESEARCH_FOUNDATIONS.md)
 - [Examples](example/)
+- [Future Features](docs/future/) - Planned designs and specifications
 
 ## 🎯 Project Status
 
