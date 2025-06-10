@@ -501,7 +501,6 @@ func runPrompt(cmd *cobra.Command, args []string) error {
 		StopSequences: stopSequences,
 		Stream:        runStream,
 		Options:       make(map[string]interface{}),
-		Provider:      providerName,
 	}
 
 	// Log environment details
@@ -524,7 +523,7 @@ func runPrompt(cmd *cobra.Command, args []string) error {
 
 	if runJSON {
 		// For JSON output, always capture full response
-		resp, respErr := client.Complete(ctx, req)
+		resp, respErr := client.CompleteWithProvider(ctx, providerName, req)
 		if respErr != nil {
 			execLog.Error = respErr.Error()
 			return respErr
@@ -540,14 +539,14 @@ func runPrompt(cmd *cobra.Command, args []string) error {
 		fmt.Println(string(jsonBytes))
 	} else if runStream {
 		// For streaming, output directly without capturing
-		if streamErr := streamResponse(ctx, client, req); streamErr != nil {
+		if streamErr := streamResponseWithProvider(ctx, client, providerName, req); streamErr != nil {
 			execLog.Error = streamErr.Error()
 			return streamErr
 		}
 		output = "[streamed output]"
 	} else {
 		// Regular execution with captured output
-		output, err = executeAndCaptureOutput(ctx, client, req)
+		output, err = executeAndCaptureOutputWithProvider(ctx, client, providerName, req)
 		if err != nil {
 			execLog.Error = err.Error()
 			return err
