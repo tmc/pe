@@ -18,7 +18,9 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/inference"
+	"github.com/tmc/pe/internal/inference/providers/anthropic"
 	"github.com/tmc/pe/internal/inference/providers/cgpt"
+	"github.com/tmc/pe/internal/inference/providers/openai"
 	"github.com/tmc/pe/internal/prompt"
 )
 
