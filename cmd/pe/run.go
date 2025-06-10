@@ -1052,9 +1052,12 @@ func applyShebangFlags(flags map[string]string) {
 
 // registerProviders registers all available providers with the client
 func registerProviders(client *inference.Client) {
-	// Register native providers
-	client.Register("openai", openai.New())
-	client.Register("anthropic", anthropic.New())
+	// Register native providers with API keys from environment
+	openaiKey := os.Getenv("OPENAI_API_KEY")
+	anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
+	
+	client.Register("openai", openai.New(openaiKey, ""))
+	client.Register("anthropic", anthropic.New(anthropicKey, ""))
 	client.Register("cgpt", cgpt.New())
 }
 
