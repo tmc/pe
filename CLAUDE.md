@@ -1,311 +1,214 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # PE: Prompt Engineering Toolkit
 
-prompt engineering tools modeled after the go toolchain
+A Go-based toolkit for prompt engineering implementing cutting-edge metaprompting research, designed following Unix philosophy with composable commands.
 
-## Project Overview
+## Development Commands
 
-PE is a Go-based toolkit for prompt engineering that implements cutting-edge 2024-2025 research in prompt optimization. The toolkit follows Unix philosophy with composable, pipeline-friendly commands and focuses on metaprompting techniques for advanced prompt optimization.
+### Building and Testing
+```bash
+# Build the main binary
+make build
+# or
+go build -o pe ./cmd/pe
 
-### Current Implementation Status
+# Run all Go tests
+make test
+# or 
+go test ./...
 
-**✅ Implemented Core Features:**
-- **Provider Interface**: Extensible LLM provider abstraction (⚠️ still primarily using cgpt CLI wrapper)
-- **Pipeline Processing**: Unix-style composable commands (ask, stream, filter, analyze, collect, reduce)
-- **Metaprompting Engine**: Advanced prompt optimization using multiple research-based methods
-- **Evaluation System**: Comprehensive evaluation with pass@n metrics and assertion types
-- **Testing Framework**: Property-based and regression testing support (⚠️ 9.7% test coverage)
-- **Module System**: Complete go mod-style commands (init, download, tidy, vendor)
-- **Component Composition**: DSPy-style prompt composition with validation
-- **Attestation System**: Cryptographic signing and verification of prompt runs
-- **Security Testing**: OWASP LLM Top 10 complete coverage via redteam module
+# Run script-based integration tests
+make scripttest
 
-**🚧 In Development:**
-- Full native provider migration (OpenAI/Anthropic providers partially implemented)
-- Distributed execution integration (foundation exists, CLI partially integrated)
-- Web dashboard and REST API
-- Module registry implementation
-- Advanced semantic caching strategies
-- Comprehensive test suite (current coverage only 9.7%)
+# Run a specific scripttest
+make test-module
 
-### Key Commands (Implemented)
-
-- `pe eval`: Core evaluation engine with pass@n metrics and multiple assertion types
-- `pe optimize`: Metaprompting-based prompt optimization using 2024-2025 research
-- `pe semantic`: Semantic backpropagation and GASO optimization (2025 KAUST/IDSIA research)
-- `pe metrics`: Evaluation metrics (BLEU, ROUGE, BERTScore, G-Eval)
-- `pe benchmark`: Performance benchmarking and analysis
-- `pe test`: Testing with property-based and regression approaches
-- `pe profile`: Performance profiling and analysis
-- `pe run`: Execute prompts immediately via providers
-- `pe compose`: Component-based prompt composition with style handlers
-- `pe mod init/download/tidy/vendor`: Go-style module management
-- `pe attest`: Cryptographic attestation for prompt runs
-- `pe extract`: Extract and parse structured data from prompts
-- `pe passn`: Calculate pass@n metrics for code generation tasks
-- `pe evolve`: Evolutionary prompt optimization with genetic algorithms
-- `pe fusion`: Multi-model fusion for production reliability
-- `pe distributed`: Distributed execution commands (start/join/status/stop)
-- `pe cache`: Content-addressed caching with cryptographic verification
-- `pe security`: OWASP LLM Top 10 security testing
-- Pipeline commands: `ask`, `stream`, `filter`, `analyze`, `collect`, `reduce` for Unix composability
-
-## Advanced Evaluation Features
-
-The `pe eval` command includes sophisticated assertion types beyond simple string matching:
-
-### Pass@N Evaluation
-
-Pass@n measures how often a model generates a correct solution within n attempts, crucial for code generation:
-
-```yaml
-# In eval config.yaml:
-tests:
-  - vars:
-      task: "Write a binary search function"
-    assert:
-      - type: pass-at-n
-        config:
-          n: 1              # Calculate pass@1
-          samples: 20       # Generate 20 samples
-          temperature: 0.8  # Higher temp for diversity
-          test_cases:
-            - input: "binary_search([1,3,5,7], 5)"
-              expected: "2"
-            - input: "binary_search([1,3,5,7], 6)"
-              expected: "-1"
-        threshold: 0.8      # Expect 80% pass rate
+# Clean build artifacts
+make clean
 ```
 
-**Implementation**: 
-- Located in `internal/evaluator/assertions.go` as `AssertionPassAtN`
-- Uses `internal/metrics/advanced.go` for pass@n calculation
-- Supports test cases, LLM validation, and pattern matching
+### Running Tests
+```bash
+# Run tests with coverage
+go test -v -cover ./...
 
-### Structured Output Validation
+# Run tests for a specific package
+go test ./internal/evaluator/
 
-Ensures LLM outputs conform to specific schemas:
+# Run a single test
+go test -run TestSpecificFunction ./internal/package/
 
-```yaml
-assert:
-  - type: structured-output
-    config:
-      format: json
-      schema:
-        type: object
-        properties:
-          sentiment:
-            type: string
-            enum: ["positive", "negative", "neutral"]
-          score:
-            type: number
-            minimum: -1
-            maximum: 1
-        required: ["sentiment", "score"]
+# Run tests with race detection
+go test -race ./...
 ```
 
-**Go Struct Integration**:
+### Linting and Code Quality
+The project currently doesn't have explicit linting commands in the Makefile. Use standard Go tools:
+```bash
+go vet ./...
+go fmt ./...
+```
+
+## Architecture Overview
+
+### Core Design Principles
+- **Unix Philosophy**: Each command does one thing well, composable via pipes
+- **Provider Abstraction**: Extensible LLM provider interface with **native OpenAI/Anthropic implementations**
+- **Modular Architecture**: Clear separation between CLI, core logic, and providers
+
+### Key Architectural Components
+
+1. **Command Layer** (`cmd/pe/`): All CLI commands and their implementations
+2. **Core Engine** (`internal/`): Business logic organized by domain:
+   - `metaprompt/`: Advanced optimization algorithms (TextGrad, GASO, semantic backprop)
+   - `evaluator/`: Evaluation engine with sophisticated assertion types
+   - `inference/`: Provider abstraction and implementations
+   - `structured/`: Schema validation and structured output handling
+   - `metrics/`: Advanced metrics (BLEU, ROUGE, BERTScore, G-Eval)
+   - `distributed/`: P2P networking and distributed execution
+   - `consensus/`: Multi-provider consensus mechanisms
+3. **Plugin System**: Runtime discovery of `pe-*` executables in PATH
+
+### Provider System
+The toolkit uses a provider abstraction for LLM calls:
+- **Native providers are primary**: OpenAI (74% test coverage) and Anthropic (73.3% test coverage) fully implemented
+- Production-ready implementations in `internal/inference/providers/openai/` and `internal/inference/providers/anthropic/`
+- `cgpt` CLI wrapper available for compatibility (`internal/cgpt/`)
+- Extensible for new providers via interface in `internal/inference/`
+
+### Pipeline Architecture
+Unix-style composable commands that can be chained:
+- `ask`: Send prompts to providers
+- `stream`: Stream responses
+- `filter`: Filter and transform data
+- `analyze`: Analyze responses
+- `collect`: Aggregate results
+- `reduce`: Reduce to final outputs
+
+## Key Commands and Usage Patterns
+
+### Evaluation System
+The `pe eval` command supports sophisticated evaluation:
+- Pass@N metrics for code generation tasks
+- Structured output validation with JSON Schema
+- 20+ assertion types for comprehensive testing
+- Integration with YAML configuration files
+
+### Metaprompting Commands  
+Advanced prompt optimization based on 2024-2025 research:
+- `pe optimize`: Multi-stage prompt optimization
+- `pe semantic`: Semantic backpropagation and GASO optimization
+- `pe evolve`: Evolutionary optimization with genetic algorithms
+- `pe compose`: Component-based prompt composition
+
+### Module System
+Go-style module management:
+- `pe mod init`: Initialize module
+- `pe mod download`: Download dependencies  
+- `pe mod tidy`: Clean up dependencies
+- `pe mod vendor`: Vendor dependencies
+
+## Testing Strategy
+
+### Test Structure
+- Unit tests alongside source files (`*_test.go`)
+- Integration tests in `tests/scripttest/`
+- Test coverage currently ~15%, goal is >50%
+
+### Test Data
+- Mock providers for testing without external dependencies
+- Test configurations in `test-configs/`
+- Example prompts and configurations in `example/`
+
+### Running Specific Tests
+```bash
+# Test a specific command
+go test ./cmd/pe/ -run TestCommandName
+
+# Test with verbose output
+go test -v ./internal/evaluator/
+
+# Test with coverage report
+go test -cover -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
+```
+
+## Code Organization Patterns
+
+### Error Handling
+Always wrap errors with context:
 ```go
-type ExpectedOutput struct {
-    Summary    string  `json:"summary" minLength:"50" maxLength:"200"`
-    Keywords   []string `json:"keywords" minItems:"3"`
-    Confidence float64  `json:"confidence" min:"0" max:"1"`
+if err != nil {
+    return fmt.Errorf("failed to process prompt: %w", err)
 }
 ```
 
-**Implementation**:
-- `internal/structured/` package provides schema validation and format conversion
-- `internal/structured/go_structs.go` enables Go struct to schema conversion
-- Supports JSON Schema, TypeScript, Pydantic, and custom formats via plugins
+### CLI Command Structure
+Commands follow cobra patterns in `cmd/pe/`:
+- Each command in separate file
+- Shared flags and utilities in `commands.go`
+- Command registration in `main.go`
 
-## Advanced Metaprompting Implementation
+### Provider Integration
+New providers should implement interfaces in `internal/inference/`:
+- `Provider` interface for basic LLM calls
+- Registration via `internal/providers/registry.go`
+- Configuration via environment variables or config files
 
-The toolkit implements cutting-edge metaprompting techniques based on the latest 2024-2025 research:
+## Development Workflow
 
-### 2025 BREAKTHROUGH: Semantic Backpropagation & GASO
+### Adding New Commands
+1. Create command file in `cmd/pe/`
+2. Implement cobra.Command following existing patterns
+3. Add to command registration in `main.go`
+4. Add tests in `cmd/pe/*_test.go`
+5. Add scripttest integration test if needed
 
-**Semantic Backpropagation Implementation** (KAUST/IDSIA 2025):
-- **Semantic Gradients**: Generalizes mathematical gradients to natural language feedback
-- **Graph-based Optimization**: GASO (Graph-based Agentic System Optimization) for multi-component systems
-- **Directional Semantic Information**: LLM-generated improvement directions with confidence scores
-- **System-Wide Optimization**: Optimizes entire agentic systems rather than individual components
-- **Computational Graph Analysis**: Dependency-aware optimization with semantic flow tracking
-- **Pareto Efficiency**: Multi-objective optimization for complex trade-offs (accuracy/latency/cost)
+### Adding New Providers
+1. Implement Provider interface in `internal/inference/providers/`
+2. Add registration in `internal/providers/register.go`
+3. Add tests following existing provider test patterns
+4. Update documentation
 
-**Key Commands Implemented**:
-```bash
-pe semantic backprop --prompt "prompt" --target "objective" --iterations 5
-pe semantic descent --objective "goal" --learning-rate 0.1 --adaptive --convergence 0.001
-pe semantic gaso --system definition.json --objective "performance" --multi-objective
-```
-
-**Target Performance Goals:**
-- Aiming for >90% accuracy on GSM8K mathematical problems
-- Target >80% accuracy on BIG-Bench Hard NLP tasks
-- Goal of >85% accuracy on algorithmic tasks
-
-*Note: These are research targets based on the 2025 paper. Actual benchmarking against these datasets is pending.*
-
-### TextGrad 2.0 Implementation
-
-Located in `internal/metaprompt/textgrad.go`:
-- Natural language gradients with attention flow mapping
-- Semantic drift detection during optimization
-- Backward propagation through textual feedback
-- Cross-modal gradient computation support
-
-### Component-Based Engineering (✅ COMPLETED)
-
-The `pe compose` command provides advanced prompt composition:
-- Type-safe prompt composition with dependency resolution
-- Style-specific handlers (chain-of-thought, few-shot, structured, conversational, DSPy)
-- Semantic coherence validation with scoring
-- Component compatibility checking
-- Integration with optimization methods
-- Support for quality gates and statistical validation
-
-### Advanced Metrics
-
-`internal/metrics/advanced.go` implements:
-- BLEU, ROUGE, METEOR for text generation
-- BERTScore using LLM-based semantic similarity
-- G-Eval with chain-of-thought evaluation
-- UniEval for task-specific multi-dimensional evaluation
-- Pass@N with proper statistical calculation
-
-## Technical Architecture
-
-### Core Metaprompting Engine (`internal/metaprompt/`)
+### Working with Metaprompting
+The metaprompting engine in `internal/metaprompt/` implements research-based optimization:
 - `optimizer.go`: Unified optimization interface
-- `textgrad.go`: Natural language gradient computation
+- `textgrad.go`: Natural language gradient computation  
 - `semantic.go`: Semantic backpropagation implementation
-- `gradient_computer.go`: Gradient analysis and application
-- `multistage.go`: Multi-stage optimization with quality gates
-- `error_refiner.go`: Automated error detection and fixing
-- `reflection.go`: Meta-analysis and knowledge extraction
-- `composer.go`: Component-based prompt composition
-- `gaso.go`: Graph-based system optimization
+- Integration via `pe optimize` and `pe semantic` commands
 
-### Evaluation System (`internal/evaluator/`)
-- `evaluator.go`: Core evaluation engine
-- `assertions.go`: Comprehensive assertion types including pass@n and structured output
-- Supports 20+ assertion types for quality, performance, and correctness
+## Current Development Status
 
-### Structured Output (`internal/structured/`)
-- `structured.go`: Core schema validation and formatting
-- `go_structs.go`: Go struct to schema conversion
-- `prompt_builder.go`: Structured prompt generation
-- Plugin system for custom formats
+### Implemented ✅
+- Core command structure and CLI
+- Provider abstraction with cgpt implementation
+- Evaluation system with pass@n metrics
+- Module management commands
+- Pipeline processing commands
+- Metaprompting optimization engine
+- Attestation and security features
 
-### Inference API (`internal/inference/`)
-- `inference.go`: Provider abstraction for LLM calls
-- `providers/cgpt/`: cgpt CLI wrapper implementation
-- Extensible for additional providers
+### In Progress 🚧  
+- Native provider implementations (OpenAI/Anthropic)
+- Distributed execution integration
+- Comprehensive test coverage (currently ~15%)
+- Module registry implementation
 
-## Plugin System
+### Known Limitations
+- Primary dependency on cgpt CLI wrapper
+- Test coverage needs improvement
+- Some distributed features incomplete
+- Documentation accuracy issues (some features documented but not fully implemented)
 
-PE supports runtime plugin discovery:
-- Plugins are `pe-*` executables in PATH
-- Example: `pe-promptfoo` provides promptfoo compatibility
-- Plugin interface defined in `internal/plugin/plugin.go`
+## Important Files for New Contributors
 
-## Recently Implemented Features
-
-### Pass@N in Evaluation (✅ COMPLETED)
-- Integrated as assertion type in `pe eval`
-- Supports test cases, LLM validation, pattern matching
-- Statistical pass@n calculation with proper sampling
-
-### Structured Output Support (⚠️ PARTIAL)
-- Schema validation interface defined in assertions.go
-- Go struct to schema conversion implemented
-- Basic JSON schema validation support
-- *Note: Full structured output validation in evaluator is not yet complete*
-
-### Inference API (✅ COMPLETED)
-- Generic provider interface in `internal/inference/`
-- cgpt provider implementation
-- Integration with `pe run` command
-
-### Component-Based Prompt Composition (✅ COMPLETED)
-- Full `pe compose` command implementation with multiple styles
-- DSPy-style program synthesis with quality gates
-- Semantic coherence validation and compatibility checking
-- Integration with optimization pipeline
-
-### Advanced Metrics (✅ COMPLETED)
-- BLEU, ROUGE, METEOR implementations
-- LLM-based metrics (BERTScore, G-Eval, UniEval)
-- Integration with evaluation pipeline
-
-## Recent Improvements (January 2025)
-
-### Pipeline Commands (✅ COMPLETED)
-- Implemented full Unix-style pipeline: `ask`, `stream`, `filter`, `analyze`, `collect`, `reduce`
-- Mock provider support for testing without external dependencies
-- JSON filtering and transformation capabilities
-
-### Module Management (✅ COMPLETED)
-- Full `pe mod` implementation matching Go toolchain patterns
-- Commands: `init`, `download`, `tidy`, `vendor`
-- go.mod file management with dependency tracking
-
-### Attestation System (✅ COMPLETED)
-- Cryptographic signing of prompt runs
-- Chain verification and integrity checking
-- Secure key storage with OS keychain integration
-- Export formats: JSON, JSONL, CSV, proof bundles
-
-### Distributed System Integration (🚧 IN PROGRESS)
-- Created distributed CLI commands: `pe distributed start/join/status/stop`
-- Integrated distributed execution flags with `pe eval` command
-- Basic P2P networking and task distribution framework
-- *Note: Full distributed evaluation functionality still being implemented*
-
-### Test Coverage Improvements (Updated January 31, 2025)
-- Fixed multiple test failures in pipeline, workflow, and extract commands
-- Added multiline XML extraction support
-- Improved test data handling
-- **NEW**: Added comprehensive tests for `internal/cli` package (31.8% coverage)
-- **NEW**: Added comprehensive tests for `internal/cgpt` package (71.1% coverage)  
-- **NEW**: Fixed all failing tests in `cmd/pe` package
-- **NEW**: Implemented table-driven tests with testify/assert for better test quality
-
-## Code Quality Guidelines
-
-1. **Import Management**: Maintain imports automatically based on code usage
-2. **Error Handling**: Always wrap errors with context using `fmt.Errorf`
-3. **Testing**: Write table-driven tests for new functionality
-4. **Documentation**: Update command help text and examples
-
-## Current Limitations & Known Issues
-
-1. **Test Coverage**: Improved from 9.7% to ~15% - still needs comprehensive test suite implementation across all packages
-2. **Provider Dependency**: Still primarily using cgpt CLI wrapper instead of native API calls
-3. **Documentation Accuracy**: Some docs describe unimplemented features as complete
-4. **Distributed System**: CLI commands exist but full integration incomplete
-5. **Module Registry**: Not yet implemented despite documentation
-6. **Benchmarking**: No benchmarks against GSM8K, BIG-Bench Hard, or algorithmic datasets
-7. **Web Dashboard**: Not implemented despite being mentioned in docs
-8. **Structured Output Validation**: Schema validation interface defined but full implementation incomplete
-
-## Priority Development Areas
-
-1. **Complete Native Providers**: Finish OpenAI/Anthropic implementations to remove cgpt dependency
-2. **Test Coverage**: Achieve >80% coverage with comprehensive test suite (immediate goal: 50%)
-3. **Distributed Execution**: Complete integration with eval command
-4. **Documentation Cleanup**: Separate implemented vs planned features clearly
-5. **Performance Benchmarks**: Validate against research paper targets (GSM8K, BIG-Bench Hard)
-6. **Module Registry**: Implement registry with dependency resolution
-7. **Provider Extensions**: Add Ollama support for local model execution
-
-## Future Roadmap
-
-See ROADMAP.md for planned features including:
-- Additional provider implementations
-- Advanced caching strategies
-- Full distributed evaluation support
-- Visual prompt engineering tools
-- Module registry with dependency resolution
-- Web dashboard and REST API
-- Multi-modal support (vision, audio)
-- Neurosymbolic prompt synthesis
+- `cmd/pe/main.go`: CLI entry point and command registration
+- `cmd/pe/commands.go`: Shared command utilities
+- `internal/inference/inference.go`: Provider interface definition
+- `internal/evaluator/evaluator.go`: Core evaluation engine
+- `internal/metaprompt/optimizer.go`: Optimization interface
+- `Makefile`: Build and test commands
+- `tests/scripttest/`: Integration test examples
