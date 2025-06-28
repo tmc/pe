@@ -35,6 +35,9 @@ func askCmd() *cobra.Command {
 
 			// Create a simple client for execution
 			client := inference.NewClient()
+			
+			// Register providers
+			registerProviders(client)
 
 			// Process input
 			if len(args) > 0 {
