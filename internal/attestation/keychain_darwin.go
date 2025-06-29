@@ -44,13 +44,15 @@ func (ks *KeyStore) StorePrivateKey(privateKey ed25519.PrivateKey) error {
 	err := keychain.AddItem(item)
 	if err == keychain.ErrorDuplicateItem {
 		// Update existing item
+		queryItem := keychain.NewItem()
+		queryItem.SetSecClass(keychain.SecClassGenericPassword)
+		queryItem.SetService(keychainService)
+		queryItem.SetAccount(keychainAccount)
+
 		updateItem := keychain.NewItem()
-		updateItem.SetSecClass(keychain.SecClassGenericPassword)
-		updateItem.SetService(keychainService)
-		updateItem.SetAccount(keychainAccount)
 		updateItem.SetData(privateKey)
 
-		return keychain.UpdateItem(item, updateItem)
+		return keychain.UpdateItem(queryItem, updateItem)
 	}
 
 	return err
@@ -103,6 +105,7 @@ func (ks *KeyStore) HasPrivateKey() bool {
 	query.SetService(keychainService)
 	query.SetAccount(keychainAccount)
 	query.SetMatchLimit(keychain.MatchLimitOne)
+	query.SetReturnData(true) // Add this to match RetrievePrivateKey
 
 	results, err := keychain.QueryItem(query)
 	return err == nil && len(results) > 0

@@ -45,9 +45,9 @@ type HistogramBucket struct {
 
 // SummaryData contains summary-specific data
 type SummaryData struct {
-	Count     uint64              `json:"count"`
-	Sum       float64             `json:"sum"`
-	Quantiles map[float64]float64 `json:"quantiles"`
+	Count     uint64            `json:"count"`
+	Sum       float64           `json:"sum"`
+	Quantiles map[string]float64 `json:"quantiles"`
 }
 
 // MetricsCollector collects and manages metrics
@@ -256,7 +256,7 @@ func (mc *MetricsCollector) Summary(name string, value float64, quantiles []floa
 	summary, exists := mc.summaries[key]
 	if !exists {
 		summary = &SummaryData{
-			Quantiles: make(map[float64]float64),
+			Quantiles: make(map[string]float64),
 		}
 		mc.summaries[key] = summary
 	}
@@ -267,7 +267,7 @@ func (mc *MetricsCollector) Summary(name string, value float64, quantiles []floa
 
 	// Calculate quantiles (simplified)
 	for _, q := range quantiles {
-		summary.Quantiles[q] = value // Placeholder - would need proper quantile calculation
+		summary.Quantiles[fmt.Sprintf("%.2f", q)] = value // Placeholder - would need proper quantile calculation
 	}
 
 	if mc.writer != nil {
@@ -322,7 +322,7 @@ func (mc *MetricsCollector) Flush() error {
 	if mc.writer != nil {
 		return mc.writer.Flush()
 	}
-	return nil
+	return fmt.Errorf("no writer configured")
 }
 
 // Close closes the metrics collector

@@ -266,6 +266,9 @@ var tracerOnce sync.Once
 
 // GetGlobalTracer returns the global tracer instance
 func GetGlobalTracer() *Tracer {
+	if globalTracer != nil {
+		return globalTracer
+	}
 	tracerOnce.Do(func() {
 		// Default to no-op tracer
 		globalTracer = NewTracer(nil)
@@ -276,6 +279,8 @@ func GetGlobalTracer() *Tracer {
 // InitGlobalTracer initializes the global tracer
 func InitGlobalTracer(writer TraceWriter) {
 	globalTracer = NewTracer(writer)
+	// Reset the sync.Once so GetGlobalTracer will use the new instance
+	tracerOnce = sync.Once{}
 }
 
 // Convenience functions using global tracer

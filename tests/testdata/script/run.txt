@@ -37,11 +37,11 @@ stdout .
 
 # Error: no prompt provided
 ! exec pe run
-stderr 'accepts 1 arg'
+stderr 'accepts between 1 and 10 arg'
 
 # Error: invalid provider
 ! exec pe run 'test' --provider invalid-provider
-stderr 'unknown provider'
+stderr 'provider.*not found'
 
 # Run from txtar file
 exec pe run example.txtar

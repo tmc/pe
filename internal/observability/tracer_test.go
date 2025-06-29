@@ -16,6 +16,7 @@ import (
 
 // MockTraceWriter for testing
 type MockTraceWriter struct {
+	mu          sync.Mutex
 	spans       []*Span
 	flushCount  int
 	closeCount  int
@@ -32,6 +33,8 @@ func (m *MockTraceWriter) WriteSpan(span *Span) error {
 	if m.shouldError {
 		return assert.AnError
 	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.spans = append(m.spans, span)
 	return nil
 }
@@ -40,6 +43,8 @@ func (m *MockTraceWriter) Flush() error {
 	if m.shouldError {
 		return assert.AnError
 	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.flushCount++
 	return nil
 }
@@ -48,8 +53,16 @@ func (m *MockTraceWriter) Close() error {
 	if m.shouldError {
 		return assert.AnError
 	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.closeCount++
 	return nil
+}
+
+func (m *MockTraceWriter) GetSpanCount() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return len(m.spans)
 }
 
 func TestNewTracer(t *testing.T) {
@@ -693,7 +706,7 @@ func TestTracer_ConcurrentAccess(t *testing.T) {
 
 	// Verify all spans were written
 	expectedSpans := numGoroutines * spansPerGoroutine
-	assert.Equal(t, expectedSpans, len(writer.spans))
+	assert.Equal(t, expectedSpans, writer.GetSpanCount())
 
 	// Verify no active spans
 	stats := tracer.GetStats()

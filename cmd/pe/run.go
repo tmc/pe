@@ -1059,6 +1059,11 @@ func registerProviders(client *inference.Client) {
 	client.Register("openai", openai.New(openaiKey, ""))
 	client.Register("anthropic", anthropic.New(anthropicKey, ""))
 	client.Register("cgpt", cgpt.New())
+	
+	// Register mock provider for testing
+	if os.Getenv("PE_TEST_MODE") == "true" || os.Getenv("PE_MOCK_PROVIDER") == "true" {
+		client.Register("mock", &inferenceTestMockProvider{})
+	}
 }
 
 // determineProvider determines which provider to use based on flags and environment
@@ -1109,4 +1114,92 @@ func streamResponseWithProvider(ctx context.Context, client *inference.Client, p
 
 	// Stream to stdout
 	return inference.StreamToWriter(ctx, chunks, os.Stdout)
+}
+
+// inferenceTestMockProvider is a mock provider for testing with the inference system
+type inferenceTestMockProvider struct{}
+
+func (m *inferenceTestMockProvider) Name() string {
+	return "mock"
+}
+
+func (m *inferenceTestMockProvider) Complete(ctx context.Context, req inference.Request) (*inference.Response, error) {
+	response := getMockResponseForInference(req.Prompt)
+	return &inference.Response{
+		Content: response,
+		Model:   "mock",
+		TokensUsed: inference.TokenUsage{
+			PromptTokens:     len(req.Prompt) / 4,
+			CompletionTokens: len(response) / 4,
+			TotalTokens:      (len(req.Prompt) + len(response)) / 4,
+		},
+	}, nil
+}
+
+func (m *inferenceTestMockProvider) Stream(ctx context.Context, req inference.Request) (<-chan inference.StreamChunk, error) {
+	ch := make(chan inference.StreamChunk)
+	go func() {
+		defer close(ch)
+		response := getMockResponseForInference(req.Prompt)
+		// For streaming, send each line as a separate chunk
+		lines := strings.Split(response, "\n")
+		for _, line := range lines {
+			if line != "" {
+				ch <- inference.StreamChunk{
+					Delta: line + "\n",
+					Done:  false,
+				}
+			}
+		}
+		ch <- inference.StreamChunk{
+			Done: true,
+		}
+	}()
+	return ch, nil
+}
+
+func (m *inferenceTestMockProvider) Models(ctx context.Context) ([]string, error) {
+	return []string{"mock"}, nil
+}
+
+func (m *inferenceTestMockProvider) Close() error {
+	return nil
+}
+
+// getMockResponseForInference provides appropriate mock responses for testing
+func getMockResponseForInference(prompt string) string {
+	prompt = strings.ToLower(prompt)
+	
+	switch {
+	case strings.Contains(prompt, "2+2"):
+		return "4"
+	case strings.Contains(prompt, "pointer"):
+		return "A pointer is a variable that stores the memory address of another variable."
+	case strings.Contains(prompt, "recursion"):
+		return "As a helpful assistant, I'll explain recursion: a function that calls itself to solve a problem by breaking it down into smaller instances."
+	case strings.Contains(prompt, "translate") && strings.Contains(prompt, "hello") && strings.Contains(prompt, "spanish"):
+		return "Hola"
+	case strings.Contains(prompt, "test prompt"):
+		return "Test response"
+	case strings.Contains(prompt, "random number"):
+		return "42"
+	case strings.Contains(prompt, "tell me a story"):
+		return "Once upon a time..."
+	case strings.Contains(prompt, "count from 1 to 10"):
+		return "1\n2\n3\n4\n5\n6\n7\n8\n9\n10"
+	case strings.Contains(prompt, "list 5 random numbers"):
+		return "3\n7\n2\n9\n5"
+	case strings.Contains(prompt, "generate a paragraph about ai"):
+		return "Artificial Intelligence represents a transformative technology that is reshaping our world."
+	case strings.Contains(prompt, "expensive computation"):
+		return "Result: 42"
+	case strings.Contains(prompt, "check status"):
+		return "System status: OK"
+	case strings.Contains(prompt, "quantum computing"):
+		return "Quantum computing uses quantum mechanics principles for computation."  
+	case strings.Contains(prompt, "gist"):
+		return "Mock response"
+	default:
+		return "Mock response for: " + prompt
+	}
 }

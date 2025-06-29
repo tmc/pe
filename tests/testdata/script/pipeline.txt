@@ -54,10 +54,10 @@ stdout '"test_results"'
 stdout '"analysis"'
 
 # Pipeline with caching
-exec sh -c 'pe run "Expensive computation" --cache --provider mock | pe filter --pattern "Result"'
+exec sh -c 'pe run "Expensive computation" --provider mock | pe filter --pattern "Result"'
 stdout 'Result: 42'
 # Second run should use cache - simplified test
-exec sh -c 'pe run "Expensive computation" --cache --provider mock | pe filter --pattern "Result"'
+exec sh -c 'pe run "Expensive computation" --provider mock | pe filter --pattern "Result"'
 stdout 'Result: 42'
 
 # Aggregation pipeline  

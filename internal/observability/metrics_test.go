@@ -95,10 +95,10 @@ func TestJSONMetricsWriter_WriteSummary(t *testing.T) {
 	summaryData := &SummaryData{
 		Count: 100,
 		Sum:   5050.0,
-		Quantiles: map[float64]float64{
-			0.5:  50.0,
-			0.9:  90.0,
-			0.95: 95.0,
+		Quantiles: map[string]float64{
+			"0.50": 50.0,
+			"0.90": 90.0,
+			"0.95": 95.0,
 		},
 	}
 
@@ -360,17 +360,17 @@ func TestSummaryData(t *testing.T) {
 	summaryData := SummaryData{
 		Count: 100,
 		Sum:   5050.0,
-		Quantiles: map[float64]float64{
-			0.5:  50.0,
-			0.9:  90.0,
-			0.95: 95.0,
+		Quantiles: map[string]float64{
+			"0.50": 50.0,
+			"0.90": 90.0,
+			"0.95": 95.0,
 		},
 	}
 
 	assert.Equal(t, uint64(100), summaryData.Count)
 	assert.Equal(t, 5050.0, summaryData.Sum)
 	assert.Len(t, summaryData.Quantiles, 3)
-	assert.Equal(t, 50.0, summaryData.Quantiles[0.5])
+	assert.Equal(t, 50.0, summaryData.Quantiles["0.50"])
 }
 
 func TestErrorCases(t *testing.T) {
