@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/metaprompt"
-	"github.com/tmc/pe/internal/metrics"
+	"github.com/tmc/pe/internal/promptfoo/evaluation/metrics"
 )
 
 // PlaygroundServer represents the web playground server

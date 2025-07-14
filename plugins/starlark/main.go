@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/tmc/pe/internal/evaluator"
+	"github.com/tmc/pe/internal/promptfoo/evaluation/evaluator"
 	"github.com/tmc/pe/internal/promptfoo"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"

@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/tmc/pe/internal/distributed"
-	"github.com/tmc/pe/internal/evaluator"
+	"github.com/tmc/pe/internal/promptfoo/execution/distributed"
+	"github.com/tmc/pe/internal/promptfoo/evaluation/evaluator"
 	"github.com/tmc/pe/internal/promptfoo"
 	"sigs.k8s.io/yaml"
 )

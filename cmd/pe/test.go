@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/tmc/pe/internal/llm"
-	"github.com/tmc/pe/internal/testing"
+	"github.com/tmc/pe/internal/promptfoo/evaluation/testing"
 )
 
 // testCmd returns a cobra.Command for the 'test' subcommand.

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/tmc/pe/internal/llm"
-	. "github.com/tmc/pe/internal/metrics"
+	. "github.com/tmc/pe/internal/promptfoo/evaluation/metrics"
 )
 
 // AssertionType represents different types of assertions that can be made

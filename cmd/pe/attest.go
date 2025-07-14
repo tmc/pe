@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/tmc/pe/internal/attestation"
+	"github.com/tmc/pe/internal/promptfoo/security/attestation"
 )
 
 var attestCmd = &cobra.Command{

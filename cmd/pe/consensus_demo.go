@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/tmc/pe/internal/consensus"
+	"github.com/tmc/pe/internal/promptfoo/execution/consensus"
 )
 
 // DemoConfig holds configuration for the consensus demo

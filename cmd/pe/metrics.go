@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/llm"
-	"github.com/tmc/pe/internal/metrics"
+	"github.com/tmc/pe/internal/promptfoo/evaluation/metrics"
 )
 
 // MetricsResult represents the result of metrics evaluation

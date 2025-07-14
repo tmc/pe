@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/llm"
-	"github.com/tmc/pe/internal/redteam"
+	"github.com/tmc/pe/internal/promptfoo/security/redteam"
 )
 
 // SecurityTestResult represents the result of security testing

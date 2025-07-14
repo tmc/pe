@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/tmc/pe/internal/distributed"
+	"github.com/tmc/pe/internal/promptfoo/execution/distributed"
 )
 
 // Distributed execution flags

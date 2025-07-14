@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tmc/pe/internal/evaluator"
+	"github.com/tmc/pe/internal/promptfoo/evaluation/evaluator"
 	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/metaprompt"
-	"github.com/tmc/pe/internal/metrics"
+	"github.com/tmc/pe/internal/promptfoo/evaluation/metrics"
 	"github.com/tmc/pe/internal/promptfoo"
 )
 
