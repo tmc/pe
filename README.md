@@ -265,11 +265,11 @@ pe optimize --prompt "task" --method multistage --stages 3
 PE is built with a modular architecture:
 
 - `internal/metaprompt/` - Optimization algorithms
-- `internal/evaluator/` - Evaluation engine
-- `internal/metrics/` - Advanced metrics
+- `internal/promptfoo/evaluation/evaluator/` - Evaluation engine
+- `internal/promptfoo/evaluation/metrics/` - Advanced metrics
 - `internal/providers/` - LLM provider abstraction
 - `internal/structured/` - Structured output support
-- `internal/distributed/` - Distributed execution (experimental)
+- `internal/promptfoo/execution/distributed/` - Distributed execution (experimental)
 
 ## 🤝 Contributing
 

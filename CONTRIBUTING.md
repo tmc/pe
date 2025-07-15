@@ -115,7 +115,7 @@ We welcome various types of contributions:
    go test ./...
    
    # Run specific tests
-   go test ./internal/evaluator
+   go test ./internal/promptfoo/evaluation/evaluator
    
    # Test CLI functionality
    ./pe eval example/config.yaml
@@ -257,12 +257,19 @@ pe/
 │   ├── pipeline.go        # Pipeline commands
 │   └── repl.go            # Interactive REPL
 ├── internal/              # Internal packages
-│   ├── evaluator/         # Core evaluation logic
-│   ├── llm/               # LLM provider interfaces
 │   ├── promptfoo/         # Promptfoo compatibility
-│   ├── providers/         # Provider implementations
-│   ├── redteam/           # Red-teaming module
-│   └── metrics/           # Custom metrics framework
+│   │   ├── evaluation/    # Evaluation components
+│   │   │   ├── evaluator/ # Core evaluation logic
+│   │   │   ├── metrics/   # Custom metrics framework
+│   │   │   └── testing/   # Testing utilities
+│   │   ├── execution/     # Execution components
+│   │   │   ├── consensus/ # Multi-provider consensus
+│   │   │   └── distributed/ # Distributed execution
+│   │   └── security/      # Security components
+│   │       ├── attestation/ # Cryptographic attestation
+│   │       └── redteam/   # Red-teaming module
+│   ├── llm/               # LLM provider interfaces
+│   └── providers/         # Provider implementations
 ├── docs/                  # Documentation
 ├── example/               # Example configurations
 ├── testdata/              # Test data
@@ -471,7 +478,7 @@ go test ./...
 go test -cover ./...
 
 # Run specific package tests
-go test ./internal/evaluator
+go test ./internal/promptfoo/evaluation/evaluator
 
 # Run tests with race detection
 go test -race ./...

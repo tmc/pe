@@ -50,13 +50,13 @@ Successfully executed comprehensive roadmap and parallelized implementation acro
 ## 📊 TEST COVERAGE ACHIEVEMENTS
 
 ### High-Coverage Packages (>70%):
-- `internal/consensus`: 82.2% ✅
+- `internal/promptfoo/execution/consensus`: 82.2% ✅
 - `internal/cgpt`: 71.1% ✅
 - `internal/inference/providers/anthropic`: 73.3% ✅
 - `internal/inference/providers/openai`: 74.0% ✅
 - `internal/inference/providers/ollama`: 71.9% ✅ (NEW)
 - `internal/pemod`: 73.2% ✅
-- `internal/attestation`: 75.8% ✅ (0% → 75.8%)
+- `internal/promptfoo/security/attestation`: 75.8% ✅ (0% → 75.8%)
 - `internal/observability`: 86.9% ✅ (0% → 86.9%)
 
 ### Medium-Coverage Packages (30-70%):
@@ -64,13 +64,13 @@ Successfully executed comprehensive roadmap and parallelized implementation acro
 - `internal/prompt`: 46.7% 
 - `internal/providers`: 61.9%
 - `internal/llm`: 41.9%
-- `internal/evaluator`: 30.6%
-- `internal/distributed`: 29.9%
+- `internal/promptfoo/evaluation/evaluator`: 30.6%
+- `internal/promptfoo/execution/distributed`: 29.9%
 
 ### Packages Needing Attention (<30%):
 - `cmd/pe`: 5.1% (primary CLI - needs focus)
 - `internal/metaprompt`: 15.9% 
-- `internal/metrics`: 27.9%
+- `internal/promptfoo/evaluation/metrics`: 27.9%
 - `internal/structured`: 6.6%
 
 ## 🚀 NEW IMPLEMENTATIONS

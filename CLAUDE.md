@@ -36,7 +36,7 @@ make clean
 go test -v -cover ./...
 
 # Run tests for a specific package
-go test ./internal/evaluator/
+go test ./internal/promptfoo/evaluation/evaluator/
 
 # Run a single test
 go test -run TestSpecificFunction ./internal/package/
@@ -64,12 +64,12 @@ go fmt ./...
 1. **Command Layer** (`cmd/pe/`): All CLI commands and their implementations
 2. **Core Engine** (`internal/`): Business logic organized by domain:
    - `metaprompt/`: Advanced optimization algorithms (TextGrad, GASO, semantic backprop)
-   - `evaluator/`: Evaluation engine with sophisticated assertion types
+   - `promptfoo/evaluation/evaluator/`: Evaluation engine with sophisticated assertion types
    - `inference/`: Provider abstraction and implementations
    - `structured/`: Schema validation and structured output handling
-   - `metrics/`: Advanced metrics (BLEU, ROUGE, BERTScore, G-Eval)
-   - `distributed/`: P2P networking and distributed execution
-   - `consensus/`: Multi-provider consensus mechanisms
+   - `promptfoo/evaluation/metrics/`: Advanced metrics (BLEU, ROUGE, BERTScore, G-Eval)
+   - `promptfoo/execution/distributed/`: P2P networking and distributed execution
+   - `promptfoo/execution/consensus/`: Multi-provider consensus mechanisms
 3. **Plugin System**: Runtime discovery of `pe-*` executables in PATH
 
 ### Provider System
@@ -129,7 +129,7 @@ Go-style module management:
 go test ./cmd/pe/ -run TestCommandName
 
 # Test with verbose output
-go test -v ./internal/evaluator/
+go test -v ./internal/promptfoo/evaluation/evaluator/
 
 # Test with coverage report
 go test -cover -coverprofile=coverage.out ./...
@@ -208,7 +208,7 @@ The metaprompting engine in `internal/metaprompt/` implements research-based opt
 - `cmd/pe/main.go`: CLI entry point and command registration
 - `cmd/pe/commands.go`: Shared command utilities
 - `internal/inference/inference.go`: Provider interface definition
-- `internal/evaluator/evaluator.go`: Core evaluation engine
+- `internal/promptfoo/evaluation/evaluator/evaluator.go`: Core evaluation engine
 - `internal/metaprompt/optimizer.go`: Optimization interface
 - `Makefile`: Build and test commands
 - `tests/scripttest/`: Integration test examples

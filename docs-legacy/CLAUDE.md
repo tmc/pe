@@ -658,8 +658,8 @@ pe metrics --all --output comprehensive-metrics.json
 - **UniEval**: Task-specific multi-dimensional evaluation
 
 **Technical Implementation**:
-- `internal/metrics/advanced.go`: Core metric computation algorithms
-- `internal/metrics/statistics.go`: Statistical analysis and significance testing
+- `internal/promptfoo/evaluation/metrics/advanced.go`: Core metric computation algorithms
+- `internal/promptfoo/evaluation/metrics/statistics.go`: Statistical analysis and significance testing
 - LLM-based evaluation integration with confidence intervals
 - Publication-ready reporting with detailed analysis
 
@@ -678,7 +678,7 @@ pe metrics --all --output comprehensive-metrics.json
 - Performance profiling and bottleneck identification
 
 **Red Team Security Integration**:
-- `internal/redteam/advanced_security.go`: Advanced security testing
+- `internal/promptfoo/security/redteam/advanced_security.go`: Advanced security testing
 - Automated vulnerability detection and mitigation
 - Comprehensive security evaluation frameworks
 
