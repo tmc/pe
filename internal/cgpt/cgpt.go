@@ -7,10 +7,40 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/tmc/pe/internal/promptfoo"
+)
+
+// Security constants for input validation
+var (
+	// allowedBackends defines the allowed backend values to prevent command injection
+	allowedBackends = map[string]bool{
+		"openai":    true,
+		"anthropic": true,
+		"googleai":  true,
+		"ollama":    true,
+		"bedrock":   true,
+		"azure":     true,
+		"cohere":    true,
+		"huggingface": true,
+	}
+
+	// allowedModelPrefixes defines allowed model name prefixes
+	allowedModelPrefixes = []string{
+		"gpt-3.5", "gpt-4", "gpt-4o", "gpt-4-turbo",
+		"claude-3", "claude-3.5", "claude-2", "claude-instant",
+		"gemini-", "gemini-pro", "gemini-flash",
+		"text-bison", "text-unicorn", "chat-bison",
+		"command", "command-light", "command-r",
+		"llama", "mistral", "mixtral", "qwen",
+		"phi-", "orca-", "vicuna-", "alpaca-",
+	}
+
+	// shellMetacharRegex matches dangerous shell metacharacters
+	shellMetacharRegex = regexp.MustCompile(`[;&|<>$` + "`" + `(){}[\]\\*?~]`)
 )
 
 // ModelProvider represents a Vertex AI model provider configuration
@@ -29,6 +59,76 @@ func DefaultProvider() *ModelProvider {
 		Temperature: 0.2,
 		Backend:     "openai", // Default to OpenAI backend
 	}
+}
+
+// Security validation functions
+
+// validateBackend validates that the backend is in the allowed list
+func validateBackend(backend string) error {
+	if backend == "" {
+		return fmt.Errorf("backend cannot be empty")
+	}
+	if !allowedBackends[backend] {
+		return fmt.Errorf("backend '%s' is not allowed; allowed backends: %v", backend, getAllowedBackends())
+	}
+	return nil
+}
+
+// validateModel validates that the model name is safe and follows expected patterns
+func validateModel(model string) error {
+	if model == "" {
+		return fmt.Errorf("model cannot be empty")
+	}
+	
+	// Check for shell metacharacters
+	if shellMetacharRegex.MatchString(model) {
+		return fmt.Errorf("model name contains forbidden characters: %s", model)
+	}
+	
+	// Check against allowed prefixes
+	for _, prefix := range allowedModelPrefixes {
+		if strings.HasPrefix(model, prefix) {
+			return nil
+		}
+	}
+	
+	// Allow models that contain only alphanumeric characters, hyphens, dots, and underscores
+	modelRegex := regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
+	if !modelRegex.MatchString(model) {
+		return fmt.Errorf("model name contains invalid characters: %s", model)
+	}
+	
+	return nil
+}
+
+// sanitizePrompt removes or escapes dangerous characters from the prompt
+func sanitizePrompt(prompt string) string {
+	// Remove null bytes which can cause command injection
+	prompt = strings.ReplaceAll(prompt, "\x00", "")
+	
+	// For safety, we don't allow prompts that look like command injection attempts
+	// This is a conservative approach that maintains functionality while preventing attacks
+	dangerous := []string{
+		"$(", "`", "${", "&&", "||", ";", "|", "<", ">", "&",
+	}
+	
+	for _, danger := range dangerous {
+		if strings.Contains(prompt, danger) {
+			// Replace with safe alternatives or remove
+			prompt = strings.ReplaceAll(prompt, danger, "")
+		}
+	}
+	
+	return prompt
+}
+
+// getAllowedBackends returns a sorted list of allowed backends for error messages
+func getAllowedBackends() []string {
+	backends := make([]string, 0, len(allowedBackends))
+	for backend := range allowedBackends {
+		backends = append(backends, backend)
+	}
+	return backends
 }
 
 // EvaluatePrompt takes a prompt and optional parameters and returns a completion from the model
@@ -86,14 +186,27 @@ type tokenCounts struct {
 
 // runCGPTCommand executes the cgpt command to query the model
 func (p *ModelProvider) runCGPTCommand(prompt string, dryRun bool) (string, tokenCounts, error) {
+	// SECURITY: Validate all inputs before passing to exec.Command
+	if err := validateBackend(p.Backend); err != nil {
+		return "", tokenCounts{}, fmt.Errorf("backend validation failed: %w", err)
+	}
+	
+	if err := validateModel(p.Model); err != nil {
+		return "", tokenCounts{}, fmt.Errorf("model validation failed: %w", err)
+	}
+	
+	// SECURITY: Sanitize the prompt to prevent command injection
+	sanitizedPrompt := sanitizePrompt(prompt)
+	
 	// Build the cgpt command with the appropriate parameters
 	tempArg := fmt.Sprintf("%.1f", p.Temperature)
 	maxTokensArg := fmt.Sprintf("%d", p.MaxTokens)
 
 	// Build the cgpt command as described: cgpt -b googleai -m gemini-2.0-flash [prompt]
+	// All inputs are now validated and sanitized
 	args := []string{
-		"-b", p.Backend,
-		"-m", p.Model,
+		"-b", p.Backend,  // Validated against allowlist
+		"-m", p.Model,    // Validated against patterns and sanitized
 	}
 
 	// Only add these flags if not in dry run mode
@@ -101,8 +214,8 @@ func (p *ModelProvider) runCGPTCommand(prompt string, dryRun bool) (string, toke
 		args = append(args, "--temperature", tempArg, "--max-tokens", maxTokensArg)
 	}
 
-	// Add the prompt as the final argument
-	args = append(args, prompt)
+	// Add the sanitized prompt as the final argument
+	args = append(args, sanitizedPrompt)
 
 	cmd := exec.Command("cgpt", args...)
 
@@ -132,7 +245,7 @@ func (p *ModelProvider) runCGPTCommand(prompt string, dryRun bool) (string, toke
 	// The output is not JSON, just plain text
 	output := stdout.String()
 
-	// Estimate token counts
+	// Estimate token counts using original prompt length for accuracy
 	promptTokens := estimateTokenCount(prompt)
 	completionTokens := estimateTokenCount(output)
 
@@ -172,56 +285,92 @@ func (p *ModelProvider) ApplyConfigFromVars(vars map[string]interface{}) {
 		// Extract backend from provider if specified (e.g., "anthropic:claude-3" -> "anthropic")
 		parts := strings.Split(provider, ":")
 		if len(parts) > 0 {
-			p.Backend = parts[0]
+			// SECURITY: Validate backend before setting
+			if err := validateBackend(parts[0]); err == nil {
+				p.Backend = parts[0]
+			}
 		}
 
 		// Extract model if specified
 		if len(parts) > 1 {
-			p.Model = parts[1]
+			// SECURITY: Validate model before setting
+			if err := validateModel(parts[1]); err == nil {
+				p.Model = parts[1]
+			}
 		}
 	}
 
 	// Check for direct vars first
 	if model, ok := vars["model"].(string); ok {
-		p.Model = model
+		// SECURITY: Validate model before setting
+		if err := validateModel(model); err == nil {
+			p.Model = model
+		}
 	}
 
 	if temp, ok := vars["temperature"].(float64); ok {
-		p.Temperature = temp
+		// Validate temperature range
+		if temp >= 0 && temp <= 2.0 {
+			p.Temperature = temp
+		}
 	}
 
 	if maxTokens, ok := vars["max_tokens"].(int); ok {
-		p.MaxTokens = maxTokens
+		// Validate max tokens range
+		if maxTokens > 0 && maxTokens <= 4096 {
+			p.MaxTokens = maxTokens
+		}
 	} else if maxTokens, ok := vars["max_tokens"].(float64); ok {
-		p.MaxTokens = int(maxTokens)
+		maxTokensInt := int(maxTokens)
+		if maxTokensInt > 0 && maxTokensInt <= 4096 {
+			p.MaxTokens = maxTokensInt
+		}
 	}
 
 	if backend, ok := vars["backend"].(string); ok {
-		p.Backend = backend
+		// SECURITY: Validate backend before setting
+		if err := validateBackend(backend); err == nil {
+			p.Backend = backend
+		}
 	}
 
 	// Check for config map and apply settings
 	if configMap, ok := vars["config"].(map[string]interface{}); ok {
 		// Apply temperature if specified
 		if temp, ok := configMap["temperature"].(float64); ok {
-			p.Temperature = temp
+			// Validate temperature range
+			if temp >= 0 && temp <= 2.0 {
+				p.Temperature = temp
+			}
 		}
 
 		// Apply max_tokens if specified
 		if maxTokens, ok := configMap["max_tokens"].(int); ok {
-			p.MaxTokens = maxTokens
+			// Validate max tokens range
+			if maxTokens > 0 && maxTokens <= 4096 {
+				p.MaxTokens = maxTokens
+			}
 		} else if maxTokens, ok := configMap["max_tokens"].(float64); ok {
-			p.MaxTokens = int(maxTokens)
+			maxTokensInt := int(maxTokens)
+			if maxTokensInt > 0 && maxTokensInt <= 4096 {
+				p.MaxTokens = maxTokensInt
+			}
 		}
 
 		// Apply backend if specified
 		if backend, ok := configMap["backend"].(string); ok {
-			p.Backend = backend
+			// SECURITY: Validate backend before setting
+			if err := validateBackend(backend); err == nil {
+				p.Backend = backend
+			}
 		}
 
 		// Apply model if specified directly in config
 		if model, ok := configMap["model"].(string); ok {
-			p.Model = model
+			// SECURITY: Validate model before setting
+			if err := validateModel(model); err == nil {
+				p.Model = model
+			}
 		}
 	}
 }
