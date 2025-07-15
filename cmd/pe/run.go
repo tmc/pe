@@ -126,7 +126,14 @@ func computeJSONHash(obj interface{}) string {
 
 // generateExecutionID generates a unique execution ID
 func generateExecutionID() string {
-	return fmt.Sprintf("pe_%d_%s", time.Now().Unix(), computeHash(fmt.Sprintf("%d", time.Now().UnixNano()))[:8])
+	hash := computeHash(fmt.Sprintf("%d", time.Now().UnixNano()))
+	// Add bounds checking to prevent panic
+	if len(hash) >= 8 {
+		return fmt.Sprintf("pe_%d_%s", time.Now().Unix(), hash[:8])
+	} else {
+		// Fallback for empty or short hashes (should never happen with SHA256)
+		return fmt.Sprintf("pe_%d_unknown", time.Now().Unix())
+	}
 }
 
 // writeExecutionLog writes an execution log to the appropriate log file
@@ -182,11 +189,23 @@ func determineLogFileName(log ExecutionLog) string {
 		}
 	} else {
 		// For inline prompts, create a name based on content hash
-		promptName = "inline-" + log.Input.PromptHash[:8]
+		// Add bounds checking to prevent panic
+		if len(log.Input.PromptHash) >= 8 {
+			promptName = "inline-" + log.Input.PromptHash[:8]
+		} else {
+			// Fallback for empty or short hashes
+			promptName = "inline-unknown"
+		}
 	}
 
 	// Use first 8 characters of content hash as version
-	promptVersion = log.Input.PromptHash[:8]
+	// Add bounds checking to prevent panic
+	if len(log.Input.PromptHash) >= 8 {
+		promptVersion = log.Input.PromptHash[:8]
+	} else {
+		// Fallback for empty or short hashes
+		promptVersion = "unknown"
+	}
 
 	// Sanitize prompt name for filename
 	promptName = sanitizeForFilename(promptName)
@@ -383,6 +402,13 @@ func runPrompt(cmd *cobra.Command, args []string) error {
 
 	// Check if it's a module reference (org/name@version)
 	if strings.Contains(input, "/") && strings.Contains(input, "@") {
+		// Initialize PromptHash even for module references to prevent panic
+		execLog.Input = ExecutionInput{
+			PromptContent: input,
+			PromptHash:    computeHash(input),
+			Variables:     runVars,
+			VariablesHash: computeJSONHash(runVars),
+		}
 		execLog.Error = "Module references not yet supported in logging"
 		return runModule(cmd, input)
 	}
@@ -391,6 +417,13 @@ func runPrompt(cmd *cobra.Command, args []string) error {
 	// Get the raw prompt content first
 	rawPromptContent, perr := resolveRawPrompt(args[0])
 	if perr != nil {
+		// Initialize PromptHash even for failed resolution to prevent panic
+		execLog.Input = ExecutionInput{
+			PromptContent: input,
+			PromptHash:    computeHash(input),
+			Variables:     runVars,
+			VariablesHash: computeJSONHash(runVars),
+		}
 		execLog.Error = fmt.Sprintf("failed to resolve prompt: %v", perr)
 		return fmt.Errorf("failed to resolve prompt: %w", perr)
 	}
@@ -398,6 +431,13 @@ func runPrompt(cmd *cobra.Command, args []string) error {
 	// Parse the full prompt file
 	parsedPrompt, parseErr := prompt.Parse(rawPromptContent)
 	if parseErr != nil {
+		// Initialize PromptHash even for failed parsing to prevent panic
+		execLog.Input = ExecutionInput{
+			PromptContent: input,
+			PromptHash:    computeHash(rawPromptContent),
+			Variables:     runVars,
+			VariablesHash: computeJSONHash(runVars),
+		}
 		execLog.Error = fmt.Sprintf("failed to parse prompt: %v", parseErr)
 		return fmt.Errorf("failed to parse prompt: %w", parseErr)
 	}
