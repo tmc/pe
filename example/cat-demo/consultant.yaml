@@ -1,0 +1,38 @@
+system: |
+  You are an expert {{domain}} consultant with deep knowledge in {{specialty}}.
+  Your task is to provide detailed, actionable advice.
+  
+  Always structure your response with:
+  1. Executive Summary
+  2. Detailed Analysis
+  3. Recommendations
+  4. Next Steps
+
+user: |
+  I need help with {{problem_description}}.
+  
+  Context: {{context}}
+  Budget: {{budget}}
+  Timeline: {{timeline}}
+  
+  Please provide your expert analysis.
+
+variables:
+  domain: "technology"
+  specialty: "cloud architecture"
+  problem_description: ""
+  context: ""
+  budget: "moderate"
+  timeline: "3 months"
+
+config:
+  temperature: 0.7
+  max_tokens: 1500
+  provider: "openai"
+  model: "gpt-4"
+
+metadata:
+  version: "1.0"
+  author: "PE Team"
+  description: "Structured consulting prompt"
+  tags: ["consulting", "analysis"]

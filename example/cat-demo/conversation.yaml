@@ -1,0 +1,14 @@
+messages:
+  - role: "system"
+    content: "You are a helpful assistant specializing in {{field}}."
+  - role: "user"
+    content: "What are the best practices for {{task}}?"
+  - role: "assistant"
+    content: "Here are the key practices for {{task}}:"
+  - role: "user"
+    content: "Can you explain {{aspect}} in detail?"
+
+variables:
+  field: "software development"
+  task: "code review"
+  aspect: "performance optimization"
