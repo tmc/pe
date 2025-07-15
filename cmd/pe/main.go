@@ -81,6 +81,7 @@ work together seamlessly.`,
 	root.AddCommand(evalPromptCmd) // pe eval-prompt for running evals from prompt files
 	root.AddCommand(workCmd)       // go work for prompts
 	root.AddCommand(attestCmd)     // cryptographic attestations
+	root.AddCommand(catCmd())      // pe cat for inspecting prompt files
 	
 	// Existing commands
 	root.AddCommand(evalCmd())
