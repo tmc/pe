@@ -1,0 +1,80 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  
+  gocyclo:
+    min-complexity: 15
+  
+  gofmt:
+    simplify: true
+  
+  goimports:
+    local-prefixes: github.com/tmc/pe
+  
+  golint:
+    min-confidence: 0.8
+  
+  govet:
+    check-shadowing: true
+    enable-all: true
+  
+  misspell:
+    locale: US
+  
+  unused:
+    check-exported: false
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - gofmt
+    - goimports
+    - misspell
+    - goconst
+    - gocyclo
+    - unparam
+    - gosec
+  
+  disable:
+    - deadcode # deprecated
+    - varcheck # deprecated
+    - structcheck # deprecated
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - gosec
+    
+    # Exclude known false positives
+    - text: "weak cryptographic primitive"
+      linters:
+        - gosec
+    
+    # Exclude shadow checking on error variables
+    - text: "declaration of \"err\" shadows"
+      linters:
+        - govet

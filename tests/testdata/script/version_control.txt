@@ -8,20 +8,20 @@ exists .pe
 
 # Basic mod commands for module management
 exec pe mod init example/mymodule
-stdout 'Created go.mod'
-exists go.mod
-exec grep 'module example/mymodule' go.mod
+stdout 'Created pe.mod'
+exists pe.mod
+exec grep 'module example/mymodule' pe.mod
 
 # Edit mod file
 exec pe edit --module example/dependency@v1.0.0
 stdout 'Added requirement: example/dependency v1.0.0'
-exec grep 'example/dependency v1.0.0' go.mod
+exec grep 'example/dependency v1.0.0' pe.mod
 
 # Work with modules
 exec pe work init
-stdout 'Created go.work'
-exists go.work
-exec grep 'go 1.21' go.work
+stdout 'Created pe.work'
+exists pe.work
+exec grep 'go 1.24' pe.work
 
 # Basic attestation for tracking changes
 exec pe attest init

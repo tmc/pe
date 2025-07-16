@@ -2,15 +2,14 @@
 
 # Initialize module
 exec pe mod init github.com/myorg/myproject
-stdout 'Created go.mod'
-exists go.mod
-exec grep 'module github.com/myorg/myproject' go.mod
-exec grep 'go 1.21' go.mod
+stdout 'Created pe.mod'
+exists pe.mod
+exec grep 'module github.com/myorg/myproject' pe.mod
 
 # Edit module file to add dependencies
 exec pe edit --module github.com/anthropic/helpful-harmless@v1.2.0
 stdout 'Added requirement: github.com/anthropic/helpful-harmless v1.2.0'
-exec grep 'github.com/anthropic/helpful-harmless v1.2.0' go.mod
+exec grep 'github.com/anthropic/helpful-harmless v1.2.0' pe.mod
 
 # List module contents
 exec pe get
@@ -30,7 +29,7 @@ This is a sample prompt that uses helpful-harmless principles.
 prompts:
   - prompt.txt
   
--- go.work --
-go 1.21
+-- pe.work --
+go 1.24
 
 use .

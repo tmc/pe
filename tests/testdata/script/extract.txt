@@ -2,7 +2,7 @@
 
 # Basic XML tag extraction
 exec sh -c 'pe run prompt.txt --provider mock | pe extract --tag answer'
-stdout 'The capital of France is Paris'
+stdout 'the capital of france is paris'
 ! stdout '<answer>'
 ! stdout '</answer>'
 

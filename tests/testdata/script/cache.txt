@@ -7,7 +7,7 @@ stdout 'Entries: 0'
 
 # Run with caching
 env PE_TEST_MODE=true
-exec pe run 'What is 2+2?' --cache --provider mock
+exec pe run 'What is 2+2?' --provider mock
 stdout '4'
 
 # Check cache was populated
@@ -34,7 +34,7 @@ stdout 'Total entries: 0'
 
 # Export cache (when populated)
 env PE_TEST_MODE=true
-exec pe run 'Test prompt' --cache --provider mock
+exec pe run 'Test prompt' --provider mock
 stdout 'Mock response'
 exec pe cache export cache-export.tar.gz
 stdout 'Exported cache bundle'

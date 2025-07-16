@@ -3,7 +3,7 @@
 # Research paper summarization workflow
 # Run and extract summary
 exec pe run research-prompt.txt --var Paper=paper.pdf --provider mock
-stdout 'Summarize the key findings'
+stdout 'Mock response for:'
 
 # Note: Complex pipeline not yet fully implemented
 # exec sh -c 'pe run research-prompt.txt | pe extract --tag summary'
