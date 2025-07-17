@@ -155,6 +155,7 @@ See [docs/PROMPT_FORMAT_SPEC.md](docs/PROMPT_FORMAT_SPEC.md) for the complete sp
 - `pe mod init/download/tidy/vendor` - Complete Go-style module management
 - `pe compose` - Component-based prompt composition with type safety
 - `pe attest` - Cryptographic attestation with keychain integration
+- `pe cat` - Inspect prompt files with variable substitution and component viewing
 - `pe extract` - Extract structured data with XML/JSON parsing
 - `pe evolve` - Evolutionary optimization with NSGA-II algorithms
 - `pe fusion` - Multi-model consensus with reliability optimization
@@ -170,6 +171,7 @@ See [docs/PROMPT_FORMAT_SPEC.md](docs/PROMPT_FORMAT_SPEC.md) for the complete sp
 - **Security Testing Suite**: Full OWASP LLM Top 10 coverage
 - **Advanced Metrics**: BERTScore, G-Eval, UniEval implementations
 - **Cryptographic Attestation**: Full signing and verification system
+- **Prompt File Inspector**: pe cat command with variable substitution and component inspection
 
 ### In Development (🚧)
 - Module registry server deployment

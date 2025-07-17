@@ -1,4 +1,4 @@
-.PHONY: build test scripttest clean
+.PHONY: build test scripttest clean install lint coverage
 
 # Default target
 all: build
@@ -34,3 +34,22 @@ test-module: build
 # Setup mock registry for testing
 mock-registry:
 	./test/mock-registry.sh
+
+# Run linting
+lint:
+	golangci-lint run ./...
+
+# Generate coverage report
+coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
+
+# Run all checks (test, lint)
+check: test lint
+
+# Development setup
+dev-setup:
+	go mod download
+	go mod verify
+	@echo "Development environment ready"
