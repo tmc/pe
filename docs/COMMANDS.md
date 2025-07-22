@@ -46,6 +46,51 @@ pe run prompt.txt --stream
 - `--stream`: Stream response
 - `--sandbox`: Sandbox mode (strict/relaxed/disabled)
 
+### pe cat
+
+Inspect prompt files with variable substitution and component viewing.
+
+```bash
+# Basic inspection
+pe cat prompt.yaml
+
+# With variable substitution
+pe cat --set topic="AI" --set detail="comprehensive" template.txt
+
+# Interactive variable input
+pe cat --interactive complex-template.yaml
+
+# View specific components
+pe cat --system prompt.yaml
+pe cat --variables prompt.yaml
+pe cat --metadata prompt.yaml
+
+# Show all components
+pe cat --components structured-prompt.yaml
+
+# Different output formats
+pe cat --format yaml prompt.txt
+pe cat --format json prompt.yaml
+
+# Raw file content
+pe cat --raw prompt.yaml
+```
+
+**Flags:**
+- `--set key=value`: Set template variables
+- `--interactive, -i`: Interactive variable input
+- `--system`: Show only system prompt
+- `--variables`: Show only variables
+- `--metadata`: Show only metadata
+- `--components`: Show all components
+- `--format`: Output format (text, yaml, json)
+- `--raw`: Show raw file content
+
+**Supported File Formats:**
+- `.prompt`, `.txt`: Plain text with variable extraction
+- `.yaml`, `.yml`: Structured YAML with full component support
+- `.json`: JSON format (converted to YAML internally)
+
 ### pe test
 
 Test prompts with assertions (like `go test`).
