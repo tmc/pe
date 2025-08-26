@@ -3,3 +3,6 @@
 .DS_Store
 pe
 .bash_history
+lastsession.txt
+*.log
+
