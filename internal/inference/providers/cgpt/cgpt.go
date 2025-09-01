@@ -1,4 +1,6 @@
 // Package cgpt provides an inference provider using the cgpt CLI tool.
+// Compatible with cgpt v0.4.4 and later versions.
+// See https://github.com/tmc/cgpt for the latest version.
 package cgpt
 
 import (
@@ -189,14 +191,19 @@ func (p *Provider) Stream(ctx context.Context, req inference.Request) (<-chan in
 // Models returns available models for cgpt.
 func (p *Provider) Models(ctx context.Context) ([]string, error) {
 	// cgpt supports various models via -m flag
-	// These are the commonly available ones
+	// These are the commonly available ones based on latest cgpt v0.4.4
 	return []string{
+		"claude-sonnet-4-20250514", // Latest default model
+		"gpt-4o",
 		"gpt-4",
-		"gpt-4-turbo-preview",
+		"gpt-4-turbo",
 		"gpt-3.5-turbo",
+		"claude-3-7-sonnet-20250219",
 		"claude-3-opus",
 		"claude-3-sonnet",
 		"claude-3-haiku",
+		"gemini-2.0-flash",
+		"gemini-pro",
 	}, nil
 }
 
@@ -224,29 +231,31 @@ func (p *Provider) buildArgs(req inference.Request) []string {
 
 	// Model selection and backend detection
 	if req.Model != "" {
-		args = append(args, "-m", req.Model)
+		args = append(args, "--model", req.Model)
 
 		// Detect backend based on model name
 		if strings.HasPrefix(req.Model, "gpt-") {
-			args = append(args, "-b", "openai")
+			args = append(args, "--backend", "openai")
 		} else if strings.HasPrefix(req.Model, "claude-") {
-			args = append(args, "-b", "anthropic")
+			args = append(args, "--backend", "anthropic")
+		} else if strings.HasPrefix(req.Model, "gemini-") {
+			args = append(args, "--backend", "googleai")
 		}
 	}
 
-	// Temperature (cgpt uses -T for temperature)
+	// Temperature (cgpt uses --temperature)
 	if req.Temperature > 0 {
-		args = append(args, "-T", fmt.Sprintf("%.2f", req.Temperature))
+		args = append(args, "--temperature", fmt.Sprintf("%.2f", req.Temperature))
 	}
 
-	// Max tokens (cgpt uses -t for max-tokens)
+	// Max tokens (cgpt uses --max-tokens)
 	if req.MaxTokens > 0 {
-		args = append(args, "-t", fmt.Sprintf("%d", req.MaxTokens))
+		args = append(args, "--max-tokens", fmt.Sprintf("%d", req.MaxTokens))
 	}
 
 	// System prompt
 	if req.SystemPrompt != "" {
-		args = append(args, "-s", req.SystemPrompt)
+		args = append(args, "--system-prompt", req.SystemPrompt)
 	}
 
 	// Prefill (cgpt uses --prefill for assistant message start)
@@ -259,9 +268,9 @@ func (p *Provider) buildArgs(req inference.Request) []string {
 		args = append(args, "--stop", stop)
 	}
 
-	// Input (use -i for direct string input)
+	// Input (use --input for direct string input)
 	if req.Prompt != "" {
-		args = append(args, "-i", req.Prompt)
+		args = append(args, "--input", req.Prompt)
 	}
 
 	// Additional options
@@ -271,7 +280,22 @@ func (p *Provider) buildArgs(req inference.Request) []string {
 			args = append(args, "--json")
 		}
 		if v, ok := req.Options["verbose"].(bool); ok && v {
-			args = append(args, "-v")
+			args = append(args, "--verbose")
+		}
+		if v, ok := req.Options["debug"].(bool); ok && v {
+			args = append(args, "--debug")
+		}
+		// Streaming is enabled by default in cgpt v0.4.4, but we can explicitly set it
+		if v, ok := req.Options["stream"].(bool); ok {
+			if v {
+				args = append(args, "--stream")
+			} else {
+				args = append(args, "--stream=false")
+			}
+		}
+		// Add completion timeout support
+		if v, ok := req.Options["completion_timeout"].(string); ok && v != "" {
+			args = append(args, "--completion-timeout", v)
 		}
 	}
 

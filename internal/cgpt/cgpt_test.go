@@ -12,10 +12,10 @@ func TestDefaultProvider(t *testing.T) {
 	provider := DefaultProvider()
 
 	assert.NotNil(t, provider)
-	assert.Equal(t, "gpt-4o", provider.Model)
+	assert.Equal(t, "claude-sonnet-4-20250514", provider.Model)
 	assert.Equal(t, 1024, provider.MaxTokens)
 	assert.Equal(t, 0.2, provider.Temperature)
-	assert.Equal(t, "openai", provider.Backend)
+	assert.Equal(t, "anthropic", provider.Backend)
 }
 
 func TestModelProvider_ApplyConfigFromVars(t *testing.T) {
@@ -35,7 +35,7 @@ func TestModelProvider_ApplyConfigFromVars(t *testing.T) {
 				Model:       "gpt-3.5-turbo",
 				MaxTokens:   1024,
 				Temperature: 0.2,
-				Backend:     "openai",
+				Backend:     "anthropic",
 			},
 		},
 		{
@@ -45,10 +45,10 @@ func TestModelProvider_ApplyConfigFromVars(t *testing.T) {
 				"temperature": 0.8,
 			},
 			expected: &ModelProvider{
-				Model:       "gpt-4o",
+				Model:       "claude-sonnet-4-20250514",
 				MaxTokens:   1024,
 				Temperature: 0.8,
-				Backend:     "openai",
+				Backend:     "anthropic",
 			},
 		},
 		{
@@ -58,23 +58,23 @@ func TestModelProvider_ApplyConfigFromVars(t *testing.T) {
 				"max_tokens": 2048,
 			},
 			expected: &ModelProvider{
-				Model:       "gpt-4o",
+				Model:       "claude-sonnet-4-20250514",
 				MaxTokens:   2048,
 				Temperature: 0.2,
-				Backend:     "openai",
+				Backend:     "anthropic",
 			},
 		},
 		{
 			name:     "apply backend from vars",
 			provider: DefaultProvider(),
 			vars: map[string]interface{}{
-				"backend": "anthropic",
+				"backend": "openai", // Change backend to openai
 			},
 			expected: &ModelProvider{
-				Model:       "gpt-4o",
+				Model:       "claude-sonnet-4-20250514",
 				MaxTokens:   1024,
 				Temperature: 0.2,
-				Backend:     "anthropic",
+				Backend:     "openai", // Updated to openai
 			},
 		},
 		{
@@ -101,10 +101,10 @@ func TestModelProvider_ApplyConfigFromVars(t *testing.T) {
 				"max_tokens":  "not-an-int",
 			},
 			expected: &ModelProvider{
-				Model:       "gpt-4o",
+				Model:       "claude-sonnet-4-20250514",
 				MaxTokens:   1024,
 				Temperature: 0.2,
-				Backend:     "openai",
+				Backend:     "anthropic",
 			},
 		},
 	}

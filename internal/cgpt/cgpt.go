@@ -31,8 +31,8 @@ var (
 	// allowedModelPrefixes defines allowed model name prefixes
 	allowedModelPrefixes = []string{
 		"gpt-3.5", "gpt-4", "gpt-4o", "gpt-4-turbo",
-		"claude-3", "claude-3.5", "claude-2", "claude-instant",
-		"gemini-", "gemini-pro", "gemini-flash",
+		"claude-3", "claude-3.5", "claude-2", "claude-instant", "claude-sonnet-4",
+		"gemini-", "gemini-pro", "gemini-flash", "gemini-2",
 		"text-bison", "text-unicorn", "chat-bison",
 		"command", "command-light", "command-r",
 		"llama", "mistral", "mixtral", "qwen",
@@ -54,10 +54,10 @@ type ModelProvider struct {
 // DefaultProvider returns a default configured model provider
 func DefaultProvider() *ModelProvider {
 	return &ModelProvider{
-		Model:       "gpt-4o", // Default to OpenAI gpt-4o
+		Model:       "claude-sonnet-4-20250514", // Default to latest Anthropic model (matches cgpt v0.4.4 default)
 		MaxTokens:   1024,
 		Temperature: 0.2,
-		Backend:     "openai", // Default to OpenAI backend
+		Backend:     "anthropic", // Default to Anthropic backend (matches cgpt v0.4.4 default)
 	}
 }
 
@@ -202,11 +202,11 @@ func (p *ModelProvider) runCGPTCommand(prompt string, dryRun bool) (string, toke
 	tempArg := fmt.Sprintf("%.1f", p.Temperature)
 	maxTokensArg := fmt.Sprintf("%d", p.MaxTokens)
 
-	// Build the cgpt command as described: cgpt -b googleai -m gemini-2.0-flash [prompt]
+	// Build the cgpt command as described: cgpt --backend googleai --model gemini-2.0-flash [prompt]
 	// All inputs are now validated and sanitized
 	args := []string{
-		"-b", p.Backend,  // Validated against allowlist
-		"-m", p.Model,    // Validated against patterns and sanitized
+		"--backend", p.Backend,  // Validated against allowlist
+		"--model", p.Model,      // Validated against patterns and sanitized
 	}
 
 	// Only add these flags if not in dry run mode
