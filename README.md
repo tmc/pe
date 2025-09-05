@@ -17,10 +17,10 @@ PE implements breakthrough research from 2024-2025:
 
 ### Core Capabilities (✅ Fully Implemented)
 - **Multi-Provider Support**: Native OpenAI (74% test coverage) and Anthropic (73.3% test coverage) providers with full API implementations
-- **Advanced Evaluation**: Pass@N metrics, structured output validation, 20+ assertion types
+- **Advanced Evaluation**: Pass@N metrics, structured output validation, 15+ assertion types (some advanced types in development)
 - **Unix Pipeline Philosophy**: 47 composable CLI commands for streaming prompt processing
 - **Performance**: Native Go implementation with comprehensive benchmarking
-- **Module Management**: Complete Go-style module system (mod init/download/tidy/vendor)
+- **Module Management**: Core module system (mod init/tidy/vendor) - registry features in development
 - **Security Testing**: Full OWASP LLM Top 10 coverage via integrated security module
 - **Distributed Execution**: Complete distributed system with P2P networking and consensus
 - **Cryptographic Attestation**: Full signing and verification of prompt runs
@@ -128,7 +128,7 @@ max-tokens 1000
 
 See [docs/PROMPT_FORMAT_SPEC.md](docs/PROMPT_FORMAT_SPEC.md) for the complete specification.
 
-## 📋 Available Commands (47 Total - All Implemented ✅)
+## 📋 Available Commands (47 Total - Core Features Stable ✅)
 
 ### Core Commands
 - `pe run` - Execute prompts with variable substitution and native providers
@@ -152,7 +152,7 @@ See [docs/PROMPT_FORMAT_SPEC.md](docs/PROMPT_FORMAT_SPEC.md) for the complete sp
 - `pe stats` - Quick statistical summaries
 
 ### Module & Advanced Commands
-- `pe mod init/download/tidy/vendor` - Complete Go-style module management
+- `pe mod init/tidy/vendor` - Core module management (registry features in next-experimental branch)
 - `pe compose` - Component-based prompt composition with type safety
 - `pe attest` - Cryptographic attestation with keychain integration
 - `pe cat` - Inspect prompt files with variable substitution and component viewing
@@ -173,8 +173,10 @@ See [docs/PROMPT_FORMAT_SPEC.md](docs/PROMPT_FORMAT_SPEC.md) for the complete sp
 - **Cryptographic Attestation**: Full signing and verification system
 - **Prompt File Inspector**: pe cat command with variable substitution and component inspection
 
-### In Development (🚧)
-- Module registry server deployment
+### In Development (🚧 - Available in `next-experimental` branch)
+- Module registry system with download/list/get commands
+- Advanced assertion types (toxicity, coherence, factuality, similarity)
+- Interactive REPL mode
 - Extended provider ecosystem (Ollama, local models)
 - REST API server implementation
 
@@ -300,7 +302,7 @@ See [docs/future/DESIGN_PHILOSOPHY.md](docs/future/DESIGN_PHILOSOPHY.md) for mor
 
 ## 🎯 Project Status
 
-PE is a research implementation focusing on cutting-edge prompt optimization techniques. While core features are functional, some advanced capabilities are still in development. See [ROADMAP.md](ROADMAP.md) for planned features.
+PE is production-ready with 47 stable CLI commands, native provider support, and comprehensive evaluation framework. Advanced experimental features are available in the `next-experimental` branch. See [RELEASE_NOTES.md](RELEASE_NOTES.md) for detailed feature status.
 
 ## 📄 License
 

@@ -1,0 +1,14 @@
+{
+  "timestamp": "2025-07-15T12:23:50Z",
+  "project": "pe",
+  "go_version": "go1.24.4",
+  "metrics": {
+    "total_dependencies":       38,
+    "direct_dependencies":       26,
+    "indirect_dependencies": 12,
+    "outdated_dependencies":       21,
+    "outdated_percentage": 55,
+    "security_status": "clean",
+    "transitive_multiplier": 1.46
+  }
+}

@@ -1,5 +1,9 @@
 # PE Module Registry
 
+> **⚠️ EXPERIMENTAL FEATURE**  
+> The module registry is currently under development and available in the `next-experimental` branch.  
+> For stable module management, use local files and the `pe mod init/tidy/vendor` commands.
+
 The PE Module Registry provides a decentralized way to share and reuse prompt templates using GitHub gists as storage. This enables prompt sharing, versioning, and discovery within the PE ecosystem.
 
 ## Overview

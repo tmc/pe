@@ -730,72 +730,79 @@ FEEDBACK: [brief analysis]`, language, output)
 // Placeholder implementations for remaining assertion types
 
 func (ae *AssertionEvaluator) evaluateToxicity(ctx context.Context, assertion Assertion, output string) *AssertionResult {
-	// Placeholder - would integrate with toxicity detection service
+	// NOTE: Toxicity detection pending implementation
+	// Will integrate with toxicity detection service in future release
 	return &AssertionResult{
 		Type:    assertion.Type,
-		Passed:  true,
-		Score:   1.0,
-		Message: "Toxicity evaluation not implemented",
+		Passed:  false,
+		Score:   0.0,
+		Message: "Toxicity evaluation not yet implemented (coming in future release)",
 	}
 }
 
 func (ae *AssertionEvaluator) evaluateCoherence(ctx context.Context, assertion Assertion, output string) *AssertionResult {
-	// Placeholder - would use LLM to evaluate coherence
+	// NOTE: Coherence evaluation pending implementation
+	// Will use LLM-based coherence scoring in future release
 	return &AssertionResult{
 		Type:    assertion.Type,
-		Passed:  true,
-		Score:   1.0,
-		Message: "Coherence evaluation not implemented",
+		Passed:  false,
+		Score:   0.0,
+		Message: "Coherence evaluation not yet implemented (coming in future release)",
 	}
 }
 
 func (ae *AssertionEvaluator) evaluateFactuality(ctx context.Context, assertion Assertion, output string) *AssertionResult {
-	// Placeholder - would use fact-checking service
+	// NOTE: Factuality checking pending implementation
+	// Will integrate with fact-checking service in future release
 	return &AssertionResult{
 		Type:    assertion.Type,
-		Passed:  true,
-		Score:   1.0,
-		Message: "Factuality evaluation not implemented",
+		Passed:  false,
+		Score:   0.0,
+		Message: "Factuality evaluation not yet implemented (coming in future release)",
 	}
 }
 
 func (ae *AssertionEvaluator) evaluateClassify(ctx context.Context, assertion Assertion, output string) *AssertionResult {
-	// Placeholder - would use LLM for classification
+	// NOTE: Classification pending implementation  
+	// Will use LLM-based classification in future release
 	return &AssertionResult{
 		Type:    assertion.Type,
-		Passed:  true,
-		Score:   1.0,
-		Message: "Classification evaluation not implemented",
+		Passed:  false,
+		Score:   0.0,
+		Message: "Classification evaluation not yet implemented (coming in future release)",
 	}
 }
 
 func (ae *AssertionEvaluator) evaluateSimilarity(ctx context.Context, assertion Assertion, output string) *AssertionResult {
-	// Placeholder - would use embedding similarity
+	// NOTE: Similarity scoring pending implementation
+	// Will use embedding-based similarity in future release
 	return &AssertionResult{
 		Type:    assertion.Type,
-		Passed:  true,
-		Score:   1.0,
-		Message: "Similarity evaluation not implemented",
+		Passed:  false,
+		Score:   0.0,
+		Message: "Similarity evaluation not yet implemented (coming in future release)",
 	}
 }
 
 func (ae *AssertionEvaluator) evaluateSQL(assertion Assertion, output string) *AssertionResult {
-	// Placeholder - would validate SQL syntax
+	// NOTE: SQL validation pending implementation
+	// Will validate SQL syntax and structure in future release
 	return &AssertionResult{
 		Type:    assertion.Type,
-		Passed:  true,
-		Score:   1.0,
-		Message: "SQL evaluation not implemented",
+		Passed:  false,
+		Score:   0.0,
+		Message: "SQL evaluation not yet implemented (coming in future release)",
 	}
 }
 
 func (ae *AssertionEvaluator) evaluateStructure(assertion Assertion, output string) *AssertionResult {
-	// Placeholder - would validate document structure
+	// NOTE: Structure validation pending implementation
+	// Will validate document structure in future release
 	return &AssertionResult{
 		Type:    assertion.Type,
-		Passed:  true,
-		Score:   1.0,
-		Message: "Structure evaluation not implemented",
+		Passed:  false,
+		Score:   0.0,
+		Message: "Structure evaluation not yet implemented (coming in future release)",
 	}
 }
 
