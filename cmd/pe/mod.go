@@ -31,9 +31,10 @@ var (
 
 func init() {
 	modCmd.AddCommand(modInitCmd)
-	modCmd.AddCommand(modListCmd)
-	modCmd.AddCommand(modGetCmd)
-	modCmd.AddCommand(modDownloadCmd)
+	// Registry commands disabled pending full implementation
+	// modCmd.AddCommand(modListCmd)
+	// modCmd.AddCommand(modGetCmd)
+	// modCmd.AddCommand(modDownloadCmd)
 	modCmd.AddCommand(modTidyCmd)
 	modCmd.AddCommand(modVendorCmd)
 }
@@ -52,6 +53,9 @@ Example:
 	RunE: runModInit,
 }
 
+// NOTE: Registry-based commands are disabled pending full implementation
+// These will be available in a future release
+/*
 var modListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List available modules from the registry",
@@ -70,6 +74,7 @@ var modDownloadCmd = &cobra.Command{
 	Short: "Download modules specified in go.mod",
 	RunE:  runModDownload,
 }
+*/
 
 var modTidyCmd = &cobra.Command{
 	Use:   "tidy",
@@ -146,6 +151,8 @@ func runModInit(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// Registry functions disabled pending implementation
+/*
 func runModList(cmd *cobra.Command, args []string) error {
 	// TODO: Implement fetching from root gist
 	fmt.Println("Available modules:")
@@ -153,6 +160,7 @@ func runModList(cmd *cobra.Command, args []string) error {
 	fmt.Printf("\nRoot gist: %s\n", rootGistID)
 	return nil
 }
+*/
 
 func runModGet(cmd *cobra.Command, args []string) error {
 	moduleName := args[0]
