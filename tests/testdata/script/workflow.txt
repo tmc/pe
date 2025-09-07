@@ -50,7 +50,7 @@ stdout 'Improvement Score:'
 # Debug workflow
 # Basic run test with error case
 exec pe run failing-prompt.txt --provider mock
-stdout 'helpful assistant'
+stdout 'be concise but explain everything in detail'
 
 # Batch processing workflow
 # Test metrics command
