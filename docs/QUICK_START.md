@@ -1,8 +1,8 @@
-# Quick Start Guide
+# PE Quick Start Guide
 
-Get up and running with PE in under 5 minutes and experience the most advanced prompt engineering toolkit available.
+Get up and running with PE in 5 minutes.
 
-## 🚀 Installation
+## Installation
 
 ```bash
 # Install PE (requires Go 1.21+)
@@ -12,9 +12,7 @@ go install github.com/tmc/pe/cmd/pe@latest
 pe --version
 ```
 
-## ⚡ 30-Second Demo
-
-Experience PE's power immediately:
+## Your First Commands
 
 ```bash
 # Create a basic config
@@ -23,14 +21,15 @@ pe init demo.yaml
 # Run your first evaluation
 pe eval demo.yaml
 
-# Try running a prompt directly
-pe run "What is 2+2?"
+# Run a simple prompt
+pe run "What is 2+2?" --provider openai
 
-# Optimize a prompt with cutting-edge TextGrad
-pe optimize --prompt "Summarize this text clearly" --method textgrad --iterations 3
+# Run from a file
+echo "Explain quantum computing in simple terms" > prompt.txt
+pe run prompt.txt --provider anthropic
 ```
 
-## 🎯 5-Minute Tutorial
+## 5-Minute Tutorial
 
 ### Step 1: Set Up Your Environment
 
@@ -53,12 +52,16 @@ This creates a configuration with multiple providers and comprehensive testing:
 
 ```yaml
 prompts:
-  - "What is the capital of {{country}}?"
-  - "Tell me about the capital city of {{country}}."
+  - "What is the capital of {{.country}}?"
+  - "Tell me about the capital city of {{.country}}."
 
 providers:
-  - "openai:gpt-4"
-  - "openai:gpt-3.5-turbo"
+  - name: openai
+    config:
+      model: gpt-4o-mini
+  - name: anthropic
+    config:
+      model: claude-3-haiku-20240307
 
 tests:
   - vars:
@@ -92,21 +95,17 @@ pe view
 pe eval advanced-demo.yaml | pe stats --format table
 ```
 
-### Step 4: Experience TextGrad Optimization
+### Step 4: Optimize a Prompt
 
 ```bash
-# Optimize your prompt using cutting-edge TextGrad method
-pe optimize \
-  --prompt "Explain {{concept}} in simple terms suitable for beginners" \
-  --method textgrad \
-  --iterations 5 \
-  --output optimization-results.json
+# Create initial prompt
+echo "Explain machine learning" > ml.prompt
 
-# Try multi-stage optimization
-pe optimize \
-  --prompt "Analyze the sentiment of this text: {{text}}" \
-  --method multistage \
-  --iterations 6
+# Optimize it
+pe optimize ml.prompt --method pe2 --iterations 3
+
+# Compare results
+pe diff ml.prompt ml.prompt.optimized
 ```
 
 ### Step 5: Explore Pipeline Processing
@@ -131,7 +130,7 @@ pe eval advanced-demo.yaml | \
   pe analyze --metric score --percentiles 50,90,95,99
 ```
 
-## 🎪 Interactive Development
+## Interactive Development
 
 ### Interactive Mode
 
@@ -154,7 +153,7 @@ pe watch advanced-demo.yaml
 pe watch advanced-demo.yaml --include "*.yaml,prompts/**/*,tests/**/*"
 ```
 
-## 📊 Advanced Features Preview
+## Advanced Features
 
 ### Comprehensive Assertions
 
@@ -218,7 +217,7 @@ pe security test --owasp --target advanced-demo.yaml
 pe security redteam --comprehensive --target advanced-demo.yaml
 ```
 
-## 🛠️ Development Workflow
+## Development Workflow
 
 ### 1. Rapid Prototyping
 
@@ -269,7 +268,7 @@ pe profile memory
 pe diff baseline.json current.json --threshold 0.05
 ```
 
-## 📁 Example Configurations
+## Example Configurations
 
 ### Content Generation
 
@@ -280,7 +279,7 @@ description: "Blog post generation evaluation"
 prompts:
   - id: "blog-post"
     content: |
-      Write a {{length}}-word blog post about {{topic}} that is {{tone}} in tone.
+      Write a {{.length}}-word blog post about {{.topic}} that is {{.tone}} in tone.
       Include an introduction, 3 main points, and a conclusion.
 
 providers:
@@ -337,7 +336,7 @@ tests:
         min: 0.6
 ```
 
-## 🚀 Next Steps
+## Next Steps
 
 ### Learn Advanced Features
 
@@ -362,7 +361,7 @@ pe promptfoo import legacy-config.yaml
 - **Issues**: [GitHub Issues](https://github.com/tmc/pe/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/tmc/pe/discussions)
 
-## 💡 Pro Tips
+## Tips & Tricks
 
 1. **Start Simple**: Use `pe run` for quick prompt testing
 2. **Use TextGrad**: For complex prompts, TextGrad optimization is highly effective
@@ -374,4 +373,4 @@ pe promptfoo import legacy-config.yaml
 
 ---
 
-**You're now ready to experience the most advanced prompt engineering toolkit available. PE combines cutting-edge research with practical engineering to deliver capabilities that exceed any other tool in the market.**
+Ready to dive deeper? Check out the [full documentation](README.md).

@@ -21,7 +21,9 @@ go install github.com/tmc/pe/cmd/pe@latest
 ```bash
 git clone https://github.com/tmc/pe.git
 cd pe
-go build -o pe cmd/pe/main.go
+make build
+# Or manually:
+# go build -o pe ./cmd/pe
 sudo mv pe /usr/local/bin/
 ```
 
@@ -63,13 +65,19 @@ pe init my-first-test.yaml
 This creates a basic configuration file:
 
 ```yaml
+description: "Capital cities evaluation"
+
 prompts:
-  - "What is the capital of {{country}}?"
-  - "Tell me about the capital city of {{country}}."
+  - "What is the capital of {{.country}}?"
+  - "Tell me about the capital city of {{.country}}."
 
 providers:
-  - "openai:gpt-4"
-  - "anthropic:claude-3-haiku"
+  - name: "openai"
+    config:
+      model: "gpt-4o-mini"
+  - name: "anthropic"
+    config:
+      model: "claude-3-haiku-20240307"
 
 tests:
   - vars:
@@ -93,18 +101,20 @@ pe eval my-first-test.yaml
 You'll see output like:
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                                Evaluation Results                            │
-├─────────────────────────────────────────────────────────────────────────────┤
-│ Prompt                                │ Provider               │ Pass │ Score │
-├─────────────────────────────────────────────────────────────────────────────┤
-│ What is the capital of {{country}}?   │ openai:gpt-4          │  ✓   │ 1.00  │
-│ What is the capital of {{country}}?   │ anthropic:claude-3-haiku │  ✓   │ 1.00  │
-│ Tell me about the capital city...     │ openai:gpt-4          │  ✓   │ 1.00  │
-│ Tell me about the capital city...     │ anthropic:claude-3-haiku │  ✓   │ 1.00  │
-└─────────────────────────────────────────────────────────────────────────────┘
+Running 4 evaluations with up to 4 threads...
 
-Summary: 4/4 tests passed (100.0%)
+Evaluation: eval-2025-09-05T16:45:00
+Timestamp: 2025-09-05T16:45:00Z
+
+Success: 4, Failures: 0, Total: 4
+Token Usage: 120 (Prompt: 60, Completion: 60)
+
+ID      Prompt                          Provider    Success  Score
+--      ------                          --------    -------  -----
+abc123  What is the capital of France?  openai      ✓        1.00
+def456  What is the capital of France?  anthropic   ✓        1.00
+ghi789  Tell me about the capital...    openai      ✓        1.00
+jkl012  Tell me about the capital...    anthropic   ✓        1.00
 ```
 
 ### Step 3: View Detailed Results
@@ -123,21 +133,24 @@ Let's break down the configuration file:
 ### Prompts
 ```yaml
 prompts:
-  - "What is the capital of {{country}}?"  # Template with variable
-  - "Tell me about {{country}}'s capital." # Alternative prompt
+  - "What is the capital of {{.country}}?"  # Template with variable
+  - "Tell me about {{.country}}'s capital." # Alternative prompt
 ```
 
-Prompts can use template variables in `{{variable}}` syntax.
+Prompts use Go template syntax with variables in `{{.variable}}` format.
 
 ### Providers
 ```yaml
 providers:
-  - "openai:gpt-4"                    # Provider:model format
-  - "anthropic:claude-3-haiku"        # Different provider
-  - "openai:gpt-3.5-turbo"           # Different model
+  - name: "openai"
+    config:
+      model: "gpt-4o-mini"       # OpenAI model
+  - name: "anthropic"
+    config:
+      model: "claude-3-haiku-20240307"  # Anthropic model
 ```
 
-Specify providers in `provider:model` format.
+Specify providers with their configuration including model selection.
 
 ### Tests
 ```yaml
@@ -196,11 +209,15 @@ Create comprehensive test suites:
 
 ```yaml
 prompts:
-  - "Write a haiku about {{topic}}"
+  - "Write a haiku about {{.topic}}"
 
 providers:
-  - "openai:gpt-4"
-  - "anthropic:claude-3-haiku"
+  - name: "openai"
+    config:
+      model: "gpt-4o-mini"
+  - name: "anthropic"
+    config:
+      model: "claude-3-haiku-20240307"
 
 tests:
   # Test different topics
@@ -256,10 +273,10 @@ Creates a shareable URL for your evaluation results.
 
 Now that you've run your first evaluation, explore these features:
 
-1. **Interactive Mode**: `pe interactive --provider openai:gpt-4`
-2. **Watch Mode**: `pe watch config.yaml` (auto-rerun on changes)
-3. **Benchmarking**: `pe benchmark config.yaml --iterations 5`
-4. **Pipeline Commands**: `echo "Hello" | pe ask --provider openai:gpt-4`
+1. **Running Prompts**: `pe run prompt.txt --provider openai`
+2. **Optimization**: `pe optimize prompt.txt --method pe2`
+3. **Module Management**: `pe mod init myproject`
+4. **Pipeline Commands**: `echo "Hello" | pe run summarize.prompt --provider cgpt`
 
 ## Common Patterns
 
@@ -269,14 +286,14 @@ Now that you've run your first evaluation, explore these features:
 pe init project-prompts.yaml
 $EDITOR project-prompts.yaml
 
-# Test interactively
-pe interactive --config project-prompts.yaml
+# Test a single prompt
+pe run prompt.txt --provider openai
 
 # Run full evaluation
-pe eval project-prompts.yaml --save-db
+pe eval project-prompts.yaml
 
-# View results
-pe view
+# Optimize prompts
+pe optimize prompt.txt --method pe2 --iterations 3
 ```
 
 ### CI/CD Integration
@@ -324,12 +341,12 @@ pe vet config.yaml  # Check for issues
 
 **Provider Not Supported**
 ```bash
-Error: unsupported provider: unknown-provider
+Error: provider "unknown-provider" not found
 ```
-Solution: Use a supported provider format:
-- `openai:gpt-4`
-- `anthropic:claude-3-sonnet`
-- `googleai:gemini-pro`
+Solution: Use a supported provider:
+- `openai` - OpenAI API
+- `anthropic` - Anthropic API
+- `cgpt` - Multi-provider CLI tool
 
 ### Debug Mode
 

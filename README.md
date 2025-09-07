@@ -40,35 +40,27 @@ go install github.com/tmc/pe/cmd/pe@latest
 pe run "What is 2+2?"
 
 # From a file with template variables
-pe run math-solver.prompt "15 + 27"
+pe run translate.prompt --var text="Hello" --var language="French" --provider openai
 
-# Using examples built into the prompt
-pe run math-solver.prompt --example example-1
+# With stdin input
+echo "Long article about AI..." | pe run summarize.prompt --provider anthropic
 
-# With explicit variables
-pe run translate.prompt --var TEXT="Hello" --var LANGUAGE="French"
+# Using pipe from another command
+cat article.txt | pe run summarize --provider cgpt
 ```
 
 ### Template Variables
 
-PE automatically detects template variables and provides helpful usage:
+PE uses Go template syntax for variables:
 
 ```bash
-$ pe run math-solver.prompt
-Error: Template variables found but no values provided
+# Using --var flags
+pe run translate.prompt --var text="Hello" --var from="English" --var to="Spanish" --provider openai
 
-Template variables detected: EXPRESSION
-
-Available flags:
-      --model string        Model to use (e.g., gpt-4, claude-3)
-      --temperature float   Temperature for randomness (0.0-1.0) (default 0.7)
-      --var stringToString  Template variables (can be repeated)
-      --example string      Run with example variables (e.g., example-1)
-      --expression string   Value for template variable EXPRESSION
-
-Examples:
-  pe run math-solver.prompt --expression 'value'
-  pe run math-solver.prompt 'value'  # positional argument
+# Variables are replaced in the prompt
+# {{.text}} becomes "Hello"
+# {{.from}} becomes "English" 
+# {{.to}} becomes "Spanish"
 ```
 
 ## 📝 Prompt Format
@@ -82,21 +74,18 @@ What is the capital of France?
 
 ### Level 2: Templates
 ```
-Solve this math problem: {{EXPRESSION}}
+Solve this math problem: {{.expression}}
 ```
 
 ### Level 3: Documentation & Examples
 ```
-Solve the following math problem step by step: {{EXPRESSION}}
+Solve the following math problem step by step: {{.expression}}
 
--- prompt-summary --
-A helpful math tutor that explains problem-solving step by step.
+-- system-prompt --
+You are a helpful math tutor that explains problem-solving step by step.
 
--- variable-description/EXPRESSION --
-A mathematical expression to solve (e.g., "2+2", "15*3", "(10+5)/3")
-
--- examples/simple/EXPRESSION --
-15 + 27
+-- defaults --
+expression=2+2
 
 -- examples/simple/ideal-output --
 Let me solve this step by step:
@@ -107,16 +96,16 @@ Let me solve this step by step:
 ```
 #!/usr/bin/env pe run --model gpt-4
 
-Translate the following {{LANGUAGE}} text to {{TARGET_LANGUAGE}}:
+Translate the following {{.source_lang}} text to {{.target_lang}}:
 
-{{TEXT}}
+{{.text}}
 
 -- system-prompt --
 You are a professional translator with native fluency in multiple languages.
 
 -- defaults --
-LANGUAGE=English
-TARGET_LANGUAGE=Spanish
+source_lang=English
+target_lang=Spanish
 
 -- variant:formal --
 extend-system-prompt Use formal, professional language suitable for business.
@@ -192,24 +181,28 @@ See [docs/PROMPT_FORMAT_SPEC.md](docs/PROMPT_FORMAT_SPEC.md) for the complete sp
 PE uses YAML configuration for comprehensive prompt evaluation:
 
 ```yaml
+description: "Summarization evaluation"
+
 prompts:
-  - file: "summarize.txt"
-    id: "summarizer"
+  - "Summarize this text: {{.text}}"
 
 providers:
-  - id: "cgpt"
+  - name: "openai"
+    config:
+      model: "gpt-4o-mini"
+  - name: "anthropic"
+    config:
+      model: "claude-3-haiku-20240307"
 
 tests:
-  - prompt: "summarizer"
-    providers: ["cgpt"]
-    vars:
-      text: "Long article about AI..."
+  - vars:
+      text: "Long article about AI developments..."
     assert:
       - type: contains
         value: "AI"
-      - type: max-length
+      - type: max_length
         value: 200
-      - type: llm-rubric
+      - type: llm_rubric
         value: "Summary should be concise and capture main points"
 ```
 

@@ -15,21 +15,25 @@ go install github.com/tmc/pe/cmd/pe@latest
 
 ### Basic Usage
 ```bash
-# Initialize a project
+# Run a simple prompt
+pe run "What is 2+2?" --provider openai
+
+# Run with template variables
+pe run translate.prompt --var text="Hello" --var to="Spanish" --provider anthropic
+
+# Initialize an evaluation config
 pe init config.yaml
 
 # Run evaluation
 pe eval config.yaml
 
-# View results
-pe view
-
-# Format configuration
-pe fmt config.yaml
-
 # Validate configuration
 pe vet config.yaml
 ```
+
+### Important: Template Syntax
+PE uses Go template syntax with dots: `{{.variable}}` not `{{variable}}`
+See [TEMPLATE_SYNTAX.md](TEMPLATE_SYNTAX.md) for details.
 
 ## Implemented Commands
 
