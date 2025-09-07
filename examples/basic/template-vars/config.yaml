@@ -1,0 +1,54 @@
+description: "Translation prompt testing with multiple languages"
+
+prompts:
+  - file://translate.prompt
+
+providers:
+  - name: openai
+    config:
+      model: gpt-4o-mini
+  - name: anthropic
+    config:
+      model: claude-3-haiku-20240307
+
+tests:
+  - description: "English to Spanish"
+    vars:
+      text: "Hello, how are you today?"
+      source_lang: "English"
+      target_lang: "Spanish"
+    assert:
+      - type: contains
+        value: ["Hola", "cómo estás", "hoy"]
+      - type: length
+        min: 20
+        max: 500
+
+  - description: "English to French"
+    vars:
+      text: "Thank you very much for your help"
+      source_lang: "English"
+      target_lang: "French"
+    assert:
+      - type: contains
+        value: ["Merci", "beaucoup", "aide"]
+
+  - description: "Spanish to English"
+    vars:
+      text: "Buenos días, ¿cómo está usted?"
+      source_lang: "Spanish"
+      target_lang: "English"
+    assert:
+      - type: contains
+        value: ["Good", "morning", "how", "are", "you"]
+
+  - description: "Complex sentence"
+    vars:
+      text: "The quick brown fox jumps over the lazy dog"
+      source_lang: "English"
+      target_lang: "German"
+    assert:
+      - type: contains
+        value: ["Fuchs", "springt", "Hund"]
+      - type: not-contains
+        value: ["error", "ERROR", "undefined"]

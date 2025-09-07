@@ -1,0 +1,9 @@
+Write a brief explanation of what machine learning is, suitable for a beginner.
+
+Focus on:
+- What it is
+- How it works (simply)
+- Real-world examples
+- Why it matters
+
+Keep it under 200 words.

@@ -1,0 +1,13 @@
+Translate the following text from {{.source_lang}} to {{.target_lang}}:
+
+"{{.text}}"
+
+Provide:
+1. The direct translation
+2. Any cultural notes or context if relevant
+3. Alternative translations if applicable
+
+-- defaults --
+text=Hello, how are you today?
+source_lang=English
+target_lang=Spanish

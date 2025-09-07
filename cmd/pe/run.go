@@ -330,16 +330,15 @@ func setupDynamicFlags(cmd *cobra.Command, args []string) error {
 
 // extractTemplateVars finds all {{.VARNAME}} and {{VARNAME}} patterns in the prompt
 func extractTemplateVars(prompt string) []string {
-	// Match both {{.VARNAME}} and {{VARNAME}} patterns
-	re1 := regexp.MustCompile(`\{\{\.([A-Za-z_][A-Za-z0-9_]*)\}\}`)
-	re2 := regexp.MustCompile(`\{\{([A-Za-z_][A-Za-z0-9_]*)\}\}`)
+	// Only match {{.VARNAME}} patterns - the proper Go template syntax
+	re := regexp.MustCompile(`\{\{\.([A-Za-z_][A-Za-z0-9_]*)\}\}`)
 
 	vars := make([]string, 0)
 	seen := make(map[string]bool)
 
 	// Find {{.VARNAME}} patterns
-	matches1 := re1.FindAllStringSubmatch(prompt, -1)
-	for _, match := range matches1 {
+	matches := re.FindAllStringSubmatch(prompt, -1)
+	for _, match := range matches {
 		if len(match) > 1 {
 			varName := match[1]
 			if !seen[varName] {
@@ -349,16 +348,10 @@ func extractTemplateVars(prompt string) []string {
 		}
 	}
 
-	// Find {{VARNAME}} patterns (but exclude function calls)
-	matches2 := re2.FindAllStringSubmatch(prompt, -1)
-	for _, match := range matches2 {
-		if len(match) > 1 {
-			varName := match[1]
-			// Skip if it's a function call or already has dot prefix
-			if !strings.Contains(match[0], " ") && !strings.HasPrefix(match[0], "{{.") && !seen[varName] {
-				vars = append(vars, varName)
-				seen[varName] = true
-			}
+	// Check for incorrect {{VARNAME}} syntax and warn
+	if wrongSyntax := regexp.MustCompile(`\{\{([A-Za-z_][A-Za-z0-9_]*)\}\}`); wrongSyntax.MatchString(prompt) {
+		if !strings.Contains(prompt, "if ") && !strings.Contains(prompt, "range ") && !strings.Contains(prompt, "end") {
+			fmt.Fprintf(os.Stderr, "Warning: Found {{variable}} syntax. Use {{.variable}} for Go templates.\n")
 		}
 	}
 

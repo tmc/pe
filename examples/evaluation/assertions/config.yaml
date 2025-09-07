@@ -1,0 +1,116 @@
+description: "Comprehensive assertion types demonstration"
+
+prompts:
+  - |
+    {{.task}}
+    
+    Requirements:
+    {{.requirements}}
+
+providers:
+  - name: openai
+    config:
+      model: gpt-4o-mini
+
+tests:
+  # Text content assertions
+  - description: "Contains assertion"
+    vars:
+      task: "List three primary colors"
+      requirements: "Include red, blue, and yellow"
+    assert:
+      - type: contains
+        value: ["red", "blue", "yellow"]
+
+  - description: "Not contains assertion"
+    vars:
+      task: "List primary colors"
+      requirements: "Do not mention secondary colors"
+    assert:
+      - type: not-contains
+        value: ["green", "orange", "purple"]
+
+  - description: "Regex pattern matching"
+    vars:
+      task: "Write today's date"
+      requirements: "Use format YYYY-MM-DD"
+    assert:
+      - type: regex
+        pattern: "\\d{4}-\\d{2}-\\d{2}"
+
+  # Length assertions
+  - description: "Length constraints"
+    vars:
+      task: "Write a haiku"
+      requirements: "Traditional 5-7-5 syllable structure"
+    assert:
+      - type: length
+        min: 30
+        max: 100
+
+  # JSON validation
+  - description: "JSON output"
+    vars:
+      task: "Return a JSON object"
+      requirements: |
+        Include fields:
+        - name (string)
+        - age (number)
+        - active (boolean)
+    assert:
+      - type: is-json
+      - type: json-schema
+        schema:
+          type: object
+          required: ["name", "age", "active"]
+          properties:
+            name:
+              type: string
+            age:
+              type: number
+            active:
+              type: boolean
+
+  # Performance assertions
+  - description: "Latency check"
+    vars:
+      task: "Say hello"
+      requirements: "Be brief"
+    assert:
+      - type: latency
+        max: 5000  # 5 seconds
+      - type: cost
+        max: 0.01  # $0.01
+
+  # Similarity assertions
+  - description: "Similarity to reference"
+    vars:
+      task: "Explain photosynthesis"
+      requirements: "One sentence"
+    assert:
+      - type: similarity
+        reference: "Photosynthesis is the process by which plants convert light energy into chemical energy."
+        threshold: 0.7
+
+  # Custom evaluation
+  - description: "LLM as judge"
+    vars:
+      task: "Write a professional email"
+      requirements: "Requesting a meeting"
+    assert:
+      - type: llm-eval
+        criteria: "Is this a professional and polite email?"
+        threshold: 0.8
+
+  # Multiple conditions
+  - description: "Complex validation"
+    vars:
+      task: "Generate a random number"
+      requirements: "Between 1 and 100"
+    assert:
+      - type: regex
+        pattern: "\\b\\d{1,2}\\b|100"
+      - type: not-contains
+        value: ["0", "-", "101", "1000"]
+      - type: length
+        max: 50

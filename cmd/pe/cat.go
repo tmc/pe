@@ -2,12 +2,14 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
+	"text/template"
 
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -368,15 +370,19 @@ func interactiveVariableInput(components *PromptComponents) error {
 
 // substituteVariables replaces {{variable}} patterns with actual values
 func substituteVariables(text string, variables map[string]string) string {
-	for name, value := range variables {
-		pattern := fmt.Sprintf("{{%s}}", name)
-		text = strings.ReplaceAll(text, pattern, value)
-		
-		// Also handle variations with spaces
-		pattern = fmt.Sprintf("{{ %s }}", name)
-		text = strings.ReplaceAll(text, pattern, value)
+	// Use standard Go template with map - the proper way
+	tmpl, err := template.New("prompt").Parse(text)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: template parse error: %v\n", err)
+		return text
 	}
-	return text
+	
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, variables); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: template execution error: %v\n", err)
+		return text
+	}
+	return buf.String()
 }
 
 // Display functions

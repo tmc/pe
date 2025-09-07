@@ -1,0 +1,54 @@
+description: "Basic evaluation example - Math problems"
+
+prompts:
+  - "Solve this math problem: {{.problem}}"
+  - "Calculate: {{.problem}}"
+
+providers:
+  - name: openai
+    config:
+      model: gpt-4o-mini
+      temperature: 0
+  - name: anthropic
+    config:
+      model: claude-3-haiku-20240307
+      temperature: 0
+
+tests:
+  - description: "Simple addition"
+    vars:
+      problem: "2 + 2"
+    assert:
+      - type: contains
+        value: "4"
+      - type: not-contains
+        value: ["5", "3", "error"]
+
+  - description: "Multiplication"
+    vars:
+      problem: "7 × 8"
+    assert:
+      - type: contains
+        value: "56"
+      - type: length
+        min: 2
+        max: 100
+
+  - description: "Division"
+    vars:
+      problem: "100 ÷ 4"
+    assert:
+      - type: contains
+        value: "25"
+
+  - description: "Word problem"
+    vars:
+      problem: "If you have 12 apples and give away 5, how many do you have left?"
+    assert:
+      - type: contains
+        value: "7"
+      - type: regex
+        pattern: "\\b7\\b|seven"
+
+outputPath: results.json
+saveDb: true
