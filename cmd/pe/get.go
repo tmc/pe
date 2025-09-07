@@ -380,13 +380,13 @@ func getPromptInfo(p *prompt.Prompt) PromptInfo {
 }
 
 func runGetModule(cmd *cobra.Command) error {
-	// Read go.mod file
-	data, err := os.ReadFile("go.mod")
+	// Read pe.mod file
+	data, err := os.ReadFile("pe.mod")
 	if err != nil {
-		return fmt.Errorf("reading go.mod: %w", err)
+		return fmt.Errorf("reading pe.mod: %w", err)
 	}
 
-	// Simple parsing of go.mod
+	// Simple parsing of pe.mod
 	lines := strings.Split(string(data), "\n")
 	inRequire := false
 

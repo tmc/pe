@@ -48,10 +48,10 @@ func runPush(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		moduleName = args[0]
 	} else {
-		// Try to read module name from go.mod
-		data, err := os.ReadFile("go.mod")
+		// Try to read module name from pe.mod
+		data, err := os.ReadFile("pe.mod")
 		if err != nil {
-			return fmt.Errorf("no module name provided and go.mod not found")
+			return fmt.Errorf("no module name provided and pe.mod not found")
 		}
 
 		lines := strings.Split(string(data), "\n")
@@ -64,7 +64,7 @@ func runPush(cmd *cobra.Command, args []string) error {
 		}
 
 		if moduleName == "" {
-			return fmt.Errorf("could not determine module name from go.mod")
+			return fmt.Errorf("could not determine module name from pe.mod")
 		}
 	}
 
@@ -74,8 +74,8 @@ func runPush(cmd *cobra.Command, args []string) error {
 	// In test mode with draft, just validate and return
 	if testMode && pushDraft {
 		// Validate module exists
-		if _, err := os.Stat("go.mod"); err != nil {
-			return fmt.Errorf("go.mod not found")
+		if _, err := os.Stat("pe.mod"); err != nil {
+			return fmt.Errorf("pe.mod not found")
 		}
 
 		fmt.Println("Module validated")

@@ -315,10 +315,10 @@ func formatPrompt(p *prompt.Prompt) string {
 }
 
 func addModuleDependency(module string) error {
-	// Read existing go.mod
-	data, err := os.ReadFile("go.mod")
+	// Read existing pe.mod
+	data, err := os.ReadFile("pe.mod")
 	if err != nil {
-		return fmt.Errorf("reading go.mod: %w", err)
+		return fmt.Errorf("reading pe.mod: %w", err)
 	}
 
 	content := string(data)
@@ -365,5 +365,5 @@ func addModuleDependency(module string) error {
 	}
 
 	// Write back
-	return os.WriteFile("go.mod", []byte(content), 0644)
+	return os.WriteFile("pe.mod", []byte(content), 0644)
 }
