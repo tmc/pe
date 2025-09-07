@@ -217,7 +217,20 @@ func (p *ModelProvider) runCGPTCommand(prompt string, dryRun bool) (string, toke
 	// Add the sanitized prompt as the final argument
 	args = append(args, sanitizedPrompt)
 
-	cmd := exec.Command("cgpt", args...)
+	// Try to use go tool cgpt first (Go 1.24+ with tool directive)
+	var cmd *exec.Cmd
+	if testCmd := exec.Command("go", "tool", "cgpt", "--version"); testCmd.Run() == nil {
+		// Use go tool cgpt
+		fullArgs := append([]string{"tool", "cgpt"}, args...)
+		cmd = exec.Command("go", fullArgs...)
+	} else if _, err := exec.LookPath("cgpt"); err == nil {
+		// Use cgpt binary if available
+		cmd = exec.Command("cgpt", args...)
+	} else {
+		// Fall back to go run
+		fullArgs := append([]string{"run", "github.com/tmc/cgpt/cmd/cgpt"}, args...)
+		cmd = exec.Command("go", fullArgs...)
+	}
 
 	// If dry run, just print the command without executing
 	if dryRun {

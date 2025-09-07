@@ -31,10 +31,13 @@ func init() {
 
 // Provider implements the inference.Provider interface using cgpt.
 type Provider struct {
-	// Path to cgpt binary (default: uses go run)
+	// Path to cgpt binary (default: uses go tool)
 	binaryPath string
 
-	// Whether to use go run instead of a binary
+	// Whether to use go tool instead of a binary
+	useGoTool bool
+
+	// Whether to use go run instead of go tool
 	useGoRun bool
 }
 
@@ -44,13 +47,24 @@ func New() *Provider {
 	if path, err := exec.LookPath("cgpt"); err == nil {
 		return &Provider{
 			binaryPath: path,
+			useGoTool:  false,
 			useGoRun:   false,
+		}
+	}
+
+	// Try to use go tool cgpt (Go 1.24+ with tool directive)
+	// Test if go tool cgpt works
+	if testCmd := exec.Command("go", "tool", "cgpt", "--version"); testCmd.Run() == nil {
+		return &Provider{
+			useGoTool: true,
+			useGoRun:  false,
 		}
 	}
 
 	// Fall back to go run
 	return &Provider{
-		useGoRun: true,
+		useGoTool: false,
+		useGoRun:  true,
 	}
 }
 
@@ -58,6 +72,7 @@ func New() *Provider {
 func NewWithBinary(path string) *Provider {
 	return &Provider{
 		binaryPath: path,
+		useGoTool:  false,
 		useGoRun:   false,
 	}
 }
@@ -215,12 +230,16 @@ func (p *Provider) Close() error {
 
 // buildCommand creates the exec.Cmd for cgpt.
 func (p *Provider) buildCommand(ctx context.Context, args ...string) *exec.Cmd {
+	if p.useGoTool {
+		// Use go tool cgpt (Go 1.24+ with tool directive)
+		fullArgs := append([]string{"tool", "cgpt"}, args...)
+		return exec.CommandContext(ctx, "go", fullArgs...)
+	}
 	if p.useGoRun {
-		// Use go run
+		// Use go run as fallback
 		fullArgs := append([]string{"run", "github.com/tmc/cgpt/cmd/cgpt"}, args...)
 		return exec.CommandContext(ctx, "go", fullArgs...)
 	}
-
 	// Use binary
 	return exec.CommandContext(ctx, p.binaryPath, args...)
 }
