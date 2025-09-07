@@ -437,7 +437,8 @@ func extractMultipleTags(content, tags string, all bool, nested bool, attrFilter
 	if len(tagList) > 1 {
 		// For the test case, format as "Tag: content"
 		for i := range results {
-			results[i].Content = fmt.Sprintf("%s: %s", strings.Title(results[i].Tag), results[i].Content)
+			tagName := strings.Title(results[i].Tag)
+			results[i].Content = fmt.Sprintf("%s: %s", tagName, results[i].Content)
 		}
 	}
 
