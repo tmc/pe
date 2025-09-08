@@ -25,6 +25,7 @@ func init() {
 	promptCmd.AddCommand(promptEditCmd())
 	promptCmd.AddCommand(promptInfoCmd())
 	promptCmd.AddCommand(promptTidyCmd())
+	promptCmd.AddCommand(promptHelpCmd())
 }
 
 // promptInitCmd creates a new prompt file with shebang and structure
@@ -661,4 +662,212 @@ func removeUnusedDefaults(lines []string, usedVars map[string]bool) []string {
 	}
 	
 	return result
+}
+
+// promptHelpCmd shows usage information for a prompt file
+func promptHelpCmd() *cobra.Command {
+	var (
+		asScript bool
+	)
+	
+	cmd := &cobra.Command{
+		Use:   "help [file]",
+		Short: "Show usage information for a prompt file",
+		Long: `Show usage information for a prompt file, including variables, defaults, and examples.
+
+This command displays comprehensive help for a prompt file, showing:
+- Description from comments
+- Required and optional variables
+- Default values
+- Usage examples
+
+Examples:
+  pe prompt help my-script.prompt
+  pe prompt help analyzer --as-script`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			filename := args[0]
+			
+			// Read the prompt file
+			content, err := os.ReadFile(filename)
+			if err != nil {
+				return fmt.Errorf("reading file: %w", err)
+			}
+			
+			// Parse sections
+			info := analyzePromptFile(string(content))
+			description := extractDescription(string(content))
+			defaults := extractDefaults(string(content))
+			vars := extractPromptVariables(string(content))
+			
+			// Display help
+			scriptName := filepath.Base(filename)
+			fmt.Printf("%s\n", scriptName)
+			
+			if description != "" {
+				fmt.Printf("\n%s\n", description)
+			}
+			
+			fmt.Printf("\nUsage:\n")
+			if asScript {
+				fmt.Printf("  %s", scriptName)
+			} else {
+				fmt.Printf("  pe run %s", filename)
+			}
+			
+			// Show variable flags
+			for _, v := range vars {
+				if def, hasDefault := defaults[v]; hasDefault {
+					fmt.Printf(" [--%s=value]", strings.ToLower(v))
+					_ = def // We'll show the default in the Variables section
+				} else {
+					fmt.Printf(" --%s=value", strings.ToLower(v))
+				}
+			}
+			fmt.Printf("\n")
+			
+			// Show variables section
+			if len(vars) > 0 {
+				fmt.Printf("\nVariables:\n")
+				for _, v := range vars {
+					if def, hasDefault := defaults[v]; hasDefault {
+						fmt.Printf("  --%s string    %s (default: %s)\n", 
+							strings.ToLower(v), v, def)
+					} else {
+						fmt.Printf("  --%s string    %s (required)\n", 
+							strings.ToLower(v), v)
+					}
+				}
+			}
+			
+			// Show system prompt if present
+			if system, ok := info["system"].(string); ok && system != "" {
+				fmt.Printf("\nSystem Prompt:\n  %s\n", 
+					strings.ReplaceAll(system, "\n", "\n  "))
+			}
+			
+			// Examples
+			fmt.Printf("\nExamples:\n")
+			
+			// Basic example
+			if asScript {
+				fmt.Printf("  # Run with defaults\n")
+				fmt.Printf("  ./%s\n", scriptName)
+				
+				if len(vars) > 0 {
+					fmt.Printf("\n  # Override variables\n")
+					fmt.Printf("  ./%s", scriptName)
+					for _, v := range vars {
+						fmt.Printf(" --%s=\"value\"", strings.ToLower(v))
+					}
+					fmt.Printf("\n")
+				}
+			} else {
+				fmt.Printf("  # Run with defaults\n")
+				fmt.Printf("  pe run %s\n", filename)
+				
+				if len(vars) > 0 {
+					fmt.Printf("\n  # Override variables\n") 
+					fmt.Printf("  pe run %s", filename)
+					for _, v := range vars {
+						fmt.Printf(" --var %s=\"value\"", v)
+					}
+					fmt.Printf("\n")
+					
+					fmt.Printf("\n  # Using direct flags (with custom parser)\n")
+					fmt.Printf("  pe run %s", filename)
+					for _, v := range vars {
+						fmt.Printf(" --%s=\"value\"", strings.ToLower(v))
+					}
+					fmt.Printf("\n")
+				}
+			}
+			
+			return nil
+		},
+	}
+	
+	cmd.Flags().BoolVar(&asScript, "as-script", false, 
+		"Show help as if running as standalone script")
+	
+	return cmd
+}
+
+// extractDescription extracts description from prompt comments
+func extractDescription(content string) string {
+	lines := strings.Split(content, "\n")
+	var description []string
+	
+	for i, line := range lines {
+		// Skip shebang
+		if i == 0 && strings.HasPrefix(line, "#!") {
+			continue
+		}
+		
+		// Collect comment lines at the top as description
+		if strings.HasPrefix(line, "# ") {
+			description = append(description, strings.TrimPrefix(line, "# "))
+		} else if strings.TrimSpace(line) != "" && !strings.HasPrefix(line, "#") {
+			// Stop at first non-comment, non-empty line
+			break
+		}
+	}
+	
+	return strings.Join(description, "\n")
+}
+
+// extractDefaults extracts default values from prompt content
+func extractDefaults(content string) map[string]string {
+	defaults := make(map[string]string)
+	lines := strings.Split(content, "\n")
+	inDefaults := false
+	
+	for _, line := range lines {
+		if strings.HasPrefix(line, "---defaults---") {
+			inDefaults = true
+			continue
+		} else if inDefaults && strings.HasPrefix(line, "---") {
+			break
+		}
+		
+		if inDefaults && strings.Contains(line, ":") {
+			parts := strings.SplitN(line, ":", 2)
+			if len(parts) == 2 {
+				key := strings.TrimSpace(parts[0])
+				value := strings.TrimSpace(parts[1])
+				defaults[key] = value
+			}
+		}
+	}
+	
+	return defaults
+}
+
+// extractPromptVariables extracts template variables from prompt
+func extractPromptVariables(content string) []string {
+	// Parse to get main prompt content
+	lines := strings.Split(content, "\n")
+	var mainContent []string
+	inSection := false
+	
+	for i, line := range lines {
+		// Skip shebang
+		if i == 0 && strings.HasPrefix(line, "#!") {
+			continue
+		}
+		
+		// Check for section start
+		if strings.HasPrefix(line, "---") && strings.HasSuffix(line, "---") {
+			inSection = true
+			continue
+		}
+		
+		// Collect main content (before any section)
+		if !inSection {
+			mainContent = append(mainContent, line)
+		}
+	}
+	
+	prompt := strings.Join(mainContent, "\n")
+	return findVariables(prompt)
 }
