@@ -235,38 +235,6 @@ Examples:
   pe run gist:username/prompt-id`,
 		Args: cobra.RangeArgs(1, 10), // Allow up to 10 args for positional template vars
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			// Debug: print os.Args
-			if os.Getenv("PE_DEBUG") == "true" {
-				fmt.Fprintf(os.Stderr, "Debug: os.Args = %v\n", os.Args)
-				fmt.Fprintf(os.Stderr, "Debug: args = %v\n", args)
-			}
-			
-			// Check if help was requested and we have a prompt file
-			helpRequested := false
-			for _, arg := range os.Args {
-				if arg == "--help" || arg == "-h" {
-					helpRequested = true
-					break
-				}
-			}
-			
-			if helpRequested {
-				// Check if we're being run as a shebang script
-				if len(os.Args) > 1 {
-					// Look for a .prompt file in the args
-					for _, arg := range os.Args {
-						if strings.HasSuffix(arg, ".prompt") {
-							// Show prompt-specific help
-							return showPromptHelp(arg)
-						}
-					}
-				}
-				// Also check the cobra args
-				if len(args) > 0 && strings.HasSuffix(args[0], ".prompt") {
-					return showPromptHelp(args[0])
-				}
-			}
-			
 			// Detect template variables and add dynamic flags
 			return setupDynamicFlags(cmd, args)
 		},
@@ -286,32 +254,21 @@ Examples:
 	// Override help function to show prompt-specific help when appropriate
 	originalHelpFunc := cmd.HelpFunc()
 	cmd.SetHelpFunc(func(c *cobra.Command, args []string) {
-		// Look for a prompt file in various positions
+		// Look for a file argument after "run"
 		promptFile := ""
 		
-		// First check if we're being run as a shebang script via $_
-		if scriptPath := os.Getenv("_"); scriptPath != "" {
-			if strings.HasSuffix(scriptPath, ".prompt") {
-				if _, err := os.Stat(scriptPath); err == nil {
-					promptFile = scriptPath
-				}
+		runFound := false
+		for _, arg := range os.Args {
+			if arg == "run" {
+				runFound = true
+				continue
 			}
-		}
-		
-		// If not found via $_, check os.Args for the file
-		if promptFile == "" {
-			runFound := false
-			for _, arg := range os.Args {
-				if arg == "run" {
-					runFound = true
-					continue
-				}
-				if runFound && !strings.HasPrefix(arg, "-") {
-					// This should be the prompt file
-					if _, err := os.Stat(arg); err == nil {
-						promptFile = arg
-						break
-					}
+			if runFound && !strings.HasPrefix(arg, "-") {
+				// This should be the prompt file or inline prompt
+				// Check if it's a file (not an inline prompt string)
+				if _, err := os.Stat(arg); err == nil {
+					promptFile = arg
+					break
 				}
 			}
 		}
@@ -346,14 +303,32 @@ func showPromptHelp(promptFile string) error {
 	description := extractDescription(string(content))
 	systemPrompt := extractSystemPrompt(string(content))
 	
-	// Display prompt-specific help
-	fmt.Printf("%s\n", filepath.Base(promptFile))
+	// Determine if we're running as a shebang script
+	// If os.Args[0] doesn't contain "pe", we're likely running as shebang
+	isShebang := !strings.Contains(os.Args[0], "pe")
+	
+	// Display help as a standalone script if running via shebang
+	scriptName := filepath.Base(promptFile)
+	if isShebang {
+		// Act like a standalone script - no mention of pe
+		fmt.Printf("%s\n", scriptName)
+	} else {
+		// Running via pe run - show full path
+		fmt.Printf("%s\n", scriptName)
+	}
+	
 	if description != "" {
 		fmt.Printf("\n%s\n", description)
 	}
 	
 	fmt.Printf("\nUsage:\n")
-	fmt.Printf("  %s", promptFile)
+	if isShebang {
+		// Show as standalone script
+		fmt.Printf("  %s", scriptName)
+	} else {
+		// Show with pe run
+		fmt.Printf("  %s", promptFile)
+	}
 	if len(vars) > 0 {
 		for _, v := range vars {
 			if _, hasDefault := defaults[v]; hasDefault {
@@ -387,31 +362,46 @@ func showPromptHelp(promptFile string) error {
 		fmt.Printf("\nSystem Prompt:\n  %s\n", strings.ReplaceAll(systemPrompt, "\n", "\n  "))
 	}
 	
+	// Show options - minimal for shebang, full for pe run
 	fmt.Printf("\nOptions:\n")
 	fmt.Printf("  -h, --help              Show this help message\n")
-	fmt.Printf("  -m, --model string      Override model (from shebang or default)\n")
-	fmt.Printf("  -t, --temperature float Override temperature (default 0.7)\n")
-	fmt.Printf("      --max-tokens int    Override max tokens\n")
-	fmt.Printf("      --provider string   Override provider\n")
-	fmt.Printf("      --stream            Enable/disable streaming (default true)\n")
-	fmt.Printf("      --json              Output in JSON format\n")
+	
+	if !isShebang {
+		// Show pe-specific options only when running via pe
+		fmt.Printf("  -m, --model string      Override model (from shebang or default)\n")
+		fmt.Printf("  -t, --temperature float Override temperature (default 0.7)\n")
+		fmt.Printf("      --max-tokens int    Override max tokens\n")
+		fmt.Printf("      --provider string   Override provider\n")
+		fmt.Printf("      --stream            Enable/disable streaming (default true)\n")
+		fmt.Printf("      --json              Output in JSON format\n")
+	}
 	fmt.Printf("      --var key=value     Set template variable (can be repeated)\n")
 	
 	fmt.Printf("\nExamples:\n")
 	fmt.Printf("  # Run with defaults\n")
-	fmt.Printf("  %s\n", promptFile)
+	if isShebang {
+		fmt.Printf("  %s\n", scriptName)
+	} else {
+		fmt.Printf("  %s\n", promptFile)
+	}
 	
 	if len(vars) > 0 {
 		fmt.Printf("\n  # Override variables\n")
-		fmt.Printf("  %s", promptFile)
+		if isShebang {
+			fmt.Printf("  %s", scriptName)
+		} else {
+			fmt.Printf("  %s", promptFile)
+		}
 		for _, v := range vars {
 			fmt.Printf(" --%s=\"custom value\"", strings.ToLower(v))
 		}
 		fmt.Printf("\n")
 	}
 	
-	fmt.Printf("\n  # Use different model\n")
-	fmt.Printf("  %s --model gpt-4\n", promptFile)
+	if !isShebang {
+		fmt.Printf("\n  # Use different model\n")
+		fmt.Printf("  %s --model gpt-4\n", promptFile)
+	}
 	
 	os.Exit(0)
 	return nil
