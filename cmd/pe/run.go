@@ -235,6 +235,38 @@ Examples:
   pe run gist:username/prompt-id`,
 		Args: cobra.RangeArgs(1, 10), // Allow up to 10 args for positional template vars
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// Debug: print os.Args
+			if os.Getenv("PE_DEBUG") == "true" {
+				fmt.Fprintf(os.Stderr, "Debug: os.Args = %v\n", os.Args)
+				fmt.Fprintf(os.Stderr, "Debug: args = %v\n", args)
+			}
+			
+			// Check if help was requested and we have a prompt file
+			helpRequested := false
+			for _, arg := range os.Args {
+				if arg == "--help" || arg == "-h" {
+					helpRequested = true
+					break
+				}
+			}
+			
+			if helpRequested {
+				// Check if we're being run as a shebang script
+				if len(os.Args) > 1 {
+					// Look for a .prompt file in the args
+					for _, arg := range os.Args {
+						if strings.HasSuffix(arg, ".prompt") {
+							// Show prompt-specific help
+							return showPromptHelp(arg)
+						}
+					}
+				}
+				// Also check the cobra args
+				if len(args) > 0 && strings.HasSuffix(args[0], ".prompt") {
+					return showPromptHelp(args[0])
+				}
+			}
+			
 			// Detect template variables and add dynamic flags
 			return setupDynamicFlags(cmd, args)
 		},
@@ -251,7 +283,210 @@ Examples:
 	cmd.Flags().BoolVar(&runStream, "stream", true, "Enable streaming output")
 	cmd.Flags().BoolVar(&runJSON, "json", false, "Output in JSON format")
 
+	// Override help function to show prompt-specific help when appropriate
+	originalHelpFunc := cmd.HelpFunc()
+	cmd.SetHelpFunc(func(c *cobra.Command, args []string) {
+		// Look for a prompt file in various positions
+		promptFile := ""
+		
+		// First check if we're being run as a shebang script via $_
+		if scriptPath := os.Getenv("_"); scriptPath != "" {
+			if strings.HasSuffix(scriptPath, ".prompt") {
+				if _, err := os.Stat(scriptPath); err == nil {
+					promptFile = scriptPath
+				}
+			}
+		}
+		
+		// If not found via $_, check os.Args for the file
+		if promptFile == "" {
+			runFound := false
+			for _, arg := range os.Args {
+				if arg == "run" {
+					runFound = true
+					continue
+				}
+				if runFound && !strings.HasPrefix(arg, "-") {
+					// This should be the prompt file
+					if _, err := os.Stat(arg); err == nil {
+						promptFile = arg
+						break
+					}
+				}
+			}
+		}
+		
+		if promptFile != "" {
+			// Show prompt-specific help
+			showPromptHelp(promptFile)
+			return
+		}
+		
+		// Fall back to original help
+		originalHelpFunc(c, args)
+	})
+
 	return cmd
+}
+
+// showPromptHelp displays prompt-specific help information
+func showPromptHelp(promptFile string) error {
+	// Read the prompt file
+	content, err := os.ReadFile(promptFile)
+	if err != nil {
+		return fmt.Errorf("reading prompt file: %w", err)
+	}
+
+	// Parse the prompt
+	prompt := parsePromptFile(string(content))
+	
+	// Extract metadata
+	vars := extractTemplateVars(prompt)
+	defaults := extractDefaults(string(content))
+	description := extractDescription(string(content))
+	systemPrompt := extractSystemPrompt(string(content))
+	
+	// Display prompt-specific help
+	fmt.Printf("%s\n", filepath.Base(promptFile))
+	if description != "" {
+		fmt.Printf("\n%s\n", description)
+	}
+	
+	fmt.Printf("\nUsage:\n")
+	fmt.Printf("  %s", promptFile)
+	if len(vars) > 0 {
+		for _, v := range vars {
+			if _, hasDefault := defaults[v]; hasDefault {
+				fmt.Printf(" [--%s=<%s>]", strings.ToLower(v), v)
+			} else {
+				fmt.Printf(" --%s=<%s>", strings.ToLower(v), v)
+			}
+		}
+	}
+	fmt.Printf("\n")
+	
+	if len(vars) > 0 {
+		fmt.Printf("\nVariables:\n")
+		for _, v := range vars {
+			if defaultVal, hasDefault := defaults[v]; hasDefault {
+				fmt.Printf("  --%s string    %s (default: %s)\n", strings.ToLower(v), v, defaultVal)
+			} else {
+				fmt.Printf("  --%s string    %s (required)\n", strings.ToLower(v), v)
+			}
+		}
+	}
+	
+	if len(defaults) > 0 {
+		fmt.Printf("\nDefaults:\n")
+		for k, v := range defaults {
+			fmt.Printf("  %s: %s\n", k, v)
+		}
+	}
+	
+	if systemPrompt != "" {
+		fmt.Printf("\nSystem Prompt:\n  %s\n", strings.ReplaceAll(systemPrompt, "\n", "\n  "))
+	}
+	
+	fmt.Printf("\nOptions:\n")
+	fmt.Printf("  -h, --help              Show this help message\n")
+	fmt.Printf("  -m, --model string      Override model (from shebang or default)\n")
+	fmt.Printf("  -t, --temperature float Override temperature (default 0.7)\n")
+	fmt.Printf("      --max-tokens int    Override max tokens\n")
+	fmt.Printf("      --provider string   Override provider\n")
+	fmt.Printf("      --stream            Enable/disable streaming (default true)\n")
+	fmt.Printf("      --json              Output in JSON format\n")
+	fmt.Printf("      --var key=value     Set template variable (can be repeated)\n")
+	
+	fmt.Printf("\nExamples:\n")
+	fmt.Printf("  # Run with defaults\n")
+	fmt.Printf("  %s\n", promptFile)
+	
+	if len(vars) > 0 {
+		fmt.Printf("\n  # Override variables\n")
+		fmt.Printf("  %s", promptFile)
+		for _, v := range vars {
+			fmt.Printf(" --%s=\"custom value\"", strings.ToLower(v))
+		}
+		fmt.Printf("\n")
+	}
+	
+	fmt.Printf("\n  # Use different model\n")
+	fmt.Printf("  %s --model gpt-4\n", promptFile)
+	
+	os.Exit(0)
+	return nil
+}
+
+// extractDefaults extracts default values from prompt content
+func extractDefaults(content string) map[string]string {
+	defaults := make(map[string]string)
+	lines := strings.Split(content, "\n")
+	inDefaults := false
+	
+	for _, line := range lines {
+		if strings.HasPrefix(line, "---defaults---") {
+			inDefaults = true
+			continue
+		} else if inDefaults && strings.HasPrefix(line, "---") {
+			break
+		}
+		
+		if inDefaults && strings.Contains(line, ":") {
+			parts := strings.SplitN(line, ":", 2)
+			if len(parts) == 2 {
+				key := strings.TrimSpace(parts[0])
+				value := strings.TrimSpace(parts[1])
+				defaults[key] = value
+			}
+		}
+	}
+	
+	return defaults
+}
+
+// extractDescription extracts description from prompt comments
+func extractDescription(content string) string {
+	lines := strings.Split(content, "\n")
+	var description []string
+	
+	for i, line := range lines {
+		// Skip shebang
+		if i == 0 && strings.HasPrefix(line, "#!") {
+			continue
+		}
+		
+		// Collect comment lines at the top as description
+		if strings.HasPrefix(line, "# ") {
+			description = append(description, strings.TrimPrefix(line, "# "))
+		} else if strings.TrimSpace(line) != "" && !strings.HasPrefix(line, "#") {
+			// Stop at first non-comment, non-empty line
+			break
+		}
+	}
+	
+	return strings.Join(description, "\n")
+}
+
+// extractSystemPrompt extracts system prompt from content
+func extractSystemPrompt(content string) string {
+	lines := strings.Split(content, "\n")
+	inSystem := false
+	var systemLines []string
+	
+	for _, line := range lines {
+		if strings.HasPrefix(line, "---system---") {
+			inSystem = true
+			continue
+		} else if inSystem && strings.HasPrefix(line, "---") {
+			break
+		}
+		
+		if inSystem {
+			systemLines = append(systemLines, line)
+		}
+	}
+	
+	return strings.TrimSpace(strings.Join(systemLines, "\n"))
 }
 
 // setupDynamicFlags detects template variables and validates arguments
