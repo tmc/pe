@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/tmc/pe/internal/module"
 	"github.com/tmc/pe/internal/pemod"
 )
 
@@ -24,19 +25,18 @@ Each module is a gist containing prompt files and metadata.`,
 }
 
 var (
-	// Root gist ID that contains the registry
-	rootGistID = "YOUR_ROOT_GIST_ID" // TODO: Set this to actual root gist
-	modForce   bool
+	modForce bool
 )
 
 func init() {
 	modCmd.AddCommand(modInitCmd)
-	// Registry commands disabled pending full implementation
-	// modCmd.AddCommand(modListCmd)
-	// modCmd.AddCommand(modGetCmd)
-	// modCmd.AddCommand(modDownloadCmd)
+	modCmd.AddCommand(modListCmd)
+	modCmd.AddCommand(modGetCmd) 
+	modCmd.AddCommand(modDownloadCmd)
 	modCmd.AddCommand(modTidyCmd)
 	modCmd.AddCommand(modVendorCmd)
+	modCmd.AddCommand(modSearchCmd)
+	modCmd.AddCommand(modPublishCmd)
 }
 
 var modInitCmd = &cobra.Command{
@@ -53,9 +53,6 @@ Example:
 	RunE: runModInit,
 }
 
-// NOTE: Registry-based commands are disabled pending full implementation
-// These will be available in a future release
-/*
 var modListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List available modules from the registry",
@@ -71,10 +68,22 @@ var modGetCmd = &cobra.Command{
 
 var modDownloadCmd = &cobra.Command{
 	Use:   "download",
-	Short: "Download modules specified in go.mod",
+	Short: "Download modules specified in pe.mod",
 	RunE:  runModDownload,
 }
-*/
+
+var modSearchCmd = &cobra.Command{
+	Use:   "search [query]",
+	Short: "Search for modules in the registry",
+	Args:  cobra.ExactArgs(1),
+	RunE:  runModSearch,
+}
+
+var modPublishCmd = &cobra.Command{
+	Use:   "publish",
+	Short: "Publish a module to the registry",
+	RunE:  runModPublish,
+}
 
 var modTidyCmd = &cobra.Command{
 	Use:   "tidy",
@@ -108,6 +117,130 @@ type PromptModule struct {
 	Module
 	PromptFile string            `json:"prompt_file"`
 	Files      map[string]string `json:"files,omitempty"`
+}
+
+func runModList(cmd *cobra.Command, args []string) error {
+	registry := module.DefaultRegistry()
+	modules, err := registry.List()
+	if err != nil {
+		return fmt.Errorf("failed to list modules: %w", err)
+	}
+	
+	if len(modules) == 0 {
+		fmt.Println("No modules found in registry")
+		return nil
+	}
+	
+	fmt.Printf("Available modules:\n\n")
+	for _, mod := range modules {
+		fmt.Printf("  %s@%s - %s\n", mod.Name, mod.Version, mod.Description)
+		if mod.Author != "" {
+			fmt.Printf("    Author: %s\n", mod.Author)
+		}
+		if len(mod.Tags) > 0 {
+			fmt.Printf("    Tags: %s\n", strings.Join(mod.Tags, ", "))
+		}
+	}
+	
+	return nil
+}
+
+func runModGet(cmd *cobra.Command, args []string) error {
+	moduleName := args[0]
+	
+	registry := module.DefaultRegistry()
+	mod, err := registry.Get(moduleName)
+	if err != nil {
+		return fmt.Errorf("failed to get module %s: %w", moduleName, err)
+	}
+	
+	fmt.Printf("Module: %s@%s\n", mod.Name, mod.Version)
+	fmt.Printf("Description: %s\n", mod.Description)
+	if mod.Author != "" {
+		fmt.Printf("Author: %s\n", mod.Author)
+	}
+	if mod.License != "" {
+		fmt.Printf("License: %s\n", mod.License)
+	}
+	if len(mod.Dependencies) > 0 {
+		fmt.Printf("Dependencies:\n")
+		for dep, ver := range mod.Dependencies {
+			fmt.Printf("  %s: %s\n", dep, ver)
+		}
+	}
+	if len(mod.Files) > 0 {
+		fmt.Printf("Files:\n")
+		for _, file := range mod.Files {
+			fmt.Printf("  - %s\n", file)
+		}
+	}
+	
+	return nil
+}
+
+func runModSearch(cmd *cobra.Command, args []string) error {
+	query := args[0]
+	
+	registry := module.DefaultRegistry()
+	modules, err := registry.Search(query)
+	if err != nil {
+		return fmt.Errorf("failed to search modules: %w", err)
+	}
+	
+	if len(modules) == 0 {
+		fmt.Printf("No modules found matching '%s'\n", query)
+		return nil
+	}
+	
+	fmt.Printf("Modules matching '%s':\n\n", query)
+	for _, mod := range modules {
+		fmt.Printf("  %s@%s - %s\n", mod.Name, mod.Version, mod.Description)
+	}
+	
+	return nil
+}
+
+func runModPublish(cmd *cobra.Command, args []string) error {
+	// Read module.json from current directory
+	data, err := os.ReadFile("module.json")
+	if err != nil {
+		return fmt.Errorf("failed to read module.json: %w", err)
+	}
+	
+	var mod module.Module
+	if err := json.Unmarshal(data, &mod); err != nil {
+		return fmt.Errorf("failed to parse module.json: %w", err)
+	}
+	
+	// Validate module
+	if mod.Name == "" {
+		return fmt.Errorf("module name is required")
+	}
+	if mod.Version == "" {
+		return fmt.Errorf("module version is required")
+	}
+	
+	// Get list of files to publish
+	if len(mod.Files) == 0 {
+		// Default to all .prompt files
+		files, err := filepath.Glob("*.prompt")
+		if err == nil && len(files) > 0 {
+			mod.Files = files
+		}
+	}
+	
+	// Set metadata
+	mod.PublishedAt = time.Now()
+	mod.UpdatedAt = time.Now()
+	
+	// Publish to registry
+	registry := module.DefaultRegistry()
+	if err := registry.Publish(&mod, "."); err != nil {
+		return fmt.Errorf("failed to publish module: %w", err)
+	}
+	
+	fmt.Printf("Successfully published %s@%s\n", mod.Name, mod.Version)
+	return nil
 }
 
 func runModInit(cmd *cobra.Command, args []string) error {
