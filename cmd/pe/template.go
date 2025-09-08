@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 
@@ -40,6 +42,7 @@ like summarization, code review, creative writing, and data analysis.`,
 	cmd.AddCommand(templateValidateCmd())
 	cmd.AddCommand(templateExportCmd())
 	cmd.AddCommand(templateImportCmd())
+	cmd.AddCommand(templateInteractiveCmd())
 
 	return cmd
 }
@@ -500,23 +503,120 @@ func outputTemplateList(cmd *cobra.Command, templateList []*templates.Template, 
 	return nil
 }
 
-func collectVariablesInteractively(cmd *cobra.Command, template *templates.Template) (map[string]interface{}, error) {
-	// This would implement interactive variable collection
-	// For now, return empty map
-	fmt.Fprintf(cmd.OutOrStdout(), "Interactive variable collection not yet implemented\n")
-	fmt.Fprintf(cmd.OutOrStdout(), "Required variables for template '%s':\n", template.Name)
+// templateInteractiveCmd provides interactive template selection and application
+func templateInteractiveCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "interactive",
+		Short: "Interactive template selection and application",
+		Long:  `Select and apply templates interactively with guided variable input.`,
+		RunE:  runTemplateInteractive,
+	}
 
+	return cmd
+}
+
+func runTemplateInteractive(cmd *cobra.Command, args []string) error {
+	library := templates.GetDefaultLibrary()
+	templateList := library.ListTemplates()
+	
+	if len(templateList) == 0 {
+		return fmt.Errorf("no templates available")
+	}
+	
+	// Show available templates
+	fmt.Fprintf(cmd.OutOrStdout(), "Available templates:\n\n")
+	for i, tmpl := range templateList {
+		fmt.Fprintf(cmd.OutOrStdout(), "%d. %s - %s\n", i+1, tmpl.Name, tmpl.Description)
+	}
+	
+	// Ask user to select a template
+	fmt.Fprintf(cmd.OutOrStdout(), "\nSelect a template (1-%d): ", len(templateList))
+	
+	var selection int
+	if _, err := fmt.Fscanf(cmd.InOrStdin(), "%d", &selection); err != nil {
+		return fmt.Errorf("invalid selection: %v", err)
+	}
+	
+	if selection < 1 || selection > len(templateList) {
+		return fmt.Errorf("selection out of range")
+	}
+	
+	selectedTemplate := templateList[selection-1]
+	fmt.Fprintf(cmd.OutOrStdout(), "\nSelected: %s\n\n", selectedTemplate.Name)
+	
+	// Collect variables interactively
+	vars, err := collectVariablesInteractively(cmd, selectedTemplate)
+	if err != nil {
+		return err
+	}
+	
+	// Apply the template
+	result, err := library.ApplyTemplate(selectedTemplate.Name, vars)
+	if err != nil {
+		return err
+	}
+	
+	fmt.Fprintf(cmd.OutOrStdout(), "\nGenerated prompt:\n\n%s\n", result)
+	return nil
+}
+
+func collectVariablesInteractively(cmd *cobra.Command, template *templates.Template) (map[string]interface{}, error) {
+	vars := make(map[string]interface{})
+	
+	if len(template.Variables) == 0 {
+		return vars, nil
+	}
+	
+	fmt.Fprintf(cmd.OutOrStdout(), "Please provide values for the following variables:\n\n")
+
+	scanner := bufio.NewScanner(cmd.InOrStdin())
+	
 	for name, variable := range template.Variables {
-		fmt.Fprintf(cmd.OutOrStdout(), "  %s (%s): %s\n", name, variable.Type, variable.Description)
-		if variable.Required {
-			fmt.Fprintf(cmd.OutOrStdout(), "    Required: yes\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "%s", name)
+		if variable.Description != "" {
+			fmt.Fprintf(cmd.OutOrStdout(), " (%s)", variable.Description)
 		}
 		if variable.Default != nil {
-			fmt.Fprintf(cmd.OutOrStdout(), "    Default: %v\n", variable.Default)
+			fmt.Fprintf(cmd.OutOrStdout(), " [default: %v]", variable.Default)
+		}
+		if variable.Required {
+			fmt.Fprintf(cmd.OutOrStdout(), " *")
+		}
+		fmt.Fprintf(cmd.OutOrStdout(), ": ")
+		
+		// Read user input
+		if !scanner.Scan() {
+			if err := scanner.Err(); err != nil {
+				return nil, fmt.Errorf("error reading input: %v", err)
+			}
+			return nil, fmt.Errorf("unexpected end of input")
+		}
+		
+		input := strings.TrimSpace(scanner.Text())
+		
+		// Use default if no input and default exists
+		if input == "" && variable.Default != nil {
+			vars[name] = variable.Default
+		} else if input == "" && variable.Required {
+			return nil, fmt.Errorf("variable '%s' is required", name)
+		} else if input != "" {
+			// Parse based on type
+			switch variable.Type {
+			case "number":
+				if val, err := strconv.ParseFloat(input, 64); err == nil {
+					vars[name] = val
+				} else {
+					return nil, fmt.Errorf("invalid number for '%s': %v", name, err)
+				}
+			case "boolean":
+				vars[name] = strings.ToLower(input) == "true" || input == "1" || strings.ToLower(input) == "yes"
+			default:
+				vars[name] = input
+			}
 		}
 	}
 
-	return map[string]interface{}{}, fmt.Errorf("interactive mode not yet implemented")
+	return vars, nil
 }
 
 func loadVariablesFromFile(filename string) (map[string]interface{}, error) {

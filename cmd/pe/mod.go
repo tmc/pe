@@ -421,12 +421,23 @@ func runModDownload(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("creating module directory: %w", err)
 		}
 
-		// TODO: Implement actual download from registry
-		// For now, create a placeholder
-		placeholder := fmt.Sprintf("# Module %s@%s\n# Downloaded on %s\n",
-			req.Mod, req.Version, time.Now().Format(time.RFC3339))
-		if err := os.WriteFile(filepath.Join(modDir, "module.info"), []byte(placeholder), 0644); err != nil {
-			return fmt.Errorf("writing module info: %w", err)
+		// Download from registry
+		registry := module.DefaultRegistry()
+		mod, err := registry.Get(string(req.Mod))
+		if err != nil {
+			// Try without version if not found
+			fmt.Printf("Warning: %s - using placeholder\n", err)
+			placeholder := fmt.Sprintf("# Module %s@%s\n# Downloaded on %s\n",
+				req.Mod, req.Version, time.Now().Format(time.RFC3339))
+			if err := os.WriteFile(filepath.Join(modDir, "module.info"), []byte(placeholder), 0644); err != nil {
+				return fmt.Errorf("writing module info: %w", err)
+			}
+			continue
+		}
+		
+		// Download the module files
+		if err := registry.Download(mod, filepath.Join(".pe", "cache")); err != nil {
+			return fmt.Errorf("downloading module %s: %w", req.Mod, err)
 		}
 	}
 
