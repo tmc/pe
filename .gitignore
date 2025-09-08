@@ -1,7 +1,7 @@
 .claude-history.txtar
 .h-*
 .DS_Store
-pe
+/pe
 .bash_history
 lastsession.txt
 *.log
