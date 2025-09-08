@@ -1,0 +1,69 @@
+# Test: Custom variable flags and direct flag parsing
+
+# Create a test prompt with variables
+echo '#!/usr/bin/env pe run --provider=cgpt
+
+# Language Translator
+# Translates text from one language to another
+
+Translate "{{.text}}" from {{.from}} to {{.to}}.
+
+---defaults---
+text: Hello, world!
+from: English
+to: Spanish' > translator.prompt
+chmod +x translator.prompt
+
+# Test traditional --var syntax
+pe run translator.prompt --var text="Good morning" --var from=English --var to=French
+stdout 'Mock response.*Good morning.*English.*French'
+
+# Test new direct variable flags
+pe run translator.prompt --text="Good evening" --from=German --to=Italian
+stdout 'Mock response.*Good evening.*German.*Italian'
+
+# Test mixed syntax (both should work)
+pe run translator.prompt --text="Hello there" --var to=Japanese
+stdout 'Mock response.*Hello there.*Japanese'
+
+# Test case-insensitive variable matching
+pe run translator.prompt --TEXT="Testing" --FROM=Spanish --TO=Portuguese
+stdout 'Mock response.*Testing.*Spanish.*Portuguese'
+
+# Test --flag=value and --flag value formats
+pe run translator.prompt --text "Space separated" --from=English --to=Russian
+stdout 'Mock response.*Space separated.*English.*Russian'
+
+# Create a more complex prompt with multiple variable types
+echo '#!/usr/bin/env pe run --provider=openai
+
+# Code Analyzer
+# Analyzes code in different languages
+
+Analyze this {{.language}} code:
+```{{.language}}
+{{.code}}
+```
+
+Focus on {{.aspect}} and provide {{.detail_level}} analysis.
+
+---defaults---
+language: Python
+code: print("hello")
+aspect: performance
+detail_level: brief' > analyzer.prompt
+
+# Test all variables with direct flags
+pe run analyzer.prompt --language=JavaScript --code="console.log('test')" --aspect=security --detail-level=detailed
+stdout 'Mock response.*JavaScript.*console.log.*security.*detailed'
+
+# Test with defaults (some flags omitted)
+pe run analyzer.prompt --code="function test() { return 42; }"
+stdout 'Mock response.*Python.*function test.*performance.*brief'
+
+# Test error handling - unknown variable flag should be ignored gracefully
+pe run translator.prompt --text="Hello" --unknown-flag="should be ignored"
+stdout 'Mock response.*Hello'
+
+# Clean up
+rm translator.prompt analyzer.prompt

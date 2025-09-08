@@ -1,0 +1,114 @@
+# Test: Shebang execution and standalone script behavior
+
+# Create executable prompt scripts
+echo '#!/usr/bin/env pe run --provider=cgpt --max-tokens=50
+
+# Math Helper
+# Solves basic math problems
+
+What is {{.problem}}?
+
+---defaults---
+problem: 2 + 2' > math-helper
+chmod +x math-helper
+
+echo '#!/usr/bin/env pe run --provider=openai
+
+# Greeting Generator  
+# Generates personalized greetings
+
+Hello {{.name}}! How are you doing this {{.time}}?
+
+---defaults---
+name: friend
+time: morning' > greeter
+chmod +x greeter
+
+# Test direct execution with defaults
+./math-helper
+stdout 'Mock response.*2 \+ 2'
+
+# Test direct execution with variable flags
+./greeter --name=Alice --time=evening
+stdout 'Mock response.*Alice.*evening'
+
+# Test shebang preserves provider and other flags from shebang line
+./math-helper --problem="10 * 5"
+stdout 'Mock response.*10 \* 5'
+
+# Create a script without extension (Unix convention)
+echo '#!/usr/bin/env pe run --provider=cgpt
+
+# Weather Check
+# Asks about weather in a location
+
+What is the weather like in {{.city}}?
+
+---defaults---
+city: San Francisco' > weather-check
+chmod +x weather-check
+
+# Test execution without .prompt extension
+./weather-check --city="New York"
+stdout 'Mock response.*New York'
+
+# Test that shebang scripts work with complex templates
+echo '#!/usr/bin/env pe run --provider=openai --temperature=0.5
+
+# Code Review Helper
+# Reviews {{.language}} code for issues
+
+Please review this {{.language}} code:
+
+```{{.language}}
+{{.code}}
+```
+
+Look for {{.focus}} issues and provide {{.verbosity}} feedback.
+
+---defaults---
+language: Python
+code: def hello(): print("world")
+focus: style
+verbosity: concise' > code-reviewer
+chmod +x code-reviewer
+
+./code-reviewer --language=JavaScript --code="function test() { alert('hi'); }" --focus=security --verbosity=detailed
+stdout 'Mock response.*JavaScript.*alert.*security.*detailed'
+
+# Test error handling for missing required variables (no defaults)
+echo '#!/usr/bin/env pe run --provider=cgpt
+
+# Required Variables Test
+# This prompt requires both variables
+
+Process {{.input}} with method {{.method}}.' > required-vars
+chmod +x required-vars
+
+# This should fail gracefully
+./required-vars --input="test data"
+stderr 'Template variables found.*method'
+! stdout 'Mock response'
+
+# This should work
+./required-vars --input="test data" --method="analysis"
+stdout 'Mock response.*test data.*analysis'
+
+# Test streaming is default for shebang scripts
+echo '#!/usr/bin/env pe run --provider=cgpt
+
+Simple test: {{.msg}}
+
+---defaults---
+msg: hello' > stream-test
+chmod +x stream-test
+
+./stream-test
+stdout 'Mock response.*hello'
+
+# Test can disable streaming
+./stream-test --stream=false
+stdout 'Mock response.*hello'
+
+# Clean up
+rm math-helper greeter weather-check code-reviewer required-vars stream-test

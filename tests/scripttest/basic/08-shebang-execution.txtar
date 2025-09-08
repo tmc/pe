@@ -1,0 +1,136 @@
+# Test: Shebang execution with expected file verification
+
+# Create executable prompt scripts
+$ cat > math-helper << 'EOF'  
+-- math-helper --
+#!/usr/bin/env pe run --provider=cgpt --max-tokens=50
+
+# Math Helper
+Solve: {{.problem}}
+
+---defaults---
+problem: 2 + 2
+EOF
+
+$ chmod +x math-helper
+
+$ cat > greeter << 'EOF'
+-- greeter --
+#!/usr/bin/env pe run --provider=openai
+
+# Greeting Generator
+Hello {{.name}}! Have a great {{.time_of_day}}!
+
+---defaults---
+name: friend
+time_of_day: day
+EOF
+
+$ chmod +x greeter
+
+# Test direct execution with defaults
+$ ./math-helper
+Mock response for: # Math Helper
+Solve: 2 + 2
+
+---defaults---
+problem: 2 + 2
+
+# Test direct execution with variable override
+$ ./greeter --name=Alice --time-of-day=evening
+Mock response for: # Greeting Generator
+Hello Alice! Have a great evening!
+
+---defaults---
+name: friend
+time_of_day: day
+
+# Test shebang preserves provider settings
+$ ./math-helper --problem="sqrt(16)"
+Mock response for: # Math Helper
+Solve: sqrt(16)
+
+---defaults---
+problem: 2 + 2
+
+# Create script without extension (Unix convention)  
+$ cat > weather-check << 'EOF'
+-- weather-check --
+#!/usr/bin/env pe run --provider=cgpt
+
+# Weather Checker
+Weather in {{.city}}: {{.condition}}
+
+---defaults---
+city: San Francisco
+condition: sunny
+EOF
+
+$ chmod +x weather-check
+
+$ ./weather-check --city="New York" --condition=rainy
+Mock response for: # Weather Checker
+Weather in New York: rainy
+
+---defaults---
+city: San Francisco
+condition: sunny
+
+# Test complex template with multiple variables
+$ cat > code-reviewer << 'EOF'
+-- code-reviewer --
+#!/usr/bin/env pe run --provider=openai --temperature=0.3
+
+# Code Reviewer
+Review {{.language}} code:
+```{{.language}}
+{{.code}}
+```
+Focus: {{.focus}}
+Level: {{.verbosity}}
+
+---defaults---
+language: Python
+code: def hello(): return "world"
+focus: bugs
+verbosity: concise
+EOF
+
+$ chmod +x code-reviewer
+
+$ ./code-reviewer --language=JavaScript --code="function test() { return undefined; }" --focus=performance --verbosity=detailed
+Mock response for: # Code Reviewer
+Review JavaScript code:
+```JavaScript
+function test() { return undefined; }
+```
+Focus: performance
+Level: detailed
+
+---defaults---
+language: Python
+code: def hello(): return "world"
+focus: bugs
+verbosity: concise
+
+# Test error handling for missing required variables
+$ cat > required-test << 'EOF'
+-- required-test --
+#!/usr/bin/env pe run --provider=cgpt
+
+# Required Variables Test
+Process {{.input}} using {{.method}}.
+EOF
+
+$ chmod +x required-test
+
+# Should fail with helpful message when variables missing
+$ ./required-test --input="test data" 2>&1 >/dev/null
+Template variables found but no values provided
+
+Template variables detected: input, method
+
+# Should work when all variables provided
+$ ./required-test --input="data" --method="analysis"
+Mock response for: # Required Variables Test
+Process data using analysis.

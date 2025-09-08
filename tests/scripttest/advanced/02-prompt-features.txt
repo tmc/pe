@@ -1,0 +1,193 @@
+# Test: Advanced prompt features and edge cases
+
+# Test prompt with all sections
+echo '#!/usr/bin/env pe run --provider=openai --model=gpt-4 --temperature=0.7
+
+# Comprehensive Prompt
+# Tests all prompt sections and features
+
+Main prompt: Process {{.data}} in {{.format}} format.
+
+---defaults---
+data: sample input
+format: JSON
+
+---system---
+You are a data processing expert.
+Always validate input before processing.
+
+---tests---
+- name: basic_test
+  vars:
+    data: "test data"
+    format: "XML"
+  assert:
+    - type: contains
+      value: "processed"
+
+---variants---
+verbose:
+  Provide detailed processing of {{.data}} in {{.format}} format.
+  Include step-by-step analysis.
+
+concise:
+  Process {{.data}} ({{.format}}): brief output only.
+
+---metadata---
+version: 1.0
+author: test' > comprehensive.prompt
+chmod +x comprehensive.prompt
+
+# Test prompt info shows all sections
+pe prompt info comprehensive.prompt
+stdout 'Sections: defaults, system, tests, variants, metadata'
+stdout 'Variables: data, format'
+stdout 'Test.*: 1'
+stdout 'Variants: verbose, concise'
+
+# Test prompt help shows system prompt
+pe prompt help comprehensive.prompt
+stdout 'System Prompt:'
+stdout 'data processing expert'
+
+# Test execution with defaults
+pe run comprehensive.prompt
+stdout 'Mock response.*sample input.*JSON'
+
+# Test execution with overrides
+pe run comprehensive.prompt --data="custom data" --format="YAML"
+stdout 'Mock response.*custom data.*YAML'
+
+# Test complex variable names and edge cases
+echo '#!/usr/bin/env pe run --provider=cgpt
+
+# Edge Case Variables
+# Tests unusual variable names and patterns
+
+Process {{.input_data}} using {{.method_name}} and {{.output_format}}.
+Also consider {{.user_preference}} and {{.system_config}}.
+
+Special case: {{.edge_case_123}} with {{.CAPS_VAR}}.
+
+---defaults---
+input_data: test
+method_name: standard
+output_format: text
+user_preference: default
+system_config: auto
+edge_case_123: handled
+CAPS_VAR: uppercase' > edge-cases.prompt
+
+# Test complex variable flag parsing
+pe run edge-cases.prompt --input-data="complex input" --method-name="advanced" --output-format="structured" --user-preference="custom" --system-config="manual" --edge-case-123="special" --caps-var="modified"
+stdout 'Mock response.*complex input.*advanced.*structured.*custom.*manual.*special.*modified'
+
+# Test prompt with no defaults (all required)
+echo '#!/usr/bin/env pe run --provider=cgpt
+
+# Required Variables Only
+# All variables must be provided
+
+Task: {{.task}}
+Input: {{.input}}
+Output: {{.output}}' > required-only.prompt
+
+# Should fail with helpful message
+pe run required-only.prompt --task="test"
+stderr 'Template variables found.*input.*output'
+
+# Should work when all provided
+pe run required-only.prompt --task="process" --input="data" --output="result"
+stdout 'Mock response.*process.*data.*result'
+
+# Test prompt fmt command
+echo '#!/usr/bin/env pe run --provider=cgpt
+
+
+# Messy Formatting
+# Needs cleanup
+
+Process   {{.data}}    
+
+---defaults---
+data: test
+extra: unused
+
+
+---system---
+
+You are helpful.
+
+
+' > messy.prompt
+
+pe prompt fmt messy.prompt -w
+stdout 'messy.prompt: formatted'
+
+# Check formatting was applied
+cat messy.prompt
+! stdout '^$.*^$.*^$'  # No multiple blank lines
+
+# Test prompt tidy validation
+echo '#!/usr/bin/env pe run --provider=cgpt
+
+# Invalid Template
+# Has syntax error
+
+Process {{invalid syntax}} and {{.valid}}
+
+---defaults---
+valid: test' > invalid.prompt
+
+pe prompt tidy invalid.prompt --validate
+stderr 'template syntax error'
+
+# Test prompt with special characters in variables
+echo '#!/usr/bin/env pe run --provider=cgpt
+
+# Unicode and Special Characters
+# Tests variable handling with special chars
+
+Message: {{.message}}
+Symbol: {{.symbol}}
+
+---defaults---
+message: Hello, 世界! 
+symbol: ★' > unicode.prompt
+
+pe run unicode.prompt --message="Bonjour, monde!" --symbol="♠"
+stdout 'Mock response.*Bonjour, monde!.*♠'
+
+# Test nested template features
+echo '#!/usr/bin/env pe run --provider=openai
+
+# Advanced Template Features
+# Tests template functions and complex syntax
+
+{{if .condition}}Process {{.data}}{{else}}Skip processing{{end}}
+
+Data: {{.data | default "fallback"}}
+Count: {{len .items}}
+
+---defaults---
+condition: true
+data: input
+items: ["a", "b", "c"]' > advanced-template.prompt
+
+pe run advanced-template.prompt
+stdout 'Mock response'
+
+# Test very long variable names
+echo '#!/usr/bin/env pe run --provider=cgpt
+
+Process {{.very_long_variable_name_that_tests_parsing_limits}} with {{.another_extremely_long_variable_name_for_comprehensive_testing}}.
+
+---defaults---
+very_long_variable_name_that_tests_parsing_limits: long_value
+another_extremely_long_variable_name_for_comprehensive_testing: another_long_value' > long-vars.prompt
+
+pe run long-vars.prompt --very-long-variable-name-that-tests-parsing-limits="custom" --another-extremely-long-variable-name-for-comprehensive-testing="modified"
+stdout 'Mock response.*custom.*modified'
+
+# Clean up
+rm comprehensive.prompt edge-cases.prompt required-only.prompt messy.prompt invalid.prompt unicode.prompt advanced-template.prompt long-vars.prompt

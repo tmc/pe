@@ -1,0 +1,103 @@
+# Test: Custom variable flags with txtar verification
+
+# Create test prompt with variables
+$ cat > translator.prompt << 'EOF'
+-- translator.prompt --
+#!/usr/bin/env pe run --provider=cgpt
+
+# Language Translator
+Translate "{{.text}}" from {{.source}} to {{.target}}.
+
+---defaults---
+text: Hello
+source: English  
+target: Spanish
+EOF
+
+$ chmod +x translator.prompt
+
+# Test direct variable flags
+$ pe run translator.prompt --text="Good morning" --source=French --target=Italian
+Mock response for: # Language Translator
+Translate "Good morning" from French to Italian.
+
+---defaults---
+text: Hello
+source: English  
+target: Spanish
+
+# Test traditional --var syntax still works
+$ pe run translator.prompt --var text="Good evening" --var target=German
+Mock response for: # Language Translator
+Translate "Good evening" from English to German.
+
+---defaults---
+text: Hello
+source: English  
+target: Spanish
+
+# Test mixed syntax
+$ pe run translator.prompt --text="Mixed test" --var target=Japanese
+Mock response for: # Language Translator
+Translate "Mixed test" from English to Japanese.
+
+---defaults---
+text: Hello
+source: English  
+target: Spanish
+
+# Create complex prompt to test edge cases
+$ cat > analyzer.prompt << 'EOF'
+-- analyzer.prompt --
+#!/usr/bin/env pe run --provider=openai
+
+# Code Analyzer
+Analyze {{.language}} code:
+```{{.language}}
+{{.code}}  
+```
+Focus: {{.focus_area}}
+Detail: {{.detail_level}}
+
+---defaults---
+language: Python
+code: print("hello")
+focus_area: performance
+detail_level: brief
+EOF
+
+# Test complex variable parsing
+$ pe run analyzer.prompt --language=JavaScript --code="console.log('test')" --focus-area=security --detail-level=detailed
+Mock response for: # Code Analyzer
+Analyze JavaScript code:
+```JavaScript
+console.log('test')  
+```
+Focus: security
+Detail: detailed
+
+---defaults---
+language: Python
+code: print("hello")
+focus_area: performance
+detail_level: brief
+
+# Test case-insensitive matching
+$ pe run translator.prompt --TEXT="Case test" --SOURCE=German --TARGET=French
+Mock response for: # Language Translator
+Translate "Case test" from German to French.
+
+---defaults---
+text: Hello
+source: English  
+target: Spanish
+
+# Test --flag=value vs --flag value formats
+$ pe run translator.prompt --text="Format test" --source English --target=Portuguese
+Mock response for: # Language Translator
+Translate "Format test" from English to Portuguese.
+
+---defaults---
+text: Hello
+source: English  
+target: Spanish

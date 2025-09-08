@@ -1,0 +1,107 @@
+# Test: Prompt management with txtar format
+
+# Test pe prompt init - creates expected file structure
+$ pe prompt init basic.prompt
+Created basic.prompt
+
+$ cat basic.prompt
+-- basic.prompt --
+#!/usr/bin/env pe run --provider=cgpt
+
+# Main prompt
+{{.task}}
+
+---defaults---
+task: Explain this concept clearly
+style: concise
+audience: general
+
+# Test prompt info command
+$ pe prompt info basic.prompt
+File: basic.prompt
+Executable: true
+Provider: cgpt
+Variables: task
+
+# Test prompt help command
+$ pe prompt help basic.prompt
+basic.prompt
+
+Usage:
+  pe run basic.prompt [--task=value]
+
+Variables:
+  --task string    task (default: Explain this concept clearly)
+
+# Create a more complex prompt for testing
+$ pe prompt init complex.prompt --provider=openai --with-tests --with-variants
+Created complex.prompt
+
+$ cat complex.prompt
+-- complex.prompt --
+#!/usr/bin/env pe run --provider=openai
+
+# Main prompt
+{{.task}}
+
+---defaults---
+task: Explain this concept clearly
+style: concise
+audience: general
+
+---tests---
+- name: basic_test
+  vars:
+    task: "What is 2+2?"
+  assert:
+    - type: contains
+      value: "4"
+
+---variants---
+verbose:
+  Provide a detailed explanation of {{.task}}
+  Include examples and context.
+
+brief:
+  {{.task}} (be very concise)
+
+# Test editing prompts
+$ pe prompt edit basic.prompt --set-default style=detailed --set-provider=anthropic
+Updated basic.prompt
+
+$ cat basic.prompt
+-- basic.prompt.edited --
+#!/usr/bin/env pe run --provider=anthropic
+
+# Main prompt
+{{.task}}
+
+---defaults---
+task: Explain this concept clearly
+style: detailed
+audience: general
+
+# Test tidy command with unused variables
+$ cat > messy.prompt << 'EOF'
+-- messy.prompt --
+# Test prompt
+{{.used_var}}
+
+---defaults---
+used_var: value
+unused_var1: remove_me
+unused_var2: also_remove
+EOF
+
+$ pe prompt tidy messy.prompt --remove-unused
+messy.prompt: tidied
+  Removing unused default: unused_var1
+  Removing unused default: unused_var2
+
+$ cat messy.prompt  
+-- messy.prompt.cleaned --
+# Test prompt
+{{.used_var}}
+
+---defaults---
+used_var: value

@@ -1,0 +1,117 @@
+# Test: Streaming output and output formats
+
+# Test streaming is enabled by default
+pe run "What is 1+1?"
+stdout '^2$'
+
+# Test streaming can be disabled
+pe run "What is 1+1?" --stream=false
+stdout '^2$'
+
+# Test JSON output format
+pe run "What is 1+1?" --json
+stdout '{'
+stdout '"response":'
+stdout '"model":'
+stdout '"tokens":'
+
+# Test JSON output with streaming disabled
+pe run "What is 1+1?" --json --stream=false
+stdout '{'
+stdout '"response":'
+
+# Create a prompt file to test various output scenarios
+echo '#!/usr/bin/env pe run --provider=cgpt
+
+# Output Tester
+# Tests different output formats
+
+Answer: {{.question}}
+
+---defaults---
+question: What is the capital of France?' > output-test.prompt
+
+# Test default streaming output
+pe run output-test.prompt
+stdout 'Mock response.*capital.*France'
+
+# Test with custom question
+pe run output-test.prompt --question="What is 5*6?"
+stdout 'Mock response.*5\*6'
+
+# Test JSON output with variables
+pe run output-test.prompt --question="What is the color of the sky?" --json
+stdout '"response".*Mock response.*sky'
+stdout '"model":'
+stdout '"tokens":'
+
+# Test system prompt doesn't affect output format
+echo '#!/usr/bin/env pe run --provider=openai
+
+# System Prompt Test
+Answer the question: {{.query}}
+
+---defaults---
+query: Test question
+
+---system---
+You are a helpful assistant. Be concise.' > system-test.prompt
+
+pe run system-test.prompt
+stdout 'Mock response.*Test question'
+
+# Test that streaming works with template variables
+pe run system-test.prompt --query="Stream this response"
+stdout 'Mock response.*Stream this response'
+
+# Test provider override doesn't break streaming
+pe run system-test.prompt --provider=anthropic --query="Different provider test"
+stdout 'Mock response.*Different provider test'
+
+# Test model override
+pe run system-test.prompt --model=gpt-4 --query="Model override test"
+stdout 'Mock response.*Model override test'
+
+# Test temperature override (should still work with streaming)
+pe run system-test.prompt --temperature=0.1 --query="Low temperature test"
+stdout 'Mock response.*Low temperature test'
+
+# Test max-tokens override
+pe run system-test.prompt --max-tokens=100 --query="Token limit test"
+stdout 'Mock response.*Token limit test'
+
+# Test multiple variables with streaming
+echo '#!/usr/bin/env pe run --provider=cgpt
+
+Multi-var test: {{.var1}} and {{.var2}} and {{.var3}}
+
+---defaults---
+var1: first
+var2: second  
+var3: third' > multi-var.prompt
+
+pe run multi-var.prompt --var1="alpha" --var2="beta" --var3="gamma"
+stdout 'Mock response.*alpha.*beta.*gamma'
+
+# Test streaming with complex template
+echo '#!/usr/bin/env pe run --provider=openai
+
+# Complex Template Test
+# Testing {{.format}} parsing
+
+Input: {{.input}}
+Format: {{.format}}
+Output level: {{.level}}
+
+Process the {{.input}} using {{.format}} format at {{.level}} level.
+
+---defaults---
+input: sample data
+format: JSON
+level: detailed' > complex.prompt
+
+pe run complex.prompt --input="user data" --format="XML" --level="summary"
+stdout 'Mock response.*user data.*XML.*summary'
+
+# Clean up
+rm output-test.prompt system-test.prompt multi-var.prompt complex.prompt

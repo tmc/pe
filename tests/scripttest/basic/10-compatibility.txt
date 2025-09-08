@@ -1,0 +1,140 @@
+# Test: Backwards compatibility and integration
+
+# Test that old --var syntax still works
+echo 'Translate {{.text}} to {{.language}}' > old-style.txt
+pe run old-style.txt --var text="Hello" --var language="French"
+stdout 'Mock response.*Hello.*French'
+
+# Test mixing old and new syntax
+echo '#!/usr/bin/env pe run --provider=cgpt
+
+Mixed syntax test: {{.old}} and {{.new}}
+
+---defaults---
+old: default_old
+new: default_new' > mixed.prompt
+
+pe run mixed.prompt --var old="var_style" --new="flag_style"
+stdout 'Mock response.*var_style.*flag_style'
+
+# Test that non-prompt files work normally
+echo 'Simple inline prompt with {{.variable}}' > simple.txt
+pe run simple.txt --var variable="inline_value"
+stdout 'Mock response.*inline_value'
+
+# Test inline prompts with new flag syntax should fallback gracefully
+pe run 'Inline: {{.test}}' --test="direct_flag"
+stdout 'Mock response.*direct_flag'
+
+# Test that existing pe run functionality is preserved
+pe run 'What is the square root of 16?'
+stdout 'Mock response.*square root.*16'
+
+# Test provider override still works
+pe run 'Provider test' --provider=anthropic
+stdout 'Mock response.*Provider test'
+
+# Test model override still works  
+pe run 'Model test' --model=claude-3
+stdout 'Mock response.*Model test'
+
+# Test system prompt override still works
+pe run 'System test' --system="Be very brief"
+stdout 'Mock response.*System test'
+
+# Test temperature override still works
+pe run 'Temperature test' --temperature=0.1
+stdout 'Mock response.*Temperature test'
+
+# Test max-tokens override still works
+pe run 'Token test' --max-tokens=50
+stdout 'Mock response.*Token test'
+
+# Test JSON output still works
+pe run 'JSON test' --json
+stdout '{'
+stdout '"response":'
+
+# Test example flag still works (when implemented)
+echo '#!/usr/bin/env pe run --provider=cgpt
+
+Example test: {{.input}}
+
+---defaults---
+input: default
+
+---examples---
+example-1:
+  input: "first example"
+example-2:
+  input: "second example"' > example-test.prompt
+
+# These should work if example functionality exists
+pe run example-test.prompt --example=example-1
+stdout 'Mock response'
+
+# Test that prompt files without shebang still work
+echo '# No shebang prompt
+Process {{.data}}
+
+---defaults---
+data: no_shebang_test' > no-shebang.prompt
+
+pe run no-shebang.prompt
+stdout 'Mock response.*no_shebang_test'
+
+pe run no-shebang.prompt --data="override_test"
+stdout 'Mock response.*override_test'
+
+# Test prompt info works on files without shebang
+pe prompt info no-shebang.prompt
+stdout 'File: no-shebang.prompt'
+stdout 'Executable: false'
+stdout 'Variables: data'
+
+# Test that all major commands still work after changes
+pe --version
+stdout 'pe version'
+
+pe --help
+stdout 'Usage:'
+stdout 'pe \[command\]'
+
+# Test that error handling is preserved
+pe run nonexistent.prompt 2>/dev/null
+! stdout 'Mock response'
+
+# Test streaming flag inheritance
+echo '#!/usr/bin/env pe run --provider=cgpt --stream=false
+
+Stream inheritance test: {{.msg}}
+
+---defaults---  
+msg: test' > inherit-stream.prompt
+
+pe run inherit-stream.prompt
+stdout 'Mock response.*test'
+
+# Test that help system integration works
+pe prompt --help
+stdout 'Manage prompt files'
+stdout 'Available Commands:'
+stdout 'init'
+stdout 'help'
+stdout 'edit'
+stdout 'info'
+stdout 'tidy'
+
+# Test robust error handling with malformed prompts
+echo '#!/usr/bin/env pe run --provider=cgpt
+
+Malformed template: {{unclosed
+
+---defaults---
+incomplete' > malformed.prompt
+
+pe run malformed.prompt 2>/dev/null
+! stdout 'Mock response'
+
+# Clean up
+rm old-style.txt mixed.prompt simple.txt example-test.prompt no-shebang.prompt inherit-stream.prompt malformed.prompt

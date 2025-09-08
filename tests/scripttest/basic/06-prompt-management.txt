@@ -1,0 +1,134 @@
+# Test: Prompt management commands (init, help, edit, info, tidy)
+
+# Test pe prompt init - basic initialization
+$ pe prompt init test-basic.prompt
+Created test-basic.prompt
+
+$ cat test-basic.prompt
+#!/usr/bin/env pe run --provider=cgpt
+
+# Main prompt
+{{.task}}
+
+---defaults---
+task: Explain this concept clearly
+style: concise
+audience: general
+
+# Test pe prompt init with custom options
+$ pe prompt init analyzer.prompt --provider=openai --with-tests --with-variants
+Created analyzer.prompt
+
+$ cat analyzer.prompt
+#!/usr/bin/env pe run --provider=openai
+
+# Main prompt
+{{.task}}
+
+---defaults---
+task: Explain this concept clearly
+style: concise
+audience: general
+
+---tests---
+- name: basic_test
+  vars:
+    task: "What is 2+2?"
+  assert:
+    - type: contains
+      value: "4"
+
+---variants---
+verbose:
+  Provide a detailed explanation of {{.task}}
+  Include examples and context.
+
+brief:
+  {{.task}} (be very concise)
+
+# Test pe prompt info
+$ pe prompt info test-basic.prompt
+File: test-basic.prompt
+Executable: true
+Provider: cgpt
+Variables: task
+Defaults:
+  audience: general
+  task: Explain this concept clearly
+  style: concise
+Sections: defaults
+
+# Test pe prompt help
+$ pe prompt help test-basic.prompt
+test-basic.prompt
+
+Usage:
+  pe run test-basic.prompt [--task=value]
+
+Variables:
+  --task string    task (default: Explain this concept clearly)
+
+Examples:
+  # Run with defaults
+  pe run test-basic.prompt
+
+  # Override variables
+  pe run test-basic.prompt --var task="value"
+
+  # Using direct flags (with custom parser)
+  pe run test-basic.prompt --task="value"
+
+# Test pe prompt help --as-script
+$ pe prompt help test-basic.prompt --as-script
+test-basic.prompt
+
+Usage:
+  test-basic.prompt [--task=value]
+
+Variables:
+  --task string    task (default: Explain this concept clearly)
+
+Examples:
+  # Run with defaults
+  ./test-basic.prompt
+
+  # Override variables
+  ./test-basic.prompt --task="value"
+
+# Test pe prompt edit - add defaults
+$ pe prompt edit test-basic.prompt --set-default style=detailed --set-default audience=technical
+Updated test-basic.prompt
+
+$ grep -A5 "---defaults---" test-basic.prompt
+---defaults---
+task: Explain this concept clearly
+style: detailed
+audience: technical
+
+# Test pe prompt edit - change provider  
+$ pe prompt edit test-basic.prompt --set-provider=openai
+Updated test-basic.prompt
+
+$ head -1 test-basic.prompt
+#!/usr/bin/env pe run --provider=openai
+
+# Test pe prompt tidy with unused defaults
+$ cat > messy.prompt << 'EOF'
+# Test prompt with unused defaults
+{{.message}}
+---defaults---
+message: hello
+unused: this will be removed
+extra: also unused
+EOF
+
+$ pe prompt tidy messy.prompt --remove-unused --validate
+messy.prompt: valid
+  Removing unused default: unused
+  Removing unused default: extra
+
+$ cat messy.prompt  
+# Test prompt with unused defaults
+{{.message}}
+---defaults---
+message: hello
