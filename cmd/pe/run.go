@@ -247,7 +247,7 @@ Examples:
 	cmd.Flags().StringVarP(&runSystem, "system", "s", "", "System prompt")
 	cmd.Flags().StringToStringVar(&runVars, "var", nil, "Template variables (can be repeated)")
 	cmd.Flags().StringVarP(&runExample, "example", "e", "", "Run with example variables (e.g., example-1)")
-	cmd.Flags().StringVar(&runProvider, "provider", "", "Provider to use (e.g., openai, anthropic, cgpt)")
+	cmd.Flags().StringVar(&runProvider, "provider", "cgpt", "Provider to use (e.g., openai, anthropic, cgpt)")
 	cmd.Flags().BoolVar(&runStream, "stream", false, "Enable streaming output")
 	cmd.Flags().BoolVar(&runJSON, "json", false, "Output in JSON format")
 
