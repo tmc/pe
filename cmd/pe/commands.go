@@ -200,16 +200,19 @@ func runVetPrompts(cmd *cobra.Command, args []string) error {
 			fmt.Printf("=== VET %s\n", file)
 		}
 
-		// Use eval-prompt command to run the evals
-		evalArgs := []string{file}
+		// Set provider flag if specified
+		oldProvider := evalPromptProvider
 		if vetProvider != "" {
-			evalArgs = append(evalArgs, "--provider", vetProvider)
+			evalPromptProvider = vetProvider
 		}
-
-		evalCmd := evalPromptCmd
-		evalCmd.SetArgs(evalArgs)
-
-		if err := evalCmd.Execute(); err != nil {
+		
+		// Run eval-prompt directly to avoid command recursion
+		err := runEvalPrompt(nil, []string{file})
+		
+		// Restore original provider
+		evalPromptProvider = oldProvider
+		
+		if err != nil {
 			if !vetQuiet {
 				fmt.Printf("FAIL: %v\n", err)
 			}

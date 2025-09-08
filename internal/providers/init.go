@@ -7,7 +7,10 @@ import (
 func init() {
 	// Register OpenAI provider factory
 	llm.RegisterProviderFactory("openai", func(providerSpec string, options map[string]interface{}) (llm.Provider, error) {
-		provider, err := NewOpenAIProvider(providerSpec, options)
+		// The providerSpec here is just the model name, not the full spec
+		// The provider name has already been extracted by the caller
+		model := providerSpec
+		provider, err := NewOpenAIProvider(model, options)
 		if err != nil {
 			return nil, err
 		}
@@ -17,7 +20,10 @@ func init() {
 
 	// Register Anthropic provider factory
 	llm.RegisterProviderFactory("anthropic", func(providerSpec string, options map[string]interface{}) (llm.Provider, error) {
-		provider, err := NewAnthropicProvider(providerSpec, options)
+		// The providerSpec here is just the model name, not the full spec
+		// The provider name has already been extracted by the caller
+		model := providerSpec
+		provider, err := NewAnthropicProvider(model, options)
 		if err != nil {
 			return nil, err
 		}

@@ -295,7 +295,7 @@ func runModList(cmd *cobra.Command, args []string) error {
 }
 */
 
-func runModGet(cmd *cobra.Command, args []string) error {
+func runModGetLocal(cmd *cobra.Command, args []string) error {
 	moduleName := args[0]
 
 	// Check local first

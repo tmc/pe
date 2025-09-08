@@ -284,13 +284,36 @@ func (r *LocalRegistry) List() ([]*Module, error) {
 
 // Get retrieves a specific module by name
 func (r *LocalRegistry) Get(name string) (*Module, error) {
-	modulePath := filepath.Join(r.rootDir, name, "module.json")
+	// First, try to find any version of the module
+	moduleDir := filepath.Join(r.rootDir, name)
 	
+	// Check if module directory exists
+	if _, err := os.Stat(moduleDir); os.IsNotExist(err) {
+		return nil, fmt.Errorf("module %s not found", name)
+	}
+	
+	// List all versions
+	entries, err := os.ReadDir(moduleDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read module directory: %w", err)
+	}
+	
+	// Find the latest version (simple approach - take the last one alphabetically)
+	var latestVersion string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			latestVersion = entry.Name()
+		}
+	}
+	
+	if latestVersion == "" {
+		return nil, fmt.Errorf("no versions found for module %s", name)
+	}
+	
+	// Read the module.json from the latest version
+	modulePath := filepath.Join(moduleDir, latestVersion, "module.json")
 	data, err := os.ReadFile(modulePath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("module %s not found", name)
-		}
 		return nil, fmt.Errorf("failed to read module: %w", err)
 	}
 	

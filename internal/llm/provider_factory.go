@@ -32,10 +32,12 @@ func GetProviderFactory(name string) (ProviderFactoryFunc, bool) {
 
 // CreateNativeProviderFromFactory creates a provider using registered factories
 func CreateNativeProviderFromFactory(providerSpec string, options map[string]interface{}) (Provider, error) {
-	// Parse provider name from spec
+	// Parse provider name and model from spec
 	providerName := providerSpec
+	model := ""
 	if idx := strings.IndexByte(providerSpec, ':'); idx != -1 {
 		providerName = providerSpec[:idx]
+		model = providerSpec[idx+1:]
 	}
 
 	// Get factory
@@ -44,6 +46,6 @@ func CreateNativeProviderFromFactory(providerSpec string, options map[string]int
 		return nil, fmt.Errorf("no factory registered for provider: %s", providerName)
 	}
 
-	// Create provider
-	return factory(providerSpec, options)
+	// Create provider - pass just the model, not the full spec
+	return factory(model, options)
 }
