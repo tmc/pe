@@ -75,6 +75,7 @@ work together seamlessly.`,
 	root.AddCommand(docCmd())      // go doc for prompts
 	root.AddCommand(peInitCmd())   // pe init for repository
 	root.AddCommand(modCmd)        // go mod for prompt modules
+	root.AddCommand(promptCmd)     // prompt file management (init, edit, fmt, info, tidy)
 	root.AddCommand(pushCmd)       // push modules to registry
 	root.AddCommand(editCmd)       // go mod edit for prompts
 	root.AddCommand(getCmd)        // pe get for extracting prompt info
