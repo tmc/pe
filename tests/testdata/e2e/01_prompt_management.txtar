@@ -1,0 +1,100 @@
+# Test: Comprehensive prompt management workflow
+
+# Initialize a new prompt with defaults
+exec pe prompt init basic.prompt
+stdout 'Created basic.prompt'
+exists basic.prompt
+
+# Verify the created file structure
+cmp basic.prompt expected/basic_prompt_initial.txt
+
+# Test prompt info command
+exec pe prompt info basic.prompt
+stdout 'File: basic.prompt'
+stdout 'Executable: true'
+stdout 'Provider: cgpt'
+stdout 'Variables: task'
+
+# Test prompt help command
+exec pe prompt help basic.prompt
+cmp stdout expected/basic_prompt_help.txt
+
+# Edit the prompt to add new defaults
+exec pe prompt edit basic.prompt --set-default style=detailed --set-default audience=technical
+stdout 'Updated basic.prompt'
+
+# Verify the edits
+exec grep -A3 "^---defaults---" basic.prompt
+cmp stdout expected/basic_prompt_defaults_edited.txt
+
+# Change the provider
+exec pe prompt edit basic.prompt --set-provider=openai
+stdout 'Updated basic.prompt'
+exec head -1 basic.prompt
+stdout '#!/usr/bin/env pe run --provider=openai'
+
+# Create a prompt with unused variables for tidying
+cp testdata/prompts/messy.prompt messy.prompt
+exec pe prompt tidy messy.prompt --remove-unused --validate
+stdout 'messy.prompt: valid'
+stdout 'Removing unused default: unused_var'
+cmp messy.prompt expected/messy_prompt_tidied.txt
+
+# Test prompt execution with variables
+exec pe run basic.prompt --task="Explain quantum computing"
+stdout 'Mock response.*Explain quantum computing'
+
+# Clean up
+rm basic.prompt messy.prompt
+
+-- expected/basic_prompt_initial.txt --
+#!/usr/bin/env pe run --provider=cgpt
+
+# Main prompt
+{{.task}}
+
+---defaults---
+task: Explain this concept clearly
+style: concise
+audience: general
+
+-- expected/basic_prompt_help.txt --
+basic.prompt
+
+Usage:
+  pe run basic.prompt [--task=value]
+
+Variables:
+  --task string    task (default: Explain this concept clearly)
+
+Examples:
+  # Run with defaults
+  pe run basic.prompt
+
+  # Override variables
+  pe run basic.prompt --var task="value"
+
+  # Using direct flags (with custom parser)
+  pe run basic.prompt --task="value"
+
+-- expected/basic_prompt_defaults_edited.txt --
+---defaults---
+task: Explain this concept clearly
+style: detailed
+audience: technical
+
+-- expected/messy_prompt_tidied.txt --
+# Test prompt with variables
+{{.used_var}}
+
+---defaults---
+used_var: keep_this
+
+-- testdata/prompts/messy.prompt --
+# Test prompt with variables
+{{.used_var}}
+
+---defaults---
+used_var: keep_this
+unused_var: remove_this
+another_unused: also_remove
