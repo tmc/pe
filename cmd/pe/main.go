@@ -51,6 +51,10 @@ import (
 	
 	// Import providers to register native provider factories
 	_ "github.com/tmc/pe/internal/providers"
+	
+	// Import reorganized commands
+	promptcmd "github.com/tmc/pe/cmd/pe/commands/prompt"
+	runcmd "github.com/tmc/pe/cmd/pe/commands/run"
 )
 
 func main() {
@@ -69,13 +73,13 @@ work together seamlessly.`,
 	}
 
 	// Core commands (like go toolchain)
-	root.AddCommand(runCmd())      // go run for prompts
-	root.AddCommand(buildCmd)      // go build for prompts
-	root.AddCommand(testCmd())     // go test for prompts
-	root.AddCommand(docCmd())      // go doc for prompts
-	root.AddCommand(peInitCmd())   // pe init for repository
-	root.AddCommand(modCmd)        // go mod for prompt modules
-	root.AddCommand(promptCmd)     // prompt file management (init, edit, fmt, info, tidy)
+	root.AddCommand(runcmd.NewCommand())   // go run for prompts (reorganized)
+	root.AddCommand(buildCmd)              // go build for prompts
+	root.AddCommand(testCmd())             // go test for prompts
+	root.AddCommand(docCmd())              // go doc for prompts
+	root.AddCommand(peInitCmd())           // pe init for repository
+	root.AddCommand(modCmd)                // go mod for prompt modules
+	root.AddCommand(promptcmd.NewCommand()) // prompt file management (reorganized)
 	root.AddCommand(pushCmd)       // push modules to registry
 	root.AddCommand(editCmd)       // go mod edit for prompts
 	root.AddCommand(getCmd)        // pe get for extracting prompt info
