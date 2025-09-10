@@ -187,12 +187,12 @@ func showPromptDoc(promptName string) error {
 	}
 
 	// Show variables
-	if len(p.VariableDescriptions) > 0 || len(extractTemplateVars(p.Main)) > 0 {
+	if len(p.VariableDescriptions) > 0 || len(prompt.ExtractVariables(p.Main)) > 0 {
 		fmt.Println("VARIABLES")
 
 		// Get all variables (from template and descriptions)
 		varMap := make(map[string]bool)
-		for _, v := range extractTemplateVars(p.Main) {
+		for _, v := range prompt.ExtractVariables(p.Main) {
 			varMap[v] = true
 		}
 		for v := range p.VariableDescriptions {
@@ -310,7 +310,7 @@ func showVariableDoc(promptName, variableName string) error {
 	desc, hasDesc := p.VariableDescriptions[variableName]
 
 	// Check if variable is used in template
-	varsInTemplate := extractTemplateVars(p.Main)
+	varsInTemplate := prompt.ExtractVariables(p.Main)
 	isUsed := false
 	for _, v := range varsInTemplate {
 		if v == variableName {
