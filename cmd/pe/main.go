@@ -101,14 +101,9 @@ work together seamlessly.`,
 	root.AddCommand(diffCmd())
 	root.AddCommand(interactiveCmd())
 	root.AddCommand(extractCmd())
-	root.AddCommand(optimizeCmd())
-	root.AddCommand(evolveCmd())
-	root.AddCommand(fusionCmd)
-	root.AddCommand(composeCmd)
-	root.AddCommand(synthesizeCmd)
-	root.AddCommand(playgroundCmd())
-	root.AddCommand(metricsCmd())
-	root.AddCommand(semanticCmd())
+	
+	// Experimental and research commands grouped together
+	root.AddCommand(experimentalCmd())
 	root.AddCommand(securityCmd())
 
 	// Plugin command
