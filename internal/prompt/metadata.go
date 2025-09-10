@@ -114,7 +114,7 @@ func ExtractMainContent(content string) string {
 
 // FindVariables finds all {{.variable}} patterns in text
 func FindVariables(text string) []string {
-	var vars []string
+	vars := []string{} // Initialize as empty slice, not nil
 	seen := make(map[string]bool)
 
 	// Simple parser to find {{.variable}} patterns
