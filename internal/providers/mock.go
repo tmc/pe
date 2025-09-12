@@ -72,6 +72,8 @@ func (p *MockProvider) Generate(ctx context.Context, prompt string, options llm.
 		// Handle specific test cases
 		if strings.Contains(prompt, "What is 2+2?") {
 			responseText = "4"
+		} else if strings.Contains(prompt, "pointer") {
+			responseText = "A pointer is a variable that stores the memory address of another variable."
 		} else if strings.Contains(prompt, "What is the capital of France?") {
 			// For extract test - include the XML tags
 			responseText = "<answer>The capital of France is Paris</answer>"

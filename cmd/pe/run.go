@@ -83,11 +83,27 @@ Examples:
 			
 			// Register mock provider for testing
 			if os.Getenv("PE_TEST_MODE") == "true" {
-				// Use the simple mock response
-				mockResp := "Mock response"
-				if strings.Contains(strings.ToLower(content), "2+2") {
+				// Create mock response based on content
+				mockResp := "Mock response for: " + content
+				
+				// Handle specific test cases like the internal/providers mock does
+				if strings.Contains(content, "2+2") {
 					mockResp = "4"
+				} else if strings.Contains(content, "pointer") {
+					mockResp = "A pointer is a variable that stores the memory address of another variable."
+				} else if strings.Contains(content, "capital") && strings.Contains(content, "France") {
+					// Check if this is from the extract test (includes answer tags)
+					if strings.Contains(content, "<answer>") {
+						mockResp = content // Return as-is since it already has the answer
+					} else {
+						mockResp = "<answer>The capital of France is Paris</answer>"
+					}
+				} else if strings.Contains(content, "Translate Hello to Spanish") {
+					mockResp = "Hola"
+				} else if strings.Contains(content, "Count from 1 to 10") {
+					mockResp = "1\n2\n3\n4\n5\n6\n7\n8\n9\n10"
 				}
+				
 				client.Register("mock", &mockProvider{response: mockResp})
 				if provider == "cgpt" {
 					provider = "mock"

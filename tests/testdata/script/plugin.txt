@@ -1,24 +1,24 @@
-# Test pe plugin system - custom inference providers
+# Test pe experimental plugin system - custom inference providers
 
 # List installed plugins
-exec pe plugin list
+exec pe experimental plugin list
 stdout 'Installed plugins:'
 stdout 'openai \(built-in\)'
 stdout 'anthropic \(built-in\)'
 
 # Install plugin from registry
-exec pe plugin install ollama
+exec pe experimental plugin install ollama
 stdout 'Installing plugin: ollama'
 stdout 'Downloading from registry'
 stdout '✓ Verified signature'
 stdout '✓ Installed successfully'
 # Note: In test mode, the plugin isn't actually persisted
 # so we check that existing plugins are still there
-exec pe plugin list
+exec pe experimental plugin list
 stdout 'promptfoo'
 
 # Install from URL
-exec pe plugin install https://github.com/user/pe-plugin-custom
+exec pe experimental plugin install https://github.com/user/pe-plugin-custom
 stdout 'Installing from: github.com'
 stdout 'Cloning repository'
 stdout 'Building plugin'
@@ -29,7 +29,7 @@ stdout '✓ Installed: custom v1.0.0'
 # which isn't persisted in test mode
 
 # Plugin info
-exec pe plugin info ollama
+exec pe experimental plugin info ollama
 stdout 'Plugin: ollama'
 stdout 'Version: 0.1.0'
 stdout 'Author: community'
@@ -37,13 +37,13 @@ stdout 'Description: Local inference with Ollama'
 stdout 'Models: llama2, mistral, mixtral'
 
 # Configure plugin
-exec pe plugin config ollama --set endpoint=http://localhost:11434
+exec pe experimental plugin config ollama --set endpoint=http://localhost:11434
 stdout 'Updated ollama configuration'
-exec pe plugin config ollama --get endpoint
+exec pe experimental plugin config ollama --get endpoint
 stdout 'endpoint: http://localhost:11434'
 
 # Create new plugin
-exec pe plugin create myplugin
+exec pe experimental plugin create myplugin
 stdout 'Creating plugin template: myplugin'
 exists myplugin/
 exists myplugin/plugin.go
@@ -54,7 +54,7 @@ stdout 'type MyPlugin struct'
 
 # Build plugin
 cd myplugin
-exec pe plugin build
+exec pe experimental plugin build
 stdout 'Building plugin: myplugin'
 stdout 'Running tests'
 stdout '✓ All tests passed'
@@ -62,7 +62,7 @@ stdout 'Built: myplugin.so'
 exists myplugin.so
 
 # Test plugin locally
-exec pe plugin test myplugin.so
+exec pe experimental plugin test myplugin.so
 stdout 'Testing plugin: myplugin'
 stdout 'Test 1: Basic inference ✓'
 stdout 'Test 2: Streaming ✓'
@@ -70,31 +70,31 @@ stdout 'Test 3: Error handling ✓'
 stdout 'All tests passed'
 
 # Install local plugin
-exec pe plugin install ./myplugin.so
+exec pe experimental plugin install ./myplugin.so
 stdout 'Installing local plugin'
 stdout '✓ Installed: myplugin'
 
 # Update plugin
-exec pe plugin update ollama
+exec pe experimental plugin update ollama
 stdout 'Checking for updates'
 stdout 'Update available: v0.1.0 → v0.2.0'
 stdout 'Updating ollama'
 stdout '✓ Updated successfully'
 
 # Remove plugin (testing with a mock plugin)
-exec sh -c 'echo y | pe plugin remove ollama'
+exec sh -c 'echo y | pe experimental plugin remove ollama'
 stdout 'Remove plugin: ollama\? \(y/N\)'
 stdout 'Removed plugin: ollama'
 
 # Plugin marketplace
-exec pe plugin search 'local inference'
+exec pe experimental plugin search 'local inference'
 stdout 'Search results:'
 stdout '  ollama - Local inference with Ollama models'
 stdout '  llama-cpp - Direct llama.cpp integration'
 stdout '  gpt4all - Run GPT4All models locally'
 
 # Plugin dependencies
-exec pe plugin install advanced-plugin
+exec pe experimental plugin install advanced-plugin
 stdout 'Installing plugin: advanced-plugin'
 stdout 'Downloading from registry'
 stdout '✓ Verified signature'

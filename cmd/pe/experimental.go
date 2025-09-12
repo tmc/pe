@@ -32,6 +32,13 @@ Examples:
 	cmd.AddCommand(metricsCmd())
 	cmd.AddCommand(playgroundCmd())
 	
+	// Pipeline and utility commands
+	cmd.AddCommand(extractCmd())
+	cmd.AddCommand(pluginCmd())
+	cmd.AddCommand(streamCmd())
+	cmd.AddCommand(filterCmd())
+	cmd.AddCommand(analyzeCmd())
+	
 	// Demo commands
 	cmd.AddCommand(&cobra.Command{
 		Use:   "consensus-demo",

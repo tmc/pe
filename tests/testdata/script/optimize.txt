@@ -1,8 +1,8 @@
-# Test pe optimize command - prompt optimization
+# Test pe experimental optimize command - prompt optimization
 
 # Basic optimization with standard method
 env PE_TEST_MODE=true
-exec pe optimize prompt.txt --provider mock --iterations 2
+exec pe experimental optimize prompt.txt --provider mock --iterations 2
 stdout 'Optimization Results'
 stdout 'Original Prompt:'
 stdout 'Optimized Prompt:'
@@ -11,32 +11,32 @@ exists prompt_standard.txt
 
 # PE2 optimization
 env PE_TEST_MODE=true
-exec pe optimize prompt.txt --method pe2 --iterations 2 --provider mock
+exec pe experimental optimize prompt.txt --method pe2 --iterations 2 --provider mock
 stdout 'Optimization Results'
 stdout 'Iteration Details'
 exists prompt_pe2.txt
 
 # TextGrad optimization
 env PE_TEST_MODE=true
-exec pe optimize prompt.txt --method textgrad --iterations 2 --provider mock
+exec pe experimental optimize prompt.txt --method textgrad --iterations 2 --provider mock
 stdout 'Optimization Results'
 exists prompt_textgrad.txt
 
 # APEX optimization
 env PE_TEST_MODE=true
-exec pe optimize prompt.txt --method apex --iterations 2 --provider mock
+exec pe experimental optimize prompt.txt --method apex --iterations 2 --provider mock
 stdout 'Optimization Results'
 exists prompt_apex.txt
 
 # Hybrid optimization
 env PE_TEST_MODE=true
-exec pe optimize prompt.txt --method hybrid --iterations 2 --provider mock
+exec pe experimental optimize prompt.txt --method hybrid --iterations 2 --provider mock
 stdout 'Optimization Results'
 exists prompt_hybrid.txt
 
 # Optimization with output file
 env PE_TEST_MODE=true
-exec pe optimize prompt.txt -o results.json --provider mock --iterations 1
+exec pe experimental optimize prompt.txt -o results.json --provider mock --iterations 1
 stdout 'Results saved to: results.json'
 exists results.json
 exec grep '"original_prompt"' results.json

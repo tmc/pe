@@ -24,14 +24,14 @@ exec pe init
 exists .pe
 
 # Basic optimization test
-exec pe optimize prompt.txt --method pe2 --iterations 1 --provider mock
+exec pe experimental optimize prompt.txt --method pe2 --iterations 1 --provider mock
 stdout 'Optimization Results'
 stdout 'Optimized Prompt:'
 exists prompt_pe2.txt
 
 # Component library workflow
 # Test compose command
-exec pe compose context.txt instruction.txt --style cot
+exec pe experimental compose context.txt instruction.txt --style cot
 stdout 'Chain of Thought Composition:'
 stdout 'Context Integration:'
 stdout 'Instructions:'
@@ -43,7 +43,7 @@ stdout 'Validation passed'
 exists dist/prompts.tar.gz
 
 # Continuous optimization workflow  
-exec pe optimize prompt.txt --method hybrid --iterations 2 --provider mock
+exec pe experimental optimize prompt.txt --method hybrid --iterations 2 --provider mock
 stdout 'Optimization Results'
 stdout 'Improvement Score:'
 
