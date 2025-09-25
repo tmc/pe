@@ -1,0 +1,103 @@
+# Test pe eval command functionality
+
+env PE_TEST_MODE=true
+
+# Test basic evaluation
+exec cat > eval-config.yaml <<'EOF'
+description: "Basic evaluation test"
+prompts:
+  - "What is 2+2?"
+providers:
+  - name: "mock"
+    config:
+      model: "test-model"
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: "4"
+EOF
+
+exec pe eval eval-config.yaml
+! stderr 'error'
+
+# Test evaluation with variables
+exec cat > var-config.yaml <<'EOF'
+description: "Variable evaluation test"
+prompts:
+  - "Hello {{.name}}"
+providers:
+  - name: "mock"
+tests:
+  - vars:
+      name: "Alice"
+    assert:
+      - type: contains
+        value: "Alice"
+EOF
+
+exec pe eval var-config.yaml
+! stderr 'error'
+
+# Test with override variables
+exec pe eval var-config.yaml --var name=Bob
+! stderr 'error'
+
+# Test different output formats
+exec pe eval eval-config.yaml --output json
+! stderr 'error'
+
+exec pe eval eval-config.yaml --output yaml
+! stderr 'error'
+
+exec pe eval eval-config.yaml --output table
+! stderr 'error'
+
+# Test verbose mode
+exec pe eval eval-config.yaml --verbose
+! stderr 'error'
+
+# Test concurrency settings
+exec pe eval eval-config.yaml --max-concurrency 1
+! stderr 'error'
+
+exec pe eval eval-config.yaml --max-concurrency 3
+! stderr 'error'
+
+# Test filter flag
+exec pe eval eval-config.yaml --filter test
+! stderr 'error'
+
+# Test with nonexistent config file
+! exec pe eval nonexistent.yaml
+stderr 'error'
+
+# Test without config file (should look for defaults)
+! exec pe eval
+stderr .
+
+# Test multiple test cases
+exec cat > multi-config.yaml <<'EOF'
+description: "Multiple test cases"
+prompts:
+  - "Test prompt 1"
+  - "Test prompt 2"
+providers:
+  - name: "mock"
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: "test"
+  - vars: {}
+    assert:
+      - type: contains
+        value: "Mock"
+EOF
+
+exec pe eval multi-config.yaml
+! stderr 'error'
+
+# Test dry run mode
+exec pe eval eval-config.yaml --dry-run
+! stderr 'error'

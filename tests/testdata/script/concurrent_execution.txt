@@ -1,0 +1,124 @@
+# Test concurrent execution scenarios
+
+env PE_TEST_MODE=true
+
+# Test concurrent run commands
+exec pe run "prompt 1" &
+exec pe run "prompt 2" &
+exec pe run "prompt 3" &
+wait
+! stderr 'error'
+
+# Test concurrent eval with shared config
+exec cat > concurrent-config.yaml <<'EOF'
+description: "Concurrent evaluation test"
+prompts:
+  - "Test prompt 1"
+  - "Test prompt 2"
+  - "Test prompt 3"
+providers:
+  - name: "mock"
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: "Mock"
+EOF
+
+# Run multiple evaluations concurrently
+exec pe eval concurrent-config.yaml --max-concurrency 3 &
+exec pe eval concurrent-config.yaml --max-concurrency 2 &
+exec pe eval concurrent-config.yaml --max-concurrency 1 &
+wait
+! stderr 'error'
+
+# Test file access concurrency
+exec cat > shared-file.txt <<'EOF'
+Shared content for concurrent access
+EOF
+
+# Multiple processes reading the same file
+exec pe run shared-file.txt &
+exec pe run shared-file.txt &
+exec pe run shared-file.txt &
+exec pe run shared-file.txt &
+exec pe run shared-file.txt &
+wait
+! stderr 'error'
+
+# Test cache concurrency
+mkdir -p .pe/cache
+exec pe run "cacheable prompt 1" &
+exec pe run "cacheable prompt 2" &
+exec pe run "cacheable prompt 3" &
+wait
+! stderr 'error'
+
+# Test template variable concurrency
+exec pe run "Hello {{.name}}" --var name=Alice &
+exec pe run "Hello {{.name}}" --var name=Bob &
+exec pe run "Hello {{.name}}" --var name=Charlie &
+wait
+! stderr 'error'
+
+# Test provider concurrency
+exec pe run "test 1" --provider mock &
+exec pe run "test 2" --provider cgpt &
+exec pe run "test 3" --provider mock &
+wait
+! stderr 'error'
+
+# Test concurrent streaming
+exec pe run "stream test 1" --stream &
+exec pe run "stream test 2" --stream &
+wait
+! stderr 'error'
+
+# Test concurrent eval with different configs
+exec cat > config1.yaml <<'EOF'
+description: "Config 1"
+prompts: ["prompt 1"]
+providers: [{"name": "mock"}]
+tests: [{"vars": {}, "assert": [{"type": "contains", "value": "Mock"}]}]
+EOF
+
+exec cat > config2.yaml <<'EOF'
+description: "Config 2"
+prompts: ["prompt 2"]
+providers: [{"name": "mock"}]
+tests: [{"vars": {}, "assert": [{"type": "contains", "value": "Mock"}]}]
+EOF
+
+exec pe eval config1.yaml &
+exec pe eval config2.yaml &
+wait
+! stderr 'error'
+
+# Test memory-intensive concurrent operations
+exec pe run "memory test 1" &
+exec pe run "memory test 2" &
+exec pe run "memory test 3" &
+exec pe run "memory test 4" &
+exec pe run "memory test 5" &
+wait
+! stderr 'error'
+
+# Test concurrent file creation/deletion
+exec pe run "test" > output1.txt &
+exec pe run "test" > output2.txt &
+exec pe run "test" > output3.txt &
+wait
+
+exists output1.txt
+exists output2.txt
+exists output3.txt
+! stderr 'error'
+
+# Test process cleanup
+# Ensure no orphaned processes remain
+exec ps aux | grep '[p]e' | wc -l
+stdout '0'
+
+# Cleanup
+rm -f output*.txt config*.yaml shared-file.txt
+rm -rf .pe

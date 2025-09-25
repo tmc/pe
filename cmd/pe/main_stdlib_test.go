@@ -8,8 +8,6 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestMain(t *testing.T) {
@@ -32,9 +30,15 @@ func TestMain(t *testing.T) {
 	}
 
 	// Verify root command exists and has subcommands
-	assert.NotNil(t, root)
-	assert.Equal(t, "pe", root.Use)
-	assert.Contains(t, root.Short, "Go for Prompts")
+	if root == nil {
+		t.Fatal("root command is nil")
+	}
+	if root.Use != "pe" {
+		t.Errorf("Expected root command use to be 'pe', got: %s", root.Use)
+	}
+	if !strings.Contains(root.Short, "Go for Prompts") {
+		t.Errorf("Expected root command short description to contain 'Go for Prompts', got: %s", root.Short)
+	}
 
 	// Restore stdout
 	w.Close()
@@ -49,7 +53,7 @@ func TestRootCommandStructure(t *testing.T) {
 	root := &cobra.Command{
 		Use:   "pe",
 		Short: "PE - Go for Prompts",
-		Long: `PE is the unified toolchain for prompt engineering, bringing Go's 
+		Long: `PE is the unified toolchain for prompt engineering, bringing Go's
 philosophy of simplicity, composability, and performance to LLM development.`,
 	}
 
@@ -82,11 +86,19 @@ philosophy of simplicity, composability, and performance to LLM development.`,
 		t.Run(tt.name, func(t *testing.T) {
 			cmd, _, err := root.Find([]string{tt.cmdName})
 			if tt.expected {
-				assert.NoError(t, err)
-				assert.NotNil(t, cmd)
-				assert.Equal(t, tt.cmdName, cmd.Use)
+				if err != nil {
+					t.Errorf("Expected to find command %s, but got error: %v", tt.cmdName, err)
+				}
+				if cmd == nil {
+					t.Errorf("Expected to find command %s, but got nil", tt.cmdName)
+				}
+				if cmd != nil && cmd.Use != tt.cmdName {
+					t.Errorf("Expected command use to be %s, got: %s", tt.cmdName, cmd.Use)
+				}
 			} else {
-				assert.Error(t, err)
+				if err == nil {
+					t.Errorf("Expected error finding command %s, but succeeded", tt.cmdName)
+				}
 			}
 		})
 	}
@@ -129,7 +141,9 @@ func TestHandlePluginExecution(t *testing.T) {
 				baseName = baseName[lastSlash+1:]
 			}
 			isPlugin := strings.HasPrefix(baseName, "pe-") && baseName != "pe"
-			assert.Equal(t, tt.isPlugin, isPlugin)
+			if isPlugin != tt.isPlugin {
+				t.Errorf("Expected isPlugin to be %t, got %t for args %v", tt.isPlugin, isPlugin, tt.args)
+			}
 		})
 	}
 }
@@ -156,9 +170,15 @@ func TestDynamicPluginCommands(t *testing.T) {
 	// Verify plugins were added
 	for _, plugin := range mockPlugins {
 		cmd, _, err := root.Find([]string{plugin})
-		assert.NoError(t, err)
-		assert.NotNil(t, cmd)
-		assert.Equal(t, plugin, cmd.Use)
+		if err != nil {
+			t.Errorf("Expected to find plugin %s, but got error: %v", plugin, err)
+		}
+		if cmd == nil {
+			t.Errorf("Expected to find plugin %s, but got nil", plugin)
+		}
+		if cmd != nil && cmd.Use != plugin {
+			t.Errorf("Expected plugin use to be %s, got: %s", plugin, cmd.Use)
+		}
 	}
 }
 
@@ -204,13 +224,19 @@ func TestCommandOutput(t *testing.T) {
 			output := buf.String()
 
 			if tt.wantErr {
-				assert.Error(t, err)
+				if err == nil {
+					t.Errorf("Expected error but got none. Output: %s", output)
+				}
 			} else {
-				assert.NoError(t, err)
+				if err != nil {
+					t.Errorf("Unexpected error: %v. Output: %s", err, output)
+				}
 			}
 
 			if tt.contains != "" {
-				assert.Contains(t, output, tt.contains)
+				if !strings.Contains(output, tt.contains) {
+					t.Errorf("Expected output to contain %q, but got: %s", tt.contains, output)
+				}
 			}
 		})
 	}
@@ -232,8 +258,14 @@ func TestAddPipelineCommands(t *testing.T) {
 	// Verify all pipeline commands were added
 	for _, cmdName := range pipelineCommands {
 		cmd, _, err := root.Find([]string{cmdName})
-		require.NoError(t, err)
-		assert.NotNil(t, cmd)
-		assert.Equal(t, cmdName, cmd.Use)
+		if err != nil {
+			t.Errorf("Expected to find pipeline command %s, but got error: %v", cmdName, err)
+		}
+		if cmd == nil {
+			t.Errorf("Expected to find pipeline command %s, but got nil", cmdName)
+		}
+		if cmd != nil && cmd.Use != cmdName {
+			t.Errorf("Expected pipeline command use to be %s, got: %s", cmdName, cmd.Use)
+		}
 	}
 }

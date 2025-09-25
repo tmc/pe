@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"text/template"
 
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -60,7 +61,8 @@ Features:
 • Raw file display without processing
 
 Variable Substitution:
-Variables in prompt files can be specified using {{variable_name}} syntax.
+Variables in prompt files use Go template syntax: {{.variable_name}}.
+Legacy {{variable_name}} format is also supported for backward compatibility.
 Use --set key=value to provide values, or --interactive for guided input.`,
 		Example: `  # Display a simple prompt file
   pe cat prompts/analyze.prompt
@@ -285,22 +287,40 @@ func parseTextPrompt(content []byte) *PromptComponents {
 	}
 }
 
-// extractVariablesFromText finds all {{variable}} patterns in text
+// extractVariablesFromText finds all {{variable}} and {{.variable}} patterns in text
 func extractVariablesFromText(text string) map[string]string {
 	variables := make(map[string]string)
 	re := regexp.MustCompile(`\{\{([^}]+)\}\}`)
 	matches := re.FindAllStringSubmatch(text, -1)
-	
+
 	for _, match := range matches {
 		if len(match) > 1 {
 			varName := strings.TrimSpace(match[1])
-			if _, exists := variables[varName]; !exists {
+
+			// Handle dot notation: remove leading dot
+			if strings.HasPrefix(varName, ".") {
+				varName = strings.TrimPrefix(varName, ".")
+				varName = strings.TrimSpace(varName)
+			}
+
+			// Clean up variable name (remove pipes and other template syntax)
+			if idx := strings.IndexAny(varName, " |"); idx > 0 {
+				varName = varName[:idx]
+			}
+
+			if varName != "" && !containsVariable(variables, varName) {
 				variables[varName] = "" // Default empty value
 			}
 		}
 	}
-	
+
 	return variables
+}
+
+// containsVariable checks if a variable already exists in the map
+func containsVariable(variables map[string]string, varName string) bool {
+	_, exists := variables[varName]
+	return exists
 }
 
 // parseVariableAssignments parses --set key=value assignments
@@ -366,18 +386,38 @@ func interactiveVariableInput(components *PromptComponents) error {
 	return nil
 }
 
-// substituteVariables replaces {{variable}} patterns with actual values
+// substituteVariables replaces {{.variable}} patterns with actual values using Go templates
 func substituteVariables(text string, variables map[string]string) string {
-	// Simple implementation that preserves missing variables
-	// This is what the tests expect
+	if len(variables) == 0 {
+		return text
+	}
+
+	// Try Go template parsing first
+	tmpl, err := template.New("content").Parse(text)
+	if err == nil {
+		var buf strings.Builder
+		err = tmpl.Execute(&buf, variables)
+		if err == nil {
+			return buf.String()
+		}
+	}
+
+	// Fallback to simple replacement for backward compatibility
+	// This handles cases where templates aren't valid Go templates
 	result := text
 	for key, value := range variables {
-		// Replace {{key}} with value
+		// Replace {{key}} with value (old format)
 		placeholder := "{{" + key + "}}"
 		result = strings.ReplaceAll(result, placeholder, value)
 		// Also handle spaces: {{ key }}
 		placeholderWithSpaces := "{{ " + key + " }}"
 		result = strings.ReplaceAll(result, placeholderWithSpaces, value)
+		// Handle dot notation: {{.key}}
+		dotPlaceholder := "{{." + key + "}}"
+		result = strings.ReplaceAll(result, dotPlaceholder, value)
+		// Handle dot notation with spaces: {{ .key }}
+		dotPlaceholderWithSpaces := "{{ ." + key + " }}"
+		result = strings.ReplaceAll(result, dotPlaceholderWithSpaces, value)
 	}
 	return result
 }

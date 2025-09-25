@@ -9,8 +9,6 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestVetCmd(t *testing.T) {
@@ -64,7 +62,9 @@ providers:
 			for filename, content := range tt.files {
 				path := filepath.Join(tmpDir, filename)
 				err := os.WriteFile(path, []byte(content), 0644)
-				require.NoError(t, err)
+				if err != nil {
+					t.Fatalf("Failed to write test file %s: %v", filename, err)
+				}
 			}
 
 			// Update args with full paths
@@ -88,13 +88,19 @@ providers:
 			output := buf.String()
 
 			if tt.wantErr {
-				assert.Error(t, err)
+				if err == nil {
+					t.Errorf("Expected error but got none. Output: %s", output)
+				}
 			} else {
-				assert.NoError(t, err)
+				if err != nil {
+					t.Errorf("Unexpected error: %v. Output: %s", err, output)
+				}
 			}
 
 			if tt.contains != "" {
-				assert.Contains(t, output, tt.contains)
+				if !strings.Contains(output, tt.contains) {
+					t.Errorf("Expected output to contain %q, but got: %s", tt.contains, output)
+				}
 			}
 		})
 	}
@@ -145,7 +151,9 @@ providers: ["openai:gpt-4"]`,
 
 			// Write input file
 			err := os.WriteFile(inputPath, []byte(tt.content), 0644)
-			require.NoError(t, err)
+			if err != nil {
+				t.Fatalf("Failed to write input file: %v", err)
+			}
 
 			// Create command
 			cmd := fmtCmd()
@@ -159,18 +167,25 @@ providers: ["openai:gpt-4"]`,
 			err = cmd.Execute()
 
 			if tt.wantErr {
-				assert.Error(t, err)
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
 			} else {
-				assert.NoError(t, err)
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
 
 				if tt.checkWrite {
 					// Check if file was modified
-					_, err := os.Stat(inputPath)
-					assert.NoError(t, err)
+					if _, err := os.Stat(inputPath); err != nil {
+						t.Errorf("Expected file to exist after write: %v", err)
+					}
 				} else {
 					// Check output
 					output := buf.String()
-					assert.NotEmpty(t, output)
+					if output == "" {
+						t.Errorf("Expected non-empty output")
+					}
 				}
 			}
 		})
@@ -231,20 +246,31 @@ func TestInitCmd(t *testing.T) {
 			err := cmd.Execute()
 
 			if tt.wantErr {
-				assert.Error(t, err)
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
 			} else {
-				assert.NoError(t, err)
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
 
 				// Check file was created
 				content, err := os.ReadFile(tt.checkFile)
-				assert.NoError(t, err)
-				assert.NotEmpty(t, content)
+				if err != nil {
+					t.Errorf("Failed to read created file %s: %v", tt.checkFile, err)
+				}
+				if len(content) == 0 {
+					t.Errorf("Created file %s is empty", tt.checkFile)
+				}
 
 				// Verify content structure
 				contentStr := string(content)
-				assert.Contains(t, contentStr, "prompts")
-				assert.Contains(t, contentStr, "providers")
-				assert.Contains(t, contentStr, "tests")
+				requiredFields := []string{"prompts", "providers", "tests"}
+				for _, field := range requiredFields {
+					if !strings.Contains(contentStr, field) {
+						t.Errorf("Expected content to contain %q, but got: %s", field, contentStr)
+					}
+				}
 			}
 		})
 	}
@@ -255,14 +281,23 @@ func TestWatchCmd(t *testing.T) {
 	// Test basic setup and validation
 	cmd := watchCmd()
 
-	assert.NotNil(t, cmd)
-	assert.Contains(t, cmd.Use, "watch")
-	assert.Contains(t, strings.ToLower(cmd.Short), "watch")
+	if cmd == nil {
+		t.Fatal("watchCmd returned nil")
+	}
+	if !strings.Contains(cmd.Use, "watch") {
+		t.Errorf("Expected command use to contain 'watch', got: %s", cmd.Use)
+	}
+	if !strings.Contains(strings.ToLower(cmd.Short), "watch") {
+		t.Errorf("Expected command short description to contain 'watch', got: %s", cmd.Short)
+	}
 
 	// Check flags exist
-	assert.NotNil(t, cmd.Flags().Lookup("config"))
-	assert.NotNil(t, cmd.Flags().Lookup("output"))
-	assert.NotNil(t, cmd.Flags().Lookup("include"))
+	requiredFlags := []string{"config", "output", "include"}
+	for _, flag := range requiredFlags {
+		if cmd.Flags().Lookup(flag) == nil {
+			t.Errorf("Expected flag %s to exist", flag)
+		}
+	}
 }
 
 func TestConvertCmd(t *testing.T) {
@@ -310,7 +345,9 @@ func TestConvertCmd(t *testing.T) {
 
 			// Write input file
 			err := os.WriteFile(inputPath, []byte(tt.content), 0644)
-			require.NoError(t, err)
+			if err != nil {
+				t.Fatalf("Failed to write input file: %v", err)
+			}
 
 			cmd := convertCmd()
 			var buf bytes.Buffer
@@ -323,13 +360,18 @@ func TestConvertCmd(t *testing.T) {
 			err = cmd.Execute()
 
 			if tt.wantErr {
-				assert.Error(t, err)
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
 			} else {
-				assert.NoError(t, err)
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
 
 				// Check output file exists
-				_, err = os.Stat(outputPath)
-				assert.NoError(t, err)
+				if _, err = os.Stat(outputPath); err != nil {
+					t.Errorf("Expected output file to exist: %v", err)
+				}
 			}
 		})
 	}
@@ -351,7 +393,9 @@ tests:
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.yaml")
 	err := os.WriteFile(configFile, []byte(configContent), 0644)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatalf("Failed to write config file: %v", err)
+	}
 
 	// Create a mock command for testing
 	cmd := &cobra.Command{}
@@ -384,11 +428,17 @@ func TestVetQuietMode(t *testing.T) {
 
 	// Parse flags
 	err := cmd.ParseFlags([]string{"-q"})
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Failed to parse flags: %v", err)
+	}
 
 	quiet, err := cmd.Flags().GetBool("quiet")
-	assert.NoError(t, err)
-	assert.True(t, quiet)
+	if err != nil {
+		t.Errorf("Failed to get quiet flag: %v", err)
+	}
+	if !quiet {
+		t.Errorf("Expected quiet flag to be true")
+	}
 }
 
 func TestVetVerboseMode(t *testing.T) {
@@ -398,9 +448,15 @@ func TestVetVerboseMode(t *testing.T) {
 
 	// Parse flags
 	err := cmd.ParseFlags([]string{"-v"})
-	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("Failed to parse flags: %v", err)
+	}
 
 	verbose, err := cmd.Flags().GetBool("verbose")
-	assert.NoError(t, err)
-	assert.True(t, verbose)
+	if err != nil {
+		t.Errorf("Failed to get verbose flag: %v", err)
+	}
+	if !verbose {
+		t.Errorf("Expected verbose flag to be true")
+	}
 }

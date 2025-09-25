@@ -266,3 +266,17 @@ metadata:
 		t.Errorf("expected version to be '1.0', got %v", components.Metadata["version"])
 	}
 }
+
+func TestExtractVariablesFromTextWithDots(t *testing.T) {
+	text := "Hello {{.name}}!"
+	result := extractVariablesFromText(text)
+	expected := map[string]string{"name": ""}
+
+	for key, expectedValue := range expected {
+		if actualValue, exists := result[key]; !exists {
+			t.Errorf("expected key %s not found in result %+v", key, result)
+		} else if actualValue != expectedValue {
+			t.Errorf("expected value %s for key %s, got %s", expectedValue, key, actualValue)
+		}
+	}
+}
