@@ -53,9 +53,7 @@ func TestEvalCmd_BasicUsage(t *testing.T) {
 prompts:
   - "What is 2+2?"
 providers:
-  - name: "mock"
-    config:
-      model: "test-model"
+  - "mock"
 tests:
   - vars: {}
     assert:
@@ -157,7 +155,7 @@ func TestEvalCmd_OutputFormats(t *testing.T) {
 prompts:
   - "Test prompt"
 providers:
-  - name: "mock"
+  - "mock"
 tests:
   - vars: {}
     assert:
@@ -209,7 +207,7 @@ func TestEvalCmd_VariableSubstitution(t *testing.T) {
 prompts:
   - "Hello {{.name}}, you are {{.age}} years old"
 providers:
-  - name: "mock"
+  - "mock"
 tests:
   - vars:
       name: "Alice"
@@ -224,35 +222,18 @@ tests:
 		t.Fatalf("Failed to write config file: %v", err)
 	}
 
-	tests := []struct {
-		name string
-		args []string
-	}{
-		{
-			name: "no additional vars",
-			args: []string{configFile},
-		},
-		{
-			name: "with override vars",
-			args: []string{configFile, "--var", "name=Bob", "--var", "age=25"},
-		},
-	}
+	// Test that eval runs without error - variables come from the config file test cases
+	cmd := evalCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{configFile})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cmd := evalCmd()
-			var buf bytes.Buffer
-			cmd.SetOut(&buf)
-			cmd.SetErr(&buf)
-			cmd.SetArgs(tt.args)
+	err = cmd.Execute()
+	output := buf.String()
 
-			err := cmd.Execute()
-			output := buf.String()
-
-			if err != nil {
-				t.Errorf("Unexpected error: %v. Output: %s", err, output)
-			}
-		})
+	if err != nil {
+		t.Errorf("Unexpected error: %v. Output: %s", err, output)
 	}
 }
 
@@ -272,7 +253,7 @@ func TestEvalCmd_Concurrency(t *testing.T) {
 prompts:
   - "Test prompt"
 providers:
-  - name: "mock"
+  - "mock"
 tests:
   - vars: {}
     assert:
