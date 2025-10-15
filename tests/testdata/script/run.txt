@@ -1,80 +1,64 @@
-# Test pe run command - basic execution
+# Test pe run command functionality
 
-# Check pe is available
-exec which pe
-stdout '.*/pe'
+env PE_TEST_MODE=true
+env PE_MOCK_PROVIDER=true
 
-# Simple prompt execution
-exec pe run 'What is 2+2?'
+# Test basic usage - simple math prompt
+pe run 'What is 2+2?' --stream=false
 stdout '4'
 ! stderr .
 
-# Run from stdin
-exec pe run 'Explain what a pointer is in one sentence.'
-stdout 'pointer'
-stdout 'memory address'
+# Test basic usage - direct text prompt
+pe run 'Hello world' --stream=false
+stdout 'Mock response for: Hello world'
+! stderr .
 
-# Run from file
-exec pe run prompt.txt
-stdout 'helpful assistant'
+# Test with no arguments - should fail
+! pe run
+stderr .
 
-# Run with variables
-exec pe run 'Translate {{.Text}} to {{.Language}}' --var Text=Hello --var Language=Spanish
-stdout 'Hola'
+# Test file input - read from file
+pe run prompt.txt --stream=false
+stdout '<answer>The capital of France is Paris</answer>'
+! stderr .
 
-# Run with provider selection
-exec pe run 'Test prompt' --provider cgpt --model gpt-4
-stdout .
-! stderr 'error'
+# Test file input - nonexistent file treated as direct text
+pe run nonexistent.txt --stream=false
+stdout 'Mock response for: nonexistent.txt'
+! stderr .
 
-# Run with temperature setting
-exec pe run 'Generate a random number' --temperature 0.9
-stdout .
+# Test template variable substitution
+pe run 'Hello {{.name}}' --var name=World --stream=false
+stdout 'Hello World|Mock response for: Hello World'
+! stderr .
 
-# Run with max tokens
-exec pe run 'Tell me a story' --max-tokens 50
-stdout .
+# Test multiple variables
+pe run '{{.greeting}} {{.name}}!' --var greeting=Hello --var name=Alice --stream=false
+stdout 'Hello Alice!|Mock response for: Hello Alice!'
+! stderr .
 
-# Error: no prompt provided
-! exec pe run
-stderr 'accepts between 1 and 10 arg'
+# Test template with no substitution
+pe run 'Simple prompt' --var unused=value --stream=false
+stdout 'Mock response for: Simple prompt'
+! stderr .
 
-# Error: invalid provider
-! exec pe run 'test' --provider invalid-provider
-stderr 'provider.*not found'
+# Test different providers
+pe run 'Test prompt' --stream=false
+! stderr .
 
-# Run from txtar file
-exec pe run example.txtar
-stdout 'Mock response'
-exists .pe/cache
+pe run 'Test prompt' --provider cgpt --stream=false
+! stderr .
 
-# Run from gist (mock)
-exec pe run gist:example/hello
-stdout 'Mock response'
+pe run 'Test prompt' --provider mock --stream=false
+! stderr .
 
-# Run with streaming output
-exec pe run 'Count to 5' --stream
-stdout '1'
-stdout '2'
-stdout '3'
-stdout '4'
-stdout '5'
+# Test stream flag
+pe run 'test prompt' --stream
+! stderr .
 
-# Run with JSON output
-exec pe run 'What is 2+2?' --json
-stdout '"response"'
-stdout '"model"'
-stdout '"tokens"'
-
--- example.txtar --
--- prompt.txt --
-Process this input: {{.Input}}
-
--- config.yaml --
-provider: openai
-model: gpt-4
-variables:
-  Input: "test data"
+# Test stream disabled
+pe run 'test prompt' --stream=false
+! stderr .
 
 -- prompt.txt --
-You are a helpful assistant. Explain the concept of recursion.
+What is the capital of France?

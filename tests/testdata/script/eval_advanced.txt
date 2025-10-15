@@ -1,0 +1,159 @@
+# Test advanced pe eval command functionality
+
+env PE_TEST_MODE=true
+env PE_MOCK_PROVIDER=true
+
+# Test basic evaluation with config file
+pe eval eval-config.yaml
+! stderr 'error'
+
+# Test eval without config file - should error
+! pe eval
+stderr .
+
+# Test eval with nonexistent file - should error
+! pe eval nonexistent.yaml
+stderr .
+
+# Test output formats - table (default)
+pe eval format-config.yaml
+! stderr 'error'
+
+# Test output formats - JSON file
+pe eval format-config.yaml --output output-results.json
+! stderr 'error'
+exists output-results.json
+
+# Test output formats - YAML file
+pe eval format-config.yaml --output output-results.yaml
+! stderr 'error'
+exists output-results.yaml
+
+# Test output formats - CSV file
+pe eval format-config.yaml --output output-results.csv
+! stderr 'error'
+exists output-results.csv
+
+# Test variable substitution in prompts
+pe eval var-config.yaml
+! stderr 'error'
+
+# Test concurrency settings - default
+pe eval concurrent-config.yaml
+! stderr 'error'
+
+# Test concurrency settings - single thread
+pe eval concurrent-config.yaml --max-concurrency 1
+! stderr 'error'
+
+# Test concurrency settings - multiple threads
+pe eval concurrent-config.yaml --max-concurrency 3
+! stderr 'error'
+
+# Test timeout flag
+pe eval eval-config.yaml --timeout 30s
+! stderr 'error'
+
+# Test dry-run mode
+pe eval eval-config.yaml --dry-run
+! stderr 'error'
+
+# Test with multiple prompts
+pe eval multi-prompts.yaml
+! stderr 'error'
+
+# Test with multiple test cases
+pe eval multi-tests.yaml
+! stderr 'error'
+
+-- eval-config.yaml --
+description: "Test evaluation"
+prompts:
+  - "What is 2+2?"
+providers:
+  - "mock"
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: "4"
+
+-- format-config.yaml --
+description: "Test evaluation"
+prompts:
+  - "Test prompt"
+providers:
+  - "mock"
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: "test"
+
+-- var-config.yaml --
+description: "Variable test evaluation"
+prompts:
+  - "Hello {{.name}}, you are {{.age}} years old"
+providers:
+  - "mock"
+tests:
+  - vars:
+      name: "Alice"
+      age: "30"
+    assert:
+      - type: contains
+        value: "Alice"
+
+-- concurrent-config.yaml --
+description: "Concurrency test evaluation"
+prompts:
+  - "Test prompt"
+providers:
+  - "mock"
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: "test"
+  - vars: {}
+    assert:
+      - type: contains
+        value: "test"
+  - vars: {}
+    assert:
+      - type: contains
+        value: "test"
+
+-- multi-prompts.yaml --
+description: "Multiple prompts test"
+prompts:
+  - "Test prompt 1"
+  - "Test prompt 2"
+  - "Test prompt 3"
+providers:
+  - "mock"
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: "Mock"
+
+-- multi-tests.yaml --
+description: "Multiple tests"
+prompts:
+  - "Test prompt"
+providers:
+  - "mock"
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: "test"
+  - vars: {}
+    assert:
+      - type: contains
+        value: "Mock"
+  - vars: {}
+    assert:
+      - type: contains
+        value: "response"

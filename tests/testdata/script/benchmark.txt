@@ -1,0 +1,136 @@
+# Test pe benchmark command functionality
+
+env PE_TEST_MODE=true
+env PE_MOCK_PROVIDER=true
+
+# Test basic benchmark with config
+pe benchmark bench-config.yaml
+! stderr 'error'
+
+# Test benchmark without config - should error
+! pe benchmark
+stderr .
+
+# Test benchmark with nonexistent file - should error
+! pe benchmark nonexistent.yaml
+stderr .
+
+# Test iterations flag - single run
+pe benchmark repeat-config.yaml --iterations 1
+! stderr 'error'
+
+# Test iterations flag - multiple runs
+pe benchmark repeat-config.yaml --iterations 5
+! stderr 'error'
+
+# Test iterations flag - many runs
+pe benchmark repeat-config.yaml --iterations 10
+! stderr 'error'
+
+# Test concurrency flag - single thread
+pe benchmark concurrent-config.yaml --concurrency 1
+! stderr 'error'
+
+# Test concurrency flag - multiple threads
+pe benchmark concurrent-config.yaml --concurrency 3
+! stderr 'error'
+
+# Test concurrency flag - high concurrency
+pe benchmark concurrent-config.yaml --concurrency 10
+! stderr 'error'
+
+# Test output formats - default (json)
+pe benchmark format-config.yaml
+! stderr 'error'
+
+# Test output formats - json to file
+pe benchmark format-config.yaml --output bench-results.json
+! stderr 'error'
+exists bench-results.json
+
+# Test output formats - csv
+pe benchmark format-config.yaml --format csv --output bench-results.csv
+! stderr 'error'
+exists bench-results.csv
+
+# Test output formats - text
+pe benchmark format-config.yaml --format text
+! stderr 'error'
+
+# Test go-bench format
+pe benchmark format-config.yaml --go-bench
+! stderr 'error'
+stdout 'Benchmark'
+
+# Test with multiple prompts
+pe benchmark multi-bench.yaml --iterations 3
+! stderr 'error'
+
+# Test combined flags
+pe benchmark bench-config.yaml --iterations 5 --concurrency 2
+! stderr 'error'
+
+pe benchmark bench-config.yaml --iterations 3 --format json
+! stderr 'error'
+
+-- bench-config.yaml --
+description: "Benchmark test"
+prompts:
+  - "Test prompt"
+providers:
+  - "mock"
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: "Mock"
+
+-- repeat-config.yaml --
+description: "Repeat test"
+prompts:
+  - "Test prompt"
+providers:
+  - "mock"
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: "Mock"
+
+-- concurrent-config.yaml --
+description: "Concurrency test"
+prompts:
+  - "Test prompt"
+providers:
+  - "mock"
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: "Mock"
+
+-- format-config.yaml --
+description: "Output format test"
+prompts:
+  - "Test prompt"
+providers:
+  - "mock"
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: "Mock"
+
+-- multi-bench.yaml --
+description: "Multiple prompts benchmark"
+prompts:
+  - "Test prompt 1"
+  - "Test prompt 2"
+  - "Test prompt 3"
+providers:
+  - "mock"
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: "Mock"
