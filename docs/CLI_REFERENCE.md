@@ -39,6 +39,15 @@ Global options:
 | [`doc`](#doc) | Show prompt documentation | `pe doc math-solver` |
 | [`extract`](#extract) | Extract XML-like tags | `pe run prompt.txt \| pe extract --tag answer` |
 | [`get`](#get) | Get prompt file fields | `pe get summarize.txt variables` |
+| [`collect`](#collect) | Gather parallel results | `pe collect --jobs 10` |
+| [`completion`](#completion) | Shell completions | `pe completion bash` |
+| [`edit`](#edit) | Edit prompt files | `pe edit prompt.txt --set-prompt "text"` |
+| [`eval-prompt`](#eval-prompt) | Run prompt evals | `pe eval-prompt prompt.txt` |
+| [`experimental`](#experimental) | Research commands | `pe experimental optimize config.yaml` |
+| [`push`](#push) | Push module to registry | `pe push tmc/hello` |
+| [`reduce`](#reduce) | Aggregate results | `pe reduce --sum cost` |
+| [`work`](#work) | Workspace management | `pe work init` |
+| [`help`](#help) | Get command help | `pe help run` |
 | [`stream`](#stream) | Process results stream | `pe eval config.yaml \| pe stream` |
 | [`filter`](#filter) | Filter results | `pe eval config.yaml \| pe filter --success` |
 | [`analyze`](#analyze) | Statistical analysis | `pe eval config.yaml \| pe analyze` |
@@ -2113,6 +2122,444 @@ pe get summarize.txt --keys
 
 # Get defaults
 pe get summarize.txt defaults
+```
+
+---
+
+## collect
+
+Gather results from parallel or asynchronous operations.
+
+### Synopsis
+
+```bash
+pe collect [flags]
+```
+
+### Description
+
+The `collect` command gathers results from parallel/async operations, useful when running multiple prompts concurrently.
+
+### Flags
+
+```bash
+-h, --help       help for collect
+    --jobs int   Number of jobs to collect
+```
+
+### Examples
+
+```bash
+# Collect results from parallel operations
+pe collect
+
+# Collect specific number of jobs
+pe collect --jobs 10
+```
+
+---
+
+## completion
+
+Generate shell completion scripts for pe.
+
+### Synopsis
+
+```bash
+pe completion [command]
+```
+
+### Description
+
+Generate autocompletion scripts for various shells to enable tab completion for PE commands and flags.
+
+### Available Commands
+
+```bash
+bash        Generate the autocompletion script for bash
+fish        Generate the autocompletion script for fish
+powershell  Generate the autocompletion script for powershell
+zsh         Generate the autocompletion script for zsh
+```
+
+### Examples
+
+```bash
+# Bash completion
+pe completion bash > /etc/bash_completion.d/pe
+
+# Zsh completion
+pe completion zsh > "${fpath[1]}/_pe"
+
+# Fish completion
+pe completion fish > ~/.config/fish/completions/pe.fish
+
+# PowerShell completion
+pe completion powershell | Out-String | Invoke-Expression
+```
+
+---
+
+## edit
+
+Edit prompt files programmatically with scriptable modifications.
+
+### Synopsis
+
+```bash
+pe edit [prompt-file] [flags]
+```
+
+### Description
+
+Inspired by `go mod edit`, provides a programmatic interface for editing prompt files without manual text editing. All modifications preserve the prompt format.
+
+### Flags
+
+```bash
+    --add-default string         Add a default (format: key=value)
+    --add-section string         Add a section
+    --add-variant string         Add a variant
+    --append-prompt string       Append text to the main prompt
+    --fmt                        Format the prompt file
+-h, --help                       help for edit
+    --json                       Output the prompt in JSON format
+    --module string              Add module dependency to go.mod
+    --prepend-prompt string      Prepend text to the main prompt
+    --print                      Print the result instead of writing to file
+    --remove-default string      Remove a default by key
+    --remove-section string      Remove a section
+    --remove-variant string      Remove a variant
+    --section-content string     Content for the section (use with --add-section)
+    --set-defaults string        Set defaults (format: key1=val1&key2=val2)
+    --set-examples string        Set the examples section
+    --set-prompt string          Set the main prompt text
+    --set-system-prompt string   Set the system prompt
+    --variant-cmd string         Commands for the variant (use with --add-variant)
+```
+
+### Examples
+
+```bash
+# Set the main prompt
+pe edit prompt.txt --set-prompt "Summarize this document"
+
+# Set the system prompt
+pe edit prompt.txt --set-system-prompt "You are a helpful assistant"
+
+# Add a variant
+pe edit prompt.txt --add-variant academic --variant-cmd "extend-system-prompt 'Use academic language'"
+
+# Add a section
+pe edit prompt.txt --add-section examples --section-content "Example 1: ..."
+
+# Output as JSON
+pe edit prompt.txt --json
+
+# Set defaults
+pe edit prompt.txt --set-defaults "lang=en&model=gpt-4"
+pe edit prompt.txt --add-default lang=en
+
+# Format the file
+pe edit prompt.txt --fmt
+```
+
+---
+
+## eval-prompt
+
+Run evaluations defined in a prompt file's evals section.
+
+### Synopsis
+
+```bash
+pe eval-prompt [prompt-file] [flags]
+```
+
+### Description
+
+Executes test cases defined in the `-- evals --` section of a prompt file. Tests should be in YAML format with variables and assertions.
+
+### Flags
+
+```bash
+-h, --help              help for eval-prompt
+    --json              Output results as JSON
+    --output string     Output file for results
+    --provider string   LLM provider to use
+    --variant string    Apply variant before running evals
+```
+
+### Evals Format
+
+```yaml
+-- evals --
+tests:
+  - vars:
+      input: "test input"
+    assert:
+      - type: contains
+        value: "expected"
+  - vars:
+      input: "another test"
+    assert:
+      - type: llm_rubric
+        value: "Should be concise"
+```
+
+### Examples
+
+```bash
+# Run evals from prompt file
+pe eval-prompt prompt.txt
+
+# Use specific provider
+pe eval-prompt prompt.txt --provider anthropic:claude-3-sonnet
+
+# Apply variant before evaluating
+pe eval-prompt prompt.txt --variant formal
+
+# Output results as JSON
+pe eval-prompt prompt.txt --json -o results.json
+```
+
+---
+
+## experimental
+
+Access experimental prompt engineering research commands.
+
+### Synopsis
+
+```bash
+pe experimental [command]
+```
+
+### Description
+
+Experimental commands implementing cutting-edge techniques from academic papers and research projects. These may be unstable, slow, or produce inconsistent results. Not recommended for production use.
+
+### Available Commands
+
+```bash
+analyze        Analyze text with various metrics
+compose        Compose prompts from verified components with type-safe composition
+consensus-demo Demo: Distributed consensus visualization
+evolve         Optimize prompts using evolutionary algorithms (NSGA-II)
+extract        Extract content from XML-like tags
+filter         Filter and transform pipeline outputs
+fusion         Multi-model consensus optimization using fusion
+metrics        Calculate advanced evaluation metrics for generated text
+optimize       Optimize prompts using metaprompting techniques
+playground     Launch interactive web playground for prompt engineering
+plugin         Manage PE plugins
+semantic       Semantic backpropagation and Graph-based Agentic System Optimization (GASO)
+stream         Stream process LLM outputs
+synthesize     Generate prompts using DSPy-style program synthesis
+```
+
+### Examples
+
+```bash
+# Optimize prompts using metaprompting
+pe experimental optimize config.yaml
+
+# Evolutionary optimization with NSGA-II
+pe experimental evolve --population 10
+
+# Semantic analysis
+pe experimental semantic analyze prompt.txt
+
+# Launch interactive playground
+pe experimental playground
+
+# Multi-model fusion
+pe experimental fusion --models "gpt-4,claude-3-sonnet,gemini-pro"
+```
+
+---
+
+## push
+
+Push a prompt module to the GitHub gist registry.
+
+### Synopsis
+
+```bash
+pe push [module] [flags]
+```
+
+### Description
+
+Creates or updates a GitHub gist with your module content and registers it in the root registry gist. Requires `GITHUB_TOKEN` environment variable.
+
+### Arguments
+
+- `module`: Module name (e.g., `tmc/hello`, `myorg/summarize`)
+
+### Flags
+
+```bash
+    --draft    Save as draft without pushing
+-h, --help     help for push
+    --public   Make the gist public
+    --update   Update existing gist
+```
+
+### Examples
+
+```bash
+# Push a module
+pe push tmc/hello
+
+# Push as public gist
+pe push myorg/summarize --public
+
+# Update existing module
+pe push tmc/hello --update
+
+# Save as draft
+pe push myorg/test --draft
+```
+
+---
+
+## reduce
+
+Aggregate pipeline results using various reduction operations.
+
+### Synopsis
+
+```bash
+pe reduce [flags]
+```
+
+### Description
+
+Reduces and aggregates evaluation results from a pipeline, supporting various mathematical and statistical operations.
+
+### Flags
+
+```bash
+-h, --help         help for reduce
+    --sum string   Sum operation
+```
+
+### Examples
+
+```bash
+# Sum costs from evaluations
+pe eval config.yaml | pe reduce --sum cost
+
+# Aggregate results
+pe eval config.yaml | pe stream --select cost | pe reduce --sum cost
+```
+
+---
+
+## work
+
+Workspace support for developing multiple related prompts.
+
+### Synopsis
+
+```bash
+pe work [command]
+```
+
+### Description
+
+A `pe.work` file in the root of your workspace lets you develop multiple prompt modules together, similar to `go.work` files in Go.
+
+### Subcommands
+
+#### work init
+
+Initialize a workspace.
+
+```bash
+pe work init
+```
+
+#### work list
+
+List workspace contents.
+
+```bash
+pe work list
+```
+
+#### work sync
+
+Sync workspace prompt dependencies.
+
+```bash
+pe work sync
+```
+
+#### work use
+
+Add directories to workspace.
+
+```bash
+pe work use [directory...]
+```
+
+#### work edit
+
+Edit pe.work file programmatically.
+
+```bash
+pe work edit [flags]
+```
+
+### Examples
+
+```bash
+# Initialize workspace
+pe work init
+
+# Add directories to workspace
+pe work use ./prompts ./templates ./experiments
+
+# List workspace contents
+pe work list
+
+# Sync dependencies
+pe work sync
+
+# Edit workspace programmatically
+pe work edit --add ./new-prompts
+```
+
+---
+
+## help
+
+Get help for any PE command.
+
+### Synopsis
+
+```bash
+pe help [command] [flags]
+```
+
+### Description
+
+Displays help information for any command in the application. Simply type `pe help [path to command]` for full details.
+
+### Examples
+
+```bash
+# General help
+pe help
+
+# Help for specific command
+pe help run
+
+# Help for subcommand
+pe help mod list
+pe help experimental optimize
 ```
 
 ---
