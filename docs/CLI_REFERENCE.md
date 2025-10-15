@@ -31,6 +31,14 @@ Global options:
 | [`cat`](#cat) | Display prompt files | `pe cat prompts/analyze.prompt` |
 | [`mod`](#mod) | Manage prompt modules | `pe mod list` |
 | [`template`](#template) | Manage prompt templates | `pe template list` |
+| [`prompt`](#prompt) | Manage prompt files | `pe prompt init analyze.prompt` |
+| [`attest`](#attest) | Cryptographic attestations | `pe attest verify abc123` |
+| [`cache`](#cache) | Cache management | `pe cache status` |
+| [`profile`](#profile) | Profiling & observability | `pe profile start --type cpu` |
+| [`distributed`](#distributed) | Distributed execution | `pe distributed start --role coordinator` |
+| [`doc`](#doc) | Show prompt documentation | `pe doc math-solver` |
+| [`extract`](#extract) | Extract XML-like tags | `pe run prompt.txt \| pe extract --tag answer` |
+| [`get`](#get) | Get prompt file fields | `pe get summarize.txt variables` |
 | [`stream`](#stream) | Process results stream | `pe eval config.yaml \| pe stream` |
 | [`filter`](#filter) | Filter results | `pe eval config.yaml \| pe filter --success` |
 | [`analyze`](#analyze) | Statistical analysis | `pe eval config.yaml \| pe analyze` |
@@ -1495,6 +1503,616 @@ pe security report --format pdf --standards owasp,nist,iso27001
 
 # Comprehensive security scan
 pe security test --target config.yaml --comprehensive
+```
+
+---
+
+## attest
+
+Manage cryptographic attestations for prompt executions.
+
+### Synopsis
+
+```bash
+pe attest [command]
+```
+
+### Description
+
+The `attest` command provides cryptographic attestations that prove prompt executions. Every prompt run can be cryptographically signed and chained, creating an immutable audit trail.
+
+### Subcommands
+
+#### attest init
+
+Initialize attestation store.
+
+```bash
+pe attest init
+```
+
+#### attest list
+
+List attestations.
+
+```bash
+pe attest list [flags]
+```
+
+#### attest show
+
+Show attestation details.
+
+```bash
+pe attest show [attestation_id]
+```
+
+#### attest verify
+
+Verify attestations.
+
+```bash
+pe attest verify [attestation_id]
+```
+
+#### attest key
+
+Manage attestation keys.
+
+```bash
+pe attest key [subcommand]
+```
+
+#### attest export
+
+Export attestation chain.
+
+```bash
+pe attest export [flags]
+```
+
+### Examples
+
+```bash
+# Initialize attestation store
+pe attest init
+
+# List all attestations
+pe attest list
+
+# Show specific attestation
+pe attest show abc123
+
+# Verify an attestation
+pe attest verify abc123
+
+# Manage keys
+pe attest key generate
+pe attest key list
+
+# Export attestation chain
+pe attest export -o attestations.json
+```
+
+---
+
+## cache
+
+Cryptographically signed content-addressed caching.
+
+### Synopsis
+
+```bash
+pe cache [command]
+```
+
+### Description
+
+Provides secure cache sharing across distributed nodes with cryptographic signatures and witness verification.
+
+### Subcommands
+
+#### cache status
+
+Show cache status and statistics.
+
+```bash
+pe cache status
+```
+
+#### cache stats
+
+Show detailed cache statistics.
+
+```bash
+pe cache stats
+```
+
+#### cache list
+
+List cache entries.
+
+```bash
+pe cache list [flags]
+```
+
+#### cache inspect
+
+View detailed cache entry information.
+
+```bash
+pe cache inspect [entry_id]
+```
+
+#### cache clear
+
+Clear cache entries.
+
+```bash
+pe cache clear [flags]
+```
+
+#### cache verify
+
+Verify cache integrity.
+
+```bash
+pe cache verify
+```
+
+#### cache export
+
+Export cache entries to a bundle.
+
+```bash
+pe cache export [flags]
+```
+
+#### cache import
+
+Import a cache bundle.
+
+```bash
+pe cache import [bundle_file]
+```
+
+### Examples
+
+```bash
+# Show cache status
+pe cache status
+
+# List all cache entries
+pe cache list
+
+# Inspect specific entry
+pe cache inspect entry-abc123
+
+# Clear old entries
+pe cache clear --older-than 7d
+
+# Verify cache integrity
+pe cache verify
+
+# Export cache bundle
+pe cache export -o cache-bundle.tar.gz
+
+# Import cache bundle
+pe cache import cache-bundle.tar.gz
+
+# Show detailed statistics
+pe cache stats --by-provider
+```
+
+---
+
+## profile
+
+Advanced profiling and observability tools.
+
+### Synopsis
+
+```bash
+pe profile [command]
+```
+
+### Description
+
+Provides CPU profiling, memory profiling, distributed tracing, and metrics collection to analyze performance and identify bottlenecks.
+
+### Subcommands
+
+#### profile start
+
+Start profiling.
+
+```bash
+pe profile start [flags]
+```
+
+#### profile stop
+
+Stop profiling.
+
+```bash
+pe profile stop
+```
+
+#### profile status
+
+Show profiling status.
+
+```bash
+pe profile status
+```
+
+#### profile report
+
+Generate profiling report.
+
+```bash
+pe profile report [flags]
+```
+
+#### profile metrics
+
+Metrics collection tools.
+
+```bash
+pe profile metrics [subcommand]
+```
+
+#### profile trace
+
+Distributed tracing tools.
+
+```bash
+pe profile trace [subcommand]
+```
+
+### Examples
+
+```bash
+# Start CPU profiling
+pe profile start --type cpu
+
+# Start memory profiling
+pe profile start --type memory
+
+# Show profiling status
+pe profile status
+
+# Stop profiling
+pe profile stop
+
+# Generate report
+pe profile report -o profile-report.html
+
+# Collect metrics
+pe profile metrics collect --interval 1s
+
+# Enable distributed tracing
+pe profile trace start --export-to jaeger
+```
+
+---
+
+## prompt
+
+Manage prompt files with initialization and metadata.
+
+### Synopsis
+
+```bash
+pe prompt [command]
+```
+
+### Description
+
+Commands for working with prompt files, similar to `go mod` for Go modules. Provides initialization, editing, validation, and metadata management.
+
+### Subcommands
+
+#### prompt init
+
+Initialize a new prompt file with shebang and structure.
+
+```bash
+pe prompt init [filename] [flags]
+```
+
+#### prompt info
+
+Display information about a prompt file.
+
+```bash
+pe prompt info [filename]
+```
+
+#### prompt help
+
+Show usage information for a prompt file.
+
+```bash
+pe prompt help [filename]
+```
+
+#### prompt edit
+
+Edit prompt file defaults and metadata.
+
+```bash
+pe prompt edit [filename] [flags]
+```
+
+#### prompt tidy
+
+Clean up and validate prompt files.
+
+```bash
+pe prompt tidy [filename...]
+```
+
+### Examples
+
+```bash
+# Initialize new prompt file
+pe prompt init analyze.prompt
+
+# Show prompt information
+pe prompt info analyze.prompt
+
+# Show usage help for a prompt
+pe prompt help analyze.prompt
+
+# Edit prompt defaults
+pe prompt edit analyze.prompt --provider anthropic --temperature 0.8
+
+# Validate and clean up prompts
+pe prompt tidy *.prompt
+```
+
+---
+
+## distributed
+
+Manage distributed execution across multiple nodes.
+
+### Synopsis
+
+```bash
+pe distributed [command]
+```
+
+### Description
+
+Enables distributed execution of prompts across multiple nodes for scalability and parallel processing.
+
+### Subcommands
+
+#### distributed start
+
+Start a distributed execution node.
+
+```bash
+pe distributed start [flags]
+```
+
+#### distributed join
+
+Join an existing distributed network.
+
+```bash
+pe distributed join [network_address] [flags]
+```
+
+#### distributed status
+
+Show distributed network status.
+
+```bash
+pe distributed status
+```
+
+#### distributed stop
+
+Stop distributed execution.
+
+```bash
+pe distributed stop
+```
+
+### Examples
+
+```bash
+# Start a coordinator node
+pe distributed start --role coordinator --port 8080
+
+# Start a worker node
+pe distributed start --role worker
+
+# Join existing network
+pe distributed join coordinator.example.com:8080
+
+# Show network status
+pe distributed status
+
+# Stop distributed execution
+pe distributed stop
+```
+
+---
+
+## doc
+
+Show documentation extracted from prompt files.
+
+### Synopsis
+
+```bash
+pe doc [prompt] [variable] [flags]
+```
+
+### Description
+
+Similar to `go doc`, this command displays documentation embedded in prompt files, including variable descriptions and examples.
+
+### Arguments
+
+- `prompt`: Prompt file name (without extension)
+- `variable`: Specific variable to document (optional)
+
+### Flags
+
+```bash
+    --all        Show all documentation
+    --examples   Show examples (default true)
+-h, --help       help for doc
+    --short      Show only brief descriptions
+```
+
+### Examples
+
+```bash
+# List all documented prompts
+pe doc
+
+# Show documentation for a prompt
+pe doc math-solver
+
+# Show variable documentation
+pe doc math-solver.EXPRESSION
+
+# Show all prompts with full documentation
+pe doc --all
+
+# Show brief descriptions only
+pe doc --short
+```
+
+---
+
+## extract
+
+Extract content from XML-like tags in LLM outputs.
+
+### Synopsis
+
+```bash
+pe extract [flags]
+```
+
+### Description
+
+Supports extracting single or multiple tags, nested tags, and XPath-like selectors. Can output in different formats and validate against schemas.
+
+### Flags
+
+```bash
+    --all                Extract all occurrences of the tag
+    --attr string        Attribute filter (e.g., 'type=final')
+    --end string         Custom end delimiter
+-f, --format string      Output format (text, json, xml) (default "text")
+-h, --help               help for extract
+    --nested             Include nested tags in extraction
+-o, --output string      Output file (default: stdout)
+    --start string       Custom start delimiter
+    --stream             Stream extraction mode
+    --tag string         Tag to extract (e.g., 'answer', 'thinking')
+    --tags string        Multiple tags to extract (comma-separated)
+    --transform string   Transform command to apply to extracted content
+    --validate string    Schema file for validation
+    --xpath string       XPath-like selector (e.g., '/response/answer')
+```
+
+### Examples
+
+```bash
+# Extract answer tags from stdin
+echo "<answer>42</answer>" | pe extract --tag answer
+
+# Extract multiple tags
+pe run prompt.txt | pe extract --tags "thinking,answer,confidence"
+
+# Extract with XPath
+pe run prompt.txt | pe extract --xpath "/response/answer"
+
+# Extract all occurrences
+pe run prompt.txt | pe extract --tag item --all
+
+# Output as JSON
+pe run prompt.txt | pe extract --tag answer --format json
+
+# Stream mode for large outputs
+pe run long-prompt.txt | pe extract --tag chunk --stream
+
+# Validate against schema
+pe run prompt.txt | pe extract --tag output --validate schema.json
+```
+
+---
+
+## get
+
+Get specific fields from prompt files.
+
+### Synopsis
+
+```bash
+pe get [prompt-file] [field] [flags]
+```
+
+### Description
+
+Extract specific fields or all information from prompt files, including prompt text, system prompts, variables, defaults, and examples.
+
+### Arguments
+
+- `prompt-file`: Path to the prompt file
+- `field`: Field to extract (prompt, system-prompt, variables, defaults, examples, variants, all)
+
+### Available Fields
+
+- **prompt**: The main prompt text
+- **system-prompt**: The system prompt
+- **variables**: List of template variables
+- **defaults**: Default values for variables
+- **examples**: Examples section
+- **variants**: List all variants
+- **all**: Get all information (default)
+
+### Flags
+
+```bash
+-h, --help             help for get
+    --json             Output in JSON format
+    --keys             List available section keys
+    --variant string   Apply variant before getting field
+```
+
+### Examples
+
+```bash
+# Get the main prompt
+pe get summarize.txt prompt
+
+# Get system prompt
+pe get summarize.txt system-prompt
+
+# Get variables used in the prompt
+pe get summarize.txt variables
+
+# Get all information as JSON
+pe get summarize.txt --json
+
+# Get specific variant
+pe get summarize.txt --variant academic prompt
+
+# List available keys
+pe get summarize.txt --keys
+
+# Get defaults
+pe get summarize.txt defaults
 ```
 
 ---
