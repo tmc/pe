@@ -1,8 +1,8 @@
 package tests
 
 import (
+	"bytes"
 	"context"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +13,34 @@ import (
 	"rsc.io/script/scripttest"
 )
 
+// peCmd implements a script command that runs pe binary with restrictions
+func peCmd(peBinary string) script.Cmd {
+	return script.Command(
+		script.CmdUsage{
+			Summary: "run pe command",
+			Args:    "args...",
+		},
+		func(s *script.State, args ...string) (script.WaitFunc, error) {
+			cmd := exec.Command(peBinary, args...)
+			cmd.Dir = s.Getwd()
+			cmd.Env = append(os.Environ(), s.Environ()...)
+
+			var stdout, stderr bytes.Buffer
+			cmd.Stdout = &stdout
+			cmd.Stderr = &stderr
+
+			if err := cmd.Start(); err != nil {
+				return nil, err
+			}
+
+			return func(*script.State) (string, string, error) {
+				err := cmd.Wait()
+				return stdout.String(), stderr.String(), err
+			}, nil
+		},
+	)
+}
+
 func TestScripts(t *testing.T) {
 	// Build the pe binary first
 	cmd := exec.Command("go", "build", "-o", "../pe", "./cmd/pe")
@@ -21,19 +49,29 @@ func TestScripts(t *testing.T) {
 		t.Fatalf("Failed to build pe binary: %v", err)
 	}
 
-	// Create engine with default commands
+	pePath, _ := filepath.Abs("../pe")
+
+	// Create custom commands - remove exec, add pe
+	cmds := make(map[string]script.Cmd)
+	for name, cmd := range scripttest.DefaultCmds() {
+		// Skip exec to prevent arbitrary shell execution
+		if name != "exec" {
+			cmds[name] = cmd
+		}
+	}
+	// Add our custom pe command
+	cmds["pe"] = peCmd(pePath)
+
+	// Create engine with custom commands (no exec, only pe)
 	engine := &script.Engine{
-		Cmds:  scripttest.DefaultCmds(),
+		Cmds:  cmds,
 		Conds: scripttest.DefaultConds(),
 	}
 
 	// Set up test environment
-	pePath, _ := filepath.Abs("../pe")
-	peDir := filepath.Dir(pePath)
 	env := []string{
 		"PE_TEST_MODE=true",
 		"PE_MOCK_PROVIDER=true",
-		fmt.Sprintf("PATH=%s:%s", peDir, os.Getenv("PATH")),
 	}
 
 	// Run tests from testdata/script directory

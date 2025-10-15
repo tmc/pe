@@ -84,6 +84,18 @@ func DefaultClient() (*Client, error) {
 	return client, nil
 }
 
+// GetFactory returns the factory function for a named provider.
+func GetFactory(name string) ProviderFactory {
+	return globalRegistry.GetFactory(name)
+}
+
+// GetFactory returns the factory function for a named provider.
+func (r *Registry) GetFactory(name string) ProviderFactory {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.factories[name]
+}
+
 // MustRegister is like Register but panics on error.
 // It's intended for use in init functions.
 func MustRegister(name string, factory ProviderFactory) {
