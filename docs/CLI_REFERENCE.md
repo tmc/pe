@@ -25,6 +25,12 @@ Global options:
 | [`watch`](#watch) | Auto-rerun on changes | `pe watch config.yaml` |
 | [`ask`](#ask) | Single prompt query | `pe ask "What is AI?"` |
 | [`benchmark`](#benchmark) | Performance testing | `pe benchmark config.yaml` |
+| [`test`](#test) | Advanced testing framework | `pe test config.yaml --type property` |
+| [`security`](#security) | Security testing (OWASP) | `pe security test --target prompt.txt` |
+| [`build`](#build) | Build optimized prompts | `pe build config.yaml --target anthropic` |
+| [`cat`](#cat) | Display prompt files | `pe cat prompts/analyze.prompt` |
+| [`mod`](#mod) | Manage prompt modules | `pe mod list` |
+| [`template`](#template) | Manage prompt templates | `pe template list` |
 | [`stream`](#stream) | Process results stream | `pe eval config.yaml \| pe stream` |
 | [`filter`](#filter) | Filter results | `pe eval config.yaml \| pe filter --success` |
 | [`analyze`](#analyze) | Statistical analysis | `pe eval config.yaml \| pe analyze` |
@@ -981,6 +987,514 @@ pe promptfoo export pe-config.yaml -o promptfoo-config.yaml
 
 # Convert between formats
 pe promptfoo convert input.yaml output.json
+```
+
+---
+
+## cat
+
+Display and inspect prompt files with variable substitution.
+
+### Synopsis
+
+```bash
+pe cat [prompt_file] [flags]
+```
+
+### Description
+
+The `cat` command reads and displays prompt files in various formats (txt, yaml, json) with support for variable substitution, component inspection, and multiple output formats.
+
+### Arguments
+
+- `prompt_file`: Path to the prompt file to display
+
+### Flags
+
+```bash
+    --components           Show all prompt components (system, user, messages, metadata)
+    --format string       Output format: text, yaml, json (default "text")
+-h, --help                help for cat
+    --interactive         Interactively prompt for variable values
+    --metadata            Show metadata information
+    --raw                 Display raw file content without processing
+    --set strings         Set variable values (key=value format)
+    --system              Show only the system prompt component
+    --variables           Show available variables
+```
+
+### Examples
+
+```bash
+# Display a simple prompt file
+pe cat prompts/analyze.prompt
+
+# Show all components of a structured prompt
+pe cat --components prompts/chat.yaml
+
+# Substitute variables interactively
+pe cat --interactive prompts/template.prompt
+
+# Set variables via command line
+pe cat --set topic=AI --set style=formal prompts/template.prompt
+
+# Show only the system prompt component
+pe cat --system prompts/chat.yaml
+
+# Output as YAML with all metadata
+pe cat --components --format yaml prompts/complex.yaml
+
+# Raw display without any processing
+pe cat --raw prompts/template.prompt
+```
+
+### Variable Substitution
+
+Variables use Go template syntax:
+- `{{.variable_name}}` - Standard Go template format
+- `{{variable_name}}` - Legacy format (backward compatibility)
+- Use `--set key=value` to provide values
+- Use `--interactive` for guided input
+
+---
+
+## mod
+
+Manage prompt modules using GitHub gists as a registry.
+
+### Synopsis
+
+```bash
+pe mod [command]
+```
+
+### Description
+
+The `mod` command manages prompt modules, similar to Go modules. PE uses GitHub gists as a module registry, with a root gist tracking forks containing prompt modules.
+
+### Subcommands
+
+#### mod list
+
+List available modules from the registry.
+
+```bash
+pe mod list
+```
+
+#### mod get
+
+Get module information or download a module.
+
+```bash
+pe mod get [module_path]
+```
+
+#### mod init
+
+Initialize a new prompt module.
+
+```bash
+pe mod init [module_path]
+```
+
+#### mod publish
+
+Publish a module to the registry.
+
+```bash
+pe mod publish [flags]
+```
+
+#### mod download
+
+Download modules specified in pe.mod file.
+
+```bash
+pe mod download
+```
+
+#### mod tidy
+
+Add missing and remove unused modules.
+
+```bash
+pe mod tidy
+```
+
+#### mod vendor
+
+Copy dependencies to vendor directory.
+
+```bash
+pe mod vendor
+```
+
+#### mod search
+
+Search for modules in the registry.
+
+```bash
+pe mod search [query]
+```
+
+### Examples
+
+```bash
+# Initialize a new module
+pe mod init github.com/user/my-prompts
+
+# List available modules
+pe mod list
+
+# Get a specific module
+pe mod get github.com/user/prompt-templates
+
+# Search for modules
+pe mod search "code review"
+
+# Publish your module
+pe mod publish
+
+# Download all dependencies
+pe mod download
+
+# Clean up unused dependencies
+pe mod tidy
+
+# Vendor dependencies
+pe mod vendor
+```
+
+---
+
+## template
+
+Manage a library of reusable prompt templates.
+
+### Synopsis
+
+```bash
+pe template [command]
+```
+
+### Description
+
+The `template` command manages structured, parameterized prompts for common use cases like summarization, code review, creative writing, and data analysis.
+
+### Subcommands
+
+#### template list
+
+List available templates.
+
+```bash
+pe template list
+```
+
+#### template show
+
+Show template details.
+
+```bash
+pe template show [template_name]
+```
+
+#### template apply
+
+Apply a template with variables.
+
+```bash
+pe template apply [template_name] [flags]
+```
+
+#### template create
+
+Create a new template.
+
+```bash
+pe template create [template_name] [flags]
+```
+
+#### template search
+
+Search templates.
+
+```bash
+pe template search [query]
+```
+
+#### template validate
+
+Validate template files.
+
+```bash
+pe template validate [file...]
+```
+
+#### template import
+
+Import templates from files.
+
+```bash
+pe template import [file...]
+```
+
+#### template export
+
+Export templates to files.
+
+```bash
+pe template export [template_name] [flags]
+```
+
+#### template interactive
+
+Interactive template selection and application.
+
+```bash
+pe template interactive
+```
+
+### Examples
+
+```bash
+# List all templates
+pe template list
+
+# Show template details
+pe template show code-review
+
+# Apply a template
+pe template apply summarize --var input=article.txt
+
+# Create a new template
+pe template create my-template --file template.yaml
+
+# Search for templates
+pe template search "data analysis"
+
+# Interactive mode
+pe template interactive
+
+# Validate template files
+pe template validate templates/*.yaml
+
+# Import templates
+pe template import my-templates.yaml
+
+# Export a template
+pe template export code-review -o exported.yaml
+```
+
+---
+
+## build
+
+Build optimized prompts for production deployment.
+
+### Synopsis
+
+```bash
+pe build [config/prompt] [flags]
+```
+
+### Description
+
+The `build` command analyzes and optimizes prompts for specific providers, validates quality, and packages them for deployment.
+
+### Arguments
+
+- `config/prompt`: Configuration file or prompt to build
+
+### Flags
+
+```bash
+    --bundle              Create bundle with dependencies
+    --compress            Compress output
+-h, --help                help for build
+    --minify              Minify prompt to reduce tokens
+-o, --output string       Output file path
+    --target string       Target provider for optimization
+    --targets strings     Multiple target providers
+    --validate            Run validation checks
+    --with-metadata       Include metadata file
+```
+
+### Examples
+
+```bash
+# Build from config
+pe build config.yaml
+
+# Build with specific output
+pe build config.yaml -o production.txt
+
+# Build for specific provider
+pe build config.yaml --target anthropic
+
+# Build with validation
+pe build config.yaml --validate
+
+# Create a bundle with dependencies
+pe build config.yaml --bundle -o bundle.tar.gz
+
+# Minify for token reduction
+pe build config.yaml --minify -o optimized.txt
+
+# Multi-target build
+pe build config.yaml --targets openai,anthropic,google
+```
+
+---
+
+## test
+
+Advanced testing framework with systematic test-driven development.
+
+### Synopsis
+
+```bash
+pe test [config_file] [flags]
+pe test [command]
+```
+
+### Description
+
+Comprehensive testing framework implementing property-based testing, regression detection, A/B testing with Bayesian analysis, and systematic test case generation.
+
+### Subcommands
+
+#### test create-suite
+
+Create systematic test suite from prompts.
+
+```bash
+pe test create-suite [prompt_file] [flags]
+```
+
+#### test generate
+
+Generate test cases automatically.
+
+```bash
+pe test generate [config_file] [flags]
+```
+
+#### test significance
+
+Statistical significance testing for improvements.
+
+```bash
+pe test significance [baseline] [current] [flags]
+```
+
+### Flags
+
+```bash
+-b, --baseline string          Baseline file for regression testing
+    --bootstrap int            Bootstrap samples for statistical analysis (default 1000)
+-c, --config string           Configuration file path
+-t, --type string             Test type: property, regression, systematic, ab-test, cross-validate (default "systematic")
+    --confidence float        Confidence level for statistical tests (default 0.95)
+    --comprehensive           Run all testing methods combined
+```
+
+### Testing Types
+
+- **property**: Property-based testing for robustness validation
+- **regression**: Performance regression detection with statistical significance
+- **systematic**: Systematic test case execution
+- **ab-test**: A/B testing with Bayesian statistical analysis
+- **cross-validate**: Cross-validation between methods
+- **significance**: Statistical significance testing
+- **comprehensive**: All testing methods combined
+
+### Examples
+
+```bash
+# Run systematic tests
+pe test config.yaml
+
+# Property-based testing
+pe test config.yaml --type property
+
+# Regression testing against baseline
+pe test config.yaml --type regression --baseline baseline.json
+
+# A/B testing
+pe test config.yaml --type ab-test
+
+# Statistical significance test
+pe test significance baseline.json current.json
+
+# Generate test suite
+pe test create-suite prompt.txt -o test-suite.yaml
+
+# Comprehensive testing
+pe test config.yaml --comprehensive
+
+# Generate test cases
+pe test generate config.yaml --count 100
+```
+
+---
+
+## security
+
+Comprehensive security testing implementing OWASP LLM Top 10.
+
+### Synopsis
+
+```bash
+pe security [command]
+```
+
+### Description
+
+Advanced security testing covering OWASP LLM Top 10, automated vulnerability discovery, prompt injection detection, bias analysis, and privacy assessment.
+
+### OWASP LLM Top 10 Coverage
+
+- **LLM01**: Prompt Injection (Direct, Indirect, Context Poisoning)
+- **LLM02**: Insecure Output Handling (Code injection, XSS, LDAP injection)
+- **LLM03**: Training Data Poisoning (Backdoor detection, bias analysis)
+- **LLM04**: Model Denial of Service (Resource exhaustion, infinite loops)
+- **LLM05**: Supply Chain Vulnerabilities (Model provenance, dependency checks)
+- **LLM06**: Sensitive Information Disclosure (PII, credentials, training data)
+- **LLM07**: Insecure Plugin Design (Authorization bypass, input validation)
+- **LLM08**: Excessive Agency (Privilege escalation, unauthorized actions)
+- **LLM09**: Overreliance (Human oversight, verification mechanisms)
+- **LLM10**: Model Theft (IP protection, model extraction attacks)
+
+### Subcommands
+
+```bash
+pe security test          Run security tests
+pe security monitor       Real-time security monitoring
+pe security report        Generate compliance reports
+```
+
+### Examples
+
+```bash
+# Complete OWASP LLM Top 10 assessment
+pe security test --target system_prompt.txt --owasp-complete
+
+# Focused prompt injection testing
+pe security test --target prompt.txt --categories prompt_injection
+
+# Sensitive information disclosure testing
+pe security test --target system.txt --categories sensitive_disclosure
+
+# Real-time security monitoring
+pe security monitor --realtime --categories all --alerts high
+
+# Compliance reporting
+pe security report --format pdf --standards owasp,nist,iso27001
+
+# Comprehensive security scan
+pe security test --target config.yaml --comprehensive
 ```
 
 ---
