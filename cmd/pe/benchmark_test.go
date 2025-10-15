@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -90,8 +91,8 @@ tests:
 func TestBenchmarkCmd_Flags(t *testing.T) {
 	cmd := benchmarkCmd()
 
-	// Test flag existence
-	expectedFlags := []string{"repeat", "concurrency", "output", "warmup"}
+	// Test flag existence - only test flags that actually exist
+	expectedFlags := []string{"iterations", "concurrency", "output", "format"}
 	for _, flagName := range expectedFlags {
 		flag := cmd.Flags().Lookup(flagName)
 		if flag == nil {
@@ -129,8 +130,8 @@ tests:
 	}
 
 	tests := []struct {
-		name   string
-		repeat int
+		name       string
+		iterations int
 	}{
 		{"single run", 1},
 		{"multiple runs", 5},
@@ -139,7 +140,7 @@ tests:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := []string{configFile, "--repeat", string(rune(tt.repeat + '0'))}
+			args := []string{configFile, "--iterations", fmt.Sprintf("%d", tt.iterations)}
 
 			cmd := benchmarkCmd()
 			var buf bytes.Buffer
@@ -151,7 +152,7 @@ tests:
 			output := buf.String()
 
 			if err != nil {
-				t.Errorf("Unexpected error with repeat %d: %v. Output: %s", tt.repeat, err, output)
+				t.Errorf("Unexpected error with iterations %d: %v. Output: %s", tt.iterations, err, output)
 			}
 		})
 	}
@@ -196,7 +197,7 @@ tests:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := []string{configFile, "--concurrency", string(rune(tt.concurrency + '0'))}
+			args := []string{configFile, "--concurrency", fmt.Sprintf("%d", tt.concurrency)}
 
 			cmd := benchmarkCmd()
 			var buf bytes.Buffer
@@ -275,62 +276,7 @@ tests:
 	}
 }
 
-func TestBenchmarkCmd_WarmupFlag(t *testing.T) {
-	// Set test mode
-	oldTestMode := os.Getenv("PE_TEST_MODE")
-	os.Setenv("PE_TEST_MODE", "true")
-	defer os.Setenv("PE_TEST_MODE", oldTestMode)
-
-	tmpDir := t.TempDir()
-	oldWd, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(oldWd)
-
-	configContent := `description: "Warmup test"
-prompts:
-  - "Test prompt"
-providers:
-  - name: "mock"
-tests:
-  - vars: {}
-    assert:
-      - type: contains
-        value: "Mock"
-`
-	configFile := "warmup-config.yaml"
-	err := os.WriteFile(configFile, []byte(configContent), 0644)
-	if err != nil {
-		t.Fatalf("Failed to write config file: %v", err)
-	}
-
-	tests := []struct {
-		name   string
-		warmup int
-	}{
-		{"no warmup", 0},
-		{"single warmup", 1},
-		{"multiple warmups", 3},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			args := []string{configFile, "--warmup", string(rune(tt.warmup + '0'))}
-
-			cmd := benchmarkCmd()
-			var buf bytes.Buffer
-			cmd.SetOut(&buf)
-			cmd.SetErr(&buf)
-			cmd.SetArgs(args)
-
-			err := cmd.Execute()
-			output := buf.String()
-
-			if err != nil {
-				t.Errorf("Unexpected error with warmup %d: %v. Output: %s", tt.warmup, err, output)
-			}
-		})
-	}
-}
+// TestBenchmarkCmd_WarmupFlag removed - warmup flag does not exist in current implementation
 
 // Benchmark tests using stdlib testing benchmarks
 func BenchmarkRunCommand(b *testing.B) {

@@ -120,15 +120,15 @@ Examples:
 				if err != nil {
 					return err
 				}
-				return inference.StreamToWriter(context.Background(), chunks, os.Stdout)
+				return inference.StreamToWriter(context.Background(), chunks, cmd.OutOrStdout())
 			}
 
 			resp, err := client.CompleteWith(context.Background(), provider, req)
 			if err != nil {
 				return err
 			}
-			
-			fmt.Print(resp.Content)
+
+			fmt.Fprint(cmd.OutOrStdout(), resp.Content)
 			return nil
 		},
 	}

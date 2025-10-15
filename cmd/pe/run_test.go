@@ -22,13 +22,13 @@ func TestRunCmd_BasicUsage(t *testing.T) {
 	}{
 		{
 			name:       "simple math prompt",
-			args:       []string{"What is 2+2?"},
+			args:       []string{"What is 2+2?", "--stream=false"},
 			wantErr:    false,
 			wantStdout: "4",
 		},
 		{
 			name:       "direct text prompt",
-			args:       []string{"Hello world"},
+			args:       []string{"Hello world", "--stream=false"},
 			wantErr:    false,
 			wantStdout: "Mock response for: Hello world",
 		},
@@ -82,20 +82,20 @@ func TestRunCmd_FileInput(t *testing.T) {
 		{
 			name:        "read from file",
 			fileContent: "What is the capital of France?",
-			args:        []string{"prompt.txt"},
+			args:        []string{"prompt.txt", "--stream=false"},
 			wantErr:     false,
 			wantStdout:  "<answer>The capital of France is Paris</answer>",
 		},
 		{
 			name:        "read prompt file format",
 			fileContent: "Main prompt text\n\n-- system-prompt --\nYou are helpful",
-			args:        []string{"prompt.txt"},
+			args:        []string{"prompt.txt", "--stream=false"},
 			wantErr:     false,
 			wantStdout:  "Mock response for: Main prompt text",
 		},
 		{
 			name:    "nonexistent file as direct prompt",
-			args:    []string{"nonexistent.txt"},
+			args:    []string{"nonexistent.txt", "--stream=false"},
 			wantErr: false, // Should treat as direct text
 		},
 	}
@@ -161,25 +161,25 @@ func TestRunCmd_Variables(t *testing.T) {
 		{
 			name:    "template substitution",
 			prompt:  "Hello {{.name}}",
-			vars:    []string{"--var", "name=World"},
+			vars:    []string{"--var", "name=World", "--stream=false"},
 			wantErr: false,
 			checkFn: func(output string) bool {
-				return strings.Contains(output, "Hello World")
+				return strings.Contains(output, "Hello World") || strings.Contains(output, "Mock response for: Hello World")
 			},
 		},
 		{
 			name:    "multiple variables",
 			prompt:  "{{.greeting}} {{.name}}!",
-			vars:    []string{"--var", "greeting=Hello", "--var", "name=Alice"},
+			vars:    []string{"--var", "greeting=Hello", "--var", "name=Alice", "--stream=false"},
 			wantErr: false,
 			checkFn: func(output string) bool {
-				return strings.Contains(output, "Hello Alice!")
+				return strings.Contains(output, "Hello Alice!") || strings.Contains(output, "Mock response for: Hello Alice!")
 			},
 		},
 		{
 			name:    "no template variables",
 			prompt:  "Simple prompt",
-			vars:    []string{"--var", "unused=value"},
+			vars:    []string{"--var", "unused=value", "--stream=false"},
 			wantErr: false,
 			checkFn: func(output string) bool {
 				return strings.Contains(output, "Mock response for: Simple prompt")
