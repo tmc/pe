@@ -9,3 +9,9 @@ lastsession.txt
 # Test binaries
 *.test
 test_binary
+
+# Beads task tracking database
+.beads/
+
+# PE cache and state
+.pe/
