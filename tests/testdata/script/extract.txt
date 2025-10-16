@@ -88,7 +88,6 @@
 # stdout 'Chunk 3'
 
 # Test grep as a basic command that doesn't require pipes
-echo 'test content with capital of France' > test-file.txt
 grep 'capital of France' test-file.txt
 stdout 'capital of France'
 
@@ -172,3 +171,6 @@ Stream some chunks.
 <chunk>Chunk 1</chunk>
 <chunk>Chunk 2</chunk>
 <chunk>Chunk 3</chunk>
+
+-- test-file.txt --
+test content with capital of France

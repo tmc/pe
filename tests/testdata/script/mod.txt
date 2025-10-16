@@ -1,24 +1,24 @@
 # Test pe mod commands - dependency management like go mod
 
 # Initialize module
-exec pe mod init github.com/myorg/myproject
+pe mod init github.com/myorg/myproject
 stdout 'Created pe.mod'
 exists pe.mod
-exec grep 'module github.com/myorg/myproject' pe.mod
+grep 'module github.com/myorg/myproject' pe.mod
 
 # Edit module file to add dependencies
-exec pe edit --module github.com/anthropic/helpful-harmless@v1.2.0
+pe edit --module github.com/anthropic/helpful-harmless@v1.2.0
 stdout 'Added requirement: github.com/anthropic/helpful-harmless v1.2.0'
-exec grep 'github.com/anthropic/helpful-harmless v1.2.0' pe.mod
+grep 'github.com/anthropic/helpful-harmless v1.2.0' pe.mod
 
 # List module contents
-exec pe get
+pe get
 stdout 'module github.com/myorg/myproject'
 stdout 'require github.com/anthropic/helpful-harmless v1.2.0'
 
 # Push module to registry (mock)
 env PE_TEST_MODE=true
-exec pe push --draft
+pe push --draft
 stdout 'Module validated'
 stdout 'Draft saved'
 

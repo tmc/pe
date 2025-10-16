@@ -3,7 +3,7 @@
 skip 'promptfoo command not implemented'
 
 # Import a basic promptfoo config
-exec pe promptfoo import promptfoo-config.yaml -o pe-config.yaml
+pe promptfoo import promptfoo-config.yaml -o pe-config.yaml
 stdout 'Importing promptfoo configuration'
 stdout '✓ Imported configuration'
 stdout '2 prompts'
@@ -11,69 +11,69 @@ stdout '3 tests'
 exists pe-config.yaml
 
 # Check imported config structure
-exec grep 'prompts:' pe-config.yaml
-exec grep 'tests:' pe-config.yaml
-exec grep 'description:' pe-config.yaml
+grep 'prompts:' pe-config.yaml
+grep 'tests:' pe-config.yaml
+grep 'description:' pe-config.yaml
 
 # Import promptfoo results
-exec pe promptfoo import promptfoo-results.json -o pe-results.json
+pe promptfoo import promptfoo-results.json -o pe-results.json
 stdout 'Detected promptfoo results file'
 stdout '✓ Imported test results'
 exists pe-results.json
 
 # Export PE config to promptfoo format
-exec pe promptfoo export -c pe-config.yaml -o exported-promptfoo.yaml
+pe promptfoo export -c pe-config.yaml -o exported-promptfoo.yaml
 stdout 'Exporting configuration'
 stdout '✓ Exported configuration'
 exists exported-promptfoo.yaml
 
 # Export with JSON format
-exec pe promptfoo export -c pe-config.yaml -o exported-promptfoo.json -f json
+pe promptfoo export -c pe-config.yaml -o exported-promptfoo.json -f json
 stdout 'Format: json'
 exists exported-promptfoo.json
-exec grep '"prompts"' exported-promptfoo.json
+grep '"prompts"' exported-promptfoo.json
 
 # Export test results to promptfoo format
-exec pe test config.yaml --export pe-native-results.json
-exec pe promptfoo export -r pe-native-results.json -o promptfoo-output.json
+pe test config.yaml --export pe-native-results.json
+pe promptfoo export -r pe-native-results.json -o promptfoo-output.json
 stdout 'Exporting test results'
 stdout '✓ Exported test results'
 stdout 'Tests: 3'
 exists promptfoo-output.json
 
 # Verify promptfoo output structure
-exec grep '"version": 2' promptfoo-output.json
-exec grep '"results"' promptfoo-output.json
-exec grep '"stats"' promptfoo-output.json
+grep '"version": 2' promptfoo-output.json
+grep '"results"' promptfoo-output.json
+grep '"stats"' promptfoo-output.json
 
 # Convert between formats
-exec pe promptfoo convert promptfoo-config.yaml -o converted.json
+pe promptfoo convert promptfoo-config.yaml -o converted.json
 stdout 'Converting.*to json format'
 stdout '✓ Converted'
 exists converted.json
 
 # Convert back to YAML
-exec pe promptfoo convert converted.json -o converted-back.yaml -f yaml
+pe promptfoo convert converted.json -o converted-back.yaml -f yaml
 stdout 'Converting.*to yaml format'
 exists converted-back.yaml
 
 # Import with options
-exec pe promptfoo import complex-promptfoo.yaml -o complex-pe.yaml --preserve-providers --expand-includes
+pe promptfoo import complex-promptfoo.yaml -o complex-pe.yaml --preserve-providers --expand-includes
 stdout '✓ Imported configuration'
 stdout '5 providers'
-exec grep 'providers:' complex-pe.yaml
+grep 'providers:' complex-pe.yaml
 
 # Test assertion conversion
-exec pe promptfoo import with-assertions.yaml -o pe-with-assertions.yaml --convert-assertions
+pe promptfoo import with-assertions.yaml -o pe-with-assertions.yaml --convert-assertions
 stdout '✓ Imported configuration'
-exec grep 'assertions:' pe-with-assertions.yaml
-exec grep 'type: contains' pe-with-assertions.yaml
-exec grep 'type: not_contains' pe-with-assertions.yaml
-exec grep 'type: llm_rubric' pe-with-assertions.yaml
+grep 'assertions:' pe-with-assertions.yaml
+grep 'type: contains' pe-with-assertions.yaml
+grep 'type: not_contains' pe-with-assertions.yaml
+grep 'type: llm_rubric' pe-with-assertions.yaml
 
 # Round-trip test
-exec pe promptfoo import original.yaml -o intermediate.yaml
-exec pe promptfoo export -c intermediate.yaml -o roundtrip.yaml
+pe promptfoo import original.yaml -o intermediate.yaml
+pe promptfoo export -c intermediate.yaml -o roundtrip.yaml
 # Files should be semantically equivalent
 exists roundtrip.yaml
 

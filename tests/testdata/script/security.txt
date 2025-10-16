@@ -1,32 +1,32 @@
 # Test pe security commands - red team testing
 
 # Run security scan
-exec pe security scan prompt.txt --quick --provider mock
+pe security scan prompt.txt --quick --provider mock
 stdout 'Running security scan'
 stdout 'Testing prompt against OWASP LLM Top 10'
 stdout 'Overall Risk: LOW'
 
 # Test specific vulnerability
-exec pe security test prompt.txt --category injection --provider mock
+pe security test prompt.txt --category injection --provider mock
 stdout 'Testing for prompt injection vulnerabilities'
 stdout 'Tests passed:'
 
 # Generate security report
-exec pe security report prompt.txt --format summary --provider mock
+pe security report prompt.txt --format summary --provider mock
 stdout 'Security Assessment Report'
 stdout 'Target: prompt.txt'
 stdout 'Risk Level:'
 
 # Test caching functionality
-exec pe cache list
+pe cache list
 stdout 'Cache entries:'
 
 # Clear cache
-exec pe cache clear --force
+pe cache clear --force
 stdout 'Cache cleared'
 
 # Show cache stats
-exec pe cache stats
+pe cache stats
 stdout 'Cache statistics:'
 stdout 'Total entries: 0'
 

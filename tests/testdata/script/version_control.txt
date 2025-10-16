@@ -10,12 +10,12 @@ exists .pe
 exec pe mod init example/mymodule
 stdout 'Created pe.mod'
 exists pe.mod
-exec grep 'module example/mymodule' pe.mod
+grep 'module example/mymodule' pe.mod
 
 # Edit mod file
 exec pe edit --module example/dependency@v1.0.0
 stdout 'Added requirement: example/dependency v1.0.0'
-exec grep 'example/dependency v1.0.0' pe.mod
+grep 'example/dependency v1.0.0' pe.mod
 
 # Work with modules (disabled - not implemented)
 # exec pe work init

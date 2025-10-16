@@ -1,26 +1,26 @@
 # Test pe fmt command - prompt formatting standardization
 
 # Format single file and write back
-exec pe fmt -w prompt.txt
+pe fmt -w prompt.txt
 stdout 'formatted'
 
 # Format with check - well formatted should pass
-exec pe fmt --check well-formatted.txt
+pe fmt --check well-formatted.txt
 
 # Format check with issues should fail
-! exec pe fmt --check badly-formatted.txt
+! pe fmt --check badly-formatted.txt
 stderr 'needs formatting'
 
 # Format with anthropic style
-exec pe fmt --style anthropic anthropic-prompt.txt
+pe fmt --style anthropic anthropic-prompt.txt
 stdout 'Human:'
 
 # Test auto-fix
-exec pe fmt --fix -w prompt-with-issues.txt
+pe fmt --fix -w prompt-with-issues.txt
 stdout 'formatted'
 
 # Format multiple files
-exec pe fmt -w prompt.txt well-formatted.txt
+pe fmt -w prompt.txt well-formatted.txt
 stdout 'prompt.txt: formatted'
 stdout 'well-formatted.txt: formatted'
 

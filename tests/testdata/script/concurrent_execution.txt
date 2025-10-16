@@ -3,9 +3,9 @@
 env PE_TEST_MODE=true
 
 # Test concurrent run commands
-exec pe run "prompt 1" &
-exec pe run "prompt 2" &
-exec pe run "prompt 3" &
+pe run "prompt 1" &
+pe run "prompt 2" &
+pe run "prompt 3" &
 wait
 ! stderr 'error'
 
@@ -26,9 +26,9 @@ tests:
 EOF
 
 # Run multiple evaluations concurrently
-exec pe eval concurrent-config.yaml --max-concurrency 3 &
-exec pe eval concurrent-config.yaml --max-concurrency 2 &
-exec pe eval concurrent-config.yaml --max-concurrency 1 &
+pe eval concurrent-config.yaml --max-concurrency 3 &
+pe eval concurrent-config.yaml --max-concurrency 2 &
+pe eval concurrent-config.yaml --max-concurrency 1 &
 wait
 ! stderr 'error'
 
@@ -38,39 +38,39 @@ Shared content for concurrent access
 EOF
 
 # Multiple processes reading the same file
-exec pe run shared-file.txt &
-exec pe run shared-file.txt &
-exec pe run shared-file.txt &
-exec pe run shared-file.txt &
-exec pe run shared-file.txt &
+pe run shared-file.txt &
+pe run shared-file.txt &
+pe run shared-file.txt &
+pe run shared-file.txt &
+pe run shared-file.txt &
 wait
 ! stderr 'error'
 
 # Test cache concurrency
 mkdir -p .pe/cache
-exec pe run "cacheable prompt 1" &
-exec pe run "cacheable prompt 2" &
-exec pe run "cacheable prompt 3" &
+pe run "cacheable prompt 1" &
+pe run "cacheable prompt 2" &
+pe run "cacheable prompt 3" &
 wait
 ! stderr 'error'
 
 # Test template variable concurrency
-exec pe run "Hello {{.name}}" --var name=Alice &
-exec pe run "Hello {{.name}}" --var name=Bob &
-exec pe run "Hello {{.name}}" --var name=Charlie &
+pe run "Hello {{.name}}" --var name=Alice &
+pe run "Hello {{.name}}" --var name=Bob &
+pe run "Hello {{.name}}" --var name=Charlie &
 wait
 ! stderr 'error'
 
 # Test provider concurrency
-exec pe run "test 1" --provider mock &
-exec pe run "test 2" --provider cgpt &
-exec pe run "test 3" --provider mock &
+pe run "test 1" --provider mock &
+pe run "test 2" --provider cgpt &
+pe run "test 3" --provider mock &
 wait
 ! stderr 'error'
 
 # Test concurrent streaming
-exec pe run "stream test 1" --stream &
-exec pe run "stream test 2" --stream &
+pe run "stream test 1" --stream &
+pe run "stream test 2" --stream &
 wait
 ! stderr 'error'
 
@@ -89,24 +89,24 @@ providers: [{"name": "mock"}]
 tests: [{"vars": {}, "assert": [{"type": "contains", "value": "Mock"}]}]
 EOF
 
-exec pe eval config1.yaml &
-exec pe eval config2.yaml &
+pe eval config1.yaml &
+pe eval config2.yaml &
 wait
 ! stderr 'error'
 
 # Test memory-intensive concurrent operations
-exec pe run "memory test 1" &
-exec pe run "memory test 2" &
-exec pe run "memory test 3" &
-exec pe run "memory test 4" &
-exec pe run "memory test 5" &
+pe run "memory test 1" &
+pe run "memory test 2" &
+pe run "memory test 3" &
+pe run "memory test 4" &
+pe run "memory test 5" &
 wait
 ! stderr 'error'
 
 # Test concurrent file creation/deletion
-exec pe run "test" > output1.txt &
-exec pe run "test" > output2.txt &
-exec pe run "test" > output3.txt &
+pe run "test" > output1.txt &
+pe run "test" > output2.txt &
+pe run "test" > output3.txt &
 wait
 
 exists output1.txt
