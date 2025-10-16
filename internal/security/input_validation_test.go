@@ -57,6 +57,15 @@ func (s *InputSanitizer) ValidateFilePath(path string) error {
 		return NewSecurityError("invalid_path", "File path contains null bytes")
 	}
 
+	// Check for Windows drive paths (e.g., C:\, D:\, etc.)
+	// These are absolute paths and potentially dangerous
+	if len(path) >= 3 && path[1] == ':' && (path[2] == '\\' || path[2] == '/') {
+		// Single letter followed by colon indicates Windows drive
+		if (path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z') {
+			return NewSecurityError("path_traversal", "File path contains traversal patterns")
+		}
+	}
+
 	// Check for directory traversal patterns
 	dangerous := []string{"../", "..\\", "/..", "\\..", "..."}
 	for _, pattern := range dangerous {
