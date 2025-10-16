@@ -60,9 +60,7 @@ description: "Basic evaluation test"
 prompts:
   - "What is 2+2?"
 providers:
-  - name: "mock"
-    config:
-      model: "test-model"
+  - mock
 tests:
   - vars: {}
     assert:
@@ -74,7 +72,7 @@ description: "Variable evaluation test"
 prompts:
   - "Hello {{.name}}"
 providers:
-  - name: "mock"
+  - mock
 tests:
   - vars:
       name: "Alice"
@@ -88,7 +86,7 @@ prompts:
   - "Test prompt 1"
   - "Test prompt 2"
 providers:
-  - name: "mock"
+  - mock
 tests:
   - vars: {}
     assert:
