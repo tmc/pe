@@ -6,3 +6,6 @@
 lastsession.txt
 *.log
 
+# Test binaries
+*.test
+test_binary
