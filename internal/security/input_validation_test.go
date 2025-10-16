@@ -503,8 +503,9 @@ func TestInputSanitization_EdgeCases(t *testing.T) {
 				if err != nil {
 					t.Errorf("Unexpected error: %v", err)
 				}
-				if result != "HelloWorldTest" {
-					t.Errorf("Expected 'HelloWorldTest', got %q", result)
+				// \x09 is tab which is preserved, other control chars are removed
+				if result != "HelloWorld\tTest" {
+					t.Errorf("Expected 'HelloWorld\\tTest', got %q", result)
 				}
 			},
 		},
