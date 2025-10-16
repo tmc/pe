@@ -1,33 +1,33 @@
 # Test pe test command - validation and testing
 
 # Basic test execution (property-based testing)
-exec pe test config.yaml --type property --provider mock
+pe test config.yaml --type property --provider mock
 stdout 'Test Summary'
 stdout 'Success Rate:'
 
 # Regression testing
-exec pe test config.yaml --type regression --baseline baseline.json --provider mock
+pe test config.yaml --type regression --baseline baseline.json --provider mock
 stdout 'Regression Test Results'
 stdout 'No regression detected'
 
 # Test with output file
-exec pe test config.yaml --type property -o results.json --provider mock
+pe test config.yaml --type property -o results.json --provider mock
 stdout 'Results saved to: results.json'
 exists results.json
 
 # Generate tests from prompt
-exec pe test generate-tests prompt.txt --provider mock
+pe test generate-tests prompt.txt --provider mock
 stdout 'Generated test cases:'
 stdout 'Test case 1:'
 
 # A/B testing
-exec pe test ab-test --config-a config-a.yaml --config-b config-b.yaml --provider mock
+pe test ab-test --config-a config-a.yaml --config-b config-b.yaml --provider mock
 stdout 'A/B Test Results'
 stdout 'Configuration A:'
 stdout 'Configuration B:'
 
 # Cross validation
-exec pe test cross-validate config.yaml --provider mock
+pe test cross-validate config.yaml --provider mock
 stdout 'Cross-Validation Results'
 stdout 'Fold 1:'
 

@@ -2,18 +2,18 @@
 # TODO: Full version control not yet implemented
 
 # Initialize repository
-exec pe init
+pe init
 stdout 'Initialized PE repository'
 exists .pe
 
 # Basic mod commands for module management
-exec pe mod init example/mymodule
+pe mod init example/mymodule
 stdout 'Created pe.mod'
 exists pe.mod
 grep 'module example/mymodule' pe.mod
 
 # Edit mod file
-exec pe edit --module example/dependency@v1.0.0
+pe edit --module example/dependency@v1.0.0
 stdout 'Added requirement: example/dependency v1.0.0'
 grep 'example/dependency v1.0.0' pe.mod
 

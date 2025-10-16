@@ -89,7 +89,7 @@
 
 # Test grep as a basic command that doesn't require pipes
 grep 'capital of France' test-file.txt
-stdout 'capital of France'
+# Note: grep output is automatically checked by scripttest, no need for additional stdout check
 
 -- prompt.txt --
 What is the capital of France?
