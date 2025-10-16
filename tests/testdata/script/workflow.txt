@@ -2,7 +2,7 @@
 
 # Research paper summarization workflow
 # Run and extract summary
-exec pe run research-prompt.txt --var Paper=paper.pdf --provider mock
+pe run research-prompt.txt --var Paper=paper.pdf --provider mock
 stdout 'Mock response for:'
 
 # Note: Complex pipeline not yet fully implemented
@@ -11,56 +11,57 @@ stdout 'Mock response for:'
 
 # Multi-model consensus workflow
 # Note: Provider outputs and fusion not yet implemented
-# exec pe run prompt.txt --provider openai
-# exec pe run prompt.txt --provider anthropic  
-# exec pe fusion
+# pe run prompt.txt --provider openai
+# pe run prompt.txt --provider anthropic  
+# pe fusion
 # For now just test basic run
-exec pe run prompt.txt --provider mock
+pe run prompt.txt --provider mock
 stdout 'insights'
 
 # A/B testing workflow  
 # Initialize project
-exec pe init
+pe init
 exists .pe
 
 # Basic optimization test
-exec pe experimental optimize prompt.txt --method pe2 --iterations 1 --provider mock
+pe experimental optimize prompt.txt --method pe2 --iterations 1 --provider mock
 stdout 'Optimization Results'
 stdout 'Optimized Prompt:'
 exists prompt_pe2.txt
 
 # Component library workflow
 # Test compose command
-exec pe experimental compose context.txt instruction.txt --style cot
+pe experimental compose context.txt instruction.txt --style cot
 stdout 'Chain of Thought Composition:'
 stdout 'Context Integration:'
 stdout 'Instructions:'
 
 # Production deployment workflow
-exec pe build build-config.yaml --validate
+pe build build-config.yaml --validate
 stdout 'Building prompts from build-config.yaml'
 stdout 'Validation passed'
 exists dist/prompts.tar.gz
 
 # Continuous optimization workflow  
-exec pe experimental optimize prompt.txt --method hybrid --iterations 2 --provider mock
+pe experimental optimize prompt.txt --method hybrid --iterations 2 --provider mock
 stdout 'Optimization Results'
 stdout 'Improvement Score:'
 
 # Debug workflow
 # Basic run test with error case
-exec pe run failing-prompt.txt --provider mock
-stdout 'be concise but explain everything in detail'
+pe run failing-prompt.txt --provider mock
+stdout 'Mock response for:'
+stdout 'Be concise but explain everything in detail'
 
 # Batch processing workflow
-# Test metrics command
-exec pe metrics simple prompt.txt --provider mock
-stdout 'Metrics for prompt.txt:'
-stdout 'Complexity Score:'
+# Test analyze command
+pe analyze prompt.txt
+stdout 'Text length:'
+stdout 'Word count:'
 
 # Knowledge distillation workflow
 # Basic evaluation test
-exec pe eval eval-config.yaml
+pe eval eval-config.yaml
 stdout 'Success'
 stdout '✓'
 

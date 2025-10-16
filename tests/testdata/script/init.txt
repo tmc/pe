@@ -1,7 +1,7 @@
 # Test pe init command
 
 # Initialize in clean directory
-exec pe init
+pe init
 stdout 'Initialized PE repository'
 exists .pe
 exists .pe/cache
@@ -13,14 +13,14 @@ exists .peignore
 # Initialize with custom directory
 mkdir myproject
 cd myproject
-exec pe init
+pe init
 exists .pe
 cd ..
 
 # Re-initialize should fail
-! exec pe init
+! pe init
 stderr 'already initialized'
 
 # Initialize with --force
-exec pe init --force
+pe init --force
 stdout 'Initialized PE repository'

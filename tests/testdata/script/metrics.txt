@@ -7,51 +7,51 @@ echo 'This is a test summary of a document about AI and machine learning' > summ
 echo 'This document discusses AI and machine learning technologies' > reference.txt
 
 # BLEU score calculation
-exec pe experimental metrics --type bleu --generated-file output.txt --reference-file expected.txt
+pe experimental metrics --type bleu --generated-file output.txt --reference-file expected.txt
 stdout 'BLEU Score:'
 
 # ROUGE scores
-exec pe experimental metrics --type rouge --generated-file summary.txt --reference-file reference.txt
+pe experimental metrics --type rouge --generated-file summary.txt --reference-file reference.txt
 stdout 'ROUGE-1:'
 stdout 'ROUGE-2:'
 stdout 'ROUGE-L:'
 
 # Skip BERTScore for now (requires LLM provider)
-# exec pe experimental metrics --type bertscore --generated output.txt --reference expected.txt
+# pe experimental metrics --type bertscore --generated output.txt --reference expected.txt
 
 # Skip G-Eval for now (requires LLM provider)
-# exec pe experimental metrics --type g-eval --generated response.txt --criteria accuracy,clarity,completeness
+# pe experimental metrics --type g-eval --generated response.txt --criteria accuracy,clarity,completeness
 
 # Skip UniEval for now (requires LLM provider)
-# exec pe experimental metrics --type unieval --generated summary.txt --reference article.txt
+# pe experimental metrics --type unieval --generated summary.txt --reference article.txt
 
 # Test specific metrics that don't require LLM
-exec pe experimental metrics --type bleu,rouge,meteor --generated-file output.txt --reference-file expected.txt --output report.json
+pe experimental metrics --type bleu,rouge,meteor --generated-file output.txt --reference-file expected.txt --output report.json
 stdout 'BLEU Score:'
 stdout 'ROUGE Scores:'
 stdout 'METEOR Score:'
 exists report.json
 
 # Skip batch evaluation for now
-# exec pe experimental metrics --batch --inputs batch.jsonl
+# pe experimental metrics --batch --inputs batch.jsonl
 
 # Skip statistical comparison for now
-# exec pe experimental metrics --compare baseline.json improved.json --significance
+# pe experimental metrics --compare baseline.json improved.json --significance
 
 # Skip custom metrics for now
-# exec pe experimental metrics --custom custom-metric.js --generated output.txt
+# pe experimental metrics --custom custom-metric.js --generated output.txt
 
 # Skip semantic similarity for now
-# exec pe experimental metrics --type similarity --text1 text1.txt --text2 text2.txt
+# pe experimental metrics --type similarity --text1 text1.txt --text2 text2.txt
 
 # Skip perplexity for now
-# exec pe experimental metrics --type perplexity --text output.txt --model gpt-4
+# pe experimental metrics --type perplexity --text output.txt --model gpt-4
 
 # Skip token analysis for now
-# exec pe experimental metrics --type token-analysis --generated output.txt --reference expected.txt
+# pe experimental metrics --type token-analysis --generated output.txt --reference expected.txt
 
 # Skip error analysis for now
-# exec pe experimental metrics --error-analysis --generated outputs/ --reference refs/
+# pe experimental metrics --error-analysis --generated outputs/ --reference refs/
 
 -- output.txt --
 The capital of France is Paris, a beautiful city known for its culture.

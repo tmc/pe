@@ -4,7 +4,7 @@
 mkdir test1
 cd test1
 cp ../config.yaml .
-exec pe build config.yaml
+pe build config.yaml
 stdout 'Building optimized prompt'
 stdout 'Analyzing requirements'
 stdout 'Optimization complete'
@@ -17,7 +17,7 @@ cd ..
 mkdir test2
 cd test2
 cp ../config.yaml .
-exec pe build config.yaml -o production.txt
+pe build config.yaml -o production.txt
 stdout 'Building to: production.txt'
 exists production.txt
 ! exists prompt_build.txt
@@ -25,7 +25,7 @@ exists production.txt
 cd ..
 
 # Build with metadata
-exec pe build config.yaml --with-metadata
+pe build config.yaml --with-metadata
 exists prompt_build.txt
 exists prompt_build_metadata.json
 # TODO: Add contains command to verify metadata contents
@@ -34,7 +34,7 @@ exists prompt_build_metadata.json
 # contains prompt_build_metadata.json '"timestamp"'
 
 # Build for specific provider
-exec pe build config.yaml --target anthropic
+pe build config.yaml --target anthropic
 stdout 'Target provider: anthropic'
 stdout 'Applying provider-specific optimizations'
 # TODO: Add contains command
@@ -42,14 +42,14 @@ stdout 'Applying provider-specific optimizations'
 # contains prompt_build.txt 'Assistant:'
 
 # Build with minification
-exec pe build verbose-prompt.txt --minify
+pe build verbose-prompt.txt --minify
 stdout 'Minifying prompt'
 stdout 'Original tokens:'
 stdout 'Minified tokens:'
 stdout 'Reduction:'
 
 # Build with validation
-exec pe build config.yaml --validate
+pe build config.yaml --validate
 stdout 'Validation checks:'
 stdout '✓ Grammar check passed'
 stdout '✓ Clarity score: 0.92'
@@ -57,7 +57,7 @@ stdout '✓ No bias detected'
 stdout '✓ Security scan passed'
 
 # Build bundle with dependencies
-exec pe build project/ --bundle
+pe build project/ --bundle
 stdout 'Creating prompt bundle'
 stdout 'Including'
 stdout 'components'
@@ -65,13 +65,13 @@ stdout 'Resolving dependencies'
 exists prompt_bundle.tar.gz
 
 # Build with compression
-exec pe build large-prompt.txt --compress
+pe build large-prompt.txt --compress
 stdout 'Compressing prompt'
 exists prompt_build.txt.gz
 stdout 'Compression ratio:'
 
 # Multi-target build
-exec pe build config.yaml --targets openai,anthropic,google
+pe build config.yaml --targets openai,anthropic,google
 stdout 'Building for multiple targets'
 exists builds/openai/prompt.txt
 exists builds/anthropic/prompt.txt
@@ -79,14 +79,14 @@ exists builds/google/prompt.txt
 
 # Build with environment-specific configs
 env PE_ENV=production
-exec pe build config.yaml
+pe build config.yaml
 stdout 'Environment: production'
 stdout 'Loading production settings'
 # TODO: Add contains command
 # contains prompt_build.txt 'Production mode'
 
 # Build failure (validation error)
-! exec pe build invalid-config.yaml
+! pe build invalid-config.yaml
 stderr 'Build failed'
 stderr 'Validation error'
 stdout 'Missing required field: prompt'

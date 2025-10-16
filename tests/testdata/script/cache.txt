@@ -1,52 +1,52 @@
 # Test pe cache commands - verifiable shared caching
 
 # Basic cache operations
-exec pe cache status
+pe cache status
 stdout 'Cache Status:'
 stdout 'Entries: 0'
 
 # Run with caching
 env PE_TEST_MODE=true
-exec pe run 'What is 2+2?' --provider mock
+pe run 'What is 2+2?' --provider mock
 stdout '4'
 
 # Check cache was populated
-exec pe cache status
+pe cache status
 stdout 'Cache Status:'
 stdout 'Entries:'
 
 # List cache entries
-exec pe cache list
+pe cache list
 stdout 'Cache entries:'
 
 # Clear cache
-exec pe cache clear --force
+pe cache clear --force
 stdout 'Cache cleared'
 
 # Verify cache is empty
-exec pe cache status
+pe cache status
 stdout 'Entries: 0'
 
 # Show cache statistics
-exec pe cache stats
+pe cache stats
 stdout 'Cache statistics:'
 stdout 'Total entries: 0'
 
 # Export cache (when populated)
 env PE_TEST_MODE=true
-exec pe run 'Test prompt' --provider mock
+pe run 'Test prompt' --provider mock
 stdout 'Mock response'
-exec pe cache export cache-export.tar.gz
+pe cache export cache-export.tar.gz
 stdout 'Exported cache bundle'
 exists cache-export.tar.gz
 
 # Import cache
-exec pe cache clear --force
+pe cache clear --force
 stdout 'Cache cleared'
-exec pe cache import cache-export.tar.gz
+pe cache import cache-export.tar.gz
 stdout 'Imported'
 
 # Verify cache
-exec pe cache verify
+pe cache verify
 stdout 'Cache Verification Results:'
 stdout 'Valid:'
