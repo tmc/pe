@@ -2,6 +2,7 @@ package testing
 
 import (
 	"context"
+	"math/rand"
 	"sync"
 	"testing"
 	"time"
@@ -134,7 +135,9 @@ func RetryWithPolicy(ctx context.Context, policy *RetryPolicy, fn func() error) 
 
 		// Add jitter if enabled
 		if policy.Jitter {
-			delay = time.Duration(float64(delay) * (0.5 + 0.5*time.Now().UnixNano()%1000/1000.0))
+			// Add 0-50% random jitter to delay (range: 0.5 to 1.0)
+		jitterFactor := 0.5 + 0.5*rand.Float64()
+		delay = time.Duration(float64(delay) * jitterFactor)
 		}
 
 		select {
@@ -334,7 +337,7 @@ func TestRetryWithPolicy_EventualSuccess(t *testing.T) {
 		attempts++
 		if attempts < 3 {
 			return &RetryableError{
-				Err:       testing.NewError("temporary failure"),
+				Err:       NewError("temporary failure"),
 				Retryable: true,
 			}
 		}
@@ -363,7 +366,7 @@ func TestRetryWithPolicy_MaxAttempts(t *testing.T) {
 	err := RetryWithPolicy(context.Background(), policy, func() error {
 		attempts++
 		return &RetryableError{
-			Err:       testing.NewError("persistent failure"),
+			Err:       NewError("persistent failure"),
 			Retryable: true,
 		}
 	})
@@ -384,7 +387,7 @@ func TestRetryWithPolicy_NonRetryableError(t *testing.T) {
 	err := RetryWithPolicy(context.Background(), policy, func() error {
 		attempts++
 		return &RetryableError{
-			Err:       testing.NewError("non-retryable failure"),
+			Err:       NewError("non-retryable failure"),
 			Retryable: false,
 		}
 	})
@@ -416,7 +419,7 @@ func TestRetryWithPolicy_ContextCancellation(t *testing.T) {
 	err := RetryWithPolicy(ctx, policy, func() error {
 		attempts++
 		return &RetryableError{
-			Err:       testing.NewError("failure"),
+			Err:       NewError("failure"),
 			Retryable: true,
 		}
 	})
@@ -455,7 +458,7 @@ func TestRetryWithPolicy_BackoffTiming(t *testing.T) {
 		attempts++
 		attemptTimes = append(attemptTimes, time.Now())
 		return &RetryableError{
-			Err:       testing.NewError("failure"),
+			Err:       NewError("failure"),
 			Retryable: true,
 		}
 	})
@@ -497,7 +500,6 @@ func TestRetryWithPolicy_Jitter(t *testing.T) {
 	var delays []time.Duration
 	for i := 0; i < 10; i++ {
 		attempts := 0
-		start := time.Now()
 		var attemptTimes []time.Time
 
 		RetryWithPolicy(context.Background(), policy, func() error {
@@ -505,7 +507,7 @@ func TestRetryWithPolicy_Jitter(t *testing.T) {
 			attemptTimes = append(attemptTimes, time.Now())
 			if attempts < 2 {
 				return &RetryableError{
-					Err:       testing.NewError("failure"),
+					Err:       NewError("failure"),
 					Retryable: true,
 				}
 			}
