@@ -4,42 +4,43 @@ This guide covers installing PE (Go for Prompts) on various platforms and config
 
 ## Prerequisites
 
-- Go 1.21 or later (for building from source)
-- macOS 11.0+ (for full sandbox support)
-- Git (for version control features)
+- **Go 1.21 or later** (required for building from source)
+- **macOS, Linux, or Windows** (via WSL2)
+- **Git** (optional, for version control features)
 
 ## Installation Methods
 
-### 1. Install with Go (Recommended)
+### 1. Install from Source (Recommended for Development)
 
-```bash
-go install github.com/tmc/pe/cmd/pe@latest
-```
-
-This installs the latest stable version of PE to `$GOPATH/bin`.
-
-### 2. Install from Source
+Since PE is currently in active development, installing from source ensures you have the latest features:
 
 ```bash
 # Clone the repository
 git clone https://github.com/tmc/pe.git
 cd pe
 
-# Build and install
+# Install directly to GOPATH/bin
+go install ./cmd/pe
+
+# Or build to a specific location
 go build -o pe cmd/pe/main.go
 sudo mv pe /usr/local/bin/
 ```
 
-### 3. Homebrew (macOS)
+### 2. Install with Go (Once Published)
+
+When PE is published to a module proxy, you'll be able to use:
 
 ```bash
-brew tap tmc/pe
-brew install pe
+# This will work once PE is properly published
+go install github.com/tmc/pe/cmd/pe@latest
 ```
 
-### 4. Download Binary
+**Note**: Currently this may not work if the module is not published to a proxy.
 
-Download pre-built binaries from the [releases page](https://github.com/tmc/pe/releases).
+### 3. Download Binary (Future)
+
+Pre-built binaries will be available from the [releases page](https://github.com/tmc/pe/releases) once releases are created.
 
 ```bash
 # macOS (Apple Silicon)
@@ -62,122 +63,100 @@ sudo mv pe /usr/local/bin/
 
 ### 1. Verify Installation
 
+Check that PE is installed and accessible:
+
 ```bash
-pe version
-# Output: PE v1.0.0 (go1.21)
+# Check PE is in your PATH
+which pe
+# Output: /Users/yourusername/go/bin/pe (or /usr/local/bin/pe)
+
+# View available commands
+pe --help
+
+# Test with a simple prompt (requires API key)
+pe run "What is 2+2?" --provider openai
 ```
 
 ### 2. Configure API Keys
 
-PE needs API keys for LLM providers. Set them as environment variables:
+PE supports multiple LLM providers. Set API keys as environment variables:
 
 ```bash
-# OpenAI
+# OpenAI (for GPT models)
 export OPENAI_API_KEY="sk-..."
 
-# Anthropic
+# Anthropic (for Claude models)
 export ANTHROPIC_API_KEY="sk-ant-..."
 
-# Google AI
-export GOOGLE_AI_API_KEY="..."
-
-# Add to your shell profile (~/.zshrc or ~/.bashrc)
+# Add to your shell profile for persistence
 echo 'export OPENAI_API_KEY="sk-..."' >> ~/.zshrc
+echo 'export ANTHROPIC_API_KEY="sk-ant-..."' >> ~/.zshrc
+
+# Reload your shell
+source ~/.zshrc
 ```
 
-### 3. Initialize PE Home Directory
+**Supported Providers:**
+- `openai` - OpenAI models (GPT-4, GPT-3.5, etc.)
+- `anthropic` - Anthropic models (Claude 3, Claude 2, etc.)
+- `cgpt` - cgpt command-line tool (if installed)
+
+### 3. Initialize a PE Project (Optional)
+
+For project-specific prompts and configuration:
 
 ```bash
-# PE creates its configuration in ~/.pe
-pe init --global
+# In your project directory
+cd your-project
+pe init
 
 # This creates:
-# ~/.pe/
-#   ├── config.yaml     # Global configuration
-#   ├── cache/          # Shared cache
-#   ├── plugins/        # Installed plugins
-#   └── styles/         # Style guides
+# .pe/
+#   ├── prompts/        # Project prompts
+#   ├── evaluations/    # Evaluation configs
+#   └── cache/          # Project-specific cache
 ```
 
-### 4. Configure Defaults
+## Quick Start
+
+Once installed and configured, try these examples:
 
 ```bash
-# Set default provider
-pe config set default.provider gpt-4
+# Simple prompt execution
+pe run "Explain what PE is in one sentence" --provider openai
 
-# Set default model
-pe config set default.model gpt-4-turbo-preview
+# Using a prompt file with variables
+echo "Translate {{.text}} to {{.language}}" > translate.prompt
+pe run translate.prompt --var text="Hello" --var language="Spanish" --provider anthropic
 
-# Enable cache
-pe config set cache.enabled true
+# Evaluate a prompt against test cases
+pe eval your-config.yaml
 
-# Set cache directory
-pe config set cache.dir ~/.pe/cache
+# Run optimization
+pe optimize --prompt "Summarize text concisely" --method textgrad --iterations 3
 
-# Configure security
-pe config set security.sandbox strict
-pe config set security.require-signatures true
+# View all commands
+pe --help
 ```
 
-## Platform-Specific Setup
+## Platform Notes
 
 ### macOS
 
-#### Enable Sandbox Support
-
-PE uses macOS App Sandbox for security. Grant necessary permissions:
-
-```bash
-# First run will prompt for permissions
-pe run "test" --sandbox=strict
-
-# Grant file access if needed
-pe sandbox grant ~/Documents
-```
-
-#### Code Signing (Optional)
-
-For distribution, sign the PE binary:
-
-```bash
-codesign -s "Developer ID Application: Your Name" /usr/local/bin/pe
-```
+No special setup required. PE works on both Intel and Apple Silicon Macs.
 
 ### Linux
 
-#### AppArmor Profile (Optional)
+PE works on most Linux distributions. Ensure Go is installed and `$GOPATH/bin` is in your PATH.
 
-Create an AppArmor profile for additional security:
+### Windows
 
-```bash
-sudo tee /etc/apparmor.d/pe > /dev/null << 'EOF'
-#include <tunables/global>
-
-/usr/local/bin/pe {
-  #include <abstractions/base>
-  
-  # Allow reading prompts
-  /home/*/.pe/** r,
-  /home/*/prompts/** r,
-  
-  # Allow network for API calls
-  network inet stream,
-  network inet6 stream,
-  
-  # Deny everything else
-  deny /** w,
-}
-EOF
-
-sudo apparmor_parser -r /etc/apparmor.d/pe
-```
-
-### Windows (WSL2)
-
-PE works best on Windows through WSL2:
+Use WSL2 for the best experience:
 
 ```bash
-# In WSL2 Ubuntu
+# In WSL2 Ubuntu/Debian
+sudo apt update
+sudo apt install golang-go
 go install github.com/tmc/pe/cmd/pe@latest
 ```
 
@@ -186,46 +165,36 @@ go install github.com/tmc/pe/cmd/pe@latest
 PE recognizes these environment variables:
 
 ```bash
-# API Keys
+# API Keys (Required for providers)
 OPENAI_API_KEY          # OpenAI API key
 ANTHROPIC_API_KEY       # Anthropic API key
-GOOGLE_AI_API_KEY       # Google AI API key
 
-# Configuration
-PE_HOME                 # PE home directory (default: ~/.pe)
-PE_CONFIG              # Config file path (default: $PE_HOME/config.yaml)
-PE_CACHE_DIR           # Cache directory (default: $PE_HOME/cache)
-PE_PLUGIN_DIR          # Plugin directory (default: $PE_HOME/plugins)
-
-# Behavior
-PE_MOCK_MODE           # Enable mock mode for testing (true/false)
+# Optional Configuration
+PE_TEST_MODE           # Enable test mode (true/false)
 PE_DEBUG               # Enable debug output (true/false)
-PE_TRACE               # Enable trace logging (true/false)
-PE_NO_COLOR            # Disable colored output (true/false)
-PE_SANDBOX             # Default sandbox mode (strict/relaxed/disabled)
 ```
 
-## Shell Completion
+## Shell Completion (Optional)
+
+PE supports shell completion for common shells:
 
 ### Zsh
 
 ```bash
-# Generate completion
-pe completion zsh > ~/.pe/completion.zsh
+# Generate and install completion
+pe completion zsh > "${fpath[1]}/_pe"
 
-# Add to ~/.zshrc
-echo 'source ~/.pe/completion.zsh' >> ~/.zshrc
+# Or add to your .zshrc
+echo 'eval "$(pe completion zsh)"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
 ### Bash
 
 ```bash
-# Generate completion
-pe completion bash > ~/.pe/completion.bash
-
-# Add to ~/.bashrc
-echo 'source ~/.pe/completion.bash' >> ~/.bashrc
+# Generate and source completion
+pe completion bash > ~/.pe-completion.bash
+echo 'source ~/.pe-completion.bash' >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -236,38 +205,6 @@ source ~/.bashrc
 pe completion fish > ~/.config/fish/completions/pe.fish
 ```
 
-## Verify Installation
-
-Run the installation test:
-
-```bash
-pe doctor
-```
-
-Expected output:
-```
-PE Installation Check
-====================
-✓ PE binary: /usr/local/bin/pe
-✓ Version: v1.0.0
-✓ Go version: go1.21
-✓ Config file: ~/.pe/config.yaml
-✓ Cache directory: ~/.pe/cache (2.3 MB)
-✓ Plugin directory: ~/.pe/plugins (3 plugins)
-
-API Keys:
-✓ OpenAI: Configured
-✓ Anthropic: Configured
-✗ Google AI: Not configured
-
-Security:
-✓ Sandbox: Available (macOS)
-✓ Trust store: Initialized
-✓ Signatures: Enabled
-
-All systems operational!
-```
-
 ## Troubleshooting
 
 ### Command Not Found
@@ -275,11 +212,18 @@ All systems operational!
 If `pe` is not found after installation:
 
 ```bash
-# Check Go bin is in PATH
-echo $PATH | grep -q "$(go env GOPATH)/bin" || echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.zshrc
+# Check if pe is installed
+which pe
 
-# Reload shell
+# Check Go bin is in PATH
+echo $PATH | grep "$(go env GOPATH)/bin"
+
+# If not in PATH, add it
+echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.zshrc
 source ~/.zshrc
+
+# Verify Go installation
+go version
 ```
 
 ### Permission Denied
@@ -287,40 +231,50 @@ source ~/.zshrc
 If you get permission errors:
 
 ```bash
-# Fix permissions
+# Fix binary permissions
 chmod +x $(which pe)
 
-# Fix cache permissions
-chmod -R u+rw ~/.pe/cache
+# Or if pe is in /usr/local/bin
+sudo chmod +x /usr/local/bin/pe
 ```
 
 ### API Key Issues
 
-Test API keys:
+Test that your API keys are set correctly:
 
 ```bash
-# Test OpenAI
-pe run "test" --provider openai --debug
+# Check environment variables
+echo $OPENAI_API_KEY
+echo $ANTHROPIC_API_KEY
 
-# Test Anthropic  
-pe run "test" --provider anthropic --debug
+# Test with a simple prompt
+pe run "Say hello" --provider openai
+
+# Enable debug output if there are issues
+PE_DEBUG=true pe run "test" --provider openai
 ```
 
-### Sandbox Issues (macOS)
+### Build Errors
 
-If sandbox is not working:
+If you encounter build errors:
 
 ```bash
-# Reset sandbox permissions
-pe sandbox reset
+# Ensure you have the correct Go version
+go version  # Should be 1.21 or later
 
-# Run without sandbox (not recommended)
-pe run "test" --sandbox=disabled
+# Clean and rebuild
+cd path/to/pe
+go clean
+go build -o pe cmd/pe/main.go
+
+# Check for dependency issues
+go mod tidy
+go mod verify
 ```
 
 ## Next Steps
 
-- Read the [Getting Started Tutorial](TUTORIAL.md)
+- Read the [Getting Started Guide](GETTING_STARTED.md)
 - Explore the [Command Reference](COMMANDS.md)
-- Learn about [Plugin Development](PLUGINS.md)
-- Join the community on [Discord](https://discord.gg/pe-prompts)
+- Check out [Example Prompts](../example/)
+- Review the [Documentation Overview](README.md)
