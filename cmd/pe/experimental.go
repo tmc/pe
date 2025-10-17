@@ -27,7 +27,7 @@ Examples:
 	cmd.AddCommand(evolveCmd())
 	cmd.AddCommand(semanticCmd())
 	cmd.AddCommand(composeCmd)
-	cmd.AddCommand(fusionCmd)
+	// fusionCmd moved to advanced-features branch
 	cmd.AddCommand(synthesizeCmd)
 	cmd.AddCommand(metricsCmd())
 	cmd.AddCommand(playgroundCmd())
@@ -38,15 +38,8 @@ Examples:
 	cmd.AddCommand(streamCmd())
 	cmd.AddCommand(filterCmd())
 	cmd.AddCommand(analyzeCmd())
-	
-	// Demo commands
-	cmd.AddCommand(&cobra.Command{
-		Use:   "consensus-demo",
-		Short: "Demo: Distributed consensus visualization",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runConsensusDemo()
-		},
-	})
+
+	// consensus-demo moved to advanced-features branch
 
 	return cmd
 }

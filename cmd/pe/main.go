@@ -81,7 +81,7 @@ work together seamlessly.`,
 	root.AddCommand(getCmd)        // pe get for extracting prompt info
 	root.AddCommand(evalPromptCmd) // pe eval-prompt for running evals from prompt files
 	root.AddCommand(workCmd)       // go work for prompts
-	root.AddCommand(attestCmd)     // cryptographic attestations
+	// root.AddCommand(attestCmd)  // Moved to advanced-features branch
 	root.AddCommand(catCmd())      // pe cat for inspecting prompt files
 	
 	// Existing commands
@@ -109,9 +109,9 @@ work together seamlessly.`,
 	// Plugin command
 	root.AddCommand(pluginCmd())
 
-	// Distributed system commands
-	root.AddCommand(cacheCmd)
-	root.AddCommand(distributedCmd())
+	// Distributed system commands moved to advanced-features branch
+	// root.AddCommand(cacheCmd)         // Moved to advanced-features branch
+	// root.AddCommand(distributedCmd()) // Moved to advanced-features branch
 
 	// Discover and add plugin commands dynamically
 	dynamicPluginCommands(root)
