@@ -416,14 +416,25 @@ type AdvancedMockProvider struct {
 
 // ProviderMetrics tracks various provider metrics for testing.
 type ProviderMetrics struct {
-	mu                sync.RWMutex
-	TotalRequests     int
+	mu                 sync.RWMutex
+	TotalRequests      int
 	SuccessfulRequests int
-	FailedRequests    int
-	AverageLatency    time.Duration
-	TotalLatency      time.Duration
-	MinLatency        time.Duration
-	MaxLatency        time.Duration
+	FailedRequests     int
+	AverageLatency     time.Duration
+	TotalLatency       time.Duration
+	MinLatency         time.Duration
+	MaxLatency         time.Duration
+}
+
+// ProviderMetricsSnapshot is a copy of metrics without the mutex for safe return.
+type ProviderMetricsSnapshot struct {
+	TotalRequests      int
+	SuccessfulRequests int
+	FailedRequests     int
+	AverageLatency     time.Duration
+	TotalLatency       time.Duration
+	MinLatency         time.Duration
+	MaxLatency         time.Duration
 }
 
 // NewAdvancedMockProvider creates a mock provider with advanced behaviors.
@@ -493,11 +504,19 @@ func (amp *AdvancedMockProvider) Complete(ctx context.Context, req inference.Req
 	return resp, err
 }
 
-// GetMetrics returns current provider metrics.
-func (amp *AdvancedMockProvider) GetMetrics() ProviderMetrics {
+// GetMetrics returns current provider metrics as a snapshot (without mutex).
+func (amp *AdvancedMockProvider) GetMetrics() ProviderMetricsSnapshot {
 	amp.metrics.mu.RLock()
 	defer amp.metrics.mu.RUnlock()
-	return *amp.metrics
+	return ProviderMetricsSnapshot{
+		TotalRequests:      amp.metrics.TotalRequests,
+		SuccessfulRequests: amp.metrics.SuccessfulRequests,
+		FailedRequests:     amp.metrics.FailedRequests,
+		AverageLatency:     amp.metrics.AverageLatency,
+		TotalLatency:       amp.metrics.TotalLatency,
+		MinLatency:         amp.metrics.MinLatency,
+		MaxLatency:         amp.metrics.MaxLatency,
+	}
 }
 
 // generateRandomContent generates random content for testing.

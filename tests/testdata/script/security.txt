@@ -17,18 +17,5 @@ stdout 'Security Assessment Report'
 stdout 'Target: prompt.txt'
 stdout 'Risk Level:'
 
-# Test caching functionality
-pe cache list
-stdout 'Cache entries:'
-
-# Clear cache
-pe cache clear --force
-stdout 'Cache cleared'
-
-# Show cache stats
-pe cache stats
-stdout 'Cache statistics:'
-stdout 'Total entries: 0'
-
 -- prompt.txt --
 Analyze this text and provide insights.
