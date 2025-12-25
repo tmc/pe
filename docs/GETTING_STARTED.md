@@ -1,373 +1,579 @@
-# Getting Started with PE
+# Getting Started with PE: A Practical Guide
 
-This guide will walk you through your first steps with PE, from installation to running your first evaluation.
+Welcome to PE (Prompt Engineering), the comprehensive toolkit for building, testing, and optimizing AI prompts. This guide will walk you through everything you need to know to get productive quickly.
 
-## Prerequisites
+## 🚀 Quick Start (5 minutes)
 
-- Go 1.21+ (for building from source)
-- API keys for LLM providers (OpenAI, Anthropic, etc.)
-- Basic familiarity with command line tools
-
-## Installation
-
-### Option 1: Install from Source (Recommended)
+### 1. Installation
 
 ```bash
+# Install PE
 go install github.com/tmc/pe/cmd/pe@latest
+
+# Verify installation
+pe --version
 ```
 
-### Option 2: Build from Repository
+### 2. Your First Prompt
+
+Create a simple prompt file:
 
 ```bash
-git clone https://github.com/tmc/pe.git
-cd pe
-make build
-# Or manually:
-# go build -o pe ./cmd/pe
-sudo mv pe /usr/local/bin/
+# Create your first prompt
+echo "Summarize this text in one sentence: {{.text}}" > summarize.prompt
+
+# Test it immediately
+pe run summarize.prompt --var text="Artificial intelligence is transforming industries worldwide through automation, data analysis, and machine learning capabilities."
 ```
 
-### Verify Installation
+Expected output:
+```
+AI is revolutionizing global industries via automation, data analysis, and machine learning.
+```
+
+### 3. Set Up Your Provider
+
+PE works with multiple AI providers. Choose one:
+
+#### Option A: OpenAI (Recommended for beginners)
+```bash
+export OPENAI_API_KEY="your-api-key-here"
+pe run summarize.prompt --provider openai --model gpt-4 --var text="Your text here"
+```
+
+#### Option B: Anthropic Claude
+```bash
+export ANTHROPIC_API_KEY="your-api-key-here"
+pe run summarize.prompt --provider anthropic --model claude-3-sonnet-20240229 --var text="Your text here"
+```
+
+#### Option C: Local Models with Ollama
+```bash
+# First install and start Ollama
+ollama pull llama2
+export OLLAMA_HOST="http://localhost:11434"
+pe run summarize.prompt --provider ollama --model llama2 --var text="Your text here"
+```
+
+Congratulations! 🎉 You've just run your first prompt with PE.
+
+## 📖 Essential Concepts
+
+### Prompts as Code
+PE treats prompts like code - versioned, tested, and modular:
 
 ```bash
-pe --help
+# Create a prompt directory structure
+mkdir my-prompts && cd my-prompts
+pe mod init github.com/myorg/prompts
+
+# This creates a go.mod file for dependency management
 ```
 
-You should see the PE command help output.
+### Template Variables
+Use `{{.variable}}` syntax for dynamic content:
 
-## Setting Up API Keys
+```
+You are a {{.role}} expert. {{.task}}
 
-PE supports multiple LLM providers. Set up environment variables for the providers you want to use:
+Context: {{.context}}
+Requirements:
+{{range .requirements}}
+- {{.}}
+{{end}}
+
+Please provide a detailed response.
+```
+
+### Prompt Composition
+Build complex prompts from reusable components:
 
 ```bash
-# OpenAI
-export OPENAI_API_KEY="your-openai-api-key"
+# Base prompt
+echo "You are a helpful assistant." > base.prompt
 
-# Anthropic
-export ANTHROPIC_API_KEY="your-anthropic-api-key"
+# Specific task
+echo "Analyze the sentiment of: {{.text}}" > sentiment.prompt
 
-# Google AI
-export GOOGLE_AI_API_KEY="your-google-ai-key"
+# Compose them
+pe compose --base base.prompt sentiment.prompt --var text="I love this product!"
 ```
 
-Add these to your shell profile (`.bashrc`, `.zshrc`, etc.) to persist them.
+## 🛠️ Core Workflows
 
-## Your First Evaluation
-
-### Step 1: Create a Configuration
-
-Let's start with PE's initialization command:
+### Workflow 1: Interactive Development
 
 ```bash
-pe init my-first-test.yaml
+# Start with a basic prompt
+echo "Translate to {{.language}}: {{.text}}" > translate.prompt
+
+# Test it interactively
+pe run translate.prompt --var language=Spanish --var text="Hello world"
+
+# Iterate and improve
+echo "Translate the following text to {{.language}}, preserving tone and context: {{.text}}" > translate.prompt
+
+# Test again
+pe run translate.prompt --var language=Spanish --var text="Hello world"
 ```
 
-This creates a basic configuration file:
+### Workflow 2: Evaluation and Testing
+
+Create an evaluation configuration:
 
 ```yaml
-description: "Capital cities evaluation"
-
+# eval-config.yaml
 prompts:
-  - "What is the capital of {{.country}}?"
-  - "Tell me about the capital city of {{.country}}."
-
-providers:
-  - name: "openai"
-    config:
-      model: "gpt-4o-mini"
-  - name: "anthropic"
-    config:
-      model: "claude-3-haiku-20240307"
+  - translate.prompt
 
 tests:
   - vars:
-      country: "France"
+      language: "Spanish" 
+      text: "Hello, how are you?"
     assert:
-      - type: "contains"
-        value: "Paris"
-  - vars:
-      country: "Japan"
-    assert:
-      - type: "contains"
-        value: "Tokyo"
-```
-
-### Step 2: Run the Evaluation
-
-```bash
-pe eval my-first-test.yaml
-```
-
-You'll see output like:
-
-```
-Running 4 evaluations with up to 4 threads...
-
-Evaluation: eval-2025-09-05T16:45:00
-Timestamp: 2025-09-05T16:45:00Z
-
-Success: 4, Failures: 0, Total: 4
-Token Usage: 120 (Prompt: 60, Completion: 60)
-
-ID      Prompt                          Provider    Success  Score
---      ------                          --------    -------  -----
-abc123  What is the capital of France?  openai      ✓        1.00
-def456  What is the capital of France?  anthropic   ✓        1.00
-ghi789  Tell me about the capital...    openai      ✓        1.00
-jkl012  Tell me about the capital...    anthropic   ✓        1.00
-```
-
-### Step 3: View Detailed Results
-
-```bash
-pe eval my-first-test.yaml --save-db
-pe view
-```
-
-This opens an interactive browser interface where you can explore the results in detail.
-
-## Understanding the Configuration
-
-Let's break down the configuration file:
-
-### Prompts
-```yaml
-prompts:
-  - "What is the capital of {{.country}}?"  # Template with variable
-  - "Tell me about {{.country}}'s capital." # Alternative prompt
-```
-
-Prompts use Go template syntax with variables in `{{.variable}}` format.
-
-### Providers
-```yaml
-providers:
-  - name: "openai"
-    config:
-      model: "gpt-4o-mini"       # OpenAI model
-  - name: "anthropic"
-    config:
-      model: "claude-3-haiku-20240307"  # Anthropic model
-```
-
-Specify providers with their configuration including model selection.
-
-### Tests
-```yaml
-tests:
-  - vars:                             # Variables for template substitution
-      country: "France"
-    assert:                           # Assertions to verify output
-      - type: "contains"              # Check if output contains text
-        value: "Paris"
-  - vars:
-      country: "Japan"
-    assert:
-      - type: "contains"
-        value: "Tokyo"
-      - type: "length"                # Check output length
-        min: 10
-        max: 200
-```
-
-Tests define scenarios with variables and success criteria.
-
-## Common Assertion Types
-
-PE supports various assertion types:
-
-```yaml
-assert:
-  # Text content checks
-  - type: "contains"
-    value: "expected text"
-  - type: "not-contains"
-    value: "unwanted text"
-  - type: "regex"
-    pattern: "Tokyo.*Japan"
-    
-  # Length checks
-  - type: "length"
-    min: 50
-    max: 200
-    
-  # Performance checks
-  - type: "latency"
-    max: "5s"
-  - type: "cost"
-    max: 0.02
-    
-  # Quality checks (advanced)
-  - type: "similarity"
-    reference: "Expected output"
-    threshold: 0.8
-```
-
-## Working with Multiple Tests
-
-Create comprehensive test suites:
-
-```yaml
-prompts:
-  - "Write a haiku about {{.topic}}"
-
-providers:
-  - name: "openai"
-    config:
-      model: "gpt-4o-mini"
-  - name: "anthropic"
-    config:
-      model: "claude-3-haiku-20240307"
-
-tests:
-  # Test different topics
-  - description: "Nature haiku"
-    vars:
-      topic: "cherry blossoms"
-    assert:
-      - type: "contains"
-        value: ["cherry", "blossom"]
-      - type: "regex"
-        pattern: "\\n.*\\n.*\\n"  # 3 lines
+      - type: contains
+        value: "Hola"
+      - type: not-contains
+        value: "Hello"
         
-  - description: "Technology haiku"
-    vars:
-      topic: "artificial intelligence"
+  - vars:
+      language: "French"
+      text: "Good morning"
     assert:
-      - type: "length"
-        min: 30
-        max: 100
-      - type: "not-contains"
-        value: ["AI", "computer"]  # Avoid technical terms
+      - type: contains
+        value: "Bonjour"
 ```
 
-## Saving and Sharing Results
+Run evaluation:
 
-### Save to File
 ```bash
-# JSON format
-pe eval config.yaml -o results.json
-
-# YAML format  
-pe eval config.yaml -o results.yaml
-
-# CSV format for spreadsheets
-pe eval config.yaml -o results.csv
+pe eval eval-config.yaml
 ```
 
-### Save to Database
+### Workflow 3: Performance Optimization
+
 ```bash
-pe eval config.yaml --save-db
+# Benchmark different approaches
+pe benchmark translate.prompt --iterations 10 --providers openai,anthropic,ollama
+
+# Optimize with metaprompting
+pe optimize translate.prompt --target "accuracy and conciseness" --iterations 5
+
+# Test optimized version
+pe eval eval-config.yaml --prompt optimized-translate.prompt
 ```
 
-This saves results to `~/.promptfoo/evals/` for later viewing with `pe view`.
+## 🧪 Advanced Features
 
-### Share Results
+### 1. Pass@N Evaluation for Code Generation
+
+Perfect for testing code generation reliability:
+
+```yaml
+# code-eval.yaml
+tests:
+  - vars:
+      task: "Write a binary search function in Python"
+    assert:
+      - type: pass-at-n
+        config:
+          n: 5
+          samples: 20
+          test_cases:
+            - input: "binary_search([1,3,5,7], 5)"
+              expected: "2"
+            - input: "binary_search([1,3,5,7], 6)" 
+              expected: "-1"
+        threshold: 0.8  # 80% success rate required
+```
+
 ```bash
-pe eval config.yaml --save-db --share
+pe eval code-eval.yaml --provider openai --model gpt-4
 ```
 
-Creates a shareable URL for your evaluation results.
+### 2. Structured Output Validation
 
-## Next Steps
+Ensure consistent JSON output:
 
-Now that you've run your first evaluation, explore these features:
+```yaml
+# structured-eval.yaml
+tests:
+  - vars:
+      text: "I love this new smartphone!"
+    assert:
+      - type: structured-output
+        config:
+          format: json
+          schema:
+            type: object
+            properties:
+              sentiment:
+                type: string
+                enum: ["positive", "negative", "neutral"]
+              confidence:
+                type: number
+                minimum: 0
+                maximum: 1
+              keywords:
+                type: array
+                items:
+                  type: string
+            required: ["sentiment", "confidence"]
+```
 
-1. **Running Prompts**: `pe run prompt.txt --provider openai`
-2. **Optimization**: `pe optimize prompt.txt --method pe2`
-3. **Module Management**: `pe mod init myproject`
-4. **Pipeline Commands**: `echo "Hello" | pe run summarize.prompt --provider cgpt`
+### 3. Distributed Evaluation
 
-## Common Patterns
+Scale your testing across multiple nodes:
 
-### Development Workflow
 ```bash
-# Create and edit config
-pe init project-prompts.yaml
-$EDITOR project-prompts.yaml
+# Start distributed nodes
+pe distributed start --capacity 10 &
+pe distributed start --capacity 5 &
 
-# Test a single prompt
-pe run prompt.txt --provider openai
+# Run evaluation across nodes
+pe eval large-eval.yaml --distributed --max-concurrent 20
 
-# Run full evaluation
-pe eval project-prompts.yaml
-
-# Optimize prompts
-pe optimize prompt.txt --method pe2 --iterations 3
+# Check status
+pe distributed status
 ```
 
-### CI/CD Integration
+### 4. Cryptographic Attestation
+
+Ensure prompt integrity and auditability:
+
 ```bash
-# Validate config
-pe vet config.yaml
+# Enable attestation
+pe attest run translate.prompt --var language=Spanish --var text="Hello"
 
-# Run tests
-pe eval config.yaml --save-db
+# Verify results
+pe attest verify --chain latest
 
-# Check for regressions
-pe diff baseline.json current.json --threshold 0.05
+# Export audit trail
+pe attest export --format csv --output audit.csv
 ```
 
-### Cost Monitoring
+## 📊 Working with Metrics
+
+### Built-in Metrics
+
+PE provides comprehensive evaluation metrics:
+
 ```bash
-# Track costs
-pe eval config.yaml | pe analyze --metric cost --group-by provider
+# Text generation metrics
+pe metrics --prompt summarize.prompt --metric bleu,rouge,bertscore
 
-# Filter expensive runs
-pe eval config.yaml | pe filter --max-cost 0.10 | pe stats
+# Custom G-Eval scoring
+pe metrics --prompt creative-writing.prompt --metric g-eval --criteria "creativity,coherence,relevance"
+
+# Performance metrics
+pe metrics --prompt fast-qa.prompt --metric latency,tokens-per-second
 ```
 
-## Troubleshooting
+### Custom Metrics
+
+Define your own evaluation criteria:
+
+```yaml
+# custom-metrics.yaml
+metrics:
+  - name: business_value
+    type: llm-judge
+    prompt: "Rate the business value of this response from 1-10: {{.response}}"
+    
+  - name: technical_accuracy
+    type: keyword-match
+    keywords: ["correct", "accurate", "precise"]
+    weight: 0.3
+```
+
+## 🔄 Pipeline Workflows
+
+Build complex processing pipelines:
+
+```bash
+# Simple pipeline
+echo "Raw customer feedback data" | pe ask "Extract sentiment" | pe ask "Categorize by topic" | pe ask "Generate action items"
+
+# Advanced pipeline with filtering
+cat reviews.txt | \
+  pe ask "Extract product mentions" | \
+  pe filter --condition "confidence > 0.8" | \
+  pe collect --group-by product | \
+  pe reduce --operation summarize
+```
+
+## 🎯 Real-World Examples
+
+### Example 1: Customer Support Automation
+
+```bash
+# Create support ticket classifier
+cat > classify-ticket.prompt << 'EOF'
+Classify this support ticket into one of these categories:
+- technical: Technical issues, bugs, or feature requests
+- billing: Payment, pricing, or subscription questions  
+- general: General inquiries or information requests
+
+Ticket: {{.ticket}}
+
+Classification: 
+EOF
+
+# Test with real data
+pe run classify-ticket.prompt --var ticket="My payment failed and I can't access my account"
+
+# Create evaluation suite
+cat > support-eval.yaml << 'EOF'
+tests:
+  - vars:
+      ticket: "App crashes when I try to upload files"
+    assert:
+      - type: contains
+        value: "technical"
+  - vars:
+      ticket: "How much does the premium plan cost?"
+    assert:
+      - type: contains
+        value: "billing"
+EOF
+
+# Validate accuracy
+pe eval support-eval.yaml
+```
+
+### Example 2: Content Generation Pipeline
+
+```bash
+# Create content generation workflow
+mkdir content-pipeline && cd content-pipeline
+
+# 1. Topic generation
+echo "Generate 5 blog post topics about: {{.subject}}" > generate-topics.prompt
+
+# 2. Outline creation  
+echo "Create a detailed outline for this blog post: {{.topic}}" > create-outline.prompt
+
+# 3. Content writing
+echo "Write a 500-word blog post based on this outline: {{.outline}}" > write-content.prompt
+
+# Run the full pipeline
+pe run generate-topics.prompt --var subject="AI in healthcare" | \
+  pe ask --prompt create-outline.prompt | \
+  pe ask --prompt write-content.prompt
+
+# Or use composition for reusable workflows
+pe compose generate-topics.prompt create-outline.prompt write-content.prompt \
+  --var subject="sustainable technology" \
+  --output content-pipeline.prompt
+```
+
+### Example 3: Code Review Assistant
+
+```bash
+# Create code review prompt
+cat > code-review.prompt << 'EOF'
+Review this code for:
+1. Security vulnerabilities
+2. Performance issues  
+3. Code quality and maintainability
+4. Best practices adherence
+
+Code:
+```{{.language}}
+{{.code}}
+```
+
+Provide specific, actionable feedback:
+EOF
+
+# Test with actual code
+pe run code-review.prompt \
+  --var language="python" \
+  --var code="def login(username, password): return username == 'admin' and password == '12345'"
+
+# Create evaluation for code review quality
+cat > code-review-eval.yaml << 'EOF'
+tests:
+  - vars:
+      language: "python"
+      code: "eval(user_input)"
+    assert:
+      - type: contains
+        value: "security"
+      - type: contains
+        value: "eval"
+      - type: severity
+        level: "high"
+EOF
+```
+
+## 🏗️ Project Organization
+
+### Recommended Structure
+
+```
+my-ai-project/
+├── go.mod                    # Module dependencies
+├── prompts/
+│   ├── base/                 # Reusable base prompts
+│   │   ├── system.prompt
+│   │   └── assistant.prompt
+│   ├── tasks/                # Specific task prompts
+│   │   ├── summarize.prompt
+│   │   ├── translate.prompt
+│   │   └── analyze.prompt
+│   └── composed/             # Complex composed prompts
+│       └── full-pipeline.prompt
+├── evaluations/
+│   ├── unit-tests.yaml       # Individual prompt tests
+│   ├── integration.yaml     # End-to-end tests
+│   └── performance.yaml     # Performance benchmarks
+├── configs/
+│   ├── providers.yaml       # Provider configurations
+│   └── optimization.yaml    # Optimization settings
+└── scripts/
+    ├── run-tests.sh         # Automated testing
+    └── deploy.sh            # Deployment automation
+```
+
+### Module Management
+
+```bash
+# Initialize a new project
+pe mod init github.com/myorg/ai-prompts
+
+# Add dependencies
+pe mod download github.com/pe-community/base-prompts@v1.2.0
+
+# Keep dependencies clean
+pe mod tidy
+
+# Create local copy for offline work
+pe mod vendor
+```
+
+## 🔧 Configuration and Best Practices
+
+### Provider Configuration
+
+```yaml
+# ~/.pe/config.yaml
+providers:
+  openai:
+    api_key_env: OPENAI_API_KEY
+    default_model: gpt-4
+    timeout: 30s
+    
+  anthropic:
+    api_key_env: ANTHROPIC_API_KEY
+    default_model: claude-3-sonnet-20240229
+    timeout: 45s
+    
+  ollama:
+    host_env: OLLAMA_HOST
+    default_model: llama2
+    timeout: 60s
+
+defaults:
+  provider: openai
+  temperature: 0.1
+  max_tokens: 1000
+```
+
+### Best Practices
+
+1. **Version Your Prompts**: Use git and semantic versioning
+2. **Test Everything**: Write evaluations for all prompts
+3. **Use Variables**: Make prompts flexible with template variables
+4. **Compose Reusably**: Build complex workflows from simple components
+5. **Monitor Performance**: Track latency, cost, and quality metrics
+6. **Secure Secrets**: Use environment variables for API keys
+7. **Document Thoroughly**: Include examples and expected outputs
+
+### Performance Tips
+
+```bash
+# Cache results for repeated testing
+pe run --cache summarize.prompt --var text="Same text"
+
+# Use parallel evaluation
+pe eval large-test-suite.yaml --parallel 10
+
+# Optimize for speed vs quality
+pe run --temperature 0 --max-tokens 100 quick-response.prompt
+
+# Profile performance
+pe profile --enable cpu,memory my-complex-prompt.prompt
+```
+
+## 🆘 Troubleshooting
 
 ### Common Issues
 
-**API Key Not Found**
+**"Provider not found"**
 ```bash
-Error: openai provider requires OPENAI_API_KEY environment variable
-```
-Solution: Set the required environment variable:
-```bash
-export OPENAI_API_KEY="your-api-key"
-```
+# Check available providers
+pe providers list
 
-**Config Validation Failed**
-```bash
-Error: missing required field 'prompts'
-```
-Solution: Ensure your config has all required fields:
-```bash
-pe vet config.yaml  # Check for issues
+# Register providers manually
+pe providers register anthropic openai ollama
 ```
 
-**Provider Not Supported**
+**"Template variable not found"**
 ```bash
-Error: provider "unknown-provider" not found
+# Debug template variables
+pe run --debug my-prompt.prompt --var known_var="value"
+
+# List required variables
+pe analyze my-prompt.prompt --show-variables
 ```
-Solution: Use a supported provider:
-- `openai` - OpenAI API
-- `anthropic` - Anthropic API
-- `cgpt` - Multi-provider CLI tool
 
-### Debug Mode
-
-Enable verbose output for troubleshooting:
-
+**"Evaluation failed"**
 ```bash
-pe eval config.yaml --verbose
+# Run with verbose output
+pe eval --verbose my-eval.yaml
+
+# Test individual assertions
+pe eval --test-only "test_name" my-eval.yaml
 ```
 
 ### Getting Help
 
-- **Built-in help**: `pe help [command]`
-- **Documentation**: [docs/README.md](README.md)
-- **Examples**: [example/](../example/)
-- **Issues**: [GitHub Issues](https://github.com/tmc/pe/issues)
+```bash
+# Command-specific help
+pe run --help
+pe eval --help
 
-## What's Next?
+# Show examples
+pe examples
 
-- Explore [Advanced Examples](README.md#advanced-examples)
-- Learn about [Pipeline Commands](README.md#pipeline-processing-unix-style)
-- Set up [CI/CD Integration](README.md#integration-guide)
-- Try [Custom Assertions](README.md#configuration-guide)
+# Check system status
+pe status
 
-Happy prompt engineering! 🚀
+# Enable debug logging
+PE_DEBUG=1 pe run my-prompt.prompt
+```
+
+## 🎓 Next Steps
+
+Now that you've mastered the basics:
+
+1. **Explore Advanced Features**: Try semantic optimization, distributed evaluation, and custom metrics
+2. **Join the Community**: Share prompts and best practices 
+3. **Build Real Projects**: Apply PE to your specific use cases
+4. **Contribute**: Help improve PE with feedback and contributions
+
+### Learning Resources
+
+- [API Reference](API_REFERENCE.md) - Complete command documentation
+- [Advanced Features](ADVANCED_FEATURES.md) - Deep dive into power features  
+- [Examples Library](../example/) - Real-world prompt examples
+- [Architecture Guide](ARCHITECTURE.md) - Understanding PE internals
+
+### Community
+
+- GitHub Issues: Report bugs and request features
+- Discussions: Share prompts and get help
+- Examples: Contribute your best prompts
+
+Happy prompting! 🚀
