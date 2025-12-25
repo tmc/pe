@@ -1,13 +1,14 @@
-# PE Release Notes - Initial Public Release
+# PE Release Notes - v0.5.0
 
-## Branch: `next` 
+## Branch: `main`
 
-This branch contains the stable, production-ready features of PE (Prompt Engineering toolkit).
+This release contains the stable, production-ready features of PE (Prompt Engineering toolkit).
 
 ## ✅ Production-Ready Features
 
 ### Core Functionality
 - **47 CLI Commands**: Full suite of composable Unix-style commands
+- **PE View**: Browser-based viewer for evaluation results (`pe view`)
 - **Native Provider Support**: 
   - OpenAI provider (74% test coverage)
   - Anthropic provider (73.3% test coverage)
@@ -98,6 +99,6 @@ Report issues at: https://github.com/tmc/pe/issues
 
 ---
 
-*Generated: September 2025*
-*Branch: next (180+ commits ahead of master)*
+*Generated: December 2025*
+*Branch: main (180+ commits ahead of master)*
 *Repository size: ~17MB (optimized from 307MB)*
