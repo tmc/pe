@@ -40,11 +40,21 @@ func init() {
 		// Use the provider directly without adapter since it already implements llm.Provider
 		return provider, nil
 	})
-	
+
 	// Register cgpt provider factory
 	llm.RegisterProviderFactory("cgpt", func(providerSpec string, options map[string]interface{}) (llm.Provider, error) {
 		// cgpt doesn't need a model specification
 		provider, err := NewCGPTProvider(options)
+		if err != nil {
+			return nil, err
+		}
+		return provider, nil
+	})
+
+	// Register llm provider factory (Simon Willison's tool)
+	llm.RegisterProviderFactory("llm", func(providerSpec string, options map[string]interface{}) (llm.Provider, error) {
+		// providerSpec is the model name for llm
+		provider, err := NewLLMCLIProvider(providerSpec, options)
 		if err != nil {
 			return nil, err
 		}
