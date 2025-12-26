@@ -1,6 +1,7 @@
 package metaprompt
 
 import (
+	"context"
 	"testing"
 )
 
@@ -245,5 +246,156 @@ func TestComposerHelperFunctions(t *testing.T) {
 	floatVal := composerFloatPtr(0.5)
 	if floatVal == nil || *floatVal != 0.5 {
 		t.Error("composerFloatPtr failed")
+	}
+}
+
+func TestComposerCompose(t *testing.T) {
+	provider := &mockProvider{}
+	composer := NewPromptComposerWithLLM(provider)
+
+	tests := []struct {
+		name       string
+		components []interface{}
+		style      string
+		wantErr    bool
+	}{
+		{
+			name: "basic composition",
+			components: []interface{}{
+				PromptComponent{Content: "First component"},
+				PromptComponent{Content: "Second component"},
+			},
+			style:   "default",
+			wantErr: false,
+		},
+		{
+			name:       "empty components",
+			components: []interface{}{},
+			style:      "default",
+			wantErr:    false,
+		},
+		{
+			name: "single component",
+			components: []interface{}{
+				PromptComponent{Content: "Only component"},
+			},
+			style:   "minimal",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			result, err := composer.Compose(ctx, tt.components, tt.style)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Compose() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if !tt.wantErr && result == nil {
+				t.Error("Compose() returned nil result")
+			}
+		})
+	}
+}
+
+func TestDefaultStyleHandler(t *testing.T) {
+	handler := &DefaultStyleHandler{}
+
+	components := []interface{}{
+		PromptComponent{Content: "First component"},
+		PromptComponent{Content: "Second component"},
+	}
+
+	ctx := context.Background()
+	result, err := handler.Compose(ctx, components, nil)
+
+	if err != nil {
+		t.Fatalf("DefaultStyleHandler.Compose() error = %v", err)
+	}
+
+	if result == nil {
+		t.Error("DefaultStyleHandler.Compose() returned nil result")
+	}
+}
+
+func TestChainOfThoughtHandler(t *testing.T) {
+	handler := &ChainOfThoughtHandler{}
+
+	components := []interface{}{
+		PromptComponent{Content: "Step 1"},
+		PromptComponent{Content: "Step 2"},
+	}
+
+	ctx := context.Background()
+	result, err := handler.Compose(ctx, components, nil)
+
+	if err != nil {
+		t.Fatalf("ChainOfThoughtHandler.Compose() error = %v", err)
+	}
+
+	if result == nil {
+		t.Error("ChainOfThoughtHandler.Compose() returned nil result")
+	}
+}
+
+func TestFewShotHandler(t *testing.T) {
+	handler := &FewShotHandler{}
+
+	components := []interface{}{
+		PromptComponent{Content: "Example 1"},
+		PromptComponent{Content: "Example 2"},
+	}
+
+	ctx := context.Background()
+	result, err := handler.Compose(ctx, components, nil)
+
+	if err != nil {
+		t.Fatalf("FewShotHandler.Compose() error = %v", err)
+	}
+
+	if result == nil {
+		t.Error("FewShotHandler.Compose() returned nil result")
+	}
+}
+
+func TestStructuredHandler(t *testing.T) {
+	handler := &StructuredHandler{}
+
+	components := []interface{}{
+		PromptComponent{Content: "Section 1"},
+		PromptComponent{Content: "Section 2"},
+	}
+
+	ctx := context.Background()
+	result, err := handler.Compose(ctx, components, nil)
+
+	if err != nil {
+		t.Fatalf("StructuredHandler.Compose() error = %v", err)
+	}
+
+	if result == nil {
+		t.Error("StructuredHandler.Compose() returned nil result")
+	}
+}
+
+func TestConversationalHandler(t *testing.T) {
+	handler := &ConversationalHandler{}
+
+	components := []interface{}{
+		PromptComponent{Content: "Message 1"},
+		PromptComponent{Content: "Message 2"},
+	}
+
+	ctx := context.Background()
+	result, err := handler.Compose(ctx, components, nil)
+
+	if err != nil {
+		t.Fatalf("ConversationalHandler.Compose() error = %v", err)
+	}
+
+	if result == nil {
+		t.Error("ConversationalHandler.Compose() returned nil result")
 	}
 }
