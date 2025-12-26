@@ -2,6 +2,32 @@
 
 Welcome to the **Prompt Engineering (PE)** toolkit, a unified toolchain for LLM development that brings Go's philosophy of simplicity, composability, and performance to prompt engineering.
 
+### LLM Providers
+PE supports various local and remote LLM providers:
+
+#### Built-in CLI Presets
+Run local models easily with built-in presets:
+
+- **Ollama**: `pe run --provider ollama:llama3 "Hello"`
+- **MLX-LM**: `pe run --provider mlx:mistral "Hello"`
+- **Llama.cpp**: `pe run --provider llama-cpp:./models/7b.gguf "Hello"`
+- **Generic CLI**: Use any CLI tool via config.
+
+#### Cloud Providers
+- **OpenAI**: `pe run --provider openai:gpt-4 "Hello"`
+- **Anthropic**: `pe run --provider anthropic:claude-3-opus "Hello"`
+
+### Configuration
+You can define custom CLI providers in `pe-config.yaml`:
+
+```yaml
+providers:
+  - id: my-local-model
+    type: cli
+    config:
+      command: "python my_script.py --prompt {{.Prompt}}"
+```
+
 ## 1. Philosophy: "Go, for Prompts"
 
 PE is designed to be for prompts what the `go` toolchain is for Go code. It unifies scattered utilities into a single, cohesive binary with standard commands:

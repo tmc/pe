@@ -51,6 +51,39 @@ func init() {
 		return provider, nil
 	})
 
+	// Register generic CLI provider factory
+	llm.RegisterProviderFactory("cli", func(providerSpec string, options map[string]interface{}) (llm.Provider, error) {
+		provider, err := NewGenericCLIProvider(providerSpec, options)
+		if err != nil {
+			return nil, err
+		}
+		return provider, nil
+	})
+
+	// Helper to register presets
+	registerPreset := func(name string) {
+		llm.RegisterProviderFactory(name, func(providerSpec string, options map[string]interface{}) (llm.Provider, error) {
+			// Get preset configuration
+			config, err := GetPresetConfig(name, options)
+			if err != nil {
+				return nil, err
+			}
+
+			// Create generic provider with preset config
+			provider, err := NewGenericCLIProvider(providerSpec, config)
+			if err != nil {
+				return nil, err
+			}
+			return provider, nil
+		})
+	}
+
+	// Register presets
+	registerPreset("ollama")
+	registerPreset("mlx")
+	registerPreset("llama-cpp")
+	registerPreset("llm-tool")
+
 	// Register llm provider factory (Simon Willison's tool)
 	llm.RegisterProviderFactory("llm", func(providerSpec string, options map[string]interface{}) (llm.Provider, error) {
 		// providerSpec is the model name for llm

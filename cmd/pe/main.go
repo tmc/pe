@@ -35,7 +35,7 @@
 //	pe fmt config.yaml --output yaml
 //	pe convert config.yaml config.json --output json
 //	pe benchmark benchmark-config.yaml --iterations 5 --concurrency 2 --format text
-//	
+//
 //	# Pipeline-friendly commands for Unix composability:
 //	echo "What is AI?" | pe ask --provider openai:gpt-4
 //	pe eval config.yaml | pe filter --success | pe stats
@@ -48,7 +48,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	
+
 	// Import providers to register native provider factories
 	_ "github.com/tmc/pe/internal/providers"
 )
@@ -82,8 +82,9 @@ work together seamlessly.`,
 	root.AddCommand(evalPromptCmd) // pe eval-prompt for running evals from prompt files
 	root.AddCommand(workCmd)       // go work for prompts
 	// root.AddCommand(attestCmd)  // Moved to advanced-features branch
-	root.AddCommand(catCmd())      // pe cat for inspecting prompt files
-	
+	root.AddCommand(catCmd())     // pe cat for inspecting prompt files
+	root.AddCommand(versionCmd()) // pe version
+
 	// Existing commands
 	root.AddCommand(evalCmd())
 	root.AddCommand(viewCmd())
@@ -94,14 +95,14 @@ work together seamlessly.`,
 	root.AddCommand(watchCmd())
 	root.AddCommand(templateCmd())
 	root.AddCommand(profileCmd())
-	
+
 	// Pipeline-friendly commands for Unix composability
 	addPipelineCommands(root)
 	root.AddCommand(statsCmd())
 	root.AddCommand(diffCmd())
 	root.AddCommand(interactiveCmd())
 	root.AddCommand(extractCmd())
-	
+
 	// Experimental and research commands grouped together
 	root.AddCommand(experimentalCmd())
 	root.AddCommand(securityCmd())
