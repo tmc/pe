@@ -15,3 +15,4 @@ test_binary
 
 # PE cache and state
 .pe/
+app/PE/build_*.txt

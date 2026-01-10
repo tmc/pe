@@ -102,6 +102,7 @@ work together seamlessly.`,
 	root.AddCommand(diffCmd())
 	root.AddCommand(interactiveCmd())
 	root.AddCommand(extractCmd())
+	root.AddCommand(expandCmd())
 
 	// Experimental and research commands grouped together
 	root.AddCommand(experimentalCmd())
