@@ -106,6 +106,7 @@ work together seamlessly.`,
 
 	// Experimental and research commands grouped together
 	root.AddCommand(experimentalCmd())
+	root.AddCommand(expCmd) // New experimental command root using "exp"
 	root.AddCommand(securityCmd())
 
 	// Plugin command
