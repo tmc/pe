@@ -48,6 +48,8 @@ func TestPresets(t *testing.T) {
 	}{
 		{"ollama"},
 		{"mlx"},
+		{"mlx-lm"},
+		{"mlx-go"},
 		{"llama-cpp"},
 		{"llm-tool"},
 	}

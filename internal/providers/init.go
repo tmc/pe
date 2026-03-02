@@ -81,6 +81,8 @@ func init() {
 	// Register presets
 	registerPreset("ollama")
 	registerPreset("mlx")
+	registerPreset("mlx-lm")
+	registerPreset("mlx-go")
 	registerPreset("llama-cpp")
 	registerPreset("llm-tool")
 

@@ -13,20 +13,28 @@ type CLIPreset struct {
 // Presets defines the built-in CLI tool configurations
 var Presets = map[string]CLIPreset{
 	"ollama": {
-		CommandTemplate: "ollama run {{.Model}} {{.Prompt}}",
+		CommandTemplate: "ollama run {{printf \"%q\" .Model}} {{printf \"%q\" .Prompt}}",
 	},
 	"mlx": {
-		// Assumes python environment with mlx_lm installed
-		CommandTemplate: "python -m mlx_lm.generate --model {{.Model}} --prompt {{.Prompt}} --max-tokens {{.MaxTokens}} --temp {{.Temperature}}",
+		// Backward-compatible alias for mlx-lm.
+		CommandTemplate: "mlx_lm.generate {{if .Model}}--model {{printf \"%q\" .Model}}{{end}} --prompt {{printf \"%q\" .Prompt}} --max-tokens 64 --temp {{.Temperature}} --verbose false",
+	},
+	"mlx-lm": {
+		// Uses the official mlx-lm CLI entrypoint.
+		CommandTemplate: "mlx_lm.generate {{if .Model}}--model {{printf \"%q\" .Model}}{{end}} --prompt {{printf \"%q\" .Prompt}} --max-tokens 64 --temp {{.Temperature}} --verbose false",
+	},
+	"mlx-go": {
+		// Uses mlx-go's CLI wrapper around MLX LM generation.
+		CommandTemplate: "mlx-lm-generate {{if .Model}}--model {{printf \"%q\" .Model}}{{end}} --prompt {{printf \"%q\" .Prompt}} --max-tokens 64 --temperature {{.Temperature}} --quiet",
 	},
 	"llama-cpp": {
 		// Requires user to likely specify binary path via options or have 'llama-cli' in PATH
 		// This is a common name, but 'main' is also common for built source
-		CommandTemplate: "llama-cli -m {{.Model}} -p {{.Prompt}} -n {{.MaxTokens}} --temp {{.Temperature}}",
+		CommandTemplate: "llama-cli -m {{printf \"%q\" .Model}} -p {{printf \"%q\" .Prompt}} -n {{.MaxTokens}} --temp {{.Temperature}}",
 	},
 	"llm-tool": {
 		// MLX Swift example tool
-		CommandTemplate: "llm-tool generate --model {{.Model}} --prompt {{.Prompt}} --max-tokens {{.MaxTokens}} --temperature {{.Temperature}}",
+		CommandTemplate: "llm-tool generate --model {{printf \"%q\" .Model}} --prompt {{printf \"%q\" .Prompt}} --max-tokens {{.MaxTokens}} --temperature {{.Temperature}}",
 	},
 	// Keeps 'llm' separate via LLMCLIProvider? Or migrate 'llm' here?
 	// For backward compatibility, we can keep using NewLLMCLIProvider or make a preset here.
