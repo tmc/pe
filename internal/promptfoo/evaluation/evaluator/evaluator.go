@@ -26,6 +26,9 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 	if len(config.Prompts) == 0 || len(config.Providers) == 0 || len(config.Tests) == 0 {
 		return promptfoo.EvaluationResult{}, fmt.Errorf("missing required config fields")
 	}
+	if maxConcurrency < 1 {
+		maxConcurrency = 1
+	}
 
 	evalId := fmt.Sprintf("eval-%s-%s", generateRandomString(3), time.Now().Format("2006-01-02T15:04:05"))
 
@@ -52,6 +55,7 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 
 	resultsChan := make(chan promptfoo.TestResult, len(config.Prompts)*len(config.Providers)*len(config.Tests))
 	errorsChan := make(chan error, len(config.Prompts)*len(config.Providers)*len(config.Tests))
+	sem := make(chan struct{}, maxConcurrency)
 	var wg sync.WaitGroup
 
 	for _, prompt := range config.Prompts {
@@ -60,6 +64,8 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 				wg.Add(1)
 				go func(prompt string, providerStr string, test promptfoo.TestCase, testIdx int) {
 					defer wg.Done()
+					sem <- struct{}{}
+					defer func() { <-sem }()
 					select {
 					case <-ctx.Done():
 						errorsChan <- ctx.Err()
@@ -67,9 +73,7 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 					default:
 					}
 
-					providerParts := strings.Split(providerStr, ":")
-					backend := providerParts[0]
-					provider, err := llm.GetProvider(backend)
+					provider, err := llm.GetProvider(providerStr)
 					if err != nil {
 						errorsChan <- fmt.Errorf("provider %s: %v", providerStr, err)
 						return
