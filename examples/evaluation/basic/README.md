@@ -28,6 +28,14 @@ pe eval config.yaml --save-db
 pe view
 ```
 
+## MLX Backend Comparison
+
+Use the included `pe test` config to compare `mlx-lm` and `mlx-go` backends on the same prompts:
+
+```bash
+pe test mlx_backends_test.yaml --type property --verbose
+```
+
 ## Understanding Results
 
 The evaluation will:

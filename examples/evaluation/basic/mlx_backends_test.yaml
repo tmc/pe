@@ -1,0 +1,17 @@
+prompts:
+  - "Answer in one short sentence: What is prompt engineering?"
+  - "Summarize in five words: {{.topic}}"
+
+providers:
+  - "mlx-lm:mlx-community/Qwen2.5-0.5B-Instruct-4bit"
+  - "mlx-go:mlx-community/Qwen2.5-0.5B-Instruct-4bit"
+
+property_tests:
+  - name: "non-empty output"
+    property: "all providers should return content"
+    generator: "random_question"
+    constraint: "response.length > 0"
+    iterations: 5
+
+options:
+  temperature: 0.2

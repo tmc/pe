@@ -1,0 +1,48 @@
+description: "Real-world style MLX backend comparison"
+
+prompts:
+  - |
+    Task: {{task}}
+    Input: {{input}}
+    Return format:
+    ANSWER: <short answer>
+    CATEGORY: <one label>
+    CONFIDENCE: <0.00-1.00>
+
+providers:
+  - "mlx-lm"
+  - "mlx-go"
+
+tests:
+  - vars:
+      task: "Classify customer support sentiment"
+      input: "I was charged twice and support has not replied for 3 days."
+    assert:
+      - type: contains
+        value: "ANSWER:"
+      - type: contains
+        value: "CATEGORY:"
+      - type: regex
+        value: "CONFIDENCE:\\s*(0(\\.\\d+)?|1(\\.0+)?)"
+
+  - vars:
+      task: "Summarize incident report"
+      input: "API latency exceeded 2.5s p95 from 10:05 to 10:22 UTC after deployment 2026.03.02-7."
+    assert:
+      - type: contains
+        value: "ANSWER:"
+      - type: contains
+        value: "CATEGORY:"
+      - type: contains
+        value: "CONFIDENCE:"
+
+  - vars:
+      task: "Extract billing risk signal"
+      input: "Customer requests refund after three failed card attempts and account lock."
+    assert:
+      - type: contains
+        value: "ANSWER:"
+      - type: contains
+        value: "CATEGORY:"
+      - type: contains
+        value: "CONFIDENCE:"

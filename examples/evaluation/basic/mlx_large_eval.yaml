@@ -1,0 +1,195 @@
+description: "Large quality parity eval for mlx-lm vs mlx-go"
+
+prompts:
+  - |
+    Classify the sentiment of the input text.
+    Return exactly one label token from this set:
+    positive, neutral, negative
+
+    Input: {{text}}
+
+providers:
+  - "mlx-lm:mlx-community/Qwen2.5-0.5B-Instruct-4bit"
+  - "mlx-go:mlx-community/Qwen2.5-0.5B-Instruct-4bit"
+
+tests:
+  - vars:
+      text: "Support resolved my issue quickly and politely."
+    assert:
+      - type: regex
+        value: "(?i)\\bpositive\\b"
+  - vars:
+      text: "The new update made everything faster and easier."
+    assert:
+      - type: regex
+        value: "(?i)\\bpositive\\b"
+  - vars:
+      text: "Billing corrected the mistake within an hour."
+    assert:
+      - type: regex
+        value: "(?i)\\bpositive\\b"
+  - vars:
+      text: "Great documentation, I solved it without help."
+    assert:
+      - type: regex
+        value: "(?i)\\bpositive\\b"
+  - vars:
+      text: "The migration went smoothly with zero downtime."
+    assert:
+      - type: regex
+        value: "(?i)\\bpositive\\b"
+  - vars:
+      text: "Response time improved a lot after the patch."
+    assert:
+      - type: regex
+        value: "(?i)\\bpositive\\b"
+  - vars:
+      text: "Fantastic onboarding flow, very clear steps."
+    assert:
+      - type: regex
+        value: "(?i)\\bpositive\\b"
+  - vars:
+      text: "Customer service exceeded expectations today."
+    assert:
+      - type: regex
+        value: "(?i)\\bpositive\\b"
+  - vars:
+      text: "The dashboard is cleaner and more useful now."
+    assert:
+      - type: regex
+        value: "(?i)\\bpositive\\b"
+  - vars:
+      text: "Refund was processed immediately, thank you."
+    assert:
+      - type: regex
+        value: "(?i)\\bpositive\\b"
+  - vars:
+      text: "Setup was simple and everything worked first try."
+    assert:
+      - type: regex
+        value: "(?i)\\bpositive\\b"
+  - vars:
+      text: "The latest release fixed my top pain points."
+    assert:
+      - type: regex
+        value: "(?i)\\bpositive\\b"
+  - vars:
+      text: "The ticket is open and awaiting review."
+    assert:
+      - type: regex
+        value: "(?i)\\bneutral\\b"
+  - vars:
+      text: "Deployment started at 10:00 UTC and ended at 10:08 UTC."
+    assert:
+      - type: regex
+        value: "(?i)\\bneutral\\b"
+  - vars:
+      text: "User requested information about pricing tiers."
+    assert:
+      - type: regex
+        value: "(?i)\\bneutral\\b"
+  - vars:
+      text: "The report contains 12 rows and 3 columns."
+    assert:
+      - type: regex
+        value: "(?i)\\bneutral\\b"
+  - vars:
+      text: "API returned status 200 for all health checks."
+    assert:
+      - type: regex
+        value: "(?i)\\bneutral\\b"
+  - vars:
+      text: "Meeting moved from Tuesday to Wednesday."
+    assert:
+      - type: regex
+        value: "(?i)\\bneutral\\b"
+  - vars:
+      text: "The package was delivered to the front desk."
+    assert:
+      - type: regex
+        value: "(?i)\\bneutral\\b"
+  - vars:
+      text: "Version 1.4.2 was deployed to staging."
+    assert:
+      - type: regex
+        value: "(?i)\\bneutral\\b"
+  - vars:
+      text: "The account has two active administrators."
+    assert:
+      - type: regex
+        value: "(?i)\\bneutral\\b"
+  - vars:
+      text: "Logs were archived after 30 days."
+    assert:
+      - type: regex
+        value: "(?i)\\bneutral\\b"
+  - vars:
+      text: "The request includes an attached CSV file."
+    assert:
+      - type: regex
+        value: "(?i)\\bneutral\\b"
+  - vars:
+      text: "Maintenance window is scheduled for midnight."
+    assert:
+      - type: regex
+        value: "(?i)\\bneutral\\b"
+  - vars:
+      text: "I waited 40 minutes and nobody responded."
+    assert:
+      - type: regex
+        value: "(?i)\\bnegative\\b"
+  - vars:
+      text: "The app crashes every time I submit the form."
+    assert:
+      - type: regex
+        value: "(?i)\\bnegative\\b"
+  - vars:
+      text: "I was billed twice and support ignored me."
+    assert:
+      - type: regex
+        value: "(?i)\\bnegative\\b"
+  - vars:
+      text: "Nothing works after the latest update."
+    assert:
+      - type: regex
+        value: "(?i)\\bnegative\\b"
+  - vars:
+      text: "Your instructions are confusing and incomplete."
+    assert:
+      - type: regex
+        value: "(?i)\\bnegative\\b"
+  - vars:
+      text: "Performance is terrible compared with last week."
+    assert:
+      - type: regex
+        value: "(?i)\\bnegative\\b"
+  - vars:
+      text: "This outage caused us to miss customer deadlines."
+    assert:
+      - type: regex
+        value: "(?i)\\bnegative\\b"
+  - vars:
+      text: "The fix introduced more bugs than it solved."
+    assert:
+      - type: regex
+        value: "(?i)\\bnegative\\b"
+  - vars:
+      text: "I keep getting errors and no useful guidance."
+    assert:
+      - type: regex
+        value: "(?i)\\bnegative\\b"
+  - vars:
+      text: "The dashboard is slow and frequently times out."
+    assert:
+      - type: regex
+        value: "(?i)\\bnegative\\b"
+  - vars:
+      text: "My data disappeared after syncing."
+    assert:
+      - type: regex
+        value: "(?i)\\bnegative\\b"
+  - vars:
+      text: "This has been a frustrating and costly experience."
+    assert:
+      - type: regex
+        value: "(?i)\\bnegative\\b"
