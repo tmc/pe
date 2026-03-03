@@ -266,12 +266,12 @@ Examples:
 
 ### Advanced Optimization Commands
 
-#### `pe compose` - Component-Based Prompt Engineering
+#### `pe experimental compose` - Component-Based Prompt Engineering
 
 Revolutionary approach to building prompts from reusable, verified components.
 
 ```bash
-pe compose [options] <component-files...>
+pe experimental compose [options] <component-files...>
 
 Component Management:
   --library-init              Initialize component library in current directory
@@ -298,16 +298,16 @@ Output Options:
 
 Examples:
   # Initialize component library
-  pe compose --library-init
+  pe experimental compose --library-init
 
   # Basic composition with style
-  pe compose context.txt instruction.txt examples.txt --style cot --output composed.txt
+  pe experimental compose context.txt instruction.txt examples.txt --style cot --output composed.txt
 
   # Advanced composition with optimization
-  pe compose components/*.txt --style few-shot --coherence --optimize --target gpt-4
+  pe experimental compose components/*.txt --style few-shot --coherence --optimize --target gpt-4
 
   # Component management
-  pe compose --add-component expert-context.txt --category context --verify
+  pe experimental compose --add-component expert-context.txt --category context --verify
 ```
 
 #### `pe evolve` - Evolutionary Prompt Optimization
@@ -360,48 +360,16 @@ Examples:
   pe evolve prompt.txt --structure-aware --diversity-preservation --convergence-detection
 ```
 
-#### `pe fusion` - Multi-Model Consensus Engineering
+#### Multi-Model Fusion Status
 
-Cross-provider optimization using ensemble learning and consensus strategies.
+`pe fusion` is not currently exposed as a standalone CLI command.
+Use `pe optimize`/`pe evolve` for available optimization flows, and check
+`pe experimental --help` for currently exposed research commands.
 
 ```bash
-pe fusion [options] <prompt-file>
-
-Provider Configuration:
-  --models strings            Models for fusion: gpt-4,claude-3,gemini-pro
-  --weights strings           Model weights for weighted consensus
-  --adaptive-weights          Enable performance-based adaptive weighting
-  --provider-config string    Provider-specific configurations
-
-Consensus Strategies:
-  --consensus string          Strategy: weighted,reflection,bayesian,rank (default "weighted")
-  --reflection-depth int      Depth for reflection-based consensus (default 3)
-  --pattern-analysis          Enable deep pattern analysis across models
-  --cross-validation          Use cross-validation for consensus validation
-
-Advanced Features:
-  --ensemble-learning         Enable ensemble learning across providers
-  --transfer-learning         Apply transfer learning between model types
-  --robustness-testing        Test prompt robustness across model variations
-  --failure-analysis          Analyze failure modes across providers
-
-Optimization Integration:
-  --optimize                  Optimize for cross-provider performance
-  --method string             Optimization method for fusion
-  --iterations int            Fusion optimization iterations
-
-Examples:
-  # Basic multi-model consensus
-  pe fusion prompt.txt --models gpt-4,claude-3-opus,gemini-pro --consensus weighted
-
-  # Advanced reflection-based consensus
-  pe fusion prompt.txt --models gpt-4,claude-3 --consensus reflection --depth 3
-
-  # Research-grade fusion with learning
-  pe fusion prompt.txt --ensemble-learning --adaptive-weights --robustness-testing
-
-  # Production optimization
-  pe fusion prompt.txt --optimize --cross-validation --failure-analysis
+pe optimize --help
+pe evolve --help
+pe experimental --help
 ```
 
 ### Pipeline Processing Commands

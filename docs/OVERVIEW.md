@@ -21,7 +21,7 @@ PE treats prompts as first-class artifacts that can be:
 - Optimized using state-of-the-art methods
 - Deployed with confidence
 
-### 2. **The PE Toolchain** (✅ All Implemented)
+### 2. **The PE Toolchain** (✅ Core + ⚠️ Prototype Commands)
 ```bash
 pe run      # Execute prompts with native OpenAI/Anthropic providers
 pe eval     # Comprehensive evaluation with 20+ assertion types
@@ -31,8 +31,8 @@ pe semantic # Semantic backpropagation (2025 research)
 pe fmt      # Format prompts and configurations
 pe mod      # Complete module management (init/download/tidy/vendor)
 pe security # OWASP LLM Top 10 security testing
-pe attest   # Cryptographic attestation and verification
-pe distributed # Distributed execution with P2P networking
+pe exp attest --help      # Prototype command group
+pe exp distributed --help # Prototype command group
 ```
 
 ### 3. **Native Formats** (✅ Implemented)
@@ -71,7 +71,7 @@ tests:
         value: "Shows clear step-by-step reasoning"
 ```
 
-### 4. **Security & Attestation** (✅ Fully Implemented)
+### 4. **Security & Attestation** (✅ Security Stable, ⚠️ Attestation/Cache Prototype)
 
 #### OWASP LLM Top 10 Security Testing
 Comprehensive security testing for LLM applications:
@@ -80,19 +80,16 @@ pe security scan --prompt task.txt
 pe security test --config security-tests.yaml
 ```
 
-#### Cryptographic Attestation
-Sign and verify prompt runs with cryptographic proofs:
+#### Cryptographic Attestation (Prototype CLI Surface)
+Inspect the currently exposed prototype interface:
 ```bash
-pe attest sign results.json --key my-key
-pe attest verify signature.json
-pe attest export --format proof-bundle
+pe exp attest --help
 ```
 
-#### Secure Caching
-Content-addressed caching with cryptographic verification:
+#### Secure Caching (Prototype CLI Surface)
+Inspect the currently exposed prototype interface:
 ```bash
-pe cache set --key prompt-hash --value result.json
-pe cache verify --integrity sha256:abc123
+pe exp cache --help
 ```
 
 ### 5. **Advanced Optimization** (✅ Implemented)
@@ -126,23 +123,23 @@ pe plugin install plugin-name
 Fully implemented native providers with high test coverage:
 ```bash
 pe run prompt.txt --provider openai:gpt-4
-pe run prompt.txt --provider anthropiclaude-3-haiku
+pe run prompt.txt --provider anthropic:claude-3-haiku
 # OpenAI: 74.0% test coverage
 # Anthropic: 73.3% test coverage
 ```
 
 ## Key Features
 
-### Advanced Optimization (✅ Fully Implemented)
+### Advanced Optimization (✅ Implemented)
 State-of-the-art optimization methods:
 - **PE2**: Meta-prompt engineering optimization
 - **TextGrad**: Natural language gradient descent
 - **Semantic Backpropagation**: 2025 GASO research implementation
 - **APEX**: Advanced prompt optimization
 - **Evolutionary Algorithms**: NSGA-II multi-objective optimization
-- **Multi-Model Fusion**: Consensus-based reliability optimization
+- **Experimental Composition**: `pe experimental compose` for component composition
 
-### Comprehensive Evaluation (✅ Fully Implemented)
+### Comprehensive Evaluation (✅ Implemented)
 Sophisticated testing and validation:
 - **20+ Assertion Types**: includes pass@n, structured output, LLM rubrics
 - **Property-based Testing**: Automated test generation
@@ -150,15 +147,15 @@ Sophisticated testing and validation:
 - **Statistical Analysis**: Advanced metrics (BLEU, ROUGE, BERTScore, G-Eval)
 - **Security Testing**: Complete OWASP LLM Top 10 coverage
 
-### Production-Ready Infrastructure (✅ Fully Implemented)
-Enterprise-grade capabilities:
-- **Cryptographic Attestation**: Sign and verify prompt runs
-- **Content-Addressed Caching**: Verifiable shared caching with integrity
-- **Distributed Execution**: P2P networking with consensus mechanisms
+### Infrastructure (Mixed Maturity)
+Enterprise-focused capabilities:
+- **Cryptographic Attestation**: Prototype CLI entrypoint (`pe exp attest`)
+- **Content-Addressed Caching**: Prototype CLI entrypoint (`pe exp cache`)
+- **Distributed Execution**: Prototype CLI entrypoint (`pe exp distributed`)
 - **Native Providers**: OpenAI (74% coverage) and Anthropic (73.3% coverage)
 - **Module System**: Complete dependency management (init/download/tidy/vendor)
 
-### Performance & Monitoring (✅ Fully Implemented)
+### Performance & Monitoring (✅ Implemented)
 Comprehensive observability:
 - **Benchmarking**: Statistical performance analysis with significance testing
 - **Profiling**: CPU, memory, and execution tracing
@@ -212,13 +209,13 @@ pe evolve --prompt assistant.txt --algorithm nsga-ii
 
 # Security testing
 pe security scan --prompt assistant.txt
-pe attest sign results.json --key my-key
+pe exp attest --help
 ```
 
 ### Production Operations (✅ Working Examples)
 ```bash
 # Distributed execution
-pe distributed start --port 8080
+pe exp distributed --help
 pe eval config.yaml --distributed --nodes node1,node2
 
 # Performance monitoring
@@ -227,8 +224,8 @@ pe benchmark config.yaml --iterations 100
 pe metrics --reference expected.txt --candidate output.txt
 
 # Caching and verification
-pe cache set prompt-hash result.json
-pe cache verify --integrity sha256:abc123
+pe exp cache --help
+pe exp cache --help
 ```
 
 ### Research & Experimentation (✅ Working Examples)
@@ -238,8 +235,8 @@ pe eval config.yaml | pe analyze --metric latency,accuracy,cost
 pe eval config.yaml | pe filter --success | pe stats
 
 # Fusion and consensus
-pe fusion --models gpt-4,claude-3 --prompt task.txt
-pe compose --components system.txt,task.txt --style dspy
+pe experimental optimize --help
+pe experimental compose --components system.txt,task.txt --style dspy
 
 # Pipeline processing
 echo "analyze this text" | pe ask --provider openai:gpt-4 | pe extract --tag analysis
@@ -257,7 +254,7 @@ See the [Getting Started Guide](GETTING_STARTED.md) for a comprehensive tutorial
 ## Next Steps
 
 - [Installation Guide](INSTALLATION.md) - Detailed setup instructions
-- [Command Reference](COMMANDS.md) - Complete command documentation
+- [Command Reference](CLI_REFERENCE.md) - Complete command documentation
 - [Tutorial](TUTORIAL.md) - Step-by-step guide
 - [Architecture](ARCHITECTURE.md) - Technical deep dive
 - [Plugin Development](PLUGINS.md) - Extend PE with custom plugins

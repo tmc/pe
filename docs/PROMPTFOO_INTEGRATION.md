@@ -186,7 +186,7 @@ pe promptfoo import old-config.yaml -o new-config.yaml \
 
 # Use PE's advanced features
 pe optimize new-config.yaml --method semantic-backprop
-pe compose new-config.yaml components/ --style cot
+pe experimental compose new-config.yaml components/ --style cot
 
 # Export back if needed
 pe promptfoo export -c new-config_optimized.yaml -o updated.yaml

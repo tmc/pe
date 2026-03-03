@@ -583,11 +583,9 @@ pe test-migration
 # Enable experimental features
 pe config set experimental.enabled true
 
-# List available experimental features
-pe experimental list
-
-# Report experimental feature issues
-pe experimental report-issue
+# Inspect available experimental/prototype commands
+pe experimental --help
+pe exp --help
 ```
 
 ---

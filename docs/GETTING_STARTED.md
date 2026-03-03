@@ -96,7 +96,7 @@ echo "You are a helpful assistant." > base.prompt
 echo "Analyze the sentiment of: {{.text}}" > sentiment.prompt
 
 # Compose them
-pe compose --base base.prompt sentiment.prompt --var text="I love this product!"
+pe experimental compose base.prompt sentiment.prompt --style structured --output composed.prompt
 ```
 
 ## 🛠️ Core Workflows
@@ -223,33 +223,29 @@ tests:
 
 ### 3. Distributed Evaluation
 
-Scale your testing across multiple nodes:
+Distributed execution is currently a prototype command group:
 
 ```bash
-# Start distributed nodes
-pe distributed start --capacity 10 &
-pe distributed start --capacity 5 &
+# Inspect distributed prototype interface
+pe exp distributed --help
 
-# Run evaluation across nodes
-pe eval large-eval.yaml --distributed --max-concurrent 20
+# Run evaluation with core CLI controls
+pe eval large-eval.yaml --max-concurrency 20
 
-# Check status
-pe distributed status
+# Re-check prototype surface
+pe exp distributed --help
 ```
 
 ### 4. Cryptographic Attestation
 
-Ensure prompt integrity and auditability:
+Attestation is currently a prototype command group:
 
 ```bash
-# Enable attestation
-pe attest run translate.prompt --var language=Spanish --var text="Hello"
+# Inspect attestation prototype interface
+pe exp attest --help
 
-# Verify results
-pe attest verify --chain latest
-
-# Export audit trail
-pe attest export --format csv --output audit.csv
+# Re-check prototype surface
+pe exp attest --help
 ```
 
 ## 📊 Working with Metrics
@@ -362,8 +358,8 @@ pe run generate-topics.prompt --var subject="AI in healthcare" | \
   pe ask --prompt write-content.prompt
 
 # Or use composition for reusable workflows
-pe compose generate-topics.prompt create-outline.prompt write-content.prompt \
-  --var subject="sustainable technology" \
+pe experimental compose generate-topics.prompt create-outline.prompt write-content.prompt \
+  --style structured \
   --output content-pipeline.prompt
 ```
 

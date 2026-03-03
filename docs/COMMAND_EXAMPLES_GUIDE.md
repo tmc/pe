@@ -247,25 +247,24 @@ pe eval custom.yaml | pe analyze \
 
 ## 🎨 Composition and Optimization
 
-### `pe compose` - Prompt Composition
+### `pe experimental compose` - Prompt Composition
 
 ```bash
 # Simple composition
-pe compose base-system.prompt task-specific.prompt \
-  --var role="data scientist" \
-  --var task="analyze customer churn"
+pe experimental compose base-system.prompt task-specific.prompt \
+  --style structured \
+  --output composed.prompt
 
 # Style-specific composition
-pe compose --style chain-of-thought \
+pe experimental compose --style cot \
   reasoning-base.prompt \
-  math-problem.prompt \
-  --var problem="calculate compound interest"
+  math-problem.prompt
 
 # Advanced composition with validation
-pe compose \
+pe experimental compose \
   --components system.prompt,context.prompt,task.prompt \
   --style dspy \
-  --validate-coherence \
+  --coherence \
   --output composed-prompt.prompt
 ```
 
@@ -441,26 +440,14 @@ pe view --dashboard \
 
 ## 🔐 Security and Attestation
 
-### `pe attest` - Cryptographic Attestation
+### `pe exp attest` - Cryptographic Attestation
 
 ```bash
-# Run with attestation
-pe attest run secure-prompt.prompt --var data="sensitive info"
+# Inspect attestation prototype command surface
+pe exp attest --help
 
-# Verify attestation chain
-pe attest verify --chain latest
-
-# Export audit trail
-pe attest export \
-  --format csv \
-  --output audit-trail.csv \
-  --date-range "2024-01-01,2024-12-31"
-
-# Proof bundle creation
-pe attest proof \
-  --run-id abc123 \
-  --include-chain \
-  --output proof-bundle.json
+# Re-check prototype interface
+pe exp attest --help
 ```
 
 ### `pe security` - Security Testing
@@ -484,17 +471,14 @@ pe security redteam \
 
 ## 🌐 Distributed Computing
 
-### `pe distributed` - Distributed Execution
+### `pe exp distributed` - Distributed Execution
 
 ```bash
-# Start a worker node
-pe distributed start --capacity 10 --port 8080 &
+# Inspect distributed prototype command surface
+pe exp distributed --help
 
-# Join existing cluster
-pe distributed join --coordinator node1:8080 --capacity 5
-
-# Check cluster status
-pe distributed status
+# Re-check prototype interface
+pe exp distributed --help
 
 # Run distributed evaluation
 pe eval large-test-suite.yaml \
@@ -502,8 +486,6 @@ pe eval large-test-suite.yaml \
   --max-concurrent 20 \
   --timeout 5m
 
-# Stop cluster
-pe distributed stop
 ```
 
 ## 📦 Module Management
@@ -614,10 +596,10 @@ pe eval production-validation.yaml \
   --threshold 0.95
 
 # 3. Create attestation
-pe attest run optimized/ --sign --output attestations/
+pe exp attest --help
 
 # 4. Deploy with monitoring
-pe distributed start --production --monitor &
+pe exp distributed --help
 
 # 5. Health check
 pe eval health-check.yaml --distributed --alert-on-failure
@@ -687,7 +669,7 @@ pe run --debug --interactive problematic-prompt.prompt
 ### Production Best Practices
 ```bash
 # Always use attestation in production
-pe attest run --production production-prompt.prompt
+pe exp attest --help
 
 # Monitor costs
 pe benchmark --cost-tracking --budget 100.00 production-eval.yaml

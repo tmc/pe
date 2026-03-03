@@ -1045,20 +1045,14 @@ EOF
 
 ```bash
 # Start distributed worker nodes
-pe distributed start --capacity 20 --port 8080 --background &
-pe distributed start --capacity 15 --port 8081 --background &
-pe distributed start --capacity 10 --port 8082 --background &
-
-# Wait for nodes to be ready
-sleep 5
+pe exp distributed --help
 
 # Check cluster status
-pe distributed status
+pe exp distributed --help
 
-# Run production test suite across cluster
+# Run production test suite with core CLI controls
 pe eval evaluations/production-test-suite.yaml \
-  --distributed \
-  --max-concurrent 30 \
+  --max-concurrency 30 \
   --timeout 10m \
   --config configs/production/ \
   --output results/production-test-results.json
@@ -1070,25 +1064,14 @@ pe view results/production-test-results.json --live --refresh 5s &
 #### Step 4: Enable Attestation and Auditing
 
 ```bash
-# Run tests with full attestation
-pe attest eval evaluations/production-test-suite.yaml \
-  --distributed \
-  --sign-all \
-  --audit-level full \
-  --output results/attested-results.json
+# Inspect attestation prototype command interface
+pe exp attest --help
 
-# Verify attestation chain
-pe attest verify --chain results/attested-results.json
-
-# Generate audit report
-pe attest export \
-  --format comprehensive \
-  --include-chain \
-  --include-metrics \
-  --output results/audit-report.json
+# Re-check prototype surface
+pe exp attest --help
 
 # Create compliance report
-pe analyze results/attested-results.json \
+pe analyze results/production-test-results.json \
   --compliance-check \
   --standards "SOC2,ISO27001" \
   --output results/compliance-report.html
@@ -1180,16 +1163,13 @@ pe eval evaluations/production-test-suite.yaml \
 # 4. Start distributed cluster
 echo "🌐 Starting distributed cluster..."
 for port in 8080 8081 8082; do
-  pe distributed start --capacity 15 --port $port --background &
+  pe exp distributed --help
 done
-
-# Wait for cluster to be ready
-sleep 10
 
 # 5. Run comprehensive evaluation with attestation
 echo "✅ Running production evaluation with attestation..."
-pe attest eval evaluations/production-test-suite.yaml \
-  --distributed \
+pe exp attest --help
+pe eval evaluations/production-test-suite.yaml \
   --config configs/production/ \
   --output results/production-deployment-$(date +%Y%m%d-%H%M%S).json
 

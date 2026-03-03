@@ -1,6 +1,6 @@
 # PE Current Implementation Status
 
-Last Updated: 2025-01-08
+Last Updated: 2026-03-02
 
 ## Overview
 
@@ -52,7 +52,7 @@ PE is a prompt engineering toolkit with 47 implemented commands. This document p
 - `pe optimize` - Multiple optimization methods
 - `pe semantic` - Semantic backpropagation
 - `pe evolve` - Evolutionary optimization
-- `pe fusion` - Multi-model fusion
+- `pe experimental compose` - Component composition in experimental command group
 
 ## Important Implementation Details
 
@@ -98,7 +98,7 @@ Basic assertions work, but these are incomplete:
 
 ### Distributed Execution
 Core implementation exists but CLI integration incomplete:
-- `pe distributed start/join/status/stop` - Commands exist but need work
+- `pe exp distributed --help` - Prototype command is present; operational subcommands are not yet stable
 
 ### REST API Server
 - Code exists but not exposed via CLI

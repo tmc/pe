@@ -32,10 +32,10 @@ Global options:
 | [`mod`](#mod) | Manage prompt modules | `pe mod list` |
 | [`template`](#template) | Manage prompt templates | `pe template list` |
 | [`prompt`](#prompt) | Manage prompt files | `pe prompt init analyze.prompt` |
-| [`attest`](#attest) | Cryptographic attestations | `pe attest verify abc123` |
-| [`cache`](#cache) | Cache management | `pe cache status` |
+| [`attest`](#attest) | Cryptographic attestation (prototype) | `pe exp attest --help` |
+| [`cache`](#cache) | Cache management (prototype) | `pe exp cache --help` |
 | [`profile`](#profile) | Profiling & observability | `pe profile start --type cpu` |
-| [`distributed`](#distributed) | Distributed execution | `pe distributed start --role coordinator` |
+| [`distributed`](#distributed) | Distributed execution (prototype) | `pe exp distributed --help` |
 | [`doc`](#doc) | Show prompt documentation | `pe doc math-solver` |
 | [`extract`](#extract) | Extract XML-like tags | `pe run prompt.txt \| pe extract --tag answer` |
 | [`get`](#get) | Get prompt file fields | `pe get summarize.txt variables` |
@@ -43,6 +43,7 @@ Global options:
 | [`completion`](#completion) | Shell completions | `pe completion bash` |
 | [`edit`](#edit) | Edit prompt files | `pe edit prompt.txt --set-prompt "text"` |
 | [`eval-prompt`](#eval-prompt) | Run prompt evals | `pe eval-prompt prompt.txt` |
+| [`exp`](#exp) | Prototype command group | `pe exp --help` |
 | [`experimental`](#experimental) | Research commands | `pe experimental optimize config.yaml` |
 | [`push`](#push) | Push module to registry | `pe push tmc/hello` |
 | [`reduce`](#reduce) | Aggregate results | `pe reduce --sum cost` |
@@ -1518,199 +1519,48 @@ pe security test --target config.yaml --comprehensive
 
 ## attest
 
-Manage cryptographic attestations for prompt executions.
+Manage cryptographic attestation prototypes.
 
 ### Synopsis
 
 ```bash
-pe attest [command]
+pe exp attest --help
 ```
 
 ### Description
 
-The `attest` command provides cryptographic attestations that prove prompt executions. Every prompt run can be cryptographically signed and chained, creating an immutable audit trail.
-
-### Subcommands
-
-#### attest init
-
-Initialize attestation store.
-
-```bash
-pe attest init
-```
-
-#### attest list
-
-List attestations.
-
-```bash
-pe attest list [flags]
-```
-
-#### attest show
-
-Show attestation details.
-
-```bash
-pe attest show [attestation_id]
-```
-
-#### attest verify
-
-Verify attestations.
-
-```bash
-pe attest verify [attestation_id]
-```
-
-#### attest key
-
-Manage attestation keys.
-
-```bash
-pe attest key [subcommand]
-```
-
-#### attest export
-
-Export attestation chain.
-
-```bash
-pe attest export [flags]
-```
+`pe exp attest` is currently a prototype entrypoint in the `pe exp` command group.
+At this stage, use `--help` to inspect the currently exposed interface.
 
 ### Examples
 
 ```bash
-# Initialize attestation store
-pe attest init
-
-# List all attestations
-pe attest list
-
-# Show specific attestation
-pe attest show abc123
-
-# Verify an attestation
-pe attest verify abc123
-
-# Manage keys
-pe attest key generate
-pe attest key list
-
-# Export attestation chain
-pe attest export -o attestations.json
+pe exp --help
+pe exp attest --help
 ```
 
 ---
 
 ## cache
 
-Cryptographically signed content-addressed caching.
+Manage content-addressed cache prototypes.
 
 ### Synopsis
 
 ```bash
-pe cache [command]
+pe exp cache --help
 ```
 
 ### Description
 
-Provides secure cache sharing across distributed nodes with cryptographic signatures and witness verification.
-
-### Subcommands
-
-#### cache status
-
-Show cache status and statistics.
-
-```bash
-pe cache status
-```
-
-#### cache stats
-
-Show detailed cache statistics.
-
-```bash
-pe cache stats
-```
-
-#### cache list
-
-List cache entries.
-
-```bash
-pe cache list [flags]
-```
-
-#### cache inspect
-
-View detailed cache entry information.
-
-```bash
-pe cache inspect [entry_id]
-```
-
-#### cache clear
-
-Clear cache entries.
-
-```bash
-pe cache clear [flags]
-```
-
-#### cache verify
-
-Verify cache integrity.
-
-```bash
-pe cache verify
-```
-
-#### cache export
-
-Export cache entries to a bundle.
-
-```bash
-pe cache export [flags]
-```
-
-#### cache import
-
-Import a cache bundle.
-
-```bash
-pe cache import [bundle_file]
-```
+`pe exp cache` is currently a prototype entrypoint in the `pe exp` command group.
+At this stage, use `--help` to inspect the currently exposed interface.
 
 ### Examples
 
 ```bash
-# Show cache status
-pe cache status
-
-# List all cache entries
-pe cache list
-
-# Inspect specific entry
-pe cache inspect entry-abc123
-
-# Clear old entries
-pe cache clear --older-than 7d
-
-# Verify cache integrity
-pe cache verify
-
-# Export cache bundle
-pe cache export -o cache-bundle.tar.gz
-
-# Import cache bundle
-pe cache import cache-bundle.tar.gz
-
-# Show detailed statistics
-pe cache stats --by-provider
+pe exp --help
+pe exp cache --help
 ```
 
 ---
@@ -1885,69 +1735,24 @@ pe prompt tidy *.prompt
 
 ## distributed
 
-Manage distributed execution across multiple nodes.
+Manage distributed execution prototypes.
 
 ### Synopsis
 
 ```bash
-pe distributed [command]
+pe exp distributed --help
 ```
 
 ### Description
 
-Enables distributed execution of prompts across multiple nodes for scalability and parallel processing.
-
-### Subcommands
-
-#### distributed start
-
-Start a distributed execution node.
-
-```bash
-pe distributed start [flags]
-```
-
-#### distributed join
-
-Join an existing distributed network.
-
-```bash
-pe distributed join [network_address] [flags]
-```
-
-#### distributed status
-
-Show distributed network status.
-
-```bash
-pe distributed status
-```
-
-#### distributed stop
-
-Stop distributed execution.
-
-```bash
-pe distributed stop
-```
+`pe exp distributed` is currently a prototype entrypoint in the `pe exp` command group.
+At this stage, use `--help` to inspect the currently exposed interface.
 
 ### Examples
 
 ```bash
-# Start a coordinator node
-pe distributed start --role coordinator --port 8080
-
-# Start a worker node
-pe distributed start --role worker
-
-# Join existing network
-pe distributed join coordinator.example.com:8080
-
-# Show network status
-pe distributed status
-
-# Stop distributed execution
-pe distributed stop
+pe exp --help
+pe exp distributed --help
 ```
 
 ---
@@ -2325,6 +2130,31 @@ pe eval-prompt prompt.txt --json -o results.json
 
 ---
 
+## exp
+
+Access prototype commands under active development.
+
+### Synopsis
+
+```bash
+pe exp [command]
+```
+
+### Description
+
+`pe exp` groups prototype commands. Current entries include `attest`, `cache`,
+`compose`, and `distributed`.
+
+### Examples
+
+```bash
+pe exp --help
+pe exp compose --help
+pe exp attest --help
+```
+
+---
+
 ## experimental
 
 Access experimental prompt engineering research commands.
@@ -2342,20 +2172,18 @@ Experimental commands implementing cutting-edge techniques from academic papers 
 ### Available Commands
 
 ```bash
-analyze        Analyze text with various metrics
-compose        Compose prompts from verified components with type-safe composition
-consensus-demo Demo: Distributed consensus visualization
-evolve         Optimize prompts using evolutionary algorithms (NSGA-II)
-extract        Extract content from XML-like tags
-filter         Filter and transform pipeline outputs
-fusion         Multi-model consensus optimization using fusion
-metrics        Calculate advanced evaluation metrics for generated text
-optimize       Optimize prompts using metaprompting techniques
-playground     Launch interactive web playground for prompt engineering
-plugin         Manage PE plugins
-semantic       Semantic backpropagation and Graph-based Agentic System Optimization (GASO)
-stream         Stream process LLM outputs
-synthesize     Generate prompts using DSPy-style program synthesis
+analyze     Analyze text with various metrics
+compose     Compose prompts from verified components with type-safe composition
+evolve      Optimize prompts using evolutionary algorithms (NSGA-II)
+extract     Extract content from XML-like tags
+filter      Filter and transform pipeline outputs
+metrics     Calculate advanced evaluation metrics for generated text
+optimize    Optimize prompts using metaprompting techniques
+playground  Launch interactive web playground for prompt engineering
+plugin      Manage PE plugins
+semantic    Semantic backpropagation and Graph-based Agentic System Optimization (GASO)
+stream      Stream process LLM outputs
+synthesize  Generate prompts using DSPy-style program synthesis
 ```
 
 ### Examples
@@ -2373,8 +2201,8 @@ pe experimental semantic analyze prompt.txt
 # Launch interactive playground
 pe experimental playground
 
-# Multi-model fusion
-pe experimental fusion --models "gpt-4,claude-3-sonnet,gemini-pro"
+# Prompt synthesis workflow
+pe experimental synthesize --help
 ```
 
 ---
