@@ -9,7 +9,8 @@ PE supports various local and remote LLM providers:
 Run local models easily with built-in presets:
 
 - **Ollama**: `pe run --provider ollama:llama3 "Hello"`
-- **MLX-LM**: `pe run --provider mlx:mistral "Hello"`
+- **MLX-LM**: `pe run --provider mlx-lm:mistral "Hello"` (alias: `mlx`)
+- **MLX-Go**: `pe run --provider mlx-go:mistral "Hello"`
 - **Llama.cpp**: `pe run --provider llama-cpp:./models/7b.gguf "Hello"`
 - **Generic CLI**: Use any CLI tool via config.
 
@@ -129,9 +130,9 @@ pe security scan --prompt task.txt
 ```
 
 **Cryptographic Attestation:**
-Sign your evaluation results to prove authenticity:
+Prototype command group (inspect current interface):
 ```bash
-pe attest sign results.json
+pe exp attest --help
 ```
 
 ## 7. Optimization
@@ -157,4 +158,4 @@ pe optimize --prompt prompt.txt --method apex
 | `security` | Run security scans |
 | `profile` | Performance profiling |
 
-For a complete reference, run `pe help` or see `CLI_COMMANDS_REFERENCE.md`.
+For a complete reference, run `pe help` or see `CLI_REFERENCE.md`.
