@@ -1,6 +1,6 @@
 # PE Documentation
 
-PE is a prompt engineering toolkit inspired by the Go toolchain. This documentation reflects the current implementation status as of January 2025.
+PE is a prompt engineering toolkit inspired by the Go toolchain. This documentation reflects the current implementation status as of March 2026.
 
 ## Current Implementation Status
 
@@ -60,15 +60,16 @@ See [TEMPLATE_SYNTAX.md](TEMPLATE_SYNTAX.md) for details.
 - **`pe optimize`** - Optimize prompts using metaprompting ✅ **IMPLEMENTED**
 - **`pe semantic`** - Semantic gradient descent optimization ✅ **IMPLEMENTED**
 - **`pe evolve`** - Evolutionary prompt optimization ✅ **IMPLEMENTED**
-- **`pe fusion`** - Multi-model fusion ✅ **IMPLEMENTED**
-- **`pe compose`** - Component-based prompt composition ✅ **IMPLEMENTED**
+- **`pe experimental compose`** - Component-based prompt composition ✅ **IMPLEMENTED**
 
 ### Module System
 - **`pe mod init/tidy/download/vendor`** - Go-style module management ✅ **IMPLEMENTED**
 - **`pe push`** - Push modules to registry ✅ **IMPLEMENTED**
 
 ### Security & Attestation
-- **`pe attest`** - Cryptographic attestation ✅ **IMPLEMENTED**
+- **`pe exp attest`** - Cryptographic attestation ⚠️ **PROTOTYPE**
+- **`pe exp distributed`** - Distributed execution ⚠️ **PROTOTYPE**
+- **`pe exp cache`** - Content-addressed caching ⚠️ **PROTOTYPE**
 - **`pe security`** - Security testing (OWASP LLM Top 10) ✅ **IMPLEMENTED**
 
 ### Utilities
@@ -85,7 +86,7 @@ See [TEMPLATE_SYNTAX.md](TEMPLATE_SYNTAX.md) for details.
 ### ✅ Current Implementation (Accurate)
 - [GETTING_STARTED.md](GETTING_STARTED.md) - Getting started guide
 - [INSTALLATION.md](INSTALLATION.md) - Installation instructions
-- [COMMANDS.md](COMMANDS.md) - Command reference (mostly accurate)
+- [CLI_REFERENCE.md](CLI_REFERENCE.md) - Command reference
 - [CLI_REFERENCE.md](CLI_REFERENCE.md) - CLI reference
 - [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
 - [MODULES.md](MODULES.md) - Module system
@@ -96,7 +97,7 @@ See [TEMPLATE_SYNTAX.md](TEMPLATE_SYNTAX.md) for details.
 ### ⚠️ Partially Implemented
 - [OVERVIEW.md](OVERVIEW.md) - Contains both implemented and aspirational features
 - [TUTORIAL.md](TUTORIAL.md) - Basic tutorial (some advanced features not implemented)
-- [QUICK_START.md](QUICK_START.md) - Quick start guide (some commands not fully implemented)
+- [GETTING_STARTED.md](GETTING_STARTED.md) - Quick start guide
 - [ADVANCED_FEATURES.md](ADVANCED_FEATURES.md) - Mix of implemented and planned features
 - [API_REFERENCE.md](API_REFERENCE.md) - API reference (provider interfaces exist, some incomplete)
 - [OPTIMIZATION_EXAMPLES.md](OPTIMIZATION_EXAMPLES.md) - Optimization examples (methods vary in completeness)

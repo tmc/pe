@@ -3,7 +3,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/tmc/pe)](https://goreportcard.com/report/github.com/tmc/pe)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/docs-comprehensive-blue)](docs/)
-[![Research](https://img.shields.io/badge/research-2024--2025-green)](docs/RESEARCH_FOUNDATIONS.md)
+[![Research](https://img.shields.io/badge/research-2024--2025-green)](docs/OVERVIEW.md)
 
 **PE brings the simplicity and power of Go's toolchain to prompt engineering.** Like `go run` for prompts, PE makes it easy to develop, test, and optimize prompts with a familiar, composable command-line interface.
 
@@ -15,15 +15,15 @@ PE implements breakthrough research from 2024-2025:
 - **TextGrad Implementation**: Gradient-based optimization through textual feedback
 - **Multiple Optimization Methods**: PE2, APEX, multistage, reflection, and evolutionary approaches
 
-### Core Capabilities (✅ Fully Implemented)
+### Core Capabilities (✅ Stable Core + ⚠️ Prototype Extensions)
 - **Multi-Provider Support**: Native OpenAI (74% test coverage) and Anthropic (73.3% test coverage) providers with full API implementations
 - **Advanced Evaluation**: Pass@N metrics, structured output validation, 15+ assertion types (some advanced types in development)
 - **Unix Pipeline Philosophy**: 47 composable CLI commands for streaming prompt processing
 - **Performance**: Native Go implementation with comprehensive benchmarking
 - **Module Management**: Core module system (mod init/tidy/vendor) - registry features in development
 - **Security Testing**: Full OWASP LLM Top 10 coverage via integrated security module
-- **Distributed Execution**: Complete distributed system with P2P networking and consensus
-- **Cryptographic Attestation**: Full signing and verification of prompt runs
+- **Distributed Execution**: Prototype command group exposed under `pe exp distributed`
+- **Cryptographic Attestation**: Prototype command group exposed under `pe exp attest`
 
 ## 🎯 Quick Start
 
@@ -115,7 +115,7 @@ temperature 0.3
 max-tokens 1000
 ```
 
-See [docs/PROMPT_FORMAT_SPEC.md](docs/PROMPT_FORMAT_SPEC.md) for the complete specification.
+See [docs/TEMPLATE_SYNTAX.md](docs/TEMPLATE_SYNTAX.md) for template syntax details.
 
 ## 📋 Available Commands (47 Total - Core Features Stable ✅)
 
@@ -128,7 +128,7 @@ See [docs/PROMPT_FORMAT_SPEC.md](docs/PROMPT_FORMAT_SPEC.md) for the complete sp
 - `pe benchmark` - Performance benchmarking with statistical analysis
 - `pe metrics` - Advanced metrics (BLEU, ROUGE, BERTScore, G-Eval, UniEval)
 - `pe profile` - Performance profiling and observability
-- `pe playground` - Interactive web-based prompt development
+- `pe experimental playground` - Interactive web-based prompt development
 - `pe security` - Complete OWASP LLM Top 10 security testing
 
 ### Pipeline Commands (Unix Composability)
@@ -153,13 +153,13 @@ See [docs/PROMPT_FORMAT_SPEC.md](docs/PROMPT_FORMAT_SPEC.md) for the complete sp
 - `pe synthesize` - DSPy-style program synthesis
 - `pe work` - Workspace management for complex projects
 
-### Recently Completed Features (✅ Production Ready)
+### Recently Completed Features
 - **Native OpenAI/Anthropic Providers**: Full API implementations with 74%/73.3% test coverage
-- **Distributed Execution**: Complete P2P networking and task distribution
+- **Distributed Execution CLI Surface**: Prototype command entrypoint under `pe exp`
 - **Web Playground Interface**: Interactive prompt development environment
 - **Security Testing Suite**: Full OWASP LLM Top 10 coverage
 - **Advanced Metrics**: BERTScore, G-Eval, UniEval implementations
-- **Cryptographic Attestation**: Full signing and verification system
+- **Cryptographic Attestation CLI Surface**: Prototype command entrypoint under `pe exp`
 - **Prompt File Inspector**: pe cat command with variable substitution and component inspection
 
 ### In Development (🚧 - Available in `next-experimental` branch)
@@ -287,7 +287,7 @@ See [docs/future/DESIGN_PHILOSOPHY.md](docs/future/DESIGN_PHILOSOPHY.md) for mor
 
 - **[Documentation Overview](docs/README.md)** - Start here for accurate implementation status
 - [Getting Started](docs/GETTING_STARTED.md)
-- [Command Reference](docs/COMMANDS.md)
+- [Command Reference](docs/CLI_REFERENCE.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [API Reference](docs/API_REFERENCE.md)
 - [Examples](example/)

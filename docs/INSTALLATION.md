@@ -275,6 +275,6 @@ go mod verify
 ## Next Steps
 
 - Read the [Getting Started Guide](GETTING_STARTED.md)
-- Explore the [Command Reference](COMMANDS.md)
+- Explore the [Command Reference](CLI_REFERENCE.md)
 - Check out [Example Prompts](../example/)
 - Review the [Documentation Overview](README.md)
