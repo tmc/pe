@@ -142,14 +142,14 @@ See [docs/PROMPT_FORMAT_SPEC.md](docs/PROMPT_FORMAT_SPEC.md) for the complete sp
 
 ### Module & Advanced Commands
 - `pe mod init/tidy/vendor` - Core module management (registry features in next-experimental branch)
-- `pe compose` - Component-based prompt composition with type safety
-- `pe attest` - Cryptographic attestation with keychain integration
+- `pe experimental compose` - Component-based prompt composition with type safety
+- `pe exp compose` - Prototype compose command in the experimental command group
+- `pe exp attest` - Cryptographic attestation prototype
 - `pe cat` - Inspect prompt files with variable substitution and component viewing
 - `pe extract` - Extract structured data with XML/JSON parsing
 - `pe evolve` - Evolutionary optimization with NSGA-II algorithms
-- `pe fusion` - Multi-model consensus with reliability optimization
-- `pe distributed start/join/status/stop` - Complete distributed execution
-- `pe cache` - Content-addressed caching with cryptographic verification
+- `pe exp distributed` - Distributed execution prototype
+- `pe exp cache` - Content-addressed caching prototype
 - `pe synthesize` - DSPy-style program synthesis
 - `pe work` - Workspace management for complex projects
 
