@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -11,7 +9,7 @@ func init() {
 	expCmd.AddCommand(expDistributedCmd)
 	expCmd.AddCommand(expAttestCmd)
 	expCmd.AddCommand(expCacheCmd)
-	expCmd.AddCommand(composeCmd) // Moving compose to exp
+	expCmd.AddCommand(expComposeCmd)
 
 	expCmd.AddCommand(expTransformCmd)
 	expCmd.AddCommand(expMergeCmd)
@@ -37,8 +35,8 @@ func createStubCmd(use, short string) *cobra.Command {
 		Use:   use,
 		Short: short,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("Command '%s' is an experimental prototype.\n", use)
-			fmt.Println("This feature is planned but not yet fully implemented.")
+			cmd.Printf("Command '%s' is an experimental prototype.\n", use)
+			cmd.Println("This feature is planned but not yet fully implemented.")
 		},
 	}
 }
@@ -47,6 +45,7 @@ func createStubCmd(use, short string) *cobra.Command {
 var expDistributedCmd = createStubCmd("distributed", "Distributed execution (prototype)")
 var expAttestCmd = createStubCmd("attest", "Cryptographic attestation (prototype)")
 var expCacheCmd = createStubCmd("cache", "Content-addressed caching (prototype)")
+var expComposeCmd = createStubCmd("compose", "Compose prompts from verified components with type-safe composition")
 
 // Planned commands
 var expTransformCmd = createStubCmd("transform", "Transform prompts between formats and styles")
