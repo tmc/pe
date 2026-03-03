@@ -11,10 +11,11 @@ pe exp [command]
 ## Available Prototypes
 
 ### Core Functionality
-*   **`pe exp distributed`**: Distributed execution engine for running massive evaluations across multiple machines.
-*   **`pe exp attest`**: Cryptographic attestation for verifying the provenance of prompt results.
-*   **`pe exp cache`**: Advanced content-addressed caching system.
-*   **`pe exp compose`**: Type-safe prompt composition (formerly `pe compose`).
+*   **`pe exp distributed`**: Distributed execution prototype.
+*   **`pe exp attest`**: Cryptographic attestation prototype.
+*   **`pe exp cache`**: Content-addressed caching prototype.
+*   **`pe exp compose`**: Prototype compose entrypoint in the `exp` group.
+*   **`pe experimental compose`**: Research/experimental compose command with advanced flags.
 
 ### Pipeline & Data Tools
 *   **`pe exp transform`**: Transform prompts between formats.
@@ -35,4 +36,5 @@ pe exp [command]
 *   **`pe exp workflow`**: Define and execute complex workflows.
 *   **`pe exp hook`**: Manage lifecycle hooks.
 
-> **Note**: As prototypes, these commands may have limited functionality or stability.
+> **Note**: Prototype commands are intentionally unstable. Use `pe exp [command] --help`
+> to inspect the currently exposed interface for your build.

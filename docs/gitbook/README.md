@@ -8,16 +8,16 @@ Welcome to **PE (Prompt Engineering)**, the comprehensive toolkit that brings th
 
 *   **Prompts as Code**: Treat prompts like software artifacts—versioned, tested, and modular.
 *   **Unix Philosophy**: Composable commands (`pe ask`, `pe filter`, `pe reduce`) that work beautifully in pipelines.
-*   **Production Ready**: Built-in security auditing, cryptographic attestation, and distributed evaluation.
+*   **Pragmatic by Default**: Stable core commands for day-to-day work, with prototypes available behind `pe exp`.
 *   **Developer Experience**: Fast, native binary with no Python dependencies for the core toolchain.
 
 ## Key Features
 
 *   **🚀 Native Providers**: Built-in support for OpenAI and Anthropic, plus integration with Ollama, Llama.cpp, and generic CLIs.
 *   **🧪 Evaluation Framework**: Comprehensive testing with `pe eval`, supporting assertions, pass@k, and structured output validation.
-*   **🔬 Optimization**: State-of-the-art algorithms (TextGrad, PE2, APEX) to automatically improve your prompts.
+*   **🔬 Optimization**: State-of-the-art algorithms (TextGrad, PE2, APEX) under `pe experimental`.
 *   **📦 Module System**: Manage prompt dependencies with `pe mod` (inspired by Go modules).
-*   **🛡️ Security**: OWASP LLM Top 10 scanning and cryptographic signing of results.
+*   **🛡️ Security**: OWASP LLM Top 10 scanning plus prototype attestation/caching/distributed command groups.
 
 ## Getting Started
 

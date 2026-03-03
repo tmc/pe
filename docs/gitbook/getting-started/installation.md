@@ -4,7 +4,7 @@ PE (Go for Prompts) is a single binary that works on macOS, Linux, and Windows.
 
 ## Prerequisites
 
-*   **Go 1.21+** (if building from source)
+*   **Go 1.24+** (if building from source)
 *   Access to LLM API keys (OpenAI, Anthropic) or local models (Ollama).
 
 ## Install from Source

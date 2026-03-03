@@ -10,10 +10,17 @@ PE implements state-of-the-art algorithms to automatically improve your prompts.
 
 ## Usage
 
-Use the `pe optimize` command:
+Use the experimental optimize command:
 
 ```bash
-pe optimize --prompt-file my-prompt.txt --method pe2 --iterations 5
+pe experimental optimize --prompt "Analyze sentiment" --method pe2 --iterations 5
+```
+
+You can also use adjacent experimental commands for optimization workflows:
+
+```bash
+pe experimental evolve my-prompt.txt --generations 20
+pe experimental compose part1.prompt part2.prompt --style structured --output composed.prompt
 ```
 
 ## Choosing a Method

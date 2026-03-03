@@ -21,6 +21,6 @@ cat data.txt | pe ask "Summarize" | pe ask "Translate to French"
 ```bash
 cat customer_reviews.db \
   | pe ask "Extract sentiment and key topics (JSON)" \
-  | pe filter --query "sentiment == 'negative'" \
-  | pe reduce "Summarize the top 3 complaints"
+  | pe filter --contains "negative" \
+  | pe reduce --sum cost
 ```
