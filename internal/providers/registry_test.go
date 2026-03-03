@@ -48,7 +48,7 @@ func TestRegistry_Create(t *testing.T) {
 		{
 			name:         "valid anthropic provider",
 			providerSpec: "anthropic:claude-3-haiku",
-			options:      map[string]interface{}{},
+			options:      map[string]interface{}{"apiKey": "test-key"},
 			wantErr:      false,
 		},
 		{
