@@ -410,7 +410,9 @@ func (p *AnthropicProvider) EvaluatePrompt(ctx context.Context, prompt string, v
 			Completion: int32(resp.CompletionTokens),
 			Cached:     0,
 		},
-		Cost:   resp.Cost,
-		Cached: false,
+		Cost:      resp.Cost,
+		Cached:    false,
+		LatencyMs: resp.Latency.Milliseconds(),
+		Metadata:  resp.Metadata,
 	}, nil
 }

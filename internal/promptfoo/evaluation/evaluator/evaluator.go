@@ -36,12 +36,12 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 	promptMetadata := make([]promptfoo.PromptData, 0, len(config.Prompts)*len(config.Providers))
 	for _, prompt := range config.Prompts {
 		for _, provider := range config.Providers {
-			promptID := generatePromptID(prompt, provider)
+			promptID := generatePromptID(prompt, provider.ID)
 			promptMetadata = append(promptMetadata, promptfoo.PromptData{
 				Raw:      prompt,
 				Label:    prompt,
 				ID:       promptID,
-				Provider: provider,
+				Provider: provider.ID,
 				Metrics: promptfoo.PromptMetrics{
 					NamedScores:      make(map[string]float64),
 					NamedScoresCount: make(map[string]int),
@@ -59,10 +59,10 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 	var wg sync.WaitGroup
 
 	for _, prompt := range config.Prompts {
-		for _, providerStr := range config.Providers {
+		for _, providerConfig := range config.Providers {
 			for k, test := range config.Tests {
 				wg.Add(1)
-				go func(prompt string, providerStr string, test promptfoo.TestCase, testIdx int) {
+				go func(prompt string, providerConfig promptfoo.ProviderConfig, test promptfoo.TestCase, testIdx int) {
 					defer wg.Done()
 					sem <- struct{}{}
 					defer func() { <-sem }()
@@ -73,20 +73,23 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 					default:
 					}
 
-					provider, err := llm.GetProvider(providerStr)
+					provider, err := llm.GetProviderWithOptions(providerConfig.ID, providerConfig.Config)
 					if err != nil {
-						errorsChan <- fmt.Errorf("provider %s: %v", providerStr, err)
+						errorsChan <- fmt.Errorf("provider %s: %v", providerConfig.ID, err)
 						return
 					}
 
-					processedPrompt := replaceVariables(prompt, test.Vars)
-					promptID := generatePromptID(prompt, providerStr)
+					processedPrompt := promptfoo.ApplyVars(prompt, test.Vars)
+					promptID := generatePromptID(prompt, providerConfig.ID)
 
 					evalVars := make(map[string]interface{})
+					for k, v := range providerConfig.Config {
+						evalVars[k] = v
+					}
 					for k, v := range test.Vars {
 						evalVars[k] = v
 					}
-					evalVars["provider"] = providerStr
+					evalVars["provider"] = providerConfig.ID
 
 					startTime := time.Now()
 					var response *promptfoo.ProviderResponse
@@ -106,32 +109,37 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 									RejectedPrediction: 0,
 								},
 							},
-							Cost:   0.001,
-							Cached: false,
+							Cost:      0.001,
+							Cached:    false,
+							LatencyMs: 1,
 						}
 					}
 					latency := time.Since(startTime)
 					if err != nil {
-						errorsChan <- fmt.Errorf("provider %s: %v", providerStr, err)
+						errorsChan <- fmt.Errorf("provider %s: %v", providerConfig.ID, err)
 						return
 					}
 
 					success, grading := evaluateAssertions(response.Output, test.Assert)
-					resultID := generateResultID(prompt, providerStr, test.Vars)
+					resultID := generateResultID(prompt, providerConfig.ID, test.Vars)
+					latencyMs := latency.Milliseconds()
+					if response.LatencyMs > 0 {
+						latencyMs = response.LatencyMs
+					}
 
 					resultsChan <- promptfoo.TestResult{
 						ID:            resultID,
 						PromptID:      promptID,
 						Prompt:        map[string]string{"raw": processedPrompt, "label": prompt},
-						Provider:      map[string]string{"id": providerStr},
+						Provider:      map[string]string{"id": providerConfig.ID},
 						Response:      *response,
 						Success:       success,
 						Score:         ifThenElse(success, 1.0, 0.0),
 						Vars:          test.Vars,
 						GradingResult: grading,
-						LatencyMs:     latency.Milliseconds(),
+						LatencyMs:     latencyMs,
 					}
-				}(prompt, providerStr, test, k)
+				}(prompt, providerConfig, test, k)
 			}
 		}
 	}
@@ -355,32 +363,6 @@ func generateResultID(prompt, provider string, vars map[string]interface{}) stri
 	varStr := fmt.Sprintf("%v", vars)
 	hash := sha256.Sum256([]byte(prompt + provider + varStr))
 	return hex.EncodeToString(hash[:])[:8]
-}
-
-func replaceVariables(prompt string, vars map[string]interface{}) string {
-	result := prompt
-	for key, value := range vars {
-		var strValue string
-		switch v := value.(type) {
-		case string:
-			strValue = v
-		case float64:
-			strValue = fmt.Sprintf("%g", v)
-		case int:
-			strValue = fmt.Sprintf("%d", v)
-		case bool:
-			strValue = fmt.Sprintf("%t", v)
-		default:
-			jsonValue, err := json.Marshal(v)
-			if err == nil {
-				strValue = string(jsonValue)
-			} else {
-				strValue = fmt.Sprintf("%v", v)
-			}
-		}
-		result = strings.ReplaceAll(result, "{{"+key+"}}", strValue)
-	}
-	return result
 }
 
 func ifThenElse(condition bool, trueVal, falseVal interface{}) float64 {

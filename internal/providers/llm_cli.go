@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/promptfoo"
@@ -74,17 +75,14 @@ func (p *LLMCLIProvider) Generate(ctx context.Context, prompt string, options ll
 	cmd.Stdout = &out
 	cmd.Stderr = &errBuf
 
+	start := time.Now()
 	if err := cmd.Run(); err != nil {
 		if errBuf.Len() > 0 {
 			return nil, fmt.Errorf("llm error: %s", errBuf.String())
 		}
 		return nil, fmt.Errorf("llm execution failed: %w", err)
 	}
-
-	return &llm.GenerateResponse{
-		Text:  out.String(),
-		Model: p.model,
-	}, nil
+	return parseCLIResponse(strings.TrimSpace(out.String()), p.model, time.Since(start)), nil
 }
 
 // EvaluatePrompt implements the legacy Provider interface method
@@ -108,6 +106,14 @@ func (p *LLMCLIProvider) EvaluatePrompt(ctx context.Context, prompt string, vars
 
 	return &promptfoo.ProviderResponse{
 		Output: result.Text,
+		TokenUsage: &promptfoo.TokenUsage{
+			Total:      int32(result.TotalTokens),
+			Prompt:     int32(result.PromptTokens),
+			Completion: int32(result.CompletionTokens),
+		},
+		Cost:      result.Cost,
+		LatencyMs: result.Latency.Milliseconds(),
+		Metadata:  result.Metadata,
 	}, nil
 }
 

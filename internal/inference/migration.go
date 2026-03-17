@@ -41,7 +41,7 @@ func (l *LegacyAdapter) Complete(ctx context.Context, req Request) (*Response, e
 	if req.SystemPrompt != "" {
 		vars["system_prompt"] = req.SystemPrompt
 	}
-	
+
 	// Build the full prompt
 	prompt := req.Prompt
 	if req.SystemPrompt != "" {
@@ -50,13 +50,13 @@ func (l *LegacyAdapter) Complete(ctx context.Context, req Request) (*Response, e
 	if req.Prefill != "" {
 		prompt = prompt + "\n\nAssistant: " + req.Prefill
 	}
-	
+
 	// Call legacy provider
 	resp, err := l.legacy.EvaluatePrompt(ctx, prompt, vars)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Convert response
 	return &Response{
 		Content: resp.Output,
@@ -77,17 +77,17 @@ func (l *LegacyAdapter) Complete(ctx context.Context, req Request) (*Response, e
 func (l *LegacyAdapter) Stream(ctx context.Context, req Request) (<-chan StreamChunk, error) {
 	// Legacy providers don't support streaming, so we simulate it
 	chunks := make(chan StreamChunk)
-	
+
 	go func() {
 		defer close(chunks)
-		
+
 		// Get the complete response
 		resp, err := l.Complete(ctx, req)
 		if err != nil {
 			chunks <- StreamChunk{Error: err}
 			return
 		}
-		
+
 		// Send as a single chunk
 		chunks <- StreamChunk{
 			Delta: resp.Content,
@@ -97,7 +97,7 @@ func (l *LegacyAdapter) Stream(ctx context.Context, req Request) (<-chan StreamC
 			Done: true,
 		}
 	}()
-	
+
 	return chunks, nil
 }
 
@@ -159,7 +159,7 @@ func (m *ModernAdapter) Generate(ctx context.Context, prompt string, options llm
 		Prompt: prompt,
 		Model:  m.model,
 	}
-	
+
 	if options.Temperature != nil {
 		req.Temperature = float32(*options.Temperature)
 	}
@@ -169,7 +169,7 @@ func (m *ModernAdapter) Generate(ctx context.Context, prompt string, options llm
 	if len(options.Stop) > 0 {
 		req.StopSequences = options.Stop
 	}
-	
+
 	// Call modern provider
 	startTime := time.Now()
 	resp, err := m.modern.Complete(ctx, req)
@@ -177,13 +177,13 @@ func (m *ModernAdapter) Generate(ctx context.Context, prompt string, options llm
 		return nil, err
 	}
 	latency := time.Since(startTime)
-	
+
 	// Convert response
 	cost := 0.0
 	if c, ok := resp.Metadata["cost"].(float64); ok {
 		cost = c
 	}
-	
+
 	return &llm.GenerateResponse{
 		Text:             resp.Content,
 		PromptTokens:     resp.TokensUsed.PromptTokens,
@@ -193,6 +193,7 @@ func (m *ModernAdapter) Generate(ctx context.Context, prompt string, options llm
 		Cost:             cost,
 		Model:            resp.Model,
 		FinishReason:     "stop",
+		Metadata:         resp.Metadata,
 	}, nil
 }
 
@@ -216,7 +217,7 @@ func (m *ModernAdapter) EvaluatePrompt(ctx context.Context, prompt string, vars 
 		Model:   m.model,
 		Options: vars,
 	}
-	
+
 	// Extract known options
 	if temp, ok := vars["temperature"].(float64); ok {
 		req.Temperature = float32(temp)
@@ -230,13 +231,13 @@ func (m *ModernAdapter) EvaluatePrompt(ctx context.Context, prompt string, vars 
 	if systemPrompt, ok := vars["system_prompt"].(string); ok {
 		req.SystemPrompt = systemPrompt
 	}
-	
+
 	// Call modern provider
 	resp, err := m.modern.Complete(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Convert response
 	cost := 0.0
 	if c, ok := resp.Metadata["cost"].(float64); ok {
@@ -246,7 +247,15 @@ func (m *ModernAdapter) EvaluatePrompt(ctx context.Context, prompt string, vars 
 	if c, ok := resp.Metadata["cached"].(bool); ok {
 		cached = c
 	}
-	
+	latencyMs := int64(0)
+	if latency, ok := resp.Metadata["latency_ms"].(int64); ok {
+		latencyMs = latency
+	} else if latency, ok := resp.Metadata["latency_ms"].(int); ok {
+		latencyMs = int64(latency)
+	} else if latency, ok := resp.Metadata["latency_ms"].(float64); ok {
+		latencyMs = int64(latency)
+	}
+
 	return &promptfoo.ProviderResponse{
 		Output: resp.Content,
 		TokenUsage: &promptfoo.TokenUsage{
@@ -255,8 +264,10 @@ func (m *ModernAdapter) EvaluatePrompt(ctx context.Context, prompt string, vars 
 			Completion: int32(resp.TokensUsed.CompletionTokens),
 			Cached:     0,
 		},
-		Cost:   cost,
-		Cached: cached,
+		Cost:      cost,
+		Cached:    cached,
+		LatencyMs: latencyMs,
+		Metadata:  resp.Metadata,
 	}, nil
 }
 
@@ -268,7 +279,7 @@ func (m *ModernAdapter) GenerateStream(ctx context.Context, prompt string, optio
 		Model:  m.model,
 		Stream: true,
 	}
-	
+
 	if options.Temperature != nil {
 		req.Temperature = float32(*options.Temperature)
 	}
@@ -278,19 +289,19 @@ func (m *ModernAdapter) GenerateStream(ctx context.Context, prompt string, optio
 	if len(options.Stop) > 0 {
 		req.StopSequences = options.Stop
 	}
-	
+
 	// Get modern stream
 	modernChunks, err := m.modern.Stream(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Convert stream chunks
 	legacyChunks := make(chan *llm.StreamResponse)
 	go func() {
 		defer close(legacyChunks)
 		startTime := time.Now()
-		
+
 		for chunk := range modernChunks {
 			legacyChunks <- &llm.StreamResponse{
 				Text:    chunk.Delta,
@@ -300,7 +311,7 @@ func (m *ModernAdapter) GenerateStream(ctx context.Context, prompt string, optio
 			}
 		}
 	}()
-	
+
 	return legacyChunks, nil
 }
 
@@ -310,7 +321,7 @@ func MigrateProvider(legacy llm.Provider) Provider {
 	if adapter, ok := legacy.(*ModernAdapter); ok {
 		return adapter.modern
 	}
-	
+
 	// Wrap legacy provider
 	return NewLegacyAdapter(legacy)
 }
@@ -321,7 +332,7 @@ func GetLegacyProvider(modern Provider, model string) llm.Provider {
 	if adapter, ok := modern.(*LegacyAdapter); ok {
 		return adapter.legacy
 	}
-	
+
 	// Wrap modern provider
 	return NewModernAdapter(modern, model)
 }
@@ -333,12 +344,12 @@ func CreateProviderFromSpec(spec string, config map[string]interface{}) (Provide
 	if err == nil {
 		return provider, nil
 	}
-	
+
 	// Fall back to legacy provider creation
 	legacy, err := llm.GetProvider(spec)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create provider %s: %w", spec, err)
 	}
-	
+
 	return MigrateProvider(legacy), nil
 }

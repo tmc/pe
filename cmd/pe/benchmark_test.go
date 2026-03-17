@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -273,6 +274,76 @@ tests:
 				t.Errorf("Unexpected error with format %s: %v. Output: %s", tt.format, err, output)
 			}
 		})
+	}
+}
+
+func TestBenchmarkCmd_ObjectProviderStructuredMetrics(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	scriptPath := filepath.Join(tmpDir, "structured-provider.sh")
+	err := os.WriteFile(scriptPath, []byte(`#!/bin/sh
+printf '%s\n' '{"output":"ok","prompt_tokens":11,"completion_tokens":7,"total_tokens":18,"latency_ms":42,"metrics":{"tokens_per_second":123.4}}'
+`), 0o755)
+	if err != nil {
+		t.Fatalf("WriteFile(script) failed: %v", err)
+	}
+
+	configFile := filepath.Join(tmpDir, "benchmark.yaml")
+	err = os.WriteFile(configFile, []byte(fmt.Sprintf(`description: "Structured benchmark"
+prompts:
+  - "Benchmark {{input}}"
+providers:
+  - id: cli:stub
+    config:
+      command: %q
+tests:
+  - vars:
+      input: "prompt"
+`, scriptPath)), 0o644)
+	if err != nil {
+		t.Fatalf("WriteFile(config) failed: %v", err)
+	}
+
+	outputFile := filepath.Join(tmpDir, "results.json")
+	cmd := benchmarkCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{configFile, "--iterations", "1", "--output", outputFile})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() failed: %v\n%s", err, buf.String())
+	}
+
+	var output struct {
+		Results   []BenchmarkResult  `json:"results"`
+		Summaries []BenchmarkSummary `json:"summaries"`
+	}
+	data, err := os.ReadFile(outputFile)
+	if err != nil {
+		t.Fatalf("ReadFile(output) failed: %v", err)
+	}
+	if err := json.Unmarshal(data, &output); err != nil {
+		t.Fatalf("json.Unmarshal() failed: %v", err)
+	}
+	if len(output.Results) != 1 {
+		t.Fatalf("len(results) = %d, want 1", len(output.Results))
+	}
+	result := output.Results[0]
+	if result.LatencyMs != 42 {
+		t.Fatalf("result.LatencyMs = %.0f, want 42", result.LatencyMs)
+	}
+	if result.TokensInput != 11 || result.TokensOutput != 7 || result.TokensTotal != 18 {
+		t.Fatalf("token counts = (%d,%d,%d), want (11,7,18)", result.TokensInput, result.TokensOutput, result.TokensTotal)
+	}
+	if got := result.RuntimeMetrics["tokens_per_second"]; got != 123.4 {
+		t.Fatalf("runtimeMetrics[tokens_per_second] = %#v, want 123.4", got)
+	}
+	if len(output.Summaries) != 1 || output.Summaries[0].AvgLatencyMs != 42 {
+		t.Fatalf("summary avg latency = %#v, want 42", output.Summaries)
 	}
 }
 

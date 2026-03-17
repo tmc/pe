@@ -32,7 +32,7 @@ func TestEvaluate(t *testing.T) {
 		{
 			name: "missing prompts should error",
 			config: promptfoo.Config{
-				Providers: []string{"mock"},
+				Providers: []promptfoo.ProviderConfig{{ID: "mock"}},
 				Tests: []promptfoo.TestCase{
 					{Vars: map[string]interface{}{"test": "value"}},
 				},
@@ -61,7 +61,7 @@ func TestEvaluate(t *testing.T) {
 			name: "missing tests should error",
 			config: promptfoo.Config{
 				Prompts:   []string{"test prompt"},
-				Providers: []string{"mock"},
+				Providers: []promptfoo.ProviderConfig{{ID: "mock"}},
 			},
 			timeout:        10 * time.Second,
 			dryRun:         true,
@@ -73,7 +73,7 @@ func TestEvaluate(t *testing.T) {
 			name: "valid config with dry run should succeed",
 			config: promptfoo.Config{
 				Prompts:   []string{"test prompt {{var1}}"},
-				Providers: []string{"mock"},
+				Providers: []promptfoo.ProviderConfig{{ID: "mock"}},
 				Tests: []promptfoo.TestCase{
 					{
 						Vars: map[string]interface{}{"var1": "value1"},
@@ -92,7 +92,7 @@ func TestEvaluate(t *testing.T) {
 			name: "multiple prompts and providers",
 			config: promptfoo.Config{
 				Prompts:   []string{"prompt1", "prompt2"},
-				Providers: []string{"mock", "mock:model2"},
+				Providers: []promptfoo.ProviderConfig{{ID: "mock"}, {ID: "mock:model2"}},
 				Tests: []promptfoo.TestCase{
 					{
 						Vars: map[string]interface{}{"test": "value"},
@@ -112,7 +112,7 @@ func TestEvaluate(t *testing.T) {
 			name: "timeout should cancel evaluation",
 			config: promptfoo.Config{
 				Prompts:   []string{"test prompt"},
-				Providers: []string{"mock"},
+				Providers: []promptfoo.ProviderConfig{{ID: "mock"}},
 				Tests: []promptfoo.TestCase{
 					{Vars: map[string]interface{}{"test": "value"}},
 				},
@@ -221,7 +221,7 @@ func TestReplaceVariables(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := replaceVariables(tt.prompt, tt.vars)
+			result := promptfoo.ApplyVars(tt.prompt, tt.vars)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -309,7 +309,7 @@ func TestEvaluateConcurrency(t *testing.T) {
 
 	config := promptfoo.Config{
 		Prompts:   []string{"test {{index}}"},
-		Providers: []string{"mock"},
+		Providers: []promptfoo.ProviderConfig{{ID: "mock"}},
 		Tests:     tests,
 	}
 

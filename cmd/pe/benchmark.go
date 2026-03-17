@@ -12,19 +12,21 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/llm"
+	"github.com/tmc/pe/internal/promptfoo"
 	"sigs.k8s.io/yaml"
 )
 
 // BenchmarkResult holds the result data for a single prompt+provider benchmark
 type BenchmarkResult struct {
-	Prompt       string  `json:"prompt"`
-	Provider     string  `json:"provider"`
-	Iteration    int     `json:"iteration"`
-	LatencyMs    float64 `json:"latencyMs"`
-	TokensTotal  int32   `json:"tokensTotal"`
-	TokensInput  int32   `json:"tokensInput"`
-	TokensOutput int32   `json:"tokensOutput"`
-	Cost         float64 `json:"cost"`
+	Prompt         string                 `json:"prompt"`
+	Provider       string                 `json:"provider"`
+	Iteration      int                    `json:"iteration"`
+	LatencyMs      float64                `json:"latencyMs"`
+	TokensTotal    int32                  `json:"tokensTotal"`
+	TokensInput    int32                  `json:"tokensInput"`
+	TokensOutput   int32                  `json:"tokensOutput"`
+	Cost           float64                `json:"cost"`
+	RuntimeMetrics map[string]interface{} `json:"runtimeMetrics,omitempty"`
 }
 
 // BenchmarkSummary contains aggregate statistics for a benchmark run
@@ -98,23 +100,18 @@ func runBenchmark(cmd *cobra.Command, configFile, outputFile, outputFormat strin
 		return fmt.Errorf("error reading config file: %v", err)
 	}
 
-	// Parse the config
-	var config map[string]interface{}
+	// Parse the config using the same provider model as eval.
+	var config promptfoo.Config
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
 		return fmt.Errorf("error parsing config file: %v", err)
 	}
 
-	// Extract prompts and providers
-	prompts, _ := config["prompts"].([]interface{})
-	providers, _ := config["providers"].([]interface{})
-	tests, _ := config["tests"].([]interface{})
-
-	if len(prompts) == 0 {
+	if len(config.Prompts) == 0 {
 		return fmt.Errorf("no prompts found in configuration")
 	}
 
-	if len(providers) == 0 {
+	if len(config.Providers) == 0 {
 		return fmt.Errorf("no providers found in configuration")
 	}
 
@@ -135,28 +132,18 @@ func runBenchmark(cmd *cobra.Command, configFile, outputFile, outputFormat strin
 
 	// Run benchmarks
 	fmt.Fprintf(cmd.OutOrStdout(), "Starting benchmark with %d prompts x %d providers x %d iterations...\n",
-		len(prompts), len(providers), iterations)
+		len(config.Prompts), len(config.Providers), iterations)
 
 	startTime := time.Now()
 
-	for i, prompt := range prompts {
-		promptStr, ok := prompt.(string)
-		if !ok {
-			continue
-		}
-
-		for _, provider := range providers {
-			providerStr, ok := provider.(string)
-			if !ok {
-				continue
-			}
-
+	for i, promptStr := range config.Prompts {
+		for _, providerConfig := range config.Providers {
 			// For each prompt and provider, run the specified number of iterations
 			for iter := 1; iter <= iterations; iter++ {
 				wg.Add(1)
 
 				// Use closure to capture loop variables
-				go func(promptIdx int, prompt string, providerName string, iteration int) {
+				go func(promptIdx int, prompt string, providerConfig promptfoo.ProviderConfig, iteration int) {
 					defer wg.Done()
 
 					// Acquire semaphore slot (blocking if we've reached max concurrency)
@@ -164,54 +151,56 @@ func runBenchmark(cmd *cobra.Command, configFile, outputFile, outputFormat strin
 					defer func() { <-semaphore }()
 
 					// Create a model provider for this run
-					modelProvider, err := llm.GetProvider(providerName)
+					modelProvider, err := llm.GetProviderWithOptions(providerConfig.ID, providerConfig.Config)
 					if err != nil {
-						fmt.Fprintf(cmd.OutOrStderr(), "Error creating provider %s: %v\n", providerName, err)
+						fmt.Fprintf(cmd.OutOrStderr(), "Error creating provider %s: %v\n", providerConfig.ID, err)
 						return
 					}
 
-					// Initialize vars from test cases if available
+					// Initialize vars from provider defaults first, then the first test case if available.
 					vars := make(map[string]interface{})
-					if len(tests) > 0 {
-						// Just use the first test's vars for benchmarking
-						if testMap, ok := tests[0].(map[string]interface{}); ok {
-							if testVars, ok := testMap["vars"].(map[string]interface{}); ok {
-								for k, v := range testVars {
-									vars[k] = v
-								}
-							}
+					for k, v := range providerConfig.Config {
+						vars[k] = v
+					}
+					if len(config.Tests) > 0 {
+						for k, v := range config.Tests[0].Vars {
+							vars[k] = v
 						}
 					}
+					vars["provider"] = providerConfig.ID
 
-					// Add provider information to vars
-					vars["provider"] = providerName
+					processedPrompt := promptfoo.ApplyVars(prompt, vars)
 
 					// Measure execution time
 					runStart := time.Now()
 
 					// Execute the prompt
-					response, err := modelProvider.EvaluatePrompt(cmd.Context(), prompt, vars)
+					response, err := modelProvider.EvaluatePrompt(cmd.Context(), processedPrompt, vars)
 
 					executionTimeMs := float64(time.Since(runStart).Milliseconds())
 
 					// Record results
 					result := BenchmarkResult{
 						Prompt:    prompt,
-						Provider:  providerName,
+						Provider:  providerConfig.ID,
 						Iteration: iteration,
 						LatencyMs: executionTimeMs,
 					}
 
 					if err == nil && response != nil {
+						if response.LatencyMs > 0 {
+							result.LatencyMs = float64(response.LatencyMs)
+						}
 						if response.TokenUsage != nil {
 							result.TokensTotal = response.TokenUsage.Total
 							result.TokensInput = response.TokenUsage.Prompt
 							result.TokensOutput = response.TokenUsage.Completion
 						}
 						result.Cost = response.Cost
+						result.RuntimeMetrics = response.Metadata
 					} else {
 						fmt.Fprintf(cmd.OutOrStderr(), "Error with prompt %d, provider %s, iteration %d: %v\n",
-							promptIdx+1, providerName, iteration, err)
+							promptIdx+1, providerConfig.ID, iteration, err)
 					}
 
 					// Thread-safe append to results
@@ -221,7 +210,7 @@ func runBenchmark(cmd *cobra.Command, configFile, outputFile, outputFormat strin
 
 					// Print progress indicator
 					fmt.Fprintf(cmd.OutOrStdout(), ".")
-				}(i, promptStr, providerStr, iter)
+				}(i, promptStr, providerConfig, iter)
 			}
 		}
 	}
@@ -490,7 +479,7 @@ func percentile(sortedData []float64, p float64) float64 {
 // Compatible with golang.org/x/perf/cmd/benchstat and other Go perf tools
 func formatAsGoBenchmarks(summaries []BenchmarkSummary) string {
 	var buf strings.Builder
-	
+
 	for _, s := range summaries {
 		// Create benchmark name following Go conventions
 		// Replace spaces and special chars with valid identifier chars
@@ -502,21 +491,21 @@ func formatAsGoBenchmarks(summaries []BenchmarkSummary) string {
 		if promptName == "" {
 			promptName = "Prompt"
 		}
-		
+
 		providerName := strings.ReplaceAll(s.Provider, ":", "_")
 		providerName = strings.ReplaceAll(providerName, "-", "_")
-		
+
 		benchmarkName := fmt.Sprintf("Benchmark%s_%s", promptName, providerName)
-		
+
 		// Calculate iterations (assume 1 for now, could be made configurable)
 		iterations := 1
-		
+
 		// Convert latency from ms to ns for Go benchmark format
 		latencyNs := s.AvgLatencyMs * 1_000_000
-		
+
 		// Calculate tokens per second (throughput)
 		tokensPerSecond := (s.AvgTokensOutput / s.AvgLatencyMs) * 1000
-		
+
 		// Format: BenchmarkName iterations ns/op [other metrics]
 		buf.WriteString(fmt.Sprintf("%s\t%d\t%.0f ns/op\t%.2f tokens/s\t%.0f tokens/op\t$%.6f/op\n",
 			benchmarkName,
@@ -527,6 +516,6 @@ func formatAsGoBenchmarks(summaries []BenchmarkSummary) string {
 			s.TotalCost,
 		))
 	}
-	
+
 	return buf.String()
 }

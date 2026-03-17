@@ -3,11 +3,14 @@ package providers
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/kballard/go-shellquote"
 	"github.com/tmc/pe/internal/llm"
@@ -19,6 +22,7 @@ type GenericCLIProvider struct {
 	commandTemplate string
 	model           string
 	env             map[string]string
+	options         map[string]interface{}
 }
 
 // NewGenericCLIProvider creates a new generic CLI provider
@@ -39,6 +43,7 @@ func NewGenericCLIProvider(model string, options map[string]interface{}) (*Gener
 		commandTemplate: cmdTemplate,
 		model:           model,
 		env:             env,
+		options:         options,
 	}, nil
 }
 
@@ -65,8 +70,8 @@ func (p *GenericCLIProvider) Generate(ctx context.Context, prompt string, option
 	data := templateData{
 		Model:       p.model,
 		Prompt:      prompt,
-		Temperature: 0.7,  // Default
-		MaxTokens:   1000, // Default
+		Temperature: getFloat64Option(p.options, "temperature", 0.7),
+		MaxTokens:   getIntOption(p.options, "max_tokens", getIntOption(p.options, "num_predict", 1000)),
 	}
 
 	if options.Temperature != nil {
@@ -118,17 +123,16 @@ func (p *GenericCLIProvider) Generate(ctx context.Context, prompt string, option
 	cmd.Stdout = &out
 	cmd.Stderr = &errBuf
 
+	start := time.Now()
 	if err := cmd.Run(); err != nil {
 		if errBuf.Len() > 0 {
 			return nil, fmt.Errorf("cli error: %s", errBuf.String())
 		}
 		return nil, fmt.Errorf("cli execution failed: %w", err)
 	}
+	latency := time.Since(start)
 
-	return &llm.GenerateResponse{
-		Text:  strings.TrimSpace(out.String()),
-		Model: p.model,
-	}, nil
+	return parseCLIResponse(strings.TrimSpace(out.String()), p.model, latency), nil
 }
 
 // EvaluatePrompt implements the legacy Provider interface method
@@ -138,6 +142,8 @@ func (p *GenericCLIProvider) EvaluatePrompt(ctx context.Context, prompt string, 
 	if len(vars) > 0 {
 		for key, value := range vars {
 			placeholder := fmt.Sprintf("{{%s}}", key)
+			finalPrompt = strings.ReplaceAll(finalPrompt, placeholder, fmt.Sprintf("%v", value))
+			placeholder = fmt.Sprintf("{{.%s}}", key)
 			finalPrompt = strings.ReplaceAll(finalPrompt, placeholder, fmt.Sprintf("%v", value))
 		}
 	}
@@ -149,6 +155,14 @@ func (p *GenericCLIProvider) EvaluatePrompt(ctx context.Context, prompt string, 
 
 	return &promptfoo.ProviderResponse{
 		Output: result.Text,
+		TokenUsage: &promptfoo.TokenUsage{
+			Total:      int32(result.TotalTokens),
+			Prompt:     int32(result.PromptTokens),
+			Completion: int32(result.CompletionTokens),
+		},
+		Cost:      result.Cost,
+		LatencyMs: result.Latency.Milliseconds(),
+		Metadata:  result.Metadata,
 	}, nil
 }
 
@@ -158,4 +172,194 @@ func (p *GenericCLIProvider) SupportsStreaming() bool {
 
 func (p *GenericCLIProvider) SupportsBatch() bool {
 	return false
+}
+
+func parseCLIResponse(stdout string, model string, measuredLatency time.Duration) *llm.GenerateResponse {
+	resp := &llm.GenerateResponse{
+		Text:    stdout,
+		Model:   model,
+		Latency: measuredLatency,
+	}
+
+	var raw map[string]interface{}
+	if err := json.Unmarshal([]byte(stdout), &raw); err != nil {
+		return resp
+	}
+	if !looksLikeStructuredCLIResponse(raw) {
+		return resp
+	}
+
+	if text := getFirstString(raw, "output", "text", "response"); text != "" {
+		resp.Text = text
+	}
+	if promptTokens, ok := getInt(raw, "prompt_tokens"); ok {
+		resp.PromptTokens = promptTokens
+	}
+	if completionTokens, ok := getInt(raw, "completion_tokens"); ok {
+		resp.CompletionTokens = completionTokens
+	}
+	if totalTokens, ok := getInt(raw, "total_tokens"); ok {
+		resp.TotalTokens = totalTokens
+	}
+	if tokenUsage, ok := getMap(raw, "tokenUsage"); ok {
+		mergeTokenUsage(resp, tokenUsage)
+	}
+	if tokenUsage, ok := getMap(raw, "token_usage"); ok {
+		mergeTokenUsage(resp, tokenUsage)
+	}
+	if latencyMs, ok := getInt64(raw, "latency_ms"); ok {
+		resp.Latency = time.Duration(latencyMs) * time.Millisecond
+	}
+	if cost, ok := getFloat(raw, "cost"); ok {
+		resp.Cost = cost
+	}
+
+	metadata := make(map[string]interface{})
+	if nested, ok := getMap(raw, "metadata"); ok {
+		for k, v := range nested {
+			metadata[k] = v
+		}
+	}
+	if nested, ok := getMap(raw, "metrics"); ok {
+		for k, v := range nested {
+			metadata[k] = v
+		}
+	}
+	for k, v := range raw {
+		switch k {
+		case "output", "text", "response", "prompt_tokens", "completion_tokens", "total_tokens", "latency_ms", "cost", "tokenUsage", "token_usage", "metadata", "metrics":
+			continue
+		default:
+			metadata[k] = v
+		}
+	}
+	if len(metadata) > 0 {
+		resp.Metadata = metadata
+	}
+	if resp.TotalTokens == 0 && (resp.PromptTokens > 0 || resp.CompletionTokens > 0) {
+		resp.TotalTokens = resp.PromptTokens + resp.CompletionTokens
+	}
+
+	return resp
+}
+
+func looksLikeStructuredCLIResponse(raw map[string]interface{}) bool {
+	for _, key := range []string{"output", "text", "response", "prompt_tokens", "completion_tokens", "total_tokens", "latency_ms", "tokenUsage", "token_usage", "metrics", "metadata"} {
+		if _, ok := raw[key]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func mergeTokenUsage(resp *llm.GenerateResponse, raw map[string]interface{}) {
+	if promptTokens, ok := getInt(raw, "prompt"); ok {
+		resp.PromptTokens = promptTokens
+	}
+	if promptTokens, ok := getInt(raw, "prompt_tokens"); ok {
+		resp.PromptTokens = promptTokens
+	}
+	if completionTokens, ok := getInt(raw, "completion"); ok {
+		resp.CompletionTokens = completionTokens
+	}
+	if completionTokens, ok := getInt(raw, "completion_tokens"); ok {
+		resp.CompletionTokens = completionTokens
+	}
+	if totalTokens, ok := getInt(raw, "total"); ok {
+		resp.TotalTokens = totalTokens
+	}
+	if totalTokens, ok := getInt(raw, "total_tokens"); ok {
+		resp.TotalTokens = totalTokens
+	}
+}
+
+func getFirstString(raw map[string]interface{}, keys ...string) string {
+	for _, key := range keys {
+		if value, ok := raw[key].(string); ok {
+			return value
+		}
+	}
+	return ""
+}
+
+func getMap(raw map[string]interface{}, key string) (map[string]interface{}, bool) {
+	value, ok := raw[key]
+	if !ok {
+		return nil, false
+	}
+	m, ok := value.(map[string]interface{})
+	return m, ok
+}
+
+func getInt(raw map[string]interface{}, key string) (int, bool) {
+	value, ok := raw[key]
+	if !ok {
+		return 0, false
+	}
+	switch v := value.(type) {
+	case float64:
+		return int(v), true
+	case int:
+		return v, true
+	case int64:
+		return int(v), true
+	case json.Number:
+		i, err := v.Int64()
+		if err == nil {
+			return int(i), true
+		}
+	case string:
+		if i, err := strconv.Atoi(v); err == nil {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+func getInt64(raw map[string]interface{}, key string) (int64, bool) {
+	value, ok := raw[key]
+	if !ok {
+		return 0, false
+	}
+	switch v := value.(type) {
+	case float64:
+		return int64(v), true
+	case int:
+		return int64(v), true
+	case int64:
+		return v, true
+	case json.Number:
+		i, err := v.Int64()
+		if err == nil {
+			return i, true
+		}
+	case string:
+		if i, err := strconv.ParseInt(v, 10, 64); err == nil {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+func getFloat(raw map[string]interface{}, key string) (float64, bool) {
+	value, ok := raw[key]
+	if !ok {
+		return 0, false
+	}
+	switch v := value.(type) {
+	case float64:
+		return v, true
+	case int:
+		return float64(v), true
+	case json.Number:
+		f, err := v.Float64()
+		if err == nil {
+			return f, true
+		}
+	case string:
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
+			return f, true
+		}
+	}
+	return 0, false
 }

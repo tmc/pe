@@ -270,8 +270,10 @@ func (p *MockProvider) EvaluatePrompt(ctx context.Context, prompt string, vars m
 			Completion: int32(resp.CompletionTokens),
 			Cached:     0,
 		},
-		Cost:   resp.Cost,
-		Cached: false,
+		Cost:      resp.Cost,
+		Cached:    false,
+		LatencyMs: resp.Latency.Milliseconds(),
+		Metadata:  resp.Metadata,
 	}, nil
 }
 

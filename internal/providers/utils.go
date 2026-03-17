@@ -138,6 +138,34 @@ func getBoolOption(options map[string]interface{}, key string, defaultValue bool
 	return defaultValue
 }
 
+func getStringSliceOption(options map[string]interface{}, key string) []string {
+	if options == nil {
+		return nil
+	}
+	value, exists := options[key]
+	if !exists {
+		return nil
+	}
+
+	switch v := value.(type) {
+	case []string:
+		return append([]string(nil), v...)
+	case []interface{}:
+		result := make([]string, 0, len(v))
+		for _, item := range v {
+			result = append(result, fmt.Sprintf("%v", item))
+		}
+		return result
+	case string:
+		if strings.TrimSpace(v) == "" {
+			return nil
+		}
+		return []string{v}
+	default:
+		return []string{fmt.Sprintf("%v", v)}
+	}
+}
+
 func getEnvVar(key string) string {
 	return os.Getenv(key)
 }

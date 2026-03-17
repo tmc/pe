@@ -2,13 +2,106 @@
 // prompt testing and evaluation data, compatible with the promptfoo schema.
 package promptfoo
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 // Config represents the promptfoo configuration structure.
 type Config struct {
-	Description string        `yaml:"description,omitempty" json:"description,omitempty"`
-	Prompts     []string      `yaml:"prompts" json:"prompts"`
-	Providers   []string      `yaml:"providers" json:"providers"`
-	Tests       []TestCase    `yaml:"tests" json:"tests"`
-	DefaultTest *TestDefaults `yaml:"defaultTest,omitempty" json:"defaultTest,omitempty"`
+	Description string           `yaml:"description,omitempty" json:"description,omitempty"`
+	Prompts     []string         `yaml:"prompts" json:"prompts"`
+	Providers   []ProviderConfig `yaml:"providers" json:"providers"`
+	Tests       []TestCase       `yaml:"tests" json:"tests"`
+	DefaultTest *TestDefaults    `yaml:"defaultTest,omitempty" json:"defaultTest,omitempty"`
+}
+
+// ProviderConfig represents a provider configuration.
+// It accepts either a plain string, like "openai:gpt-4",
+// or an object with an id and per-provider config.
+type ProviderConfig struct {
+	ID     string                 `yaml:"id" json:"id"`
+	Config map[string]interface{} `yaml:"config,omitempty" json:"config,omitempty"`
+}
+
+// String returns the provider identifier.
+func (p ProviderConfig) String() string {
+	return p.ID
+}
+
+// MarshalJSON preserves the compact string form when no config is present.
+func (p ProviderConfig) MarshalJSON() ([]byte, error) {
+	if len(p.Config) == 0 {
+		return json.Marshal(p.ID)
+	}
+	return json.Marshal(struct {
+		ID     string                 `json:"id"`
+		Config map[string]interface{} `json:"config,omitempty"`
+	}{
+		ID:     p.ID,
+		Config: p.Config,
+	})
+}
+
+// UnmarshalJSON accepts either a plain string provider spec or
+// an object of the form {"id":"...", "config":{...}}.
+// Legacy objects using "name" and inline config keys are also accepted.
+func (p *ProviderConfig) UnmarshalJSON(data []byte) error {
+	var id string
+	if err := json.Unmarshal(data, &id); err == nil {
+		p.ID = id
+		p.Config = nil
+		return nil
+	}
+
+	var raw map[string]interface{}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("provider must be a string or object: %w", err)
+	}
+
+	id = getProviderObjectString(raw, "id")
+	if id == "" {
+		id = getProviderObjectString(raw, "name")
+	}
+	if id == "" {
+		return fmt.Errorf("provider object requires id")
+	}
+
+	config := make(map[string]interface{})
+	if nested, ok := raw["config"]; ok {
+		nestedMap, ok := nested.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("provider config must be an object")
+		}
+		for k, v := range nestedMap {
+			config[k] = v
+		}
+	}
+	for k, v := range raw {
+		switch k {
+		case "id", "name", "config":
+			continue
+		default:
+			config[k] = v
+		}
+	}
+
+	p.ID = id
+	if len(config) == 0 {
+		p.Config = nil
+	} else {
+		p.Config = config
+	}
+	return nil
+}
+
+func getProviderObjectString(raw map[string]interface{}, key string) string {
+	value, ok := raw[key]
+	if !ok {
+		return ""
+	}
+	s, _ := value.(string)
+	return s
 }
 
 // TestCase represents a single test case in the configuration.
@@ -84,10 +177,12 @@ type TestResult struct {
 
 // ProviderResponse represents a response from an LLM provider.
 type ProviderResponse struct {
-	Output     string      `json:"output"`
-	TokenUsage *TokenUsage `json:"tokenUsage,omitempty"`
-	Cost       float64     `json:"cost,omitempty"`
-	Cached     bool        `json:"cached,omitempty"`
+	Output     string                 `json:"output"`
+	TokenUsage *TokenUsage            `json:"tokenUsage,omitempty"`
+	Cost       float64                `json:"cost,omitempty"`
+	Cached     bool                   `json:"cached,omitempty"`
+	LatencyMs  int64                  `json:"latencyMs,omitempty"`
+	Metadata   map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // TokenUsage tracks token consumption.
@@ -134,11 +229,8 @@ type Stats struct {
 
 // Additional types for compatibility
 
-// Provider represents a provider configuration
-type Provider struct {
-	ID     string                 `yaml:"id" json:"id"`
-	Config map[string]interface{} `yaml:"config,omitempty" json:"config,omitempty"`
-}
+// Provider is kept as a compatibility alias for older code.
+type Provider = ProviderConfig
 
 // Prompt represents a prompt configuration
 type Prompt struct {

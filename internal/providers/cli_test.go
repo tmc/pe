@@ -46,11 +46,12 @@ func TestPresets(t *testing.T) {
 	tests := []struct {
 		name string
 	}{
-		{"ollama"},
 		{"mlx"},
 		{"mlx-lm"},
 		{"mlx-go"},
+		{"mlx-go-lm"},
 		{"llama-cpp"},
+		{"llama.cpp"},
 		{"llm-tool"},
 	}
 
@@ -87,5 +88,33 @@ func TestGenericCLIProvider_Generate_Mock(t *testing.T) {
 
 	if strings.TrimSpace(resp.Text) != "hello world" {
 		t.Errorf("expected 'hello world', got '%s'", resp.Text)
+	}
+}
+
+func TestGenericCLIProvider_Generate_StructuredJSON(t *testing.T) {
+	options := map[string]interface{}{
+		"command": `sh -c 'printf '\''{"output":"hi","prompt_tokens":3,"completion_tokens":5,"total_tokens":8,"latency_ms":21,"metrics":{"tokens_per_second":99.5}}'\'''`,
+	}
+	p, err := NewGenericCLIProvider("echo-model", options)
+	if err != nil {
+		t.Fatalf("failed to create provider: %v", err)
+	}
+
+	resp, err := p.Generate(context.Background(), "ignored", llm.GenerateOptions{})
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	if resp.Text != "hi" {
+		t.Fatalf("resp.Text = %q, want hi", resp.Text)
+	}
+	if resp.PromptTokens != 3 || resp.CompletionTokens != 5 || resp.TotalTokens != 8 {
+		t.Fatalf("token counts = (%d,%d,%d), want (3,5,8)", resp.PromptTokens, resp.CompletionTokens, resp.TotalTokens)
+	}
+	if resp.Latency.Milliseconds() != 21 {
+		t.Fatalf("latency = %dms, want 21ms", resp.Latency.Milliseconds())
+	}
+	if got := resp.Metadata["tokens_per_second"]; got != 99.5 {
+		t.Fatalf("metadata[tokens_per_second] = %#v, want 99.5", got)
 	}
 }

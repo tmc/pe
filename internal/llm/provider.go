@@ -30,6 +30,7 @@ type GenerateResponse struct {
 	Cost             float64
 	Model            string
 	FinishReason     string
+	Metadata         map[string]interface{}
 }
 
 // StreamResponse contains a streaming response chunk
@@ -67,6 +68,11 @@ type BatchProvider interface {
 
 // GetProvider returns a Provider for the given backend
 func GetProvider(backend string) (Provider, error) {
+	return GetProviderWithOptions(backend, nil)
+}
+
+// GetProviderWithOptions returns a Provider for the given backend and provider config.
+func GetProviderWithOptions(backend string, options map[string]interface{}) (Provider, error) {
 	// Auto-detect provider if backend is empty
 	if backend == "" {
 		backend = detectDefaultProvider()
@@ -95,27 +101,27 @@ func GetProvider(backend string) (Provider, error) {
 	switch provider {
 	case "mock":
 		// Use native mock provider through factory
-		provider, err := CreateNativeProviderFromFactory("mock", nil)
+		provider, err := CreateNativeProviderFromFactory("mock", options)
 		if err != nil {
 			// Fall back to local mock proxy if factory fails
 			return &MockProviderProxy{}, nil
 		}
-		return provider, nil
+		return NewConfiguredProvider(provider, options), nil
 	case "openai", "anthropic":
 		// Use native providers through the factory system
-		provider, err := CreateNativeProviderFromFactory(backend, nil)
+		provider, err := CreateNativeProviderFromFactory(backend, options)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create native provider: %w", err)
 		}
-		return provider, nil
+		return NewConfiguredProvider(provider, options), nil
 	case "cgpt":
 		// Check if we can use native providers instead of cgpt
 		if os.Getenv("PE_USE_NATIVE_PROVIDERS") == "true" || os.Getenv("PE_FORCE_NATIVE") == "true" {
 			// Try to auto-detect and use native provider
 			if os.Getenv("OPENAI_API_KEY") != "" {
-				return CreateNativeProviderFromFactory("openai:gpt-4", nil)
+				return CreateNativeProviderFromFactory("openai:gpt-4", options)
 			} else if os.Getenv("ANTHROPIC_API_KEY") != "" {
-				return CreateNativeProviderFromFactory("anthropic:claude-3-sonnet-20240229", nil)
+				return CreateNativeProviderFromFactory("anthropic:claude-3-sonnet-20240229", options)
 			}
 		}
 		// Fall back to CGPT wrapper
@@ -131,9 +137,9 @@ func GetProvider(backend string) (Provider, error) {
 		}, nil
 	default:
 		// Try to create as native provider first
-		provider, err := CreateNativeProviderFromFactory(backend, nil)
+		provider, err := CreateNativeProviderFromFactory(backend, options)
 		if err == nil {
-			return provider, nil
+			return NewConfiguredProvider(provider, options), nil
 		}
 		// Fall back to CGPT if it exists
 		if _, err := os.Stat("/usr/local/bin/cgpt"); err == nil {
@@ -270,8 +276,10 @@ func (p *CGPTProvider) EvaluatePrompt(ctx context.Context, prompt string, vars m
 			Completion: resp.TokenUsage.Completion,
 			Cached:     resp.TokenUsage.Cached,
 		},
-		Cost:   resp.Cost,
-		Cached: false,
+		Cost:      resp.Cost,
+		Cached:    false,
+		LatencyMs: resp.LatencyMs,
+		Metadata:  resp.Metadata,
 	}, nil
 }
 

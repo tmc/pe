@@ -28,6 +28,12 @@ func Factory(config map[string]interface{}) (inference.Provider, error) {
 		if u, ok := config["base_url"].(string); ok {
 			baseURL = u
 		}
+		if u, ok := config["baseURL"].(string); ok {
+			baseURL = u
+		}
+		if u, ok := config["host"].(string); ok {
+			baseURL = u
+		}
 	}
 	if envURL := os.Getenv("OLLAMA_HOST"); envURL != "" {
 		baseURL = envURL
@@ -59,13 +65,14 @@ func (p *Provider) Name() string {
 
 // generateRequest represents the Ollama generate request.
 type generateRequest struct {
-	Model     string            `json:"model"`
-	Prompt    string            `json:"prompt"`
-	System    string            `json:"system,omitempty"`
-	Stream    bool              `json:"stream,omitempty"`
+	Model     string                 `json:"model"`
+	Prompt    string                 `json:"prompt"`
+	System    string                 `json:"system,omitempty"`
+	Raw       bool                   `json:"raw,omitempty"`
+	Stream    bool                   `json:"stream,omitempty"`
 	Options   map[string]interface{} `json:"options,omitempty"`
-	Context   []int             `json:"context,omitempty"`
-	KeepAlive string            `json:"keep_alive,omitempty"`
+	Context   []int                  `json:"context,omitempty"`
+	KeepAlive string                 `json:"keep_alive,omitempty"`
 }
 
 // generateResponse represents the Ollama generate response.
@@ -75,7 +82,7 @@ type generateResponse struct {
 	Response  string `json:"response"`
 	Done      bool   `json:"done"`
 	Context   []int  `json:"context,omitempty"`
-	
+
 	// Token usage information (available when done=true)
 	TotalDuration      int64 `json:"total_duration,omitempty"`
 	LoadDuration       int64 `json:"load_duration,omitempty"`
@@ -88,11 +95,11 @@ type generateResponse struct {
 // modelsResponse represents the Ollama models list response.
 type modelsResponse struct {
 	Models []struct {
-		Name         string `json:"name"`
-		ModifiedAt   string `json:"modified_at"`
-		Size         int64  `json:"size"`
-		Digest       string `json:"digest"`
-		Details      struct {
+		Name       string `json:"name"`
+		ModifiedAt string `json:"modified_at"`
+		Size       int64  `json:"size"`
+		Digest     string `json:"digest"`
+		Details    struct {
 			Format            string   `json:"format"`
 			Family            string   `json:"family"`
 			Families          []string `json:"families"`
@@ -111,6 +118,7 @@ func (p *Provider) Complete(ctx context.Context, req inference.Request) (*infere
 
 	// Build options from request
 	options := make(map[string]interface{})
+	raw := false
 	if req.Temperature > 0 {
 		options["temperature"] = req.Temperature
 	}
@@ -122,6 +130,12 @@ func (p *Provider) Complete(ctx context.Context, req inference.Request) (*infere
 	}
 	// Merge with any provider-specific options
 	for k, v := range req.Options {
+		if k == "raw" {
+			if rawValue, ok := v.(bool); ok {
+				raw = rawValue
+			}
+			continue
+		}
 		options[k] = v
 	}
 
@@ -129,6 +143,7 @@ func (p *Provider) Complete(ctx context.Context, req inference.Request) (*infere
 		Model:   model,
 		Prompt:  req.Prompt,
 		System:  req.SystemPrompt,
+		Raw:     raw,
 		Stream:  false,
 		Options: options,
 	}
@@ -169,10 +184,11 @@ func (p *Provider) Complete(ctx context.Context, req inference.Request) (*infere
 			TotalTokens:      genResp.PromptEvalCount + genResp.EvalCount,
 		},
 		Metadata: map[string]interface{}{
-			"total_duration":      genResp.TotalDuration,
-			"load_duration":       genResp.LoadDuration,
+			"latency_ms":           time.Duration(genResp.TotalDuration).Milliseconds(),
+			"total_duration":       genResp.TotalDuration,
+			"load_duration":        genResp.LoadDuration,
 			"prompt_eval_duration": genResp.PromptEvalDuration,
-			"eval_duration":       genResp.EvalDuration,
+			"eval_duration":        genResp.EvalDuration,
 		},
 	}, nil
 }
@@ -186,6 +202,7 @@ func (p *Provider) Stream(ctx context.Context, req inference.Request) (<-chan in
 
 	// Build options from request
 	options := make(map[string]interface{})
+	raw := false
 	if req.Temperature > 0 {
 		options["temperature"] = req.Temperature
 	}
@@ -197,6 +214,12 @@ func (p *Provider) Stream(ctx context.Context, req inference.Request) (<-chan in
 	}
 	// Merge with any provider-specific options
 	for k, v := range req.Options {
+		if k == "raw" {
+			if rawValue, ok := v.(bool); ok {
+				raw = rawValue
+			}
+			continue
+		}
 		options[k] = v
 	}
 
@@ -204,6 +227,7 @@ func (p *Provider) Stream(ctx context.Context, req inference.Request) (<-chan in
 		Model:   model,
 		Prompt:  req.Prompt,
 		System:  req.SystemPrompt,
+		Raw:     raw,
 		Stream:  true,
 		Options: options,
 	}

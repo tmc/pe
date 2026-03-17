@@ -1,6 +1,8 @@
 package providers
 
 import (
+	"github.com/tmc/pe/internal/inference"
+	inferenceollama "github.com/tmc/pe/internal/inference/providers/ollama"
 	"github.com/tmc/pe/internal/llm"
 )
 
@@ -60,30 +62,45 @@ func init() {
 		return provider, nil
 	})
 
-	// Helper to register presets
-	registerPreset := func(name string) {
-		llm.RegisterProviderFactory(name, func(providerSpec string, options map[string]interface{}) (llm.Provider, error) {
-			// Get preset configuration
-			config, err := GetPresetConfig(name, options)
-			if err != nil {
-				return nil, err
-			}
+	// Register Ollama using the native HTTP API implementation so request
+	// options and runtime metrics are available without CLI scraping.
+	llm.RegisterProviderFactory("ollama", func(providerSpec string, options map[string]interface{}) (llm.Provider, error) {
+		provider, err := inferenceollama.Factory(options)
+		if err != nil {
+			return nil, err
+		}
+		return inference.NewModernAdapter(provider, providerSpec), nil
+	})
 
-			// Create generic provider with preset config
-			provider, err := NewGenericCLIProvider(providerSpec, config)
-			if err != nil {
-				return nil, err
-			}
-			return provider, nil
-		})
+	// Helper to register presets.
+	registerPreset := func(names ...string) {
+		if len(names) == 0 {
+			return
+		}
+		buildName := names[0]
+		for _, name := range names {
+			llm.RegisterProviderFactory(name, func(providerSpec string, options map[string]interface{}) (llm.Provider, error) {
+				// Get preset configuration
+				config, err := GetPresetConfig(buildName, options)
+				if err != nil {
+					return nil, err
+				}
+
+				// Create generic provider with preset config
+				provider, err := NewGenericCLIProvider(providerSpec, config)
+				if err != nil {
+					return nil, err
+				}
+				return provider, nil
+			})
+		}
 	}
 
 	// Register presets
-	registerPreset("ollama")
 	registerPreset("mlx")
 	registerPreset("mlx-lm")
-	registerPreset("mlx-go")
-	registerPreset("llama-cpp")
+	registerPreset("mlx-go", "mlx-go-lm")
+	registerPreset("llama-cpp", "llama.cpp")
 	registerPreset("llm-tool")
 
 	// Register llm provider factory (Simon Willison's tool)

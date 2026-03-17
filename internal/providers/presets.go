@@ -2,66 +2,122 @@ package providers
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 )
 
-// CLIPreset represents a predefined CLI configuration
+// CLIPreset represents a predefined CLI configuration.
 type CLIPreset struct {
-	CommandTemplate string
-	DefaultOptions  map[string]interface{}
+	build func(options map[string]interface{}) (map[string]interface{}, error)
 }
 
-// Presets defines the built-in CLI tool configurations
+// Presets defines the built-in CLI tool configurations.
 var Presets = map[string]CLIPreset{
-	"ollama": {
-		CommandTemplate: "ollama run {{printf \"%q\" .Model}} {{printf \"%q\" .Prompt}}",
-	},
-	"mlx": {
-		// Backward-compatible alias for mlx-lm.
-		CommandTemplate: "mlx_lm.generate {{if .Model}}--model {{printf \"%q\" .Model}}{{end}} --prompt {{printf \"%q\" .Prompt}} --max-tokens 64 --temp {{.Temperature}} --verbose false",
-	},
-	"mlx-lm": {
-		// Uses the official mlx-lm CLI entrypoint.
-		CommandTemplate: "mlx_lm.generate {{if .Model}}--model {{printf \"%q\" .Model}}{{end}} --prompt {{printf \"%q\" .Prompt}} --max-tokens 64 --temp {{.Temperature}} --verbose false",
-	},
-	"mlx-go": {
-		// Uses mlx-go's CLI wrapper around MLX LM generation.
-		CommandTemplate: "mlx-lm-generate {{if .Model}}--model {{printf \"%q\" .Model}}{{end}} --prompt {{printf \"%q\" .Prompt}} --max-tokens 64 --temperature {{.Temperature}} --quiet",
-	},
-	"llama-cpp": {
-		// Requires user to likely specify binary path via options or have 'llama-cli' in PATH
-		// This is a common name, but 'main' is also common for built source
-		CommandTemplate: "llama-cli -m {{printf \"%q\" .Model}} -p {{printf \"%q\" .Prompt}} -n {{.MaxTokens}} --temp {{.Temperature}}",
-	},
-	"llm-tool": {
-		// MLX Swift example tool
-		CommandTemplate: "llm-tool generate --model {{printf \"%q\" .Model}} --prompt {{printf \"%q\" .Prompt}} --max-tokens {{.MaxTokens}} --temperature {{.Temperature}}",
-	},
-	// Keeps 'llm' separate via LLMCLIProvider? Or migrate 'llm' here?
-	// For backward compatibility, we can keep using NewLLMCLIProvider or make a preset here.
-	// Simon Willison's llm tool has specific flag structure.
+	"mlx":       {build: buildMLXLMPreset},
+	"mlx-lm":    {build: buildMLXLMPreset},
+	"mlx-go":    {build: buildMLXGoPreset},
+	"mlx-go-lm": {build: buildMLXGoPreset},
+	"llama-cpp": {build: buildLlamaCPPPreset},
+	"llama.cpp": {build: buildLlamaCPPPreset},
+	"llm-tool":  {build: buildLLMToolPreset},
 }
 
-// GetPresetConfig returns the configuration options for a given preset
+// GetPresetConfig returns the configuration options for a given preset.
 func GetPresetConfig(presetName string, userOptions map[string]interface{}) (map[string]interface{}, error) {
 	preset, ok := Presets[presetName]
 	if !ok {
 		return nil, fmt.Errorf("unknown preset: %s", presetName)
 	}
+	return preset.build(userOptions)
+}
 
-	config := make(map[string]interface{})
+func buildMLXLMPreset(options map[string]interface{}) (map[string]interface{}, error) {
+	executable := getStringOption(options, "executable", "mlx_lm.generate")
+	command := buildCommandTemplate(
+		executable,
+		[]string{
+			"{{if .Model}}--model {{printf \"%q\" .Model}}{{end}}",
+			"--prompt {{printf \"%q\" .Prompt}}",
+			"--max-tokens {{.MaxTokens}}",
+			"--temp {{.Temperature}}",
+			"--verbose false",
+		},
+		getStringSliceOption(options, "args"),
+	)
+	return presetConfig(command, options), nil
+}
 
-	// Copy default options if any
-	for k, v := range preset.DefaultOptions {
-		config[k] = v
+func buildMLXGoPreset(options map[string]interface{}) (map[string]interface{}, error) {
+	executable := getStringOption(options, "executable", "mlx-lm-generate")
+	command := buildCommandTemplate(
+		executable,
+		[]string{
+			"{{if .Model}}--model {{printf \"%q\" .Model}}{{end}}",
+			"--prompt {{printf \"%q\" .Prompt}}",
+			"--max-tokens {{.MaxTokens}}",
+			"--temperature {{.Temperature}}",
+			"--quiet",
+		},
+		getStringSliceOption(options, "args"),
+	)
+	return presetConfig(command, options), nil
+}
+
+func buildLlamaCPPPreset(options map[string]interface{}) (map[string]interface{}, error) {
+	executable := getStringOption(options, "executable", "llama-cli")
+	command := buildCommandTemplate(
+		executable,
+		[]string{
+			"-m {{printf \"%q\" .Model}}",
+			"-p {{printf \"%q\" .Prompt}}",
+			"-n {{.MaxTokens}}",
+			"--temp {{.Temperature}}",
+		},
+		getStringSliceOption(options, "args"),
+	)
+	return presetConfig(command, options), nil
+}
+
+func buildLLMToolPreset(options map[string]interface{}) (map[string]interface{}, error) {
+	executable := getStringOption(options, "executable", "llm-tool")
+	command := buildCommandTemplate(
+		executable,
+		[]string{
+			"generate",
+			"--model {{printf \"%q\" .Model}}",
+			"--prompt {{printf \"%q\" .Prompt}}",
+			"--max-tokens {{.MaxTokens}}",
+			"--temperature {{.Temperature}}",
+		},
+		getStringSliceOption(options, "args"),
+	)
+	return presetConfig(command, options), nil
+}
+
+func buildCommandTemplate(executable string, baseArgs, extraArgs []string) string {
+	parts := []string{shellEscape(executable)}
+	parts = append(parts, baseArgs...)
+	for _, arg := range extraArgs {
+		parts = append(parts, shellEscape(arg))
 	}
+	return strings.Join(parts, " ")
+}
 
-	// Set the command template
-	config["command"] = preset.CommandTemplate
-
-	// Merge user options
+func presetConfig(command string, userOptions map[string]interface{}) map[string]interface{} {
+	config := make(map[string]interface{})
 	for k, v := range userOptions {
 		config[k] = v
 	}
+	config["command"] = command
+	return config
+}
 
-	return config, nil
+func shellEscape(s string) string {
+	if s == "" {
+		return "''"
+	}
+	if !strings.ContainsAny(s, " \t\n\r'\"\\") {
+		return s
+	}
+	return strconv.Quote(s)
 }
