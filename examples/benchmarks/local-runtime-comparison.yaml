@@ -1,0 +1,48 @@
+description: "Compare local runtime behavior across mlx-go-lm, Ollama, and llama.cpp"
+
+prompts:
+  - |
+    Task: {{task}}
+    Input: {{input}}
+
+    Respond in exactly one short paragraph.
+
+providers:
+  - id: "mlx-go-lm:/Users/you/models/Qwen3-4B-4bit"
+    config:
+      executable: "mlx-lm-generate"
+      max_tokens: 100
+      temperature: 0
+      args:
+        - --ignore-chat-template
+        - --top-p
+        - "1.0"
+
+  - id: "ollama:qwen3.5:4b"
+    config:
+      base_url: "http://localhost:11434"
+      raw: true
+      seed: 1
+      num_predict: 100
+      temperature: 0
+
+  - id: "llama.cpp:/Users/you/models/qwen3.5-4b-instruct.gguf"
+    config:
+      executable: "llama-cli"
+      max_tokens: 100
+      temperature: 0
+      args:
+        - --no-conversation
+        - -ngl
+        - "999"
+        - -t
+        - "8"
+        - -fa
+
+tests:
+  - vars:
+      task: "Summarize the incident"
+      input: "Checkout latency rose from 220ms to 1.8s after deployment 2026.03.12-4. Rollback restored normal performance."
+    assert:
+      - type: contains
+        value: "latency"

@@ -1,4 +1,4 @@
-# LLM CLI Standards: Token Usage Reporting
+# LLM CLI Standards: Structured Runtime Reporting
 
 This document defines standard practices for reporting token utilization in LLM CLI tools within the PE ecosystem.
 
@@ -9,44 +9,42 @@ This document defines standard practices for reporting token utilization in LLM 
 
 ## Standard Data Structure
 
-Tools should output token usage data using the following JSON schema (compatible with Promptfoo and OpenAI formats):
+Tools should output runtime data using the following JSON schema:
 
 ```json
 {
+  "output": "The response string...",
+  "prompt_tokens": 50,
+  "completion_tokens": 100,
+  "total_tokens": 150,
+  "latency_ms": 321,
+  "cost": 0.002,
+  "metrics": {
+    "tokens_per_second": 311.5,
+    "load_duration_ms": 40
+  },
   "tokenUsage": {
     "total": 150,
     "prompt": 50,
-    "completion": 100,
-    "cached": 0,
-    "details": {
-      "reasoning": 0
-    }
-  },
-  "cost": 0.002
+    "completion": 100
+  }
 }
 ```
 
 ### Fields
-- `total` (integer): Total tokens used.
-- `prompt` (integer): Tokens used in the input prompt.
-- `completion` (integer): Tokens generated in the response.
-- `cached` (integer, optional): Tokens retrieved from cache.
-- `details` (object, optional): Breakdown of specific token types (e.g., reasoning tokens).
+- `output` (string): Generated output text.
+- `prompt_tokens` (integer, optional): Tokens used in the input prompt.
+- `completion_tokens` (integer, optional): Tokens generated in the response.
+- `total_tokens` (integer, optional): Total token count.
+- `latency_ms` (integer, optional): End-to-end latency in milliseconds.
 - `cost` (float, optional): Estimated cost in USD.
+- `metrics` (object, optional): Runtime-specific metrics such as throughput or load time.
+- `tokenUsage` / `token_usage` (object, optional): Alternative Promptfoo/OpenAI-compatible token usage object.
 
 ## Integration Patterns
 
 ### 1. JSON Output Requirement
-When a tool is invoked with a `--json` flag, the output **MUST** be a valid JSON object containing the response. Token usage data should be included in a top-level `usage` or `tokenUsage` field, or wrapped in a metadata object.
-
-**Recommended Wrapper Format:**
-```json
-{
-  "output": "The response string...",
-  "tokenUsage": { ... },
-  "cost": 0.001
-}
-```
+When a tool is invoked with a `--json` flag, the output **MUST** be a valid JSON object containing the response and any available token or latency metrics.
 
 ### 2. Standard Error (stderr) Reporting
 For tools outputting raw text to `stdout` (pipeline mode), token usage info **SHOULD** be printed to `stderr` if specifically requested or if verbose logging is enabled.
@@ -66,4 +64,4 @@ Tools SHOULD respect `PE_PRINT_USAGE=true` to force printing usage statistics to
 The `pe` tool and its providers adhere to these standards:
 - Internal structures match the JSON schema.
 - `pe run` supports `--json` for structured output.
-- Providers (like `cgpt`, `llm` wrapper) are expected to map their native usage data to this standard structure.
+- CLI-backed providers are expected to map their native usage data to this standard structure.

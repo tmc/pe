@@ -10,8 +10,16 @@ prompts:
     CONFIDENCE: <0.00-1.00>
 
 providers:
-  - "mlx-lm"
-  - "mlx-go"
+  - id: "mlx-lm:mlx-community/Qwen2.5-0.5B-Instruct-4bit"
+    config:
+      max_tokens: 128
+      temperature: 0.2
+  - id: "mlx-go-lm:mlx-community/Qwen2.5-0.5B-Instruct-4bit"
+    config:
+      max_tokens: 128
+      temperature: 0.2
+      args:
+        - --ignore-chat-template
 
 tests:
   - vars:

@@ -53,21 +53,27 @@ optimization_methods:
 
 # Models to test
 providers:
-  - name: gpt-4
-    temperature: 0.7
-    max_tokens: 500
-  - name: gpt-3.5-turbo
-    temperature: 0.7
-    max_tokens: 500
-  - name: claude-3-opus
-    temperature: 0.7
-    max_tokens: 500
-  - name: claude-3-sonnet
-    temperature: 0.7
-    max_tokens: 500
-  - name: ollama:llama2-7b
-    temperature: 0.7
-    max_tokens: 500
+  - id: openai:gpt-4
+    config:
+      temperature: 0.7
+      max_tokens: 500
+  - id: openai:gpt-3.5-turbo
+    config:
+      temperature: 0.7
+      max_tokens: 500
+  - id: anthropic:claude-3-opus-20240229
+    config:
+      temperature: 0.7
+      max_tokens: 500
+  - id: anthropic:claude-3-sonnet-20240229
+    config:
+      temperature: 0.7
+      max_tokens: 500
+  - id: ollama:llama2-7b
+    config:
+      raw: true
+      seed: 1
+      num_predict: 500
 
 # Metrics to collect
 metrics:

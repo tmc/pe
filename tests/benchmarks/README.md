@@ -41,8 +41,12 @@ optimization_methods:
     iterations: 5
     
 providers:
-  - name: gpt-4
-    temperature: 0.7
+  - "openai:gpt-4o-mini"
+  - id: "ollama:qwen3.5:4b"
+    config:
+      raw: true
+      seed: 1
+      num_predict: 200
     
 metrics:
   primary: [accuracy, latency, cost]
