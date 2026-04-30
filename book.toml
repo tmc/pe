@@ -1,0 +1,13 @@
+[book]
+title = "PE Documentation"
+authors = ["PE Team"]
+description = "Documentation for PE: The Go for Prompts Toolkit"
+language = "en"
+
+src = "docs/gitbook"
+
+[build]
+build-dir = "book"
+create-missing = false
+
+[output.html]

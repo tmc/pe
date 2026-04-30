@@ -2,6 +2,8 @@
 .h-*
 .DS_Store
 /pe
+book/
+test_workspace/
 .bash_history
 lastsession.txt
 *.log
