@@ -300,6 +300,7 @@ providers:
     label: cli label
     config:
       command: %q
+      parse_json_response: true
 tests:
   - vars:
       input: "prompt"

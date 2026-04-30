@@ -29,11 +29,21 @@ Reuse `pf` concepts, not `pf` as the backend.
 - `internal/providers/cli.go`
   - executes argv directly when configured with `executable` and `args`
   - keeps shell-string execution only as a compatibility fallback
-  - decodes structured JSON responses for output, token counts, latency, and runtime metadata
+  - decodes structured JSON responses for output, token counts, latency, and runtime metadata when `parse_json_response` is enabled
 
 - `internal/inference/providers/ollama/ollama.go`
   - remains the local Ollama execution path
   - preserves `raw`, `seed`, `num_predict`, base URL, and timing/token counters
+
+## Preset Override Rules
+
+Local runtime presets build `executable` plus `args` defaults for each supported runtime.
+
+- `command` bypasses the preset argv builder and is kept as a compatibility escape hatch.
+- `executable` plus `args` replaces the preset argv entirely.
+- `executable` by itself changes only the binary name and keeps the preset arguments.
+- `args` by itself appends extra arguments after the preset arguments.
+- `parse_json_response` is opt-in; without it, valid JSON on stdout is returned as model text.
 
 ## Tradeoff
 

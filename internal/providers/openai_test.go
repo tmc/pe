@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
@@ -57,9 +56,9 @@ func TestNewOpenAIProvider(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("OPENAI_API_KEY", "")
 			if tt.envKey != "" {
-				os.Setenv("OPENAI_API_KEY", tt.envKey)
-				defer os.Unsetenv("OPENAI_API_KEY")
+				t.Setenv("OPENAI_API_KEY", tt.envKey)
 			}
 
 			provider, err := NewOpenAIProvider(tt.model, tt.options)

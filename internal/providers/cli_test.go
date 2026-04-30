@@ -95,7 +95,8 @@ func TestGenericCLIProvider_Generate_Mock(t *testing.T) {
 
 func TestGenericCLIProvider_Generate_StructuredJSON(t *testing.T) {
 	options := map[string]interface{}{
-		"command": `sh -c 'printf '\''{"output":"hi","prompt_tokens":3,"completion_tokens":5,"total_tokens":8,"latency_ms":21,"metrics":{"tokens_per_second":99.5}}'\'''`,
+		"command":             `sh -c 'printf '\''{"output":"hi","prompt_tokens":3,"completion_tokens":5,"total_tokens":8,"latency_ms":21,"metrics":{"tokens_per_second":99.5}}'\'''`,
+		"parse_json_response": true,
 	}
 	p, err := NewGenericCLIProvider("echo-model", options)
 	if err != nil {
@@ -118,6 +119,24 @@ func TestGenericCLIProvider_Generate_StructuredJSON(t *testing.T) {
 	}
 	if got := resp.Metadata["tokens_per_second"]; got != 99.5 {
 		t.Fatalf("metadata[tokens_per_second] = %#v, want 99.5", got)
+	}
+}
+
+func TestGenericCLIProvider_Generate_JSONOutputWithoutOptIn(t *testing.T) {
+	options := map[string]interface{}{
+		"command": `sh -c 'printf '\''{"output":"hi"}'\'''`,
+	}
+	p, err := NewGenericCLIProvider("echo-model", options)
+	if err != nil {
+		t.Fatalf("failed to create provider: %v", err)
+	}
+
+	resp, err := p.Generate(context.Background(), "ignored", llm.GenerateOptions{})
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+	if resp.Text != `{"output":"hi"}` {
+		t.Fatalf("resp.Text = %q, want raw JSON", resp.Text)
 	}
 }
 

@@ -51,7 +51,10 @@ When a runtime can be executed as argv plus stdin, prefer that over a shell comm
 
 - `executable` + `args` for direct argv execution
 - `prompt_stdin: true` when the runtime should read the prompt from stdin
+- `parse_json_response: true` when stdout is the structured JSON schema above
 - `command` as a compatibility fallback when shell execution is unavoidable
+
+JSON parsing is opt-in so providers can return ordinary JSON text without `pe` rewriting the model output. Enable `parse_json_response` only when the configured command is expected to emit runtime telemetry in this schema, typically because the command includes its own `--json` flag.
 
 ### 2. Standard Error (stderr) Reporting
 For tools outputting raw text to `stdout` (pipeline mode), token usage info **SHOULD** be printed to `stderr` if specifically requested or if verbose logging is enabled.

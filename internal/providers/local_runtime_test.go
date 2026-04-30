@@ -140,6 +140,33 @@ printf "%s\n" "$@"
 	}
 }
 
+func TestMLXGoPresetExecutableOverrideKeepsDefaults(t *testing.T) {
+	binDir := t.TempDir()
+	stubPath := filepath.Join(binDir, "mlx-custom")
+	writeExecutable(t, stubPath, `#!/bin/sh
+printf "%s\n" "$@"
+`)
+
+	provider, err := llm.GetProviderWithOptions("mlx-go-lm:test-model", map[string]interface{}{
+		"executable": stubPath,
+		"max_tokens": 77,
+	})
+	if err != nil {
+		t.Fatalf("GetProviderWithOptions() failed: %v", err)
+	}
+
+	resp, err := provider.Generate(context.Background(), "prompt text", llm.GenerateOptions{})
+	if err != nil {
+		t.Fatalf("Generate() failed: %v", err)
+	}
+	output := resp.Text
+	for _, want := range []string{"--model", "test-model", "--prompt", "prompt text", "--max-tokens", "77"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("output %q does not contain %q", output, want)
+		}
+	}
+}
+
 func TestLlamaCPPPresetConfigPropagation(t *testing.T) {
 	binDir := t.TempDir()
 	stubPath := filepath.Join(binDir, "llama-cli")

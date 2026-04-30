@@ -25,6 +25,7 @@ func TestProviderFactories(t *testing.T) {
 		name     string
 		provider string
 		config   map[string]interface{}
+		envKey   string
 		wantErr  bool
 	}{
 		{
@@ -39,7 +40,8 @@ func TestProviderFactories(t *testing.T) {
 			name:     "openai_with_env_api_key",
 			provider: "openai",
 			config:   map[string]interface{}{},
-			wantErr:  false, // May succeed if OPENAI_API_KEY env var is set
+			envKey:   "test-env-key",
+			wantErr:  false,
 		},
 		{
 			name:     "anthropic_with_api_key",
@@ -71,6 +73,11 @@ func TestProviderFactories(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("OPENAI_API_KEY", "")
+			if tt.envKey != "" {
+				t.Setenv("OPENAI_API_KEY", tt.envKey)
+			}
+
 			factory := inference.GetFactory(tt.provider)
 			if factory == nil && !tt.wantErr {
 				t.Errorf("Expected factory for provider %s, but got nil", tt.provider)

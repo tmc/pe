@@ -23,6 +23,7 @@ type GenericCLIProvider struct {
 	executable      string
 	argTemplates    []string
 	promptStdin     bool
+	parseJSON       bool
 	model           string
 	env             map[string]string
 	options         map[string]interface{}
@@ -68,6 +69,7 @@ func NewGenericCLIProvider(model string, options map[string]interface{}) (*Gener
 		executable:      executable,
 		argTemplates:    args,
 		promptStdin:     getBoolOption(options, "prompt_stdin", false),
+		parseJSON:       getBoolOption(options, "parse_json_response", false),
 		model:           model,
 		env:             env,
 		options:         options,
@@ -124,7 +126,15 @@ func (p *GenericCLIProvider) Generate(ctx context.Context, prompt string, option
 	}
 	latency := time.Since(start)
 
-	return parseCLIResponse(strings.TrimSpace(out.String()), p.model, latency), nil
+	stdout := strings.TrimSpace(out.String())
+	if !p.parseJSON {
+		return &llm.GenerateResponse{
+			Text:    stdout,
+			Model:   p.model,
+			Latency: latency,
+		}, nil
+	}
+	return parseCLIResponse(stdout, p.model, latency), nil
 }
 
 // EvaluatePrompt implements the legacy Provider interface method
