@@ -4,8 +4,6 @@ Last updated: 2026-04-30
 
 This file is the source of truth for planned PE work. Beads is deprecated for this repository: do not create or update `.beads` issues for new work. Keep roadmap changes in tracked commits with the code or documentation they describe.
 
-The active work items below were migrated from the legacy Beads database. Legacy IDs are retained only for traceability.
-
 ## Priority Guide
 
 - **P1**: Release blocking or user-facing quality work.
@@ -18,7 +16,6 @@ The active work items below were migrated from the legacy Beads database. Legacy
 
 #### Release prep: Documentation accuracy audit
 
-- Legacy ID: `pe-30`
 - Type: `epic`
 
 **Scope**
@@ -50,7 +47,6 @@ Priority: P1 - Blocking release
 
 #### Release prep: Examples validation
 
-- Legacy ID: `pe-31`
 - Type: `epic`
 
 **Scope**
@@ -82,7 +78,6 @@ Priority: P1 - User-facing quality
 
 #### Release prep: Version and changelog
 
-- Legacy ID: `pe-33`
 - Type: `task`
 
 **Scope**
@@ -104,15 +99,14 @@ Tasks:
 7. Tag version in git
 
 Recent work to include:
-- Scripttest framework fixes (pe-16)
-- Test improvements (pe-12, pe-10, pe-11)
+- Scripttest framework fixes
+- Test improvements
 - Documentation additions (MARKERS.md)
 - .gitignore improvements
 
 
 #### Release prep: README consolidation
 
-- Legacy ID: `pe-36`
 - Type: `task`
 
 **Scope**
@@ -144,7 +138,6 @@ Key sections to update:
 
 #### Release prep: Security review
 
-- Legacy ID: `pe-39`
 - Type: `task`
 
 **Scope**
@@ -175,7 +168,6 @@ Critical areas:
 
 #### Release prep: Build and distribution
 
-- Legacy ID: `pe-40`
 - Type: `task`
 
 **Scope**
@@ -209,7 +201,6 @@ Distribution methods:
 
 #### Add pipe support to scripttest framework
 
-- Legacy ID: `pe-6`
 - Type: `feature`
 
 **Scope**
@@ -260,13 +251,12 @@ Options:
 
 Recommendation: Option 2 (workaround) for immediate needs, watch Option 1 (upstream PR) for long term.
 
-Related: pe-16 (completed - documented pipe limitations)
-Related: pe-19 (scripttest docs should mention this limitation)
+Related: documented scripttest pipe limitations
+Related: scripttest documentation should mention this limitation
 
 
 #### Maintain roadmap with current status
 
-- Legacy ID: `pe-18`
 - Type: `task`
 
 **Scope**
@@ -283,7 +273,6 @@ Need to:
 
 #### Add scripttest framework documentation
 
-- Legacy ID: `pe-19`
 - Type: `task`
 
 **Scope**
@@ -308,7 +297,6 @@ Reference:
 
 #### Implement Ollama provider
 
-- Legacy ID: `pe-20`
 - Type: `feature`
 
 **Scope**
@@ -337,7 +325,6 @@ Benefits:
 
 #### Improve test coverage
 
-- Legacy ID: `pe-25`
 - Type: `task`
 
 **Scope**
@@ -370,14 +357,13 @@ Tools:
 
 #### Document scripttest limitations in code comments
 
-- Legacy ID: `pe-28`
 - Type: `task`
 
 **Scope**
 
 Add inline documentation about scripttest framework limitations.
 
-Based on pe-16 work, add comments to tests/scripttest_test.go explaining:
+Based on completed scripttest fixes, add comments to tests/scripttest_test.go explaining:
 
 1. Why exec is disabled (security)
 2. Why pipes aren't supported (testscript framework limitation)
@@ -396,14 +382,13 @@ Based on pe-16 work, add comments to tests/scripttest_test.go explaining:
 This will help future developers understand the constraints and make better test design decisions.
 
 Related:
-- pe-16: Completed scripttest fixes
-- pe-6: Pipe support investigation
-- pe-19: Scripttest documentation (should reference this)
+- Completed scripttest fixes
+- Pipe support investigation
+- Scripttest documentation should reference this
 
 
 #### Add llm CLI support as provider backend
 
-- Legacy ID: `pe-29`
 - Type: `epic`
 
 **Scope**
@@ -449,7 +434,6 @@ References:
 
 #### Release prep: Command documentation review
 
-- Legacy ID: `pe-35`
 - Type: `task`
 
 **Scope**
@@ -479,7 +463,6 @@ Consider:
 
 #### Release prep: Documentation organization
 
-- Legacy ID: `pe-37`
 - Type: `task`
 
 **Scope**
@@ -527,7 +510,6 @@ Tasks:
 
 #### Release prep: License and legal review
 
-- Legacy ID: `pe-38`
 - Type: `task`
 
 **Scope**
@@ -552,7 +534,6 @@ Run:
 
 #### Release prep: CI/CD review
 
-- Legacy ID: `pe-41`
 - Type: `task`
 
 **Scope**
@@ -582,7 +563,6 @@ Checks to add:
 
 #### Release prep: Migration guide
 
-- Legacy ID: `pe-42`
 - Type: `task`
 
 **Scope**
@@ -609,7 +589,6 @@ Create docs/MIGRATION.md or docs/UPGRADING.md
 
 #### Release prep: Performance benchmarks
 
-- Legacy ID: `pe-43`
 - Type: `task`
 
 **Scope**
@@ -640,7 +619,6 @@ Document in:
 
 #### Fix dependency security vulnerabilities
 
-- Legacy ID: `pe-44`
 - Type: `task`
 
 **Scope**
@@ -661,7 +639,7 @@ Actions:
 
 This is BLOCKING for release.
 
-Related: pe-39 (security review)
+Related: security review
 
 **Notes**
 
@@ -683,7 +661,6 @@ Pre-commit hook may be too strict - consider adjusting threshold.
 
 #### Extend GenerateOptions for provider-specific options
 
-- Legacy ID: `pe-46`
 - Type: `feature`
 
 **Scope**
@@ -710,7 +687,6 @@ Created from NotebookLM design audit notebook 50b86925-3d62-4d09-bd1a-59d7ced9a5
 
 #### Honor Promptfoo assertion provider override
 
-- Legacy ID: `pe-47`
 - Type: `bug`
 
 **Scope**
@@ -735,7 +711,6 @@ Created from NotebookLM design audit notebook 50b86925-3d62-4d09-bd1a-59d7ced9a5
 
 #### Review .gitignore for PE project
 
-- Legacy ID: `pe-15`
 - Type: `task`
 
 **Notes**
@@ -757,7 +732,6 @@ Need to:
 
 #### Module registry implementation
 
-- Legacy ID: `pe-21`
 - Type: `feature`
 
 **Scope**
@@ -785,7 +759,6 @@ Related:
 
 #### Add advanced assertion types
 
-- Legacy ID: `pe-22`
 - Type: `feature`
 
 **Scope**
@@ -814,7 +787,6 @@ Location: internal/promptfoo/evaluation/metrics/
 
 #### Add interactive REPL mode
 
-- Legacy ID: `pe-23`
 - Type: `feature`
 
 **Scope**
@@ -847,7 +819,6 @@ Consider:
 
 #### REST API server implementation
 
-- Legacy ID: `pe-24`
 - Type: `feature`
 
 **Scope**
@@ -884,7 +855,6 @@ Consider:
 
 #### Add examples for new features
 
-- Legacy ID: `pe-27`
 - Type: `task`
 
 **Scope**
