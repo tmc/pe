@@ -24,10 +24,10 @@ Comprehensive documentation accuracy audit and update for release.
 
 Current Issues:
 - Test coverage claims inconsistent (25% vs 40%)
-- Dates outdated (Jan/Feb 2025, should be Oct 2025)
+- Documentation dates are inconsistent across older 2025 snapshots and current 2026 status docs
 - Multiple overlapping getting started docs
 - Future docs mixed with current implementation docs
-- TODO.md severely outdated
+- Legacy TODO material now points at this roadmap, but current documentation still needs an accuracy pass
 - Recent work not documented (scripttest, fixes, etc.)
 
 Sub-tasks to create:
@@ -35,12 +35,11 @@ Sub-tasks to create:
 2. Update all documentation dates
 3. Consolidate getting started documentation
 4. Update docs/CURRENT_STATUS.md with latest
-5. Migrate TODO.md items to this roadmap
-6. Document recent scripttest work
-7. Update RELEASE_NOTES.md
-8. Clean up docs/future/ organization
-9. Fix README.md accuracy
-10. Review all command documentation
+5. Document recent scripttest work
+6. Update RELEASE_NOTES.md
+7. Clean up docs/future/ organization
+8. Fix README.md accuracy
+9. Review all command documentation
 
 Priority: P1 - Blocking release
 
@@ -85,7 +84,7 @@ Priority: P1 - User-facing quality
 Prepare version number and comprehensive changelog for release.
 
 Tasks:
-1. Determine version number (0.1.0? 0.5.0? 1.0.0?)
+1. Verify v0.5.0 version consistency across source, release notes, tags, and docs
 2. Review all commits since last release
 3. Categorize changes:
    - Breaking changes
@@ -149,7 +148,7 @@ Tasks:
 2. Check for command injection vulnerabilities
 3. Verify input validation (already have tests)
 4. Review file path traversal protections
-5. Check dependency vulnerabilities (go list -m all)
+5. Check dependency vulnerabilities with govulncheck and document any non-called transitive findings
 6. Review security.md if exists
 7. Test with untrusted input
 8. Review error messages for info disclosure
@@ -271,23 +270,21 @@ Need to:
 5. Remove obsolete TODO and Beads references as they are found
 
 
-#### Add scripttest framework documentation
+#### Correct scripttest framework documentation
 
 - Type: `task`
 
 **Scope**
 
-Create comprehensive documentation for scripttest framework used in tests/.
+The scripttest guide exists, but it must match the custom runner in
+tests/scripttest_test.go. In particular, the runner removes `exec` and
+does not support shell pipes or shell redirection.
 
-Should cover:
-1. Overview of scripttest framework and philosophy
-2. Available commands (pe, cat, echo, exists, env, grep, etc.)
-3. File creation with -- markers
-4. Variable substitution
-5. Output matching (stdout, stderr)
-6. Test organization and best practices
-7. Limitations (no exec, no pipes currently)
-8. Examples from tests/testdata/script/
+Tasks:
+1. Remove claims in tests/SCRIPTTEST_GUIDE.md that `exec` is available.
+2. Document that shell pipes (`|`), redirection (`>`, `<`, `>>`), and background jobs (`&`) are not supported.
+3. Document workarounds, including intermediate files instead of pipes and direct commands instead of `exec`.
+4. Ensure tests/testdata/script/README and tests/SCRIPTTEST_GUIDE.md agree on the supported command set.
 
 Reference:
 - tests/scripttest_test.go
@@ -295,26 +292,26 @@ Reference:
 - MARKERS.md for prompt format context
 
 
-#### Implement Ollama provider
+#### Document and harden Ollama provider
 
 - Type: `feature`
 
 **Scope**
 
-Add support for Ollama as a local LLM provider.
+Native Ollama support exists in internal/inference/providers/ollama and is
+registered through the provider bridge. Remaining work is release polish:
+documentation, examples, and end-to-end validation against common local models.
 
 Current status:
-- Provider interface exists in internal/inference/providers/
-- Ollama provider directory exists with basic test (73.9% coverage)
-- Need to complete implementation
+- Native provider implements Complete, Stream, and Models.
+- Provider is registered through internal/providers/init.go.
+- Unit tests cover factory, completion, streaming, models, and error paths.
 
 Tasks:
-1. Review existing ollama provider code
-2. Implement complete API integration
-3. Add configuration support
-4. Add tests for various models
-5. Document usage in README and docs
-6. Add examples
+1. Document Ollama configuration and provider selection in README and docs.
+2. Add examples for common local model workflows.
+3. Add end-to-end validation notes for representative Ollama models.
+4. Verify direct Generate option passthrough once provider-specific options are extended.
 
 Benefits:
 - Local model support (no API keys needed)
@@ -331,19 +328,16 @@ Benefits:
 
 Increase test coverage across the project.
 
-Current coverage (from go test output):
-- Most packages have good coverage (70%+)
-- Some packages lack tests entirely ([no test files])
+Current coverage needs a fresh measured baseline; older roadmap text and docs
+disagree on 25% versus 40% overall coverage.
 
 Priority areas:
-1. internal/cli - No test files
-2. internal/module - No test files
-3. internal/optimization - No test files
-4. internal/plugin - No test files
-5. internal/templates - No test files
+1. Refresh package coverage data with `go test -cover ./...`.
+2. Expand tests in lower-coverage packages, including internal/cli, internal/module, internal/optimization, internal/plugin, and internal/templates.
+3. Add command-level integration tests for paths that currently rely on package-level tests only.
 
 Tasks:
-1. Add unit tests for untested packages
+1. Add unit tests for low-coverage packages
 2. Add integration tests for end-to-end workflows
 3. Add property-based tests where appropriate
 4. Target 80%+ coverage for critical paths
@@ -355,69 +349,24 @@ Tools:
 - Use testify for assertions
 
 
-#### Document scripttest limitations in code comments
-
-- Type: `task`
-
-**Scope**
-
-Add inline documentation about scripttest framework limitations.
-
-Based on completed scripttest fixes, add comments to tests/scripttest_test.go explaining:
-
-1. Why exec is disabled (security)
-2. Why pipes aren't supported (testscript framework limitation)
-3. Why certain shell features are unavailable:
-   - Background jobs (&)
-   - Shell redirection (>, <, >>)
-   - Complex shell features (process substitution, etc.)
-
-4. Workarounds and alternatives:
-   - Use -- file markers instead of heredoc
-   - Use intermediate files instead of pipes
-   - Use direct commands instead of exec
-
-5. Link to upstream testscript docs
-
-This will help future developers understand the constraints and make better test design decisions.
-
-Related:
-- Completed scripttest fixes
-- Pipe support investigation
-- Scripttest documentation should reference this
-
-
-#### Add llm CLI support as provider backend
+#### Harden and document llm CLI provider backend
 
 - Type: `epic`
 
 **Scope**
 
-Add support for Simon Willison's llm CLI tool as a provider backend.
+The base adapter for Simon Willison's llm CLI exists in internal/providers/llm_cli.go
+and is registered as the `llm` provider. Remaining work is hardening,
+documentation, and examples.
 
 Simon's llm tool (https://llm.datasette.io/) is a powerful CLI for interacting with LLMs
 that supports multiple providers and models through a plugin system.
 
-Epic Goals:
-1. Implement llm provider adapter
-2. Support llm's model aliases and configuration
-3. Enable access to llm's extensive plugin ecosystem
-4. Document llm integration
-
-Benefits:
-- Access to 40+ LLM providers via llm plugins
-- Local model support (llama-cpp, mlc, etc.)
-- Consistent interface for diverse backends
-- Leverage llm's quality and community
-
-Implementation Tasks:
-- Research llm CLI interface and JSON output
-- Design provider adapter for llm backend
-- Implement LLMProvider in internal/inference/providers/
-- Add llm-specific configuration support
-- Test with various llm providers/plugins
-- Document llm setup and usage
-- Add examples for common llm workflows
+Tasks:
+1. Support llm model aliases and advanced `-o` configuration.
+2. Add integration docs covering setup, plugins, and provider selection.
+3. Add examples for common llm model-alias workflows.
+4. Add tests that exercise argument construction without requiring a live llm installation.
 
 Technical Notes:
 - llm supports JSON output via --json flag
@@ -617,48 +566,6 @@ Document in:
 - Known limitations
 
 
-#### Fix dependency security vulnerabilities
-
-- Type: `task`
-
-**Scope**
-
-CRITICAL: Pre-commit hook detected security vulnerabilities in dependencies.
-
-Pre-commit output:
-❌ Security vulnerabilities detected in dependencies!
-Run 'govulncheck ./...' for details
-
-Actions:
-1. Run govulncheck ./... to identify vulnerable packages
-2. Review vulnerability details
-3. Update affected dependencies
-4. Test that updates don't break functionality
-5. Re-run security check
-6. Document any vulnerabilities that can't be fixed
-
-This is BLOCKING for release.
-
-Related: security review
-
-**Notes**
-
-govulncheck results: NO CODE VULNERABILITIES
-
-Output:
-'Your code is affected by 0 vulnerabilities.'
-
-Details:
-- 0 vulnerabilities in packages we import
-- 2 vulnerabilities in modules we require BUT code doesn't call them
-- These are transitive dependencies not actually used
-
-Action: Downgrade from P0 to P2
-This is not blocking - just needs documentation and monitoring.
-
-Pre-commit hook may be too strict - consider adjusting threshold.
-
-
 #### Extend GenerateOptions for provider-specific options
 
 - Type: `feature`
@@ -675,7 +582,7 @@ Add a minimal provider-specific extension path for direct generation without wid
 
 **Acceptance Criteria**
 
-- Direct Generate can pass provider-specific options needed by existing providers, including Ollama seed and raw.
+- Direct Generate can pass provider-specific options needed by existing providers, including Ollama seed and raw, through a typed extension path or map.
 - Existing evaluator configuration behavior remains unchanged.
 - Regression tests cover direct Generate option passthrough.
 - Package docs describe which options are portable and which are provider-specific.
@@ -697,8 +604,9 @@ Add assertion-level judge provider resolution or reject unsupported overrides ex
 
 **Acceptance Criteria**
 
-- Promptfoo assertions with provider set route LLM judge calls through that provider.
+- Promptfoo assertions with provider set resolve and route LLM judge calls through that provider context.
 - Missing or invalid assertion providers return clear errors.
+- Unsupported assertion provider overrides are rejected explicitly.
 - Existing default judge provider behavior remains unchanged when provider is unset.
 - Regression tests cover assertion-level provider selection.
 
@@ -785,22 +693,21 @@ Implementation notes:
 Location: internal/promptfoo/evaluation/metrics/
 
 
-#### Add interactive REPL mode
+#### Wire interactive REPL mode
 
 - Type: `feature`
 
 **Scope**
 
-Implement interactive REPL (Read-Eval-Print Loop) for prompt experimentation.
+cmd/pe/repl.go contains REPLSession, but the registered `pe interactive`
+command in cmd/pe/stats.go is still a TODO stub. Wire the existing session
+into the CLI entrypoint and verify the promised interactive behavior.
 
-Features needed:
-1. Interactive prompt input
-2. Live execution with provider selection
-3. History and editing (readline support)
-4. Variable management
-5. Context preservation across runs
-6. Save session to file
-7. Multiline input support
+Tasks:
+1. Replace the interactiveCmd stub with NewREPLSession(...).Run().
+2. Verify prompt history, context preservation, multiline input, and session save/load through the CLI entrypoint.
+3. Verify provider hot-switching and temperature/token controls from the command loop.
+4. Add tests for command wiring that do not require live provider calls.
 
 Command: pe repl or pe interactive
 
@@ -988,14 +895,14 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Create lock file format
 
 ##### Module Commands
-- [ ] Fix `pe mod init` with proper initialization
-- [ ] Implement `pe mod download` with real registry
+- [x] Fix `pe mod init` with proper initialization
+- [x] Implement `pe mod download` with real registry
 - [ ] Complete `pe mod tidy` functionality
 - [ ] Implement `pe mod vendor` properly
 - [ ] Add `pe mod verify` for integrity checking
-- [ ] Implement `pe mod list` for installed modules
-- [ ] Add `pe mod search` for registry search
-- [ ] Implement `pe mod publish` for module publishing
+- [x] Implement `pe mod list` for installed modules
+- [x] Add `pe mod search` for registry search
+- [x] Implement `pe mod publish` for module publishing
 - [ ] Add `pe mod upgrade` for version updates
 - [ ] Implement `pe mod graph` for dependency visualization
 
@@ -1380,13 +1287,13 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 #### Phase 8: Observability (Week 10)
 
 ##### Metrics Infrastructure
-- [ ] Create `internal/metrics/` directory
-- [ ] Implement MetricsCollector type
-- [ ] Add counter implementation
-- [ ] Add histogram implementation
-- [ ] Add gauge implementation
-- [ ] Add summary implementation
-- [ ] Create metrics registry
+- [x] Add metrics infrastructure under `internal/observability`
+- [x] Implement MetricsCollector type
+- [x] Add counter implementation
+- [x] Add histogram implementation
+- [x] Add gauge implementation
+- [x] Add summary implementation
+- [x] Create global metrics collector
 
 ##### Provider Metrics
 - [ ] Add request latency metrics
@@ -1412,12 +1319,12 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Add score distribution metrics
 
 ##### Distributed Tracing
-- [ ] Create `internal/tracing/` directory
+- [x] Add tracing infrastructure under `internal/observability`
 - [ ] Integrate OpenTelemetry
 - [ ] Add trace provider setup
-- [ ] Implement span creation
-- [ ] Add context propagation
-- [ ] Create trace exporters
+- [x] Implement span creation
+- [x] Add context propagation
+- [x] Create file trace writer
 - [ ] Add trace sampling
 
 ##### Command Tracing
@@ -1445,10 +1352,10 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Implement health checks
 
 ##### Performance Profiling
-- [ ] Add CPU profiling
-- [ ] Add memory profiling
-- [ ] Add goroutine profiling
-- [ ] Add block profiling
+- [x] Add CPU profiling
+- [x] Add memory profiling
+- [x] Add goroutine profiling
+- [x] Add block profiling
 - [ ] Create profile analysis tools
 - [ ] Add continuous profiling
 
