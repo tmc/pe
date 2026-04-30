@@ -2,6 +2,8 @@ package providers
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -116,5 +118,31 @@ func TestGenericCLIProvider_Generate_StructuredJSON(t *testing.T) {
 	}
 	if got := resp.Metadata["tokens_per_second"]; got != 99.5 {
 		t.Fatalf("metadata[tokens_per_second] = %#v, want 99.5", got)
+	}
+}
+
+func TestGenericCLIProvider_Generate_ArgvAndStdin(t *testing.T) {
+	binDir := t.TempDir()
+	writeExecutable(t, filepath.Join(binDir, "stdin-stub"), `#!/bin/sh
+cat
+`)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	p, err := NewGenericCLIProvider("test-model", map[string]interface{}{
+		"executable":   "stdin-stub",
+		"args":         []string{},
+		"prompt_stdin": true,
+	})
+	if err != nil {
+		t.Fatalf("NewGenericCLIProvider() failed: %v", err)
+	}
+
+	prompt := "line 1\nline 2\n"
+	resp, err := p.Generate(context.Background(), prompt, llm.GenerateOptions{})
+	if err != nil {
+		t.Fatalf("Generate() failed: %v", err)
+	}
+	if resp.Text != "line 1\nline 2" {
+		t.Fatalf("resp.Text = %q, want exact stdin bytes without trailing trim mismatch", resp.Text)
 	}
 }

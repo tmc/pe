@@ -46,6 +46,13 @@ Tools should output runtime data using the following JSON schema:
 ### 1. JSON Output Requirement
 When a tool is invoked with a `--json` flag, the output **MUST** be a valid JSON object containing the response and any available token or latency metrics.
 
+### 1.5. Invocation Shape
+When a runtime can be executed as argv plus stdin, prefer that over a shell command string. In `pe`, CLI-backed providers support:
+
+- `executable` + `args` for direct argv execution
+- `prompt_stdin: true` when the runtime should read the prompt from stdin
+- `command` as a compatibility fallback when shell execution is unavoidable
+
 ### 2. Standard Error (stderr) Reporting
 For tools outputting raw text to `stdout` (pipeline mode), token usage info **SHOULD** be printed to `stderr` if specifically requested or if verbose logging is enabled.
 

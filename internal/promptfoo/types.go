@@ -20,8 +20,12 @@ type Config struct {
 // It accepts either a plain string, like "openai:gpt-4",
 // or an object with an id and per-provider config.
 type ProviderConfig struct {
-	ID     string                 `yaml:"id" json:"id"`
-	Config map[string]interface{} `yaml:"config,omitempty" json:"config,omitempty"`
+	ID      string                 `yaml:"id" json:"id"`
+	Label   string                 `yaml:"label,omitempty" json:"label,omitempty"`
+	Config  map[string]interface{} `yaml:"config,omitempty" json:"config,omitempty"`
+	Env     map[string]string      `yaml:"env,omitempty" json:"env,omitempty"`
+	Prompts []string               `yaml:"prompts,omitempty" json:"prompts,omitempty"`
+	Delay   string                 `yaml:"delay,omitempty" json:"delay,omitempty"`
 }
 
 // String returns the provider identifier.
@@ -29,17 +33,33 @@ func (p ProviderConfig) String() string {
 	return p.ID
 }
 
+// DisplayName returns the label when present, otherwise the id.
+func (p ProviderConfig) DisplayName() string {
+	if p.Label != "" {
+		return p.Label
+	}
+	return p.ID
+}
+
 // MarshalJSON preserves the compact string form when no config is present.
 func (p ProviderConfig) MarshalJSON() ([]byte, error) {
-	if len(p.Config) == 0 {
+	if len(p.Config) == 0 && p.Label == "" && len(p.Env) == 0 && len(p.Prompts) == 0 && p.Delay == "" {
 		return json.Marshal(p.ID)
 	}
 	return json.Marshal(struct {
-		ID     string                 `json:"id"`
-		Config map[string]interface{} `json:"config,omitempty"`
+		ID      string                 `json:"id"`
+		Label   string                 `json:"label,omitempty"`
+		Config  map[string]interface{} `json:"config,omitempty"`
+		Env     map[string]string      `json:"env,omitempty"`
+		Prompts []string               `json:"prompts,omitempty"`
+		Delay   string                 `json:"delay,omitempty"`
 	}{
-		ID:     p.ID,
-		Config: p.Config,
+		ID:      p.ID,
+		Label:   p.Label,
+		Config:  p.Config,
+		Env:     p.Env,
+		Prompts: p.Prompts,
+		Delay:   p.Delay,
 	})
 }
 
@@ -50,7 +70,11 @@ func (p *ProviderConfig) UnmarshalJSON(data []byte) error {
 	var id string
 	if err := json.Unmarshal(data, &id); err == nil {
 		p.ID = id
+		p.Label = ""
 		p.Config = nil
+		p.Env = nil
+		p.Prompts = nil
+		p.Delay = ""
 		return nil
 	}
 
@@ -68,6 +92,8 @@ func (p *ProviderConfig) UnmarshalJSON(data []byte) error {
 	}
 
 	config := make(map[string]interface{})
+	env := getProviderEnv(raw)
+	prompts := getProviderPrompts(raw)
 	if nested, ok := raw["config"]; ok {
 		nestedMap, ok := nested.(map[string]interface{})
 		if !ok {
@@ -79,7 +105,7 @@ func (p *ProviderConfig) UnmarshalJSON(data []byte) error {
 	}
 	for k, v := range raw {
 		switch k {
-		case "id", "name", "config":
+		case "id", "name", "label", "config", "env", "prompts", "delay":
 			continue
 		default:
 			config[k] = v
@@ -87,6 +113,10 @@ func (p *ProviderConfig) UnmarshalJSON(data []byte) error {
 	}
 
 	p.ID = id
+	p.Label = getProviderObjectString(raw, "label")
+	p.Env = env
+	p.Prompts = prompts
+	p.Delay = getProviderDelay(raw)
 	if len(config) == 0 {
 		p.Config = nil
 	} else {
@@ -102,6 +132,73 @@ func getProviderObjectString(raw map[string]interface{}, key string) string {
 	}
 	s, _ := value.(string)
 	return s
+}
+
+func getProviderEnv(raw map[string]interface{}) map[string]string {
+	value, ok := raw["env"]
+	if !ok {
+		return nil
+	}
+	switch v := value.(type) {
+	case map[string]string:
+		if len(v) == 0 {
+			return nil
+		}
+		out := make(map[string]string, len(v))
+		for k, val := range v {
+			out[k] = val
+		}
+		return out
+	case map[string]interface{}:
+		if len(v) == 0 {
+			return nil
+		}
+		out := make(map[string]string, len(v))
+		for k, val := range v {
+			out[k] = fmt.Sprintf("%v", val)
+		}
+		return out
+	default:
+		return nil
+	}
+}
+
+func getProviderPrompts(raw map[string]interface{}) []string {
+	value, ok := raw["prompts"]
+	if !ok {
+		return nil
+	}
+	switch v := value.(type) {
+	case []string:
+		if len(v) == 0 {
+			return nil
+		}
+		return append([]string(nil), v...)
+	case []interface{}:
+		if len(v) == 0 {
+			return nil
+		}
+		out := make([]string, 0, len(v))
+		for _, item := range v {
+			out = append(out, fmt.Sprintf("%v", item))
+		}
+		return out
+	case string:
+		if v == "" {
+			return nil
+		}
+		return []string{v}
+	default:
+		return []string{fmt.Sprintf("%v", v)}
+	}
+}
+
+func getProviderDelay(raw map[string]interface{}) string {
+	value, ok := raw["delay"]
+	if !ok {
+		return ""
+	}
+	return fmt.Sprintf("%v", value)
 }
 
 // TestCase represents a single test case in the configuration.

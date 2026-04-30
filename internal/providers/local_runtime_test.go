@@ -104,6 +104,42 @@ printf "%s\n" "$@"
 	}
 }
 
+func TestMLXGoPresetExplicitCommandOverridesDefaults(t *testing.T) {
+	binDir := t.TempDir()
+	stubPath := filepath.Join(binDir, "mlx-explicit")
+	writeExecutable(t, stubPath, `#!/bin/sh
+printf "%s\n" "$@"
+`)
+
+	provider, err := llm.GetProviderWithOptions("mlx-go-lm:test-model", map[string]interface{}{
+		"executable": stubPath,
+		"args": []string{
+			"--model",
+			"{{.Model}}",
+			"--prompt",
+			"{{.Prompt}}",
+			"--raw-mode",
+		},
+	})
+	if err != nil {
+		t.Fatalf("GetProviderWithOptions() failed: %v", err)
+	}
+
+	resp, err := provider.Generate(context.Background(), "prompt text", llm.GenerateOptions{})
+	if err != nil {
+		t.Fatalf("Generate() failed: %v", err)
+	}
+	output := resp.Text
+	if strings.Contains(output, "--max-tokens") || strings.Contains(output, "--temperature") {
+		t.Fatalf("output %q contains preset defaults that should have been overridden", output)
+	}
+	for _, want := range []string{"--model", "test-model", "--prompt", "prompt text", "--raw-mode"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("output %q does not contain %q", output, want)
+		}
+	}
+}
+
 func TestLlamaCPPPresetConfigPropagation(t *testing.T) {
 	binDir := t.TempDir()
 	stubPath := filepath.Join(binDir, "llama-cli")

@@ -11,6 +11,12 @@ func TestProviderConfig_UnmarshalStringAndObject(t *testing.T) {
 providers:
   - openai:gpt-4
   - id: ollama:qwen3.5:4b
+    label: ollama raw
+    env:
+      OLLAMA_HOST: http://localhost:11434
+    prompts:
+      - "Say hi"
+    delay: 150ms
     config:
       raw: true
       seed: 1
@@ -32,6 +38,18 @@ providers:
 	}
 	if cfg.Providers[1].ID != "ollama:qwen3.5:4b" {
 		t.Fatalf("Providers[1].ID = %q, want ollama:qwen3.5:4b", cfg.Providers[1].ID)
+	}
+	if cfg.Providers[1].Label != "ollama raw" {
+		t.Fatalf("Providers[1].Label = %q, want ollama raw", cfg.Providers[1].Label)
+	}
+	if cfg.Providers[1].Env["OLLAMA_HOST"] != "http://localhost:11434" {
+		t.Fatalf("Providers[1].Env = %#v", cfg.Providers[1].Env)
+	}
+	if len(cfg.Providers[1].Prompts) != 1 || cfg.Providers[1].Prompts[0] != "Say hi" {
+		t.Fatalf("Providers[1].Prompts = %#v", cfg.Providers[1].Prompts)
+	}
+	if cfg.Providers[1].Delay != "150ms" {
+		t.Fatalf("Providers[1].Delay = %q, want 150ms", cfg.Providers[1].Delay)
 	}
 	if got, ok := cfg.Providers[1].Config["raw"].(bool); !ok || !got {
 		t.Fatalf("Providers[1].Config[raw] = %#v, want true", cfg.Providers[1].Config["raw"])
@@ -62,6 +80,9 @@ providers:
 	provider := cfg.Providers[0]
 	if provider.ID != "mlx-go-lm:mlx-community/Qwen3-4B-4bit" {
 		t.Fatalf("provider.ID = %q", provider.ID)
+	}
+	if provider.DisplayName() != provider.ID {
+		t.Fatalf("provider.DisplayName() = %q, want %q", provider.DisplayName(), provider.ID)
 	}
 	args, ok := provider.Config["args"].([]interface{})
 	if !ok || len(args) != 3 {

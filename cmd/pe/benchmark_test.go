@@ -297,6 +297,7 @@ prompts:
   - "Benchmark {{input}}"
 providers:
   - id: cli:stub
+    label: cli label
     config:
       command: %q
 tests:
@@ -333,6 +334,9 @@ tests:
 		t.Fatalf("len(results) = %d, want 1", len(output.Results))
 	}
 	result := output.Results[0]
+	if result.Provider != "cli label" || result.ProviderID != "cli:stub" {
+		t.Fatalf("provider = (%q,%q), want (cli label, cli:stub)", result.Provider, result.ProviderID)
+	}
 	if result.LatencyMs != 42 {
 		t.Fatalf("result.LatencyMs = %.0f, want 42", result.LatencyMs)
 	}
@@ -344,6 +348,9 @@ tests:
 	}
 	if len(output.Summaries) != 1 || output.Summaries[0].AvgLatencyMs != 42 {
 		t.Fatalf("summary avg latency = %#v, want 42", output.Summaries)
+	}
+	if output.Summaries[0].Provider != "cli label" || output.Summaries[0].ProviderID != "cli:stub" {
+		t.Fatalf("summary provider = (%q,%q)", output.Summaries[0].Provider, output.Summaries[0].ProviderID)
 	}
 }
 

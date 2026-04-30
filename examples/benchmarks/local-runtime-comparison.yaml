@@ -9,16 +9,24 @@ prompts:
 
 providers:
   - id: "mlx-go-lm:/Users/you/models/Qwen3-4B-4bit"
+    label: "mlx raw"
     config:
       executable: "mlx-lm-generate"
-      max_tokens: 100
-      temperature: 0
       args:
+        - --model
+        - "{{.Model}}"
+        - --prompt
+        - "{{.Prompt}}"
+        - --max-tokens
+        - "100"
+        - --temperature
+        - "0"
         - --ignore-chat-template
         - --top-p
         - "1.0"
 
   - id: "ollama:qwen3.5:4b"
+    label: "ollama raw"
     config:
       base_url: "http://localhost:11434"
       raw: true
@@ -27,11 +35,18 @@ providers:
       temperature: 0
 
   - id: "llama.cpp:/Users/you/models/qwen3.5-4b-instruct.gguf"
+    label: "llama.cpp raw"
     config:
       executable: "llama-cli"
-      max_tokens: 100
-      temperature: 0
       args:
+        - -m
+        - "{{.Model}}"
+        - -p
+        - "{{.Prompt}}"
+        - -n
+        - "100"
+        - --temp
+        - "0"
         - --no-conversation
         - -ngl
         - "999"

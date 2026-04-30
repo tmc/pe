@@ -189,9 +189,14 @@ prompts:
 providers:
   - "openai:gpt-4o-mini"
   - id: "anthropic:claude-3-haiku-20240307"
+    label: "claude haiku"
     config:
       temperature: 0
   - id: "ollama:qwen3.5:4b"
+    label: "ollama raw"
+    env:
+      OLLAMA_HOST: "http://localhost:11434"
+    delay: 150ms
     config:
       base_url: "http://localhost:11434"
       raw: true
@@ -210,9 +215,10 @@ tests:
         value: "Summary should be concise and capture main points"
 ```
 
-`providers:` accepts either a plain provider spec string like `"openai:gpt-4o-mini"` or an object with `id` and optional `config`. `pe eval` and `pe benchmark` now use the same provider shape.
+`providers:` accepts either a plain provider spec string like `"openai:gpt-4o-mini"` or an object with `id`, `label`, `config`, `env`, `prompts`, and `delay`. `pe eval` and `pe benchmark` now use the same provider shape.
 
 For a local-runtime benchmark example, see `examples/benchmarks/local-runtime-comparison.yaml`.
+The design note for the provider/materialization split is in `docs/LOCAL_RUNTIME_PROVIDER_DESIGN.md`.
 
 ### Advanced Assertions
 

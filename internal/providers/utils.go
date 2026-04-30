@@ -166,6 +166,80 @@ func getStringSliceOption(options map[string]interface{}, key string) []string {
 	}
 }
 
+func getStringMapOption(options map[string]interface{}, key string) map[string]string {
+	if options == nil {
+		return nil
+	}
+	value, exists := options[key]
+	if !exists {
+		return nil
+	}
+	switch v := value.(type) {
+	case map[string]string:
+		out := make(map[string]string, len(v))
+		for k, val := range v {
+			out[k] = val
+		}
+		return out
+	case map[string]interface{}:
+		out := make(map[string]string, len(v))
+		for k, val := range v {
+			out[k] = fmt.Sprintf("%v", val)
+		}
+		return out
+	default:
+		return nil
+	}
+}
+
+func lookupIntOption(options map[string]interface{}, key string) (int, bool) {
+	if options == nil {
+		return 0, false
+	}
+	value, exists := options[key]
+	if !exists {
+		return 0, false
+	}
+	switch v := value.(type) {
+	case int:
+		return v, true
+	case int64:
+		return int(v), true
+	case float64:
+		return int(v), true
+	case string:
+		i, err := strconv.Atoi(v)
+		if err == nil {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+func lookupFloat64Option(options map[string]interface{}, key string) (float64, bool) {
+	if options == nil {
+		return 0, false
+	}
+	value, exists := options[key]
+	if !exists {
+		return 0, false
+	}
+	switch v := value.(type) {
+	case float64:
+		return v, true
+	case int:
+		return float64(v), true
+	case int64:
+		return float64(v), true
+	case string:
+		f, err := strconv.ParseFloat(v, 64)
+		if err == nil {
+			return f, true
+		}
+	}
+	return 0, false
+}
+
 func getEnvVar(key string) string {
 	return os.Getenv(key)
 }

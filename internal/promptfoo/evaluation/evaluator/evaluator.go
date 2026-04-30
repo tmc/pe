@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/promptfoo"
+	"github.com/tmc/pe/internal/providers"
 	"sigs.k8s.io/yaml"
 )
 
@@ -30,18 +30,26 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 		maxConcurrency = 1
 	}
 
+	materializedProviders, err := providers.MaterializeProviders(config.Providers)
+	if err != nil {
+		return promptfoo.EvaluationResult{}, err
+	}
+
 	evalId := fmt.Sprintf("eval-%s-%s", generateRandomString(3), time.Now().Format("2006-01-02T15:04:05"))
 
 	// Create prompt metadata for each prompt-provider combination
-	promptMetadata := make([]promptfoo.PromptData, 0, len(config.Prompts)*len(config.Providers))
+	promptMetadata := make([]promptfoo.PromptData, 0, len(config.Prompts)*len(materializedProviders))
 	for _, prompt := range config.Prompts {
-		for _, provider := range config.Providers {
-			promptID := generatePromptID(prompt, provider.ID)
+		for _, provider := range materializedProviders {
+			if !provider.AppliesToPrompt(prompt) {
+				continue
+			}
+			promptID := generatePromptID(prompt, provider.Spec.ID)
 			promptMetadata = append(promptMetadata, promptfoo.PromptData{
 				Raw:      prompt,
 				Label:    prompt,
 				ID:       promptID,
-				Provider: provider.ID,
+				Provider: provider.DisplayName(),
 				Metrics: promptfoo.PromptMetrics{
 					NamedScores:      make(map[string]float64),
 					NamedScoresCount: make(map[string]int),
@@ -53,16 +61,19 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resultsChan := make(chan promptfoo.TestResult, len(config.Prompts)*len(config.Providers)*len(config.Tests))
-	errorsChan := make(chan error, len(config.Prompts)*len(config.Providers)*len(config.Tests))
+	resultsChan := make(chan promptfoo.TestResult, len(config.Prompts)*len(materializedProviders)*len(config.Tests))
+	errorsChan := make(chan error, len(config.Prompts)*len(materializedProviders)*len(config.Tests))
 	sem := make(chan struct{}, maxConcurrency)
 	var wg sync.WaitGroup
 
 	for _, prompt := range config.Prompts {
-		for _, providerConfig := range config.Providers {
+		for _, provider := range materializedProviders {
+			if !provider.AppliesToPrompt(prompt) {
+				continue
+			}
 			for k, test := range config.Tests {
 				wg.Add(1)
-				go func(prompt string, providerConfig promptfoo.ProviderConfig, test promptfoo.TestCase, testIdx int) {
+				go func(prompt string, provider *providers.MaterializedProvider, test promptfoo.TestCase, testIdx int) {
 					defer wg.Done()
 					sem <- struct{}{}
 					defer func() { <-sem }()
@@ -73,28 +84,33 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 					default:
 					}
 
-					provider, err := llm.GetProviderWithOptions(providerConfig.ID, providerConfig.Config)
-					if err != nil {
-						errorsChan <- fmt.Errorf("provider %s: %v", providerConfig.ID, err)
-						return
+					if provider.Delay > 0 && !dryRun {
+						timer := time.NewTimer(provider.Delay)
+						defer timer.Stop()
+						select {
+						case <-ctx.Done():
+							errorsChan <- ctx.Err()
+							return
+						case <-timer.C:
+						}
 					}
 
 					processedPrompt := promptfoo.ApplyVars(prompt, test.Vars)
-					promptID := generatePromptID(prompt, providerConfig.ID)
+					promptID := generatePromptID(prompt, provider.Spec.ID)
 
 					evalVars := make(map[string]interface{})
-					for k, v := range providerConfig.Config {
+					for k, v := range provider.Spec.Config {
 						evalVars[k] = v
 					}
 					for k, v := range test.Vars {
 						evalVars[k] = v
 					}
-					evalVars["provider"] = providerConfig.ID
+					evalVars["provider"] = provider.Spec.ID
 
 					startTime := time.Now()
 					var response *promptfoo.ProviderResponse
 					if !dryRun {
-						response, err = provider.EvaluatePrompt(ctx, processedPrompt, evalVars)
+						response, err = provider.Executor.EvaluatePrompt(ctx, processedPrompt, evalVars)
 					} else {
 						response = &promptfoo.ProviderResponse{
 							Output: "Dry run response",
@@ -116,12 +132,12 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 					}
 					latency := time.Since(startTime)
 					if err != nil {
-						errorsChan <- fmt.Errorf("provider %s: %v", providerConfig.ID, err)
+						errorsChan <- fmt.Errorf("provider %s: %v", provider.Spec.ID, err)
 						return
 					}
 
 					success, grading := evaluateAssertions(response.Output, test.Assert)
-					resultID := generateResultID(prompt, providerConfig.ID, test.Vars)
+					resultID := generateResultID(prompt, provider.Spec.ID, test.Vars)
 					latencyMs := latency.Milliseconds()
 					if response.LatencyMs > 0 {
 						latencyMs = response.LatencyMs
@@ -131,7 +147,7 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 						ID:            resultID,
 						PromptID:      promptID,
 						Prompt:        map[string]string{"raw": processedPrompt, "label": prompt},
-						Provider:      map[string]string{"id": providerConfig.ID},
+						Provider:      map[string]string{"id": provider.Spec.ID, "label": provider.DisplayName()},
 						Response:      *response,
 						Success:       success,
 						Score:         ifThenElse(success, 1.0, 0.0),
@@ -139,7 +155,7 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 						GradingResult: grading,
 						LatencyMs:     latencyMs,
 					}
-				}(prompt, providerConfig, test, k)
+				}(prompt, provider, test, k)
 			}
 		}
 	}

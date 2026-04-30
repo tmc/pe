@@ -1,10 +1,6 @@
 package providers
 
-import (
-	"fmt"
-	"strconv"
-	"strings"
-)
+import "fmt"
 
 // CLIPreset represents a predefined CLI configuration.
 type CLIPreset struct {
@@ -32,92 +28,90 @@ func GetPresetConfig(presetName string, userOptions map[string]interface{}) (map
 }
 
 func buildMLXLMPreset(options map[string]interface{}) (map[string]interface{}, error) {
-	executable := getStringOption(options, "executable", "mlx_lm.generate")
-	command := buildCommandTemplate(
-		executable,
+	return presetConfig(
+		getStringOption(options, "executable", "mlx_lm.generate"),
 		[]string{
-			"{{if .Model}}--model {{printf \"%q\" .Model}}{{end}}",
-			"--prompt {{printf \"%q\" .Prompt}}",
-			"--max-tokens {{.MaxTokens}}",
-			"--temp {{.Temperature}}",
-			"--verbose false",
+			"{{if .HasModel}}--model{{end}}",
+			"{{if .HasModel}}{{.Model}}{{end}}",
+			"--prompt",
+			"{{.Prompt}}",
+			"{{if .HasMaxTokens}}--max-tokens{{end}}",
+			"{{if .HasMaxTokens}}{{.MaxTokens}}{{end}}",
+			"{{if .HasTemperature}}--temp{{end}}",
+			"{{if .HasTemperature}}{{.Temperature}}{{end}}",
 		},
-		getStringSliceOption(options, "args"),
-	)
-	return presetConfig(command, options), nil
+		options,
+	), nil
 }
 
 func buildMLXGoPreset(options map[string]interface{}) (map[string]interface{}, error) {
-	executable := getStringOption(options, "executable", "mlx-lm-generate")
-	command := buildCommandTemplate(
-		executable,
+	return presetConfig(
+		getStringOption(options, "executable", "mlx-lm-generate"),
 		[]string{
-			"{{if .Model}}--model {{printf \"%q\" .Model}}{{end}}",
-			"--prompt {{printf \"%q\" .Prompt}}",
-			"--max-tokens {{.MaxTokens}}",
-			"--temperature {{.Temperature}}",
-			"--quiet",
+			"{{if .HasModel}}--model{{end}}",
+			"{{if .HasModel}}{{.Model}}{{end}}",
+			"--prompt",
+			"{{.Prompt}}",
+			"{{if .HasMaxTokens}}--max-tokens{{end}}",
+			"{{if .HasMaxTokens}}{{.MaxTokens}}{{end}}",
+			"{{if .HasTemperature}}--temperature{{end}}",
+			"{{if .HasTemperature}}{{.Temperature}}{{end}}",
 		},
-		getStringSliceOption(options, "args"),
-	)
-	return presetConfig(command, options), nil
+		options,
+	), nil
 }
 
 func buildLlamaCPPPreset(options map[string]interface{}) (map[string]interface{}, error) {
-	executable := getStringOption(options, "executable", "llama-cli")
-	command := buildCommandTemplate(
-		executable,
+	return presetConfig(
+		getStringOption(options, "executable", "llama-cli"),
 		[]string{
-			"-m {{printf \"%q\" .Model}}",
-			"-p {{printf \"%q\" .Prompt}}",
-			"-n {{.MaxTokens}}",
-			"--temp {{.Temperature}}",
+			"{{if .HasModel}}-m{{end}}",
+			"{{if .HasModel}}{{.Model}}{{end}}",
+			"-p",
+			"{{.Prompt}}",
+			"{{if .HasMaxTokens}}-n{{end}}",
+			"{{if .HasMaxTokens}}{{.MaxTokens}}{{end}}",
+			"{{if .HasTemperature}}--temp{{end}}",
+			"{{if .HasTemperature}}{{.Temperature}}{{end}}",
 		},
-		getStringSliceOption(options, "args"),
-	)
-	return presetConfig(command, options), nil
+		options,
+	), nil
 }
 
 func buildLLMToolPreset(options map[string]interface{}) (map[string]interface{}, error) {
-	executable := getStringOption(options, "executable", "llm-tool")
-	command := buildCommandTemplate(
-		executable,
+	return presetConfig(
+		getStringOption(options, "executable", "llm-tool"),
 		[]string{
 			"generate",
-			"--model {{printf \"%q\" .Model}}",
-			"--prompt {{printf \"%q\" .Prompt}}",
-			"--max-tokens {{.MaxTokens}}",
-			"--temperature {{.Temperature}}",
+			"{{if .HasModel}}--model{{end}}",
+			"{{if .HasModel}}{{.Model}}{{end}}",
+			"--prompt",
+			"{{.Prompt}}",
+			"{{if .HasMaxTokens}}--max-tokens{{end}}",
+			"{{if .HasMaxTokens}}{{.MaxTokens}}{{end}}",
+			"{{if .HasTemperature}}--temperature{{end}}",
+			"{{if .HasTemperature}}{{.Temperature}}{{end}}",
 		},
-		getStringSliceOption(options, "args"),
-	)
-	return presetConfig(command, options), nil
+		options,
+	), nil
 }
 
-func buildCommandTemplate(executable string, baseArgs, extraArgs []string) string {
-	parts := []string{shellEscape(executable)}
-	parts = append(parts, baseArgs...)
-	for _, arg := range extraArgs {
-		parts = append(parts, shellEscape(arg))
-	}
-	return strings.Join(parts, " ")
-}
-
-func presetConfig(command string, userOptions map[string]interface{}) map[string]interface{} {
+func presetConfig(executable string, baseArgs []string, userOptions map[string]interface{}) map[string]interface{} {
 	config := make(map[string]interface{})
 	for k, v := range userOptions {
 		config[k] = v
 	}
-	config["command"] = command
+	if _, ok := userOptions["command"]; ok {
+		return config
+	}
+	if _, hasExecutable := userOptions["executable"]; hasExecutable {
+		if _, hasArgs := userOptions["args"]; hasArgs {
+			return config
+		}
+	}
+	config["executable"] = executable
+	args := append([]string(nil), baseArgs...)
+	args = append(args, getStringSliceOption(userOptions, "args")...)
+	config["args"] = args
 	return config
-}
-
-func shellEscape(s string) string {
-	if s == "" {
-		return "''"
-	}
-	if !strings.ContainsAny(s, " \t\n\r'\"\\") {
-		return s
-	}
-	return strconv.Quote(s)
 }

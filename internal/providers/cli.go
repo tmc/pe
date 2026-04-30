@@ -20,6 +20,9 @@ import (
 // GenericCLIProvider implements the Provider interface for any CLI tool
 type GenericCLIProvider struct {
 	commandTemplate string
+	executable      string
+	argTemplates    []string
+	promptStdin     bool
 	model           string
 	env             map[string]string
 	options         map[string]interface{}
@@ -27,20 +30,44 @@ type GenericCLIProvider struct {
 
 // NewGenericCLIProvider creates a new generic CLI provider
 func NewGenericCLIProvider(model string, options map[string]interface{}) (*GenericCLIProvider, error) {
-	cmdTemplate := getStringOption(options, "command", "")
-	if cmdTemplate == "" {
-		return nil, fmt.Errorf("generic cli provider requires 'command' option")
+	if options == nil {
+		options = map[string]interface{}{}
 	}
 
-	env := make(map[string]string)
-	if envMap, ok := options["env"].(map[string]interface{}); ok {
-		for k, v := range envMap {
-			env[k] = fmt.Sprintf("%v", v)
+	env := getStringMapOption(options, "env")
+	executable := getStringOption(options, "executable", "")
+	args := getStringSliceOption(options, "args")
+	commandTemplate := ""
+
+	if command, ok := options["command"]; ok {
+		switch v := command.(type) {
+		case string:
+			commandTemplate = v
+		case []string:
+			if executable == "" && len(v) > 0 {
+				executable = v[0]
+				args = append([]string(nil), v[1:]...)
+			}
+		case []interface{}:
+			if executable == "" && len(v) > 0 {
+				executable = fmt.Sprintf("%v", v[0])
+				args = make([]string, 0, len(v)-1)
+				for _, arg := range v[1:] {
+					args = append(args, fmt.Sprintf("%v", arg))
+				}
+			}
 		}
 	}
 
+	if commandTemplate == "" && executable == "" {
+		return nil, fmt.Errorf("generic cli provider requires command or executable")
+	}
+
 	return &GenericCLIProvider{
-		commandTemplate: cmdTemplate,
+		commandTemplate: commandTemplate,
+		executable:      executable,
+		argTemplates:    args,
+		promptStdin:     getBoolOption(options, "prompt_stdin", false),
 		model:           model,
 		env:             env,
 		options:         options,
@@ -58,59 +85,24 @@ func (p *GenericCLIProvider) Model() string {
 }
 
 type templateData struct {
-	Model       string
-	Prompt      string
-	Temperature float64
-	MaxTokens   int
+	Model          string
+	HasModel       bool
+	Prompt         string
+	HasPrompt      bool
+	Temperature    float64
+	HasTemperature bool
+	MaxTokens      int
+	HasMaxTokens   bool
 }
 
 // Generate generates a response using the configured CLI command
 func (p *GenericCLIProvider) Generate(ctx context.Context, prompt string, options llm.GenerateOptions) (*llm.GenerateResponse, error) {
-	// Prepare template data
-	data := templateData{
-		Model:       p.model,
-		Prompt:      prompt,
-		Temperature: getFloat64Option(p.options, "temperature", 0.7),
-		MaxTokens:   getIntOption(p.options, "max_tokens", getIntOption(p.options, "num_predict", 1000)),
-	}
+	data := makeTemplateData(p.model, prompt, p.options, options)
 
-	if options.Temperature != nil {
-		data.Temperature = *options.Temperature
-	}
-	if options.MaxTokens != nil {
-		data.MaxTokens = *options.MaxTokens
-	}
-
-	// Parse and execute template
-	tmpl, err := template.New("cli").Parse(p.commandTemplate)
+	cmd, err := p.buildCommand(ctx, data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse command template: %w", err)
+		return nil, err
 	}
-
-	var cmdStr bytes.Buffer
-	if err := tmpl.Execute(&cmdStr, data); err != nil {
-		return nil, fmt.Errorf("failed to execute command template: %w", err)
-	}
-
-	// Parse command string into executable and arguments
-	// We use shellquote to handle quoted arguments correctly
-	parts, err := shellquote.Split(cmdStr.String())
-	if err != nil {
-		return nil, fmt.Errorf("failed to split command string: %w", err)
-	}
-	if len(parts) == 0 {
-		return nil, fmt.Errorf("empty command resulted from template")
-	}
-
-	executable := parts[0]
-	args := parts[1:]
-
-	// Look for executable
-	if _, err := exec.LookPath(executable); err != nil {
-		return nil, fmt.Errorf("executable not found: %s", executable)
-	}
-
-	cmd := exec.CommandContext(ctx, executable, args...)
 
 	// Set environment variables
 	cmd.Env = os.Environ()
@@ -138,17 +130,21 @@ func (p *GenericCLIProvider) Generate(ctx context.Context, prompt string, option
 // EvaluatePrompt implements the legacy Provider interface method
 func (p *GenericCLIProvider) EvaluatePrompt(ctx context.Context, prompt string, vars map[string]interface{}) (*promptfoo.ProviderResponse, error) {
 	// Apply variables to prompt if needed
-	finalPrompt := prompt
-	if len(vars) > 0 {
-		for key, value := range vars {
-			placeholder := fmt.Sprintf("{{%s}}", key)
-			finalPrompt = strings.ReplaceAll(finalPrompt, placeholder, fmt.Sprintf("%v", value))
-			placeholder = fmt.Sprintf("{{.%s}}", key)
-			finalPrompt = strings.ReplaceAll(finalPrompt, placeholder, fmt.Sprintf("%v", value))
-		}
+	finalPrompt := promptfoo.ApplyVars(prompt, vars)
+
+	generateOptions := llm.GenerateOptions{}
+	if temp, ok := lookupFloat64Option(vars, "temperature"); ok {
+		generateOptions.Temperature = &temp
+	} else if temp, ok := lookupFloat64Option(vars, "temp"); ok {
+		generateOptions.Temperature = &temp
+	}
+	if maxTokens, ok := lookupIntOption(vars, "max_tokens"); ok {
+		generateOptions.MaxTokens = &maxTokens
+	} else if maxTokens, ok := lookupIntOption(vars, "num_predict"); ok {
+		generateOptions.MaxTokens = &maxTokens
 	}
 
-	result, err := p.Generate(ctx, finalPrompt, llm.GenerateOptions{})
+	result, err := p.Generate(ctx, finalPrompt, generateOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -172,6 +168,126 @@ func (p *GenericCLIProvider) SupportsStreaming() bool {
 
 func (p *GenericCLIProvider) SupportsBatch() bool {
 	return false
+}
+
+func (p *GenericCLIProvider) buildCommand(ctx context.Context, data templateData) (*exec.Cmd, error) {
+	if p.executable != "" {
+		executable, err := renderTemplateString(p.executable, data)
+		if err != nil {
+			return nil, fmt.Errorf("render executable: %w", err)
+		}
+		executable = strings.TrimSpace(executable)
+		if executable == "" {
+			return nil, fmt.Errorf("empty executable")
+		}
+
+		args, err := renderTemplateArgs(p.argTemplates, data)
+		if err != nil {
+			return nil, fmt.Errorf("render args: %w", err)
+		}
+		if _, err := exec.LookPath(executable); err != nil {
+			return nil, fmt.Errorf("executable not found: %s", executable)
+		}
+		cmd := exec.CommandContext(ctx, executable, args...)
+		if p.promptStdin {
+			cmd.Stdin = strings.NewReader(data.Prompt)
+		}
+		return cmd, nil
+	}
+
+	tmpl, err := template.New("cli").Parse(p.commandTemplate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse command template: %w", err)
+	}
+
+	var cmdStr bytes.Buffer
+	if err := tmpl.Execute(&cmdStr, data); err != nil {
+		return nil, fmt.Errorf("failed to execute command template: %w", err)
+	}
+
+	parts, err := shellquote.Split(cmdStr.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to split command string: %w", err)
+	}
+	if len(parts) == 0 {
+		return nil, fmt.Errorf("empty command resulted from template")
+	}
+
+	executable := parts[0]
+	args := parts[1:]
+	if _, err := exec.LookPath(executable); err != nil {
+		return nil, fmt.Errorf("executable not found: %s", executable)
+	}
+	cmd := exec.CommandContext(ctx, executable, args...)
+	if p.promptStdin {
+		cmd.Stdin = strings.NewReader(data.Prompt)
+	}
+	return cmd, nil
+}
+
+func makeTemplateData(model, prompt string, providerOptions map[string]interface{}, options llm.GenerateOptions) templateData {
+	data := templateData{
+		Model:     model,
+		HasModel:  model != "",
+		Prompt:    prompt,
+		HasPrompt: true,
+	}
+
+	if temp, ok := lookupFloat64Option(providerOptions, "temperature"); ok {
+		data.Temperature = temp
+		data.HasTemperature = true
+	}
+	if temp, ok := lookupFloat64Option(providerOptions, "temp"); ok && !data.HasTemperature {
+		data.Temperature = temp
+		data.HasTemperature = true
+	}
+	if maxTokens, ok := lookupIntOption(providerOptions, "max_tokens"); ok {
+		data.MaxTokens = maxTokens
+		data.HasMaxTokens = true
+	}
+	if maxTokens, ok := lookupIntOption(providerOptions, "num_predict"); ok && !data.HasMaxTokens {
+		data.MaxTokens = maxTokens
+		data.HasMaxTokens = true
+	}
+
+	if options.Temperature != nil {
+		data.Temperature = *options.Temperature
+		data.HasTemperature = true
+	}
+	if options.MaxTokens != nil {
+		data.MaxTokens = *options.MaxTokens
+		data.HasMaxTokens = true
+	}
+
+	return data
+}
+
+func renderTemplateArgs(templates []string, data templateData) ([]string, error) {
+	args := make([]string, 0, len(templates))
+	for _, argTemplate := range templates {
+		rendered, err := renderTemplateString(argTemplate, data)
+		if err != nil {
+			return nil, err
+		}
+		rendered = strings.TrimSpace(rendered)
+		if rendered == "" {
+			continue
+		}
+		args = append(args, rendered)
+	}
+	return args, nil
+}
+
+func renderTemplateString(value string, data templateData) (string, error) {
+	tmpl, err := template.New("cli-arg").Parse(value)
+	if err != nil {
+		return "", err
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 func parseCLIResponse(stdout string, model string, measuredLatency time.Duration) *llm.GenerateResponse {

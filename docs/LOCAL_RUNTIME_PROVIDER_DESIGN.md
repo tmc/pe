@@ -1,0 +1,40 @@
+# Local Runtime Provider Design
+
+`pe` now adopts the richer provider-spec ideas already present in the Promptfoo compatibility layer, but it does not route execution through the plugin itself.
+
+## Decision
+
+Reuse `pf` concepts, not `pf` as the backend.
+
+## Why
+
+- The Promptfoo plugin in this repository already models provider configs as richer objects and normalizes schema differences well.
+- That plugin is a config translation layer. It does not provide a runtime execution stack for Ollama, `mlx-go-lm`, or `llama.cpp`.
+- `pe` already has working execution backends, including a native Ollama HTTP adapter that preserves token counts and timing metadata.
+- Reusing the provider-spec shape while keeping execution in `pe` avoids adding another provider abstraction or a second runtime path.
+
+## Resulting Structure
+
+- `internal/promptfoo/types.go`
+  - owns the provider spec shape used by config loading
+  - supports string or object providers
+  - object providers can carry `id`, `label`, `config`, `env`, `prompts`, and `delay`
+
+- `internal/providers/materialize.go`
+  - separates provider materialization from execution
+  - merges provider-local env into executor options
+  - parses execution delay
+  - returns executable providers with labels and prompt scoping preserved
+
+- `internal/providers/cli.go`
+  - executes argv directly when configured with `executable` and `args`
+  - keeps shell-string execution only as a compatibility fallback
+  - decodes structured JSON responses for output, token counts, latency, and runtime metadata
+
+- `internal/inference/providers/ollama/ollama.go`
+  - remains the local Ollama execution path
+  - preserves `raw`, `seed`, `num_predict`, base URL, and timing/token counters
+
+## Tradeoff
+
+This keeps `pe` and the Promptfoo plugin aligned on provider schema without forcing them to share an execution backend that does not exist yet. The design stays explicit and small: one provider spec model, one materialization step, and existing executors underneath.

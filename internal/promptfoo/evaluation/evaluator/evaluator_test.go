@@ -325,3 +325,32 @@ func TestEvaluateConcurrency(t *testing.T) {
 		assert.Equal(t, "Dry run response", r.Response.Output)
 	}
 }
+
+func TestEvaluate_ObjectProviderLabelAndPromptFilter(t *testing.T) {
+	config := promptfoo.Config{
+		Prompts: []string{"keep", "skip"},
+		Providers: []promptfoo.ProviderConfig{
+			{
+				ID:      "mock",
+				Label:   "mock labeled",
+				Prompts: []string{"keep"},
+			},
+		},
+		Tests: []promptfoo.TestCase{
+			{
+				Vars: map[string]interface{}{},
+				Assert: []promptfoo.Assertion{
+					{Type: "equals", Value: "Dry run response"},
+				},
+			},
+		},
+	}
+
+	result, err := Evaluate(config, 10*time.Second, true, 1, false)
+	require.NoError(t, err)
+	require.Len(t, result.Results.Results, 1)
+	require.Len(t, result.Results.Prompts, 1)
+	assert.Equal(t, "mock labeled", result.Results.Results[0].Provider["label"])
+	assert.Equal(t, "mock labeled", result.Results.Prompts[0].Provider)
+	assert.Equal(t, "keep", result.Results.Results[0].Prompt["label"])
+}
