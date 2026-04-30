@@ -42,14 +42,25 @@ func peCmd(peBinary string) script.Cmd {
 }
 
 func TestScripts(t *testing.T) {
+	binDir := t.TempDir()
+	peBinary := filepath.Join(binDir, "pe")
+	promptfooPlugin := filepath.Join(binDir, "pe-promptfoo")
+
 	// Build the pe binary first
-	cmd := exec.Command("go", "build", "-o", "../pe", "./cmd/pe")
+	cmd := exec.Command("go", "build", "-o", peBinary, "./cmd/pe")
 	cmd.Dir = ".."
+	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to build pe binary: %v", err)
 	}
 
-	pePath, _ := filepath.Abs("../pe")
+	// Build the promptfoo plugin so `pe promptfoo` resolves during script tests.
+	cmd = exec.Command("go", "build", "-o", promptfooPlugin, "./plugins/promptfoo")
+	cmd.Dir = ".."
+	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local")
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to build pe-promptfoo plugin: %v", err)
+	}
 
 	// Create custom commands - remove exec, add pe
 	cmds := make(map[string]script.Cmd)
@@ -60,7 +71,7 @@ func TestScripts(t *testing.T) {
 		}
 	}
 	// Add our custom pe command
-	cmds["pe"] = peCmd(pePath)
+	cmds["pe"] = peCmd(peBinary)
 
 	// Create engine with custom commands (no exec, only pe)
 	engine := &script.Engine{
@@ -72,6 +83,7 @@ func TestScripts(t *testing.T) {
 	env := []string{
 		"PE_TEST_MODE=true",
 		"PE_MOCK_PROVIDER=true",
+		"PATH=" + binDir + string(os.PathListSeparator) + os.Getenv("PATH"),
 	}
 
 	// Run tests from testdata/script directory

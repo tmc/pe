@@ -43,9 +43,9 @@ func main() {
 
 	// Run as normal command
 	rootCmd := &cobra.Command{
-		Use:   "pe-promptfoo",
+		Use:   "promptfoo",
 		Short: "Promptfoo compatibility plugin for PE",
-		Long:  `Import, export, and convert between PE and Promptfoo formats.`,
+		Long:  `Import, export, and convert Promptfoo-compatible configuration files.`,
 	}
 
 	rootCmd.AddCommand(

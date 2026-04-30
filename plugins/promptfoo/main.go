@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/tmc/pe/internal/promptfoo"
 	"gopkg.in/yaml.v3"
 )
 
@@ -44,9 +45,9 @@ func main() {
 
 	// Run as normal command
 	rootCmd := &cobra.Command{
-		Use:   "pe-promptfoo",
+		Use:   "promptfoo",
 		Short: "Promptfoo compatibility plugin for PE",
-		Long:  `Import, export, and convert between PE and Promptfoo formats.`,
+		Long:  `Import, export, and convert Promptfoo-compatible configuration files.`,
 	}
 
 	rootCmd.AddCommand(
@@ -80,27 +81,18 @@ func importCmd() *cobra.Command {
 				return fmt.Errorf("failed to read input file: %w", err)
 			}
 
-			var config promptfoo.Config
-			if err := yaml.Unmarshal(data, &config); err != nil {
+			config, err := readConfig(data)
+			if err != nil {
 				return fmt.Errorf("failed to parse promptfoo config: %w", err)
 			}
 
 			// Convert to PE format
-			peConfig := convertFromPromptfoo(&config)
+			peConfig := convertFromPromptfoo(config)
 
 			// Output based on format
-			var outputData []byte
-			switch format {
-			case "json":
-				outputData, err = json.MarshalIndent(peConfig, "", "  ")
-			case "yaml":
-				outputData, err = yaml.Marshal(peConfig)
-			default:
-				return fmt.Errorf("unsupported format: %s", format)
-			}
-
+			outputData, err := marshalConfig(peConfig, format)
 			if err != nil {
-				return fmt.Errorf("failed to marshal output: %w", err)
+				return err
 			}
 
 			if output == "-" || output == "" {
@@ -140,31 +132,18 @@ func exportCmd() *cobra.Command {
 				return fmt.Errorf("failed to read input file: %w", err)
 			}
 
-			// Parse based on extension
-			var peConfig map[string]interface{}
-			if err := yaml.Unmarshal(data, &peConfig); err != nil {
-				// Try JSON
-				if err := json.Unmarshal(data, &peConfig); err != nil {
-					return fmt.Errorf("failed to parse PE config: %w", err)
-				}
+			peConfig, err := readConfig(data)
+			if err != nil {
+				return fmt.Errorf("failed to parse PE config: %w", err)
 			}
 
 			// Convert to promptfoo format
 			pfConfig := convertToPromptfoo(peConfig)
 
 			// Output based on format
-			var outputData []byte
-			switch format {
-			case "json":
-				outputData, err = json.MarshalIndent(pfConfig, "", "  ")
-			case "yaml":
-				outputData, err = yaml.Marshal(pfConfig)
-			default:
-				return fmt.Errorf("unsupported format: %s", format)
-			}
-
+			outputData, err := marshalConfig(pfConfig, format)
 			if err != nil {
-				return fmt.Errorf("failed to marshal output: %w", err)
+				return err
 			}
 
 			if output == "-" || output == "" {
@@ -210,13 +189,7 @@ func convertCmd() *cobra.Command {
 
 			switch direction {
 			case "pe-to-promptfoo":
-				// Parse PE config
-				var peConfig map[string]interface{}
-				if inputFormat == "json" {
-					err = json.Unmarshal(data, &peConfig)
-				} else {
-					err = yaml.Unmarshal(data, &peConfig)
-				}
+				peConfig, err := readConfigWithFormat(data, resolvedFormat(inputFormat, inputFile))
 				if err != nil {
 					return fmt.Errorf("failed to parse input: %w", err)
 				}
@@ -224,34 +197,18 @@ func convertCmd() *cobra.Command {
 				// Convert to promptfoo
 				pfConfig := convertToPromptfoo(peConfig)
 
-				// Marshal output
-				if outputFormat == "json" {
-					outputData, err = json.MarshalIndent(pfConfig, "", "  ")
-				} else {
-					outputData, err = yaml.Marshal(pfConfig)
-				}
+				outputData, err = marshalConfig(pfConfig, resolvedFormat(outputFormat, outputFile))
 
 			case "promptfoo-to-pe":
-				// Parse promptfoo config
-				var pfConfig promptfoo.Config
-				if inputFormat == "json" {
-					err = json.Unmarshal(data, &pfConfig)
-				} else {
-					err = yaml.Unmarshal(data, &pfConfig)
-				}
+				pfConfig, err := readConfigWithFormat(data, resolvedFormat(inputFormat, inputFile))
 				if err != nil {
 					return fmt.Errorf("failed to parse input: %w", err)
 				}
 
 				// Convert to PE
-				peConfig := convertFromPromptfoo(&pfConfig)
+				peConfig := convertFromPromptfoo(pfConfig)
 
-				// Marshal output
-				if outputFormat == "json" {
-					outputData, err = json.MarshalIndent(peConfig, "", "  ")
-				} else {
-					outputData, err = yaml.Marshal(peConfig)
-				}
+				outputData, err = marshalConfig(peConfig, resolvedFormat(outputFormat, outputFile))
 
 			default:
 				return fmt.Errorf("unknown direction: %s", direction)
@@ -274,76 +231,302 @@ func convertCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&inputFormat, "input-format", "yaml", "Input format (yaml or json)")
-	cmd.Flags().StringVar(&outputFormat, "output-format", "yaml", "Output format (yaml or json)")
+	cmd.Flags().StringVar(&inputFormat, "input-format", "", "Input format (yaml or json; defaults from file extension)")
+	cmd.Flags().StringVar(&outputFormat, "output-format", "", "Output format (yaml or json; defaults from file extension)")
 	cmd.Flags().StringVar(&direction, "direction", "promptfoo-to-pe", "Conversion direction (promptfoo-to-pe or pe-to-promptfoo)")
 
 	return cmd
 }
 
 // Conversion functions
-func convertFromPromptfoo(config *promptfoo.Config) map[string]interface{} {
-	// TODO: Implement full conversion logic
-	// For now, return a basic structure
-	return map[string]interface{}{
-		"version":     "1.0",
-		"prompts":     config.Prompts,
-		"providers":   config.Providers,
-		"tests":       config.Tests,
-		"defaultTest": config.DefaultTest,
-		"description": config.Description,
+func convertFromPromptfoo(config map[string]interface{}) map[string]interface{} {
+	out := map[string]interface{}{
+		"version": "1.0",
+	}
+
+	copyIfPresent(out, config, "description")
+	copyIfPresent(out, config, "prompts")
+
+	if providers, ok := config["providers"]; ok {
+		out["providers"] = convertProvidersFromPromptfoo(providers)
+	}
+	if tests, ok := config["tests"]; ok {
+		out["tests"] = normalizeTests(tests)
+	}
+	if defaults, ok := config["defaultTest"]; ok {
+		out["defaultTest"] = normalizeDefaultTest(defaults)
+	}
+
+	return out
+}
+
+func convertToPromptfoo(peConfig map[string]interface{}) map[string]interface{} {
+	out := make(map[string]interface{})
+
+	copyIfPresent(out, peConfig, "description")
+	copyIfPresent(out, peConfig, "prompts")
+
+	if providers, ok := peConfig["providers"]; ok {
+		out["providers"] = convertProvidersToPromptfoo(providers)
+	}
+	if tests, ok := peConfig["tests"]; ok {
+		out["tests"] = normalizeTests(tests)
+	}
+	if defaults, ok := peConfig["defaultTest"]; ok {
+		out["defaultTest"] = normalizeDefaultTest(defaults)
+	} else if defaults, ok := peConfig["default_test"]; ok {
+		out["defaultTest"] = normalizeDefaultTest(defaults)
+	}
+
+	return out
+}
+
+func readConfig(data []byte) (map[string]interface{}, error) {
+	return readConfigWithFormat(data, "")
+}
+
+func readConfigWithFormat(data []byte, format string) (map[string]interface{}, error) {
+	var config map[string]interface{}
+
+	switch format {
+	case "", "yaml":
+		if err := yaml.Unmarshal(data, &config); err == nil {
+			return config, nil
+		}
+		if format == "yaml" {
+			return nil, fmt.Errorf("failed to parse yaml config")
+		}
+	case "json":
+		if err := json.Unmarshal(data, &config); err == nil {
+			return config, nil
+		}
+		return nil, fmt.Errorf("failed to parse json config")
+	default:
+		return nil, fmt.Errorf("unsupported format: %s", format)
+	}
+
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
+func marshalConfig(config map[string]interface{}, format string) ([]byte, error) {
+	switch format {
+	case "json":
+		return json.MarshalIndent(config, "", "  ")
+	case "", "yaml":
+		return yaml.Marshal(config)
+	default:
+		return nil, fmt.Errorf("unsupported format: %s", format)
 	}
 }
 
-func convertToPromptfoo(peConfig map[string]interface{}) *promptfoo.Config {
-	// TODO: Implement full conversion logic
-	// For now, return a basic structure
-	config := &promptfoo.Config{}
+func resolvedFormat(format, filename string) string {
+	if format != "" {
+		return format
+	}
+	if strings.EqualFold(filepath.Ext(filename), ".json") {
+		return "json"
+	}
+	return "yaml"
+}
 
-	// Convert prompts if present
-	if prompts, ok := peConfig["prompts"]; ok {
-		// Handle different prompt formats
-		switch v := prompts.(type) {
-		case []interface{}:
-			for _, p := range v {
-				if str, ok := p.(string); ok {
-					config.Prompts = append(config.Prompts, str)
-				}
-			}
-		case []string:
-			config.Prompts = v
-		}
+func copyIfPresent(dst, src map[string]interface{}, key string) {
+	if value, ok := src[key]; ok {
+		dst[key] = value
+	}
+}
+
+func normalizeTests(value interface{}) []interface{} {
+	items, ok := value.([]interface{})
+	if !ok {
+		return nil
 	}
 
-	// Convert providers if present
-	if providers, ok := peConfig["providers"]; ok {
-		switch v := providers.(type) {
-		case []interface{}:
-			for _, p := range v {
-				if str, ok := p.(string); ok {
-					config.Providers = append(config.Providers, str)
-				}
-			}
-		case []string:
-			config.Providers = v
+	tests := make([]interface{}, 0, len(items))
+	for _, item := range items {
+		test, ok := stringMap(item)
+		if !ok {
+			tests = append(tests, item)
+			continue
 		}
-	}
 
-	// Convert tests if present - simplified for now
-	if tests, ok := peConfig["tests"]; ok {
-		switch v := tests.(type) {
-		case []interface{}:
-			for _, t := range v {
-				if testMap, ok := t.(map[string]interface{}); ok {
-					testCase := promptfoo.TestCase{}
-					if vars, ok := testMap["vars"].(map[string]interface{}); ok {
-						testCase.Vars = vars
-					}
-					config.Tests = append(config.Tests, testCase)
-				}
+		out := make(map[string]interface{})
+		for key, val := range test {
+			switch key {
+			case "vars", "variables":
+			case "assert", "assertions":
+			default:
+				out[key] = val
 			}
 		}
+
+		if vars, ok := firstPresent(test, "vars", "variables"); ok {
+			out["vars"] = vars
+		}
+		if assert, ok := firstPresent(test, "assert", "assertions"); ok {
+			out["assert"] = normalizeAssertions(assert)
+		}
+
+		tests = append(tests, out)
 	}
 
-	return config
+	return tests
+}
+
+func normalizeDefaultTest(value interface{}) interface{} {
+	defaults, ok := stringMap(value)
+	if !ok {
+		return value
+	}
+
+	out := make(map[string]interface{})
+	for key, val := range defaults {
+		if key == "assert" || key == "assertions" {
+			continue
+		}
+		out[key] = val
+	}
+
+	if assert, ok := firstPresent(defaults, "assert", "assertions"); ok {
+		out["assert"] = normalizeAssertions(assert)
+	}
+
+	return out
+}
+
+func normalizeAssertions(value interface{}) []interface{} {
+	items, ok := value.([]interface{})
+	if !ok {
+		return nil
+	}
+
+	assertions := make([]interface{}, 0, len(items))
+	for _, item := range items {
+		assertion, ok := stringMap(item)
+		if !ok {
+			assertions = append(assertions, item)
+			continue
+		}
+
+		out := make(map[string]interface{}, len(assertion))
+		for key, val := range assertion {
+			if key == "type" {
+				if typeName, ok := val.(string); ok {
+					out[key] = strings.ReplaceAll(typeName, "_", "-")
+					continue
+				}
+			}
+			out[key] = val
+		}
+
+		assertions = append(assertions, out)
+	}
+
+	return assertions
+}
+
+func convertProvidersFromPromptfoo(value interface{}) []interface{} {
+	items, ok := value.([]interface{})
+	if !ok {
+		return nil
+	}
+
+	providers := make([]interface{}, 0, len(items))
+	for _, item := range items {
+		provider, ok := stringMap(item)
+		if !ok {
+			providers = append(providers, item)
+			continue
+		}
+
+		out := make(map[string]interface{})
+		if id, ok := provider["id"]; ok {
+			out["id"] = id
+		}
+
+		if name, ok := provider["apiProvider"]; ok {
+			out["name"] = name
+		} else if name, ok := provider["type"]; ok {
+			out["name"] = name
+		}
+
+		config := make(map[string]interface{})
+		for key, val := range provider {
+			switch key {
+			case "id", "apiProvider", "type":
+			default:
+				config[key] = val
+			}
+		}
+		if len(config) > 0 {
+			out["config"] = config
+		}
+
+		providers = append(providers, out)
+	}
+
+	return providers
+}
+
+func convertProvidersToPromptfoo(value interface{}) []interface{} {
+	items, ok := value.([]interface{})
+	if !ok {
+		return nil
+	}
+
+	providers := make([]interface{}, 0, len(items))
+	for _, item := range items {
+		provider, ok := stringMap(item)
+		if !ok {
+			providers = append(providers, item)
+			continue
+		}
+
+		if _, ok := provider["apiProvider"]; ok {
+			providers = append(providers, provider)
+			continue
+		}
+
+		out := make(map[string]interface{})
+		if id, ok := provider["id"]; ok {
+			out["id"] = id
+		}
+
+		if apiProvider, ok := firstPresent(provider, "name", "type", "apiProvider"); ok {
+			out["apiProvider"] = apiProvider
+		}
+
+		if config, ok := stringMap(provider["config"]); ok {
+			for key, val := range config {
+				out[key] = val
+			}
+		}
+		for key, val := range provider {
+			switch key {
+			case "id", "name", "type", "apiProvider", "config":
+			default:
+				out[key] = val
+			}
+		}
+
+		providers = append(providers, out)
+	}
+
+	return providers
+}
+
+func firstPresent(m map[string]interface{}, keys ...string) (interface{}, bool) {
+	for _, key := range keys {
+		if value, ok := m[key]; ok {
+			return value, true
+		}
+	}
+	return nil, false
+}
+
+func stringMap(value interface{}) (map[string]interface{}, bool) {
+	m, ok := value.(map[string]interface{})
+	return m, ok
 }

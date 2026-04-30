@@ -935,8 +935,9 @@ pe plugin list
 Example output:
 ```
 Installed plugins:
-  promptfoo - Promptfoo compatibility layer for PE
-    Version: 0.1.0
+  openai (built-in)
+  anthropic (built-in)
+  promptfoo v0.1.0
 ```
 
 #### plugin run
@@ -994,7 +995,15 @@ To create a PE plugin:
 
 #### promptfoo
 
-The promptfoo compatibility plugin provides import/export functionality:
+The Promptfoo compatibility plugin is exposed when a `pe-promptfoo` executable is on your `PATH`.
+
+Build it from this repository:
+
+```bash
+go build -o ~/bin/pe-promptfoo ./plugins/promptfoo
+```
+
+Once installed, the plugin provides config import/export/conversion commands:
 
 ```bash
 # Import promptfoo configuration
@@ -1004,7 +1013,7 @@ pe promptfoo import promptfoo-config.yaml -o pe-config.yaml
 pe promptfoo export pe-config.yaml -o promptfoo-config.yaml
 
 # Convert between formats
-pe promptfoo convert input.yaml output.json
+pe promptfoo convert input.yaml output.json --direction pe-to-promptfoo
 ```
 
 ---

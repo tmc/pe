@@ -1,276 +1,77 @@
-# Test pe promptfoo integration - import/export compatibility
-# TODO: promptfoo command not yet implemented - skip for now
-skip 'promptfoo command not implemented'
+# Test promptfoo plugin integration through dynamic plugin discovery.
 
-# Import a basic promptfoo config
-pe promptfoo import promptfoo-config.yaml -o pe-config.yaml
-stdout 'Importing promptfoo configuration'
-stdout '✓ Imported configuration'
-stdout '2 prompts'
-stdout '3 tests'
-exists pe-config.yaml
+pe promptfoo --help
+stdout 'promptfoo \[command\]'
+stdout 'Import a Promptfoo configuration file'
+stdout 'Export a PE configuration to Promptfoo format'
 
-# Check imported config structure
-grep 'prompts:' pe-config.yaml
-grep 'tests:' pe-config.yaml
-grep 'description:' pe-config.yaml
+# Import a promptfoo-style config into the PE compatibility shape.
+pe promptfoo import promptfoo-config.yaml -o imported-pe.yaml
+exists imported-pe.yaml
+grep 'version: "1.0"' imported-pe.yaml
+grep 'name: openai' imported-pe.yaml
+grep 'model: gpt-4o-mini' imported-pe.yaml
+grep 'llm-rubric' imported-pe.yaml
 
-# Import promptfoo results
-pe promptfoo import promptfoo-results.json -o pe-results.json
-stdout 'Detected promptfoo results file'
-stdout '✓ Imported test results'
-exists pe-results.json
-
-# Export PE config to promptfoo format
-pe promptfoo export -c pe-config.yaml -o exported-promptfoo.yaml
-stdout 'Exporting configuration'
-stdout '✓ Exported configuration'
+# Export a PE-style config back to promptfoo-friendly keys.
+pe promptfoo export pe-config.yaml -o exported-promptfoo.yaml
 exists exported-promptfoo.yaml
+grep 'apiProvider: openai' exported-promptfoo.yaml
+grep 'temperature: 0.2' exported-promptfoo.yaml
+grep 'vars:' exported-promptfoo.yaml
+grep 'not-contains' exported-promptfoo.yaml
 
-# Export with JSON format
-pe promptfoo export -c pe-config.yaml -o exported-promptfoo.json -f json
-stdout 'Format: json'
-exists exported-promptfoo.json
-grep '"prompts"' exported-promptfoo.json
+# Conversions should honor direction and infer JSON from the output extension.
+pe promptfoo convert pe-config.yaml converted-promptfoo.json --direction pe-to-promptfoo
+exists converted-promptfoo.json
+grep '"defaultTest"' converted-promptfoo.json
+grep '"not-contains"' converted-promptfoo.json
+grep '"apiProvider": "openai"' converted-promptfoo.json
 
-# Export test results to promptfoo format
-pe test config.yaml --export pe-native-results.json
-pe promptfoo export -r pe-native-results.json -o promptfoo-output.json
-stdout 'Exporting test results'
-stdout '✓ Exported test results'
-stdout 'Tests: 3'
-exists promptfoo-output.json
-
-# Verify promptfoo output structure
-grep '"version": 2' promptfoo-output.json
-grep '"results"' promptfoo-output.json
-grep '"stats"' promptfoo-output.json
-
-# Convert between formats
-pe promptfoo convert promptfoo-config.yaml -o converted.json
-stdout 'Converting.*to json format'
-stdout '✓ Converted'
-exists converted.json
-
-# Convert back to YAML
-pe promptfoo convert converted.json -o converted-back.yaml -f yaml
-stdout 'Converting.*to yaml format'
-exists converted-back.yaml
-
-# Import with options
-pe promptfoo import complex-promptfoo.yaml -o complex-pe.yaml --preserve-providers --expand-includes
-stdout '✓ Imported configuration'
-stdout '5 providers'
-grep 'providers:' complex-pe.yaml
-
-# Test assertion conversion
-pe promptfoo import with-assertions.yaml -o pe-with-assertions.yaml --convert-assertions
-stdout '✓ Imported configuration'
-grep 'assertions:' pe-with-assertions.yaml
-grep 'type: contains' pe-with-assertions.yaml
-grep 'type: not_contains' pe-with-assertions.yaml
-grep 'type: llm_rubric' pe-with-assertions.yaml
-
-# Round-trip test
-pe promptfoo import original.yaml -o intermediate.yaml
-pe promptfoo export -c intermediate.yaml -o roundtrip.yaml
-# Files should be semantically equivalent
-exists roundtrip.yaml
+pe promptfoo convert promptfoo-config.yaml converted-pe.yaml
+exists converted-pe.yaml
+grep 'defaultTest:' converted-pe.yaml
+grep 'name: openai' converted-pe.yaml
 
 -- promptfoo-config.yaml --
-description: "Test prompt evaluation"
+description: "Promptfoo source config"
 prompts:
-  - "You are a helpful assistant. {{question}}"
-  - file://assistant-prompt.txt
+  - "Answer {{question}}"
 providers:
-  - openai:gpt-4
-  - anthropic:claude-3
+  - id: gpt4-mini
+    apiProvider: openai
+    model: gpt-4o-mini
+    temperature: 0.1
+  - anthropic:claude-3-haiku
+defaultTest:
+  assert:
+    - type: not-contains
+      value: "error"
 tests:
   - vars:
       question: "What is 2+2?"
     assert:
-      - type: equals
-        value: "4"
-  - vars:
-      question: "Capital of France?"
-    assert:
-      - type: contains
-        value: "Paris"
-  - vars:
-      question: "Explain recursion"
-    assert:
       - type: llm-rubric
-        value: "Response explains recursion clearly"
+        value: "Says 4"
 
--- assistant-prompt.txt --
-You are an expert assistant focused on accuracy.
-
--- promptfoo-results.json --
-{
-  "version": 2,
-  "createdAt": "2024-01-20T10:00:00Z",
-  "results": {
-    "table": {
-      "head": {
-        "prompts": [
-          {
-            "raw": "You are a helpful assistant",
-            "label": "assistant-v1",
-            "provider": "openai:gpt-4"
-          }
-        ],
-        "vars": ["question"]
-      },
-      "body": [
-        {
-          "test": {
-            "vars": {"question": "What is 2+2?"},
-            "assert": [{"type": "equals", "value": "4"}]
-          },
-          "outputs": [
-            {
-              "text": "4",
-              "pass": true,
-              "tokenUsage": {"total": 50, "prompt": 20, "completion": 30},
-              "latency": 523
-            }
-          ]
-        }
-      ]
-    }
-  },
-  "stats": {
-    "totalPrompts": 1,
-    "totalTests": 1,
-    "totalPass": 1,
-    "totalFail": 0
-  }
-}
-
--- config.yaml --
+-- pe-config.yaml --
+description: "PE source config"
 prompts:
-  - name: "test-prompt"
-    content: "Test prompt content"
-tests:
-  - variables:
-      input: "test"
-    assertions:
-      - type: "contains"
-        value: "response"
-  - variables:
-      input: "another test"
-    assertions:
-      - type: "equals"
-        value: "expected"
-  - variables:
-      input: "third test"
-    assertions:
-      - type: "not_contains"
-        value: "error"
-
--- pe-native-results.json --
-{
-  "prompts": [
-    {
-      "name": "assistant",
-      "content": "You are a helpful assistant",
-      "provider": "openai"
-    }
-  ],
-  "tests": [
-    {
-      "description": "Basic math",
-      "variables": {"question": "What is 2+2?"},
-      "results": [
-        {
-          "output": "2+2 equals 4",
-          "passed": true,
-          "tokens": 15,
-          "latency_ms": 450
-        }
-      ]
-    },
-    {
-      "description": "Geography",
-      "variables": {"question": "Capital of France?"},
-      "results": [
-        {
-          "output": "The capital of France is Paris",
-          "passed": true,
-          "tokens": 20,
-          "latency_ms": 380
-        }
-      ]
-    },
-    {
-      "description": "Concept explanation",
-      "variables": {"question": "Explain recursion"},
-      "results": [
-        {
-          "output": "Recursion is a programming technique where a function calls itself",
-          "passed": true,
-          "tokens": 50,
-          "latency_ms": 620
-        }
-      ]
-    }
-  ],
-  "metadata": {
-    "timestamp": "2024-01-20T10:00:00Z",
-    "pe_version": "1.0.0"
-  }
-}
-
--- complex-promptfoo.yaml --
-description: "Complex configuration with multiple providers"
+  - "Summarize {{topic}}"
 providers:
-  - id: gpt4
-    apiProvider: openai
-    apiKey: ${OPENAI_API_KEY}
-    model: gpt-4
-  - id: claude
-    apiProvider: anthropic
-    apiKey: ${ANTHROPIC_API_KEY}
-    model: claude-3
-  - id: local
-    apiProvider: ollama
-    apiBaseUrl: http://localhost:11434
-  - openai:gpt-3.5-turbo
-  - anthropic:claude-instant
-prompts:
-  - file://prompts/main.txt
-  - file://prompts/backup.txt
+  - id: prod
+    name: openai
+    config:
+      model: gpt-4o-mini
+      temperature: 0.2
+  - anthropic:claude-3-haiku
+default_test:
+  assertions:
+    - type: not_contains
+      value: "error"
 tests:
-  - vars:
-      context: "Important context"
-    provider: gpt4
-
--- with-assertions.yaml --
-prompts:
-  - "Test prompt"
-tests:
-  - vars:
-      input: "test"
-    assert:
-      - type: contains
-        value: "expected"
-      - type: not-contains
-        value: "error"
-      - type: javascript
-        value: "output.length > 10"
-      - type: regex
-        value: "^[A-Z].*\\.$"
-      - type: llm-rubric
-        value: "The output should be professional"
-
--- original.yaml --
-description: "Original promptfoo config for round-trip test"
-prompts:
-  - "You are a helpful assistant"
-providers:
-  - openai:gpt-4
-tests:
-  - vars:
-      question: "Hello"
-    assert:
-      - contains: "Hi"
+  - variables:
+      topic: "Go"
+    assertions:
+      - type: llm_rubric
+        value: "Mentions channels"

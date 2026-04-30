@@ -533,17 +533,17 @@ pe get github.com/user/prompts --path custom-location/
 # List available plugins
 pe plugin list
 
-# Install plugin
-pe plugin install pe-promptfoo
+# Build and expose the Promptfoo plugin
+go build -o ~/bin/pe-promptfoo ./plugins/promptfoo
 
 # Use plugin
-pe promptfoo convert config.yaml
+pe promptfoo convert config.yaml output.json --direction pe-to-promptfoo
 
 # Update plugins
 pe plugin update
 
 # Remove plugin
-pe plugin remove pe-promptfoo
+rm -f ~/bin/pe-promptfoo
 ```
 
 ## 💡 Advanced Workflows
