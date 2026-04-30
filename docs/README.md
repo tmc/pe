@@ -106,6 +106,8 @@ See [TEMPLATE_SYNTAX.md](TEMPLATE_SYNTAX.md) for details.
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Troubleshooting guide
 
 ### 🔮 Future/Planned Features
+The tracked source of truth for planned work is [../ROADMAP.md](../ROADMAP.md).
+
 All documents in [future/](future/) directory describe planned features that are not yet implemented:
 - Comprehensive features
 - World-class tooling
@@ -149,11 +151,11 @@ PE uses YAML configuration files compatible with promptfoo:
 ```yaml
 prompts:
   - "What is the capital of {{country}}?"
-  
+
 providers:
   - "openai:gpt-4"
   - "anthropic:claude-3-haiku"
-  
+
 tests:
   - vars:
       country: "France"

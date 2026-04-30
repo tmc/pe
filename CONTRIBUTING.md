@@ -45,7 +45,7 @@ This project adheres to a code of conduct that we expect all contributors to fol
    ```bash
    # Copy example environment file
    cp .env.example .env
-   
+
    # Add your API keys
    export OPENAI_API_KEY="your-key"
    export ANTHROPIC_API_KEY="your-key"
@@ -55,10 +55,10 @@ This project adheres to a code of conduct that we expect all contributors to fol
    ```bash
    # Build the project
    go build -o pe cmd/pe/main.go
-   
+
    # Run tests
    go test ./...
-   
+
    # Test the CLI
    ./pe --help
    ```
@@ -67,7 +67,7 @@ This project adheres to a code of conduct that we expect all contributors to fol
    ```bash
    # Create a test configuration
    ./pe init test-config.yaml
-   
+
    # Run a test evaluation
    ./pe eval test-config.yaml --dry-run
    ```
@@ -89,7 +89,7 @@ We welcome various types of contributions:
 
 1. **Check Existing Issues**: Look for existing issues related to your contribution
 2. **Create an Issue**: For significant changes, create an issue first to discuss the approach
-3. **Review Roadmap**: Check our [roadmap](README.md#roadmap) to see planned features
+3. **Review Roadmap**: Check [ROADMAP.md](ROADMAP.md) to see planned features and active work
 4. **Read Documentation**: Familiarize yourself with the project structure and architecture
 
 ## Pull Request Process
@@ -113,13 +113,13 @@ We welcome various types of contributions:
    ```bash
    # Run all tests
    go test ./...
-   
+
    # Run specific tests
    go test ./internal/promptfoo/evaluation/evaluator
-   
+
    # Test CLI functionality
    ./pe eval example/config.yaml
-   
+
    # Run integration tests
    ./scripts/test-integration.sh
    ```
@@ -156,18 +156,18 @@ git commit -m "type(scope): description"
    ```markdown
    ## Description
    Brief description of changes
-   
+
    ## Type of Change
    - [ ] Bug fix
    - [ ] New feature
    - [ ] Breaking change
    - [ ] Documentation update
-   
+
    ## Testing
    - [ ] Tests pass locally
    - [ ] Added tests for new functionality
    - [ ] Manual testing completed
-   
+
    ## Checklist
    - [ ] Code follows style guidelines
    - [ ] Self-review completed
@@ -286,7 +286,7 @@ pe/
    func evaluatePrompt() error {
        // implementation
    }
-   
+
    // Good: Use PascalCase for exported functions
    func EvaluatePrompt() error {
        // implementation
@@ -299,13 +299,13 @@ pe/
    if err != nil {
        return fmt.Errorf("failed to evaluate prompt: %w", err)
    }
-   
+
    // Good: Use specific error types when appropriate
    type ValidationError struct {
        Field string
        Value interface{}
    }
-   
+
    func (e ValidationError) Error() string {
        return fmt.Sprintf("validation failed for field %s: %v", e.Field, e.Value)
    }
@@ -341,7 +341,7 @@ pe/
            },
            // more test cases...
        }
-       
+
        for _, tt := range tests {
            t.Run(tt.name, func(t *testing.T) {
                got, err := EvaluatePrompt(tt.prompt, tt.provider)

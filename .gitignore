@@ -12,7 +12,7 @@ lastsession.txt
 *.test
 test_binary
 
-# Beads task tracking database
+# Deprecated local Beads task database
 .beads/
 
 # PE cache and state

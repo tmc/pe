@@ -59,7 +59,7 @@ pe run translate.prompt --var text="Hello" --var from="English" --var to="Spanis
 
 # Variables are replaced in the prompt
 # {{.text}} becomes "Hello"
-# {{.from}} becomes "English" 
+# {{.from}} becomes "English"
 # {{.to}} becomes "Spanish"
 ```
 
@@ -170,6 +170,8 @@ See [docs/TEMPLATE_SYNTAX.md](docs/TEMPLATE_SYNTAX.md) for template syntax detai
 - REST API server implementation
 
 ### Planned Features (📝 Roadmap)
+See [ROADMAP.md](ROADMAP.md) for the tracked roadmap and release work.
+
 - Multi-modal support (vision, audio)
 - Visual prompt engineering tools
 - IDE integrations (VS Code, JetBrains)
@@ -247,7 +249,7 @@ assert:
       schema:
         type: object
         properties:
-          sentiment: 
+          sentiment:
             type: string
             enum: ["positive", "negative", "neutral"]
         required: ["sentiment"]
