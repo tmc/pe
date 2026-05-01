@@ -23,23 +23,23 @@ This file is the source of truth for planned PE work. Beads is deprecated for th
 Comprehensive documentation accuracy audit and update for release.
 
 Current Issues:
-- Test coverage claims inconsistent (25% vs 40%)
+- Test coverage baseline is now measured at 40.8%; remaining stale coverage
+  claims should point to docs/TEST_COVERAGE_REPORT.md
 - Documentation dates are inconsistent across older 2025 snapshots and current 2026 status docs
 - Multiple overlapping getting started docs
 - Future docs mixed with current implementation docs
 - Legacy TODO material now points at this roadmap, but current documentation still needs an accuracy pass
-- Recent work not documented (scripttest, fixes, etc.)
+- Recent scripttest, provider, and release-note work is documented; remaining
+  command and getting-started docs still need a pass
 
-Sub-tasks to create:
-1. Reconcile test coverage numbers
+Remaining sub-tasks:
+1. Replace stale coverage claims with references to docs/TEST_COVERAGE_REPORT.md
 2. Update all documentation dates
 3. Consolidate getting started documentation
 4. Update docs/CURRENT_STATUS.md with latest
-5. Document recent scripttest work
-6. Update RELEASE_NOTES.md
-7. Clean up docs/future/ organization
-8. Fix README.md accuracy
-9. Review all command documentation
+5. Clean up docs/future/ organization
+6. Review all command documentation
+7. Reconcile docs/README.md with README.md and current release notes
 
 Priority: P1 - Blocking release
 
@@ -55,22 +55,19 @@ Validate and update all examples for release.
 Ensure all examples work with current codebase:
 
 Areas to validate:
-- example/ directory examples
-- examples/ directory examples
+- example/ directory examples (Go packages pass)
+- examples/ directory examples (Go packages pass; examples/README.md refreshed)
 - Code examples in documentation
 - README code samples
 - Tutorial examples
 - Command reference examples
 
-Sub-tasks:
-1. Test all example/ directory samples
-2. Test all examples/ directory samples
-3. Verify documentation code examples
-4. Update broken examples
-5. Add missing examples for new features
-6. Create examples index/README
-7. Validate template syntax ({{.var}} not {{var}})
-8. Test with all supported providers
+Remaining sub-tasks:
+1. Verify documentation code examples
+2. Validate README and tutorial command samples
+3. Validate command reference examples
+4. Test representative live-provider examples with valid credentials
+5. Add missing examples for new features not yet represented
 
 Priority: P1 - User-facing quality
 
@@ -83,19 +80,15 @@ Priority: P1 - User-facing quality
 
 Prepare version number and comprehensive changelog for release.
 
-Tasks:
-1. Verify v0.5.0 version consistency across source, release notes, tags, and docs
-2. Review all commits since last release
-3. Categorize changes:
-   - Breaking changes
-   - New features
-   - Bug fixes
-   - Documentation improvements
-   - Testing improvements
-4. Update RELEASE_NOTES.md
-5. Create/update CHANGELOG.md
-6. Document migration path if breaking changes
-7. Tag version in git
+Current status:
+- `pe version` reports v0.5.0.
+- RELEASE_NOTES.md and CHANGELOG.md are refreshed for the current release
+  candidate.
+
+Remaining tasks:
+1. Verify v0.5.0 consistency across all current user-facing docs
+2. Document migration path if breaking changes are identified
+3. Tag version in git when release validation is complete
 
 Recent work to include:
 - Scripttest framework fixes
@@ -113,19 +106,15 @@ Recent work to include:
 Consolidate and align README files.
 
 Current state:
-- README.md (root) - main project README
-- docs/README.md - documentation index
-- Potential inconsistencies between them
+- README.md now reflects the generated 40-command top-level CLI surface.
+- docs/README.md still contains stale status, date, and coverage claims.
 
-Tasks:
-1. Review README.md for accuracy
-2. Update with latest features and status
-3. Ensure consistency with docs/README.md
-4. Update badges and links
-5. Add clear feature status indicators (✅ Implemented, ⚠️ Partial, 📝 Planned)
-6. Link to release notes and changelog
-7. Update contribution guidelines reference
-8. Add clear next steps for users
+Remaining tasks:
+1. Reconcile docs/README.md with README.md
+2. Update badges and links
+3. Link to release notes and changelog from the documentation index
+4. Update contribution guidelines reference
+5. Add clear next steps for users
 
 Key sections to update:
 - Feature list with accurate status
@@ -143,15 +132,18 @@ Key sections to update:
 
 Security review before release.
 
-Tasks:
-1. Review for hardcoded secrets or API keys
-2. Check for command injection vulnerabilities
-3. Verify input validation (already have tests)
-4. Review file path traversal protections
-5. Check dependency vulnerabilities with govulncheck and document any non-called transitive findings
-6. Review security.md if exists
-7. Test with untrusted input
-8. Review error messages for info disclosure
+Current status:
+- docs/SECURITY_REVIEW.md records local secret scans, govulncheck results,
+  gosec findings, and follow-up risks.
+- `GOTOOLCHAIN=go1.25.9 govulncheck ./...` reports no vulnerabilities.
+
+Remaining tasks:
+1. Triage gosec G204 and G304 findings
+2. Add or update a concise SECURITY.md disclosure policy
+3. Review file path traversal protections in config expansion, Starlark loading,
+   modules, and metadata paths
+4. Review provider stderr/body error propagation for secret redaction
+5. Test representative commands with untrusted input
 
 Tools to use:
 - gosec (static analysis)
@@ -285,11 +277,12 @@ Current status:
 - Unit tests cover factory, completion, streaming, models, and error paths.
 - Direct Generate option passthrough covers provider-specific options such as
   `raw` and `seed`.
+- docs/LOCAL_RUNTIME_PROVIDER_DESIGN.md documents Ollama config.
+- examples/local-ollama/ contains a local Ollama smoke example.
 
 Tasks:
-1. Document Ollama configuration and provider selection in README and docs.
-2. Add examples for common local model workflows.
-3. Add end-to-end validation notes for representative Ollama models.
+1. Add end-to-end validation notes for representative Ollama models.
+2. Run the local Ollama example against a real daemon before release.
 
 Benefits:
 - Local model support (no API keys needed)
@@ -306,13 +299,14 @@ Benefits:
 
 Increase test coverage across the project.
 
-Current coverage needs a fresh measured baseline; older roadmap text and docs
-disagree on 25% versus 40% overall coverage.
+Current measured baseline is 40.8% overall statement coverage. The report in
+docs/TEST_COVERAGE_REPORT.md lists packages below 30%.
 
 Priority areas:
-1. Refresh package coverage data with `go test -cover ./...`.
-2. Expand tests in lower-coverage packages, including internal/cli, internal/module, internal/optimization, internal/plugin, and internal/templates.
-3. Add command-level integration tests for paths that currently rely on package-level tests only.
+1. Expand tests in lower-coverage packages, including internal/cli,
+   internal/inference, internal/optimization, internal/testing, and example
+   command packages.
+2. Add command-level integration tests for paths that currently rely on package-level tests only.
 
 Tasks:
 1. Add unit tests for low-coverage packages
