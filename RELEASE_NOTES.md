@@ -1,104 +1,104 @@
 # PE Release Notes - v0.5.0
 
-## Branch: `main`
+## Branch: `exp`
 
-This release contains the stable, production-ready features of PE (Prompt Engineering toolkit).
+Release prep is in progress on April 30, 2026. These notes describe the current
+release candidate state of PE.
 
-## ✅ Production-Ready Features
+## Production-Ready Surface
 
-### Core Functionality
-- **47 CLI Commands**: Full suite of composable Unix-style commands
-- **PE View**: Browser-based viewer for evaluation results (`pe view`)
-- **Native Provider Support**: 
-  - OpenAI provider (74% test coverage)
-  - Anthropic provider (73.3% test coverage)
-  - cgpt CLI integration (updated for v0.4.4)
-- **Evaluation Framework**: 
-  - Pass@N metrics
-  - 15+ assertion types (contains, regex, JSON, length, etc.)
-  - Comprehensive evaluation reports
-- **Module Management**:
-  - `pe mod init` - Initialize modules
-  - `pe mod tidy` - Clean up dependencies
-  - `pe mod vendor` - Vendor dependencies
+### Core Toolchain
 
-### Advanced Features
-- **Optimization Methods**:
-  - PE2 optimization
-  - APEX method
-  - Multistage optimization
-  - Reflection-based improvement
-  - Evolutionary algorithms (NSGA-II)
-- **Security Testing**: Full OWASP LLM Top 10 coverage
-- **Cryptographic Attestation**: Sign and verify prompt runs
-- **Structured Output**: JSON/YAML schema validation
-- **Pipeline Support**: Unix-style composability
+- `pe version` reports `v0.5.0` for this build.
+- `pe --help` lists 40 top-level commands, including prompt execution,
+  evaluation, benchmarking, module/workspace commands, templates, plugins,
+  security testing, and the experimental command groups.
+- Prompt files support variable substitution, metadata, formatting, validation,
+  and evaluation hooks.
+- The promptfoo-compatible evaluation path supports string assertions, structured
+  output checks, provider object configuration, labels, prompt scoping, provider
+  delays, and bounded concurrency.
 
-## ⚠️ Features Moved to `next-experimental` Branch
+### Providers
 
-The following features are under development and have been moved to the `next-experimental` branch:
+- Native OpenAI and Anthropic providers are available through the provider
+  factory system.
+- Native Ollama support is registered through the local-runtime provider bridge.
+- CLI-backed providers support argv-based execution and explicit JSON telemetry
+  parsing when configured.
+- The `llm` CLI backend is registered as provider `llm`; argument construction is
+  covered by tests that do not require a live `llm` installation.
+- Direct `llm.Provider.Generate` calls can now carry provider-specific options,
+  including Ollama `raw` and `seed` settings.
 
-### Module Registry (Pending Implementation)
-- `pe mod list` - List registry modules
-- `pe mod get` - Download specific modules  
-- `pe mod download` - Batch download dependencies
-- Registry URLs (registry.pe.dev) are placeholders
+### Evaluation
 
-### Assertion Types (Placeholders)
-- Toxicity detection
-- Coherence evaluation
-- Factuality checking
-- Classification
-- Similarity scoring
-- SQL validation
-- Document structure validation
+- Promptfoo assertion provider overrides are honored for `llm-judge` assertions.
+- Unsupported provider overrides on non-judge assertions are rejected explicitly.
+- The evaluator preserves provider labels and prompt filters in results.
+- Pass@N and structured output examples are present under `example/`.
 
-These assertions will return informative error messages indicating they're not yet implemented.
+### Development Workflow
 
-### Other Incomplete Features
-- Interactive REPL mode
-- Playground web interface
-- Some statistical functions (Shapiro-Wilk test)
-- Distributed execution edge cases
+- `pe interactive` now starts the REPL session and accepts provider, config, and
+  temperature flags.
+- Script-based CLI tests use `rsc.io/script/scripttest` and document the runner's
+  limitations: no `exec`, shell pipes, redirection, heredocs, or shell job
+  control.
+- The roadmap in `ROADMAP.md` is the tracked source of truth for planned work;
+  Beads is deprecated for this repository.
 
-## Migration Guide
+## Notable Changes Since `next`
 
-If you were using any of the experimental features:
+### Features
 
-1. **Module Registry**: Use local file paths or Git repositories for now
-2. **Advanced Assertions**: Stick to the implemented assertion types (contains, regex, JSON, etc.)
-3. **Interactive Mode**: Use the standard CLI commands instead
+- Added `config expand`, `version`, GitBook documentation, and the `exp` command
+  root for experimental commands.
+- Added local runtime provider materialization for object provider specs.
+- Added MLX local runtime presets and local runtime comparison examples.
+- Wired the interactive REPL command to the existing REPL session.
+
+### Fixes
+
+- Normalized promptfoo config conversion.
+- Preserved provider-specific Generate options through the legacy/modern provider
+  bridge.
+- Honored Promptfoo `llm-judge` assertion provider overrides.
+- Made CLI JSON response parsing explicit so ordinary JSON model output is not
+  rewritten accidentally.
+
+### Documentation and Tests
+
+- Added mdBook/GitBook documentation scaffolding.
+- Corrected command docs for experimental command paths and current CLI surface.
+- Documented local runtime provider design and scripttest runner limits.
+- Added hermetic tests for provider registration, exp command registration,
+  Promptfoo judge provider overrides, REPL command wiring, and `llm` CLI argv
+  construction.
 
 ## Known Limitations
 
-- Some script tests may fail (does not affect core functionality)
-- Module registry uses placeholder configuration
-- Some caching features are incomplete
+- Module registry support exists but still needs release validation and clearer
+  user documentation.
+- Advanced assertion types that require external ML services remain partial.
+- Local runtime examples require the corresponding local daemon or binary
+  (`ollama`, `mlx-lm`, `mlx-go-lm`, or configured CLI command).
+- Documentation still contains older archived and future-facing material; release
+  prep is consolidating current user-facing docs.
 
-## Testing
+## Validation
 
-Core functionality has been thoroughly tested:
-- Unit test coverage: ~40% overall
-- Provider coverage: 70%+
-- Build system: Fully functional
-- Core commands: Production ready
+Current release validation should include:
 
-## Next Steps
+- `go test ./...`
+- `go test -cover ./...`
+- `go vet ./...`
+- `govulncheck ./...`
+- `go install .`
+- Example validation for `example/` and `examples/`
 
-The `next-experimental` branch contains ongoing work on:
-- Full module registry implementation
-- Advanced assertion types with ML integration
-- Interactive development environment
-- Extended statistical analysis
-
-For production use, stick with the `next` branch. For bleeding-edge features and contributing to development, check out `next-experimental`.
+See `docs/TEST_COVERAGE_REPORT.md` for the current measured coverage baseline.
 
 ## Support
 
 Report issues at: https://github.com/tmc/pe/issues
-
----
-
-*Generated: December 2025*
-*Branch: main (180+ commits ahead of master)*
-*Repository size: ~17MB (optimized from 307MB)*
