@@ -52,16 +52,31 @@ func interactiveCmd() *cobra.Command {
 		Use:   "interactive",
 		Short: "Start interactive REPL mode for prompt development",
 		Long:  `Launch an interactive REPL (Read-Eval-Print Loop) for iterative prompt development.`,
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// TODO: Implement interactive REPL
-			fmt.Println("Starting interactive prompt development mode...")
-			fmt.Println("Type 'exit' to quit")
-			fmt.Println("pe> _")
-			return nil
+			provider, err := cmd.Flags().GetString("provider")
+			if err != nil {
+				return err
+			}
+			configFile, err := cmd.Flags().GetString("config")
+			if err != nil {
+				return err
+			}
+			temperature, err := cmd.Flags().GetFloat64("temperature")
+			if err != nil {
+				return err
+			}
+			if temperature < 0 || temperature > 2 {
+				return fmt.Errorf("temperature must be between 0.0 and 2.0")
+			}
+
+			return NewREPLSession(cmd, provider, configFile, temperature).Run()
 		},
 	}
 
 	cmd.Flags().String("provider", "openai:gpt-4", "LLM provider to use")
+	cmd.Flags().String("config", "", "Path to configuration file")
+	cmd.Flags().Float64("temperature", 0.7, "Generation temperature")
 
 	return cmd
 }

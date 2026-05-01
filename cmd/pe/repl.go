@@ -39,7 +39,7 @@ func NewREPLSession(cmd *cobra.Command, provider, configFile string, temperature
 func (r *REPLSession) Run() error {
 	r.printWelcome()
 
-	scanner := bufio.NewScanner(os.Stdin)
+	scanner := bufio.NewScanner(r.cmd.InOrStdin())
 	for {
 		fmt.Fprint(r.cmd.OutOrStdout(), "pe> ")
 		if !scanner.Scan() {
@@ -354,7 +354,7 @@ func (r *REPLSession) handleMultiline() {
 	fmt.Fprintln(r.cmd.OutOrStdout(), "Entering multiline mode. Type 'END' on a new line to finish:")
 
 	var lines []string
-	scanner := bufio.NewScanner(os.Stdin)
+	scanner := bufio.NewScanner(r.cmd.InOrStdin())
 
 	for {
 		fmt.Fprint(r.cmd.OutOrStdout(), "... ")
@@ -384,7 +384,7 @@ func (r *REPLSession) runBenchmark(iterations int) {
 	fmt.Fprintln(r.cmd.OutOrStdout(), "Enter the prompt to benchmark:")
 	fmt.Fprint(r.cmd.OutOrStdout(), "pe> ")
 
-	scanner := bufio.NewScanner(os.Stdin)
+	scanner := bufio.NewScanner(r.cmd.InOrStdin())
 	if !scanner.Scan() {
 		return
 	}
