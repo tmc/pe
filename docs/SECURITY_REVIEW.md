@@ -1,0 +1,83 @@
+# Security Review
+
+Date: 2026-04-30 PDT
+
+Scope: release-prep security review for secrets, command execution, file/path use,
+network/provider boundaries, dependency vulnerabilities, and security documentation.
+
+## Commands
+
+```sh
+date '+%Y-%m-%d %Z'
+sed -n '138,162p' ROADMAP.md
+find . \( -path './.git' -o -path './.beads' \) -prune -o -iname 'security.md' -print -o -iname 'README_SECURITY.md' -print | sort
+sed -n '1,220p' README_SECURITY.md
+rg -n --hidden --glob '!.git/**' --glob '!.beads/**' --glob '!go.sum' --glob '!plugins/**/go.sum' --glob '!*.png' --glob '!*.jpg' --glob '!*.jpeg' --glob '!*.gif' --glob '!*.pdf' --glob '!*.zip' --glob '!*.tar' --glob '!*.gz' --glob '!*.woff*' --glob '!*.ttf' --glob '!node_modules/**' -i '(api[_-]?key|secret|token|password|passwd|credential|authorization: bearer|private[_-]?key|client[_-]?secret)\s*[:=]\s*["'\'']?[^"'\''[:space:]]+' .
+rg -n --hidden --glob '!.git/**' --glob '!.beads/**' --glob '!go.sum' --glob '!plugins/**/go.sum' --glob '!*.png' --glob '!*.jpg' --glob '!*.jpeg' --glob '!*.gif' --glob '!*.pdf' --glob '!*.zip' --glob '!*.tar' --glob '!*.gz' --glob '!*.woff*' --glob '!*.ttf' --glob '!node_modules/**' '(sk-[A-Za-z0-9_-]{20,}|AIza[0-9A-Za-z_-]{35}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)' .
+rg -n -g '*.go' 'os/exec|exec\.Command|exec\.CommandContext|syscall\.Exec|CombinedOutput\(|\.Output\(|\.Run\(' cmd internal plugins tests example examples
+rg -n -g '*.go' 'net/http|http\.Client|http\.DefaultClient|http\.(Get|Post|NewRequest|NewRequestWithContext)|NewRequestWithContext|url\.Parse|ListenAndServe|Authorization|Bearer' cmd internal plugins tests example examples
+rg -n -g '*.go' 'filepath\.(Clean|Join|Abs|Rel|Base|Dir)|os\.(Open|OpenFile|Create|ReadFile|WriteFile|Mkdir|MkdirAll|Remove|RemoveAll|Rename|Stat)|fs\.ValidPath|http\.Dir' cmd internal plugins tests example examples
+govulncheck ./...
+govulncheck -show verbose ./...
+GOTOOLCHAIN=go1.25.9 govulncheck ./...
+gosec ./...
+gosec -fmt=json -no-fail ./... >/tmp/pe-gosec.json 2>/tmp/pe-gosec.err
+jq -r '.Stats | to_entries[] | "\(.key)=\(.value)"' /tmp/pe-gosec.json
+jq -r '.Issues | group_by(.rule_id)[] | "\(.[0].rule_id)\t\(length)\t\(.[0].details)"' /tmp/pe-gosec.json | sort
+```
+
+## Findings
+
+- Secrets: broad secret-name scan returned 119 matches and common live-key
+  pattern scan returned 5 matches. Reviewed matches were placeholders, CI secret
+  references, env var reads, or test fixtures. No live-looking hardcoded secret
+  was identified.
+- Local key material: `.pe/keys` had no files, and no `.pe` key files were
+  tracked by git in this checkout.
+- Security docs: no canonical `SECURITY.md` was present. `README_SECURITY.md`
+  exists, but it reads as an architecture/roadmap document rather than a current
+  vulnerability disclosure policy.
+- Vulnerabilities: `govulncheck ./...` found called standard-library
+  vulnerabilities when run with the default Go 1.24.13 toolchain:
+  GO-2026-4947, GO-2026-4946, GO-2026-4870, GO-2026-4602, and GO-2026-4601.
+  The listed fixes are in Go 1.25.8 or Go 1.25.9. Rerunning with
+  `GOTOOLCHAIN=go1.25.9 govulncheck ./...` reported no vulnerabilities.
+- Non-called vulnerabilities: verbose govulncheck also reported non-called
+  package/module findings GO-2026-4869, GO-2026-4864, GO-2026-4865, and
+  GO-2026-4603, all in the standard library.
+- Static analysis: `gosec` scanned 135 files and 55,041 lines, reporting 324
+  issues. Rule counts: G304 88, G306 86, G104 54, G115 29, G404 26, G301 24,
+  G204 13, G302 2, G112 1, G114 1. `gosec` also reported SSA/build errors for
+  `plugins/starlark/main.go`, so coverage is not complete.
+- Command execution: command execution is concentrated in CLI providers, cgpt
+  adapters, plugin execution, metrics helpers, and scripttests. Most calls use
+  `exec.Command` or `exec.CommandContext` with argv rather than an explicit
+  shell, which limits shell injection. Risk remains where user config controls
+  executable names, command templates, plugin discovery paths, or cgpt options.
+- File/path use: many commands intentionally read and write user-supplied paths.
+  Higher-risk areas are config expansion and Starlark loading, where file
+  references are joined relative to a base path without an obvious containment
+  check, and module paths where module names or metadata-provided prompt paths
+  can influence files read from `.pe/modules`.
+- Network/providers: OpenAI and Anthropic providers use HTTPS defaults and
+  client timeouts, but `baseURL` is configurable. GitHub gist calls use
+  `http.DefaultClient` without explicit timeout. Local viewer/playground HTTP
+  servers have missing or incomplete server timeouts.
+- Error disclosure: provider and command wrappers sometimes return remote API
+  bodies, subprocess stderr, or generated output in errors. This is useful for
+  debugging but can leak prompts, API response details, or secrets into logs.
+
+## Follow-up risks
+
+- Release vulnerability checks should use Go 1.25.9 or newer. The default
+  Go 1.24.13 toolchain still reports called standard-library vulnerabilities.
+- Triage `gosec` G204 and G304 first. Document which command/file inclusions are
+  intended CLI behavior and add containment checks for config-relative imports,
+  Starlark loads, module names, and module metadata paths where appropriate.
+- Add explicit timeouts to GitHub API calls and local HTTP servers, or document
+  why the local-only endpoints are acceptable.
+- Review API/body/stderr error propagation and redact secrets before logging or
+  returning errors from provider paths.
+- Decide whether `README_SECURITY.md` is product roadmap material or current
+  security documentation. Add a concise `SECURITY.md` disclosure policy if this
+  repository is being prepared for public release.
