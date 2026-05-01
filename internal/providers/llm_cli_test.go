@@ -5,56 +5,127 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/tmc/pe/internal/llm"
 )
 
-// Mock exec.CommandContext for testing
-// This is a common Go pattern for mocking os/exec
-func fakeExecCommandContext(command string, args ...string) *exec.Cmd {
-	cs := []string{"-test.run=TestHelperProcess", "--", command}
-	cs = append(cs, args...)
-	cmd := exec.Command(os.Args[0], cs...)
-	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "PE_TEST_OUTPUT=Mocked output"}
-	return cmd
-}
+func TestLLMCLIProvider(t *testing.T) {
+	binDir := t.TempDir()
+	executable := filepath.Join(binDir, "llm")
+	if err := os.WriteFile(executable, []byte("#!/bin/sh\nprintf mocked\n"), 0o755); err != nil {
+		t.Fatalf("WriteFile(%q) failed: %v", executable, err)
+	}
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 
-func TestLLMCLIProvider_Generate(t *testing.T) {
-	// Skip if we can't easily mock exec within the package structure without refactoring
-	// For now, we'll verify the arguments construction logic by inspecting the provider
-
-	// Since we can't easily inject the exec command mock without changing the implementation
-	// (which uses exec.CommandContext directly), we will perform a basic initialization test
-	// and rely on integration tests or manual verification for the actual execution.
-
-	// Create a provider
-	p, err := NewLLMCLIProvider("gpt-4", map[string]interface{}{
-		"executable": "echo", // Use echo to simulate existence
-	})
+	p, err := NewLLMCLIProvider("gpt-4", nil)
 	if err != nil {
-		t.Fatalf("Failed to create provider: %v", err)
+		t.Fatalf("NewLLMCLIProvider() failed: %v", err)
 	}
 
 	if p.Name() != "llm" {
-		t.Errorf("Expected name 'llm', got '%s'", p.Name())
+		t.Errorf("Name() = %q, want llm", p.Name())
 	}
 
 	if p.Model() != "gpt-4" {
-		t.Errorf("Expected model 'gpt-4', got '%s'", p.Model())
+		t.Errorf("Model() = %q, want gpt-4", p.Model())
 	}
 }
 
-// TestHelperProcess isn't a real test. It's used as a helper process for exec tests.
-func TestHelperProcess(t *testing.T) {
-	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
+func TestLLMCLIProvider_GenerateArgs(t *testing.T) {
+	temperature := 0.25
+	maxTokens := 128
+
+	tests := []struct {
+		name    string
+		model   string
+		prompt  string
+		options llm.GenerateOptions
+		want    []string
+	}{
+		{
+			name:   "model temperature max tokens and prompt",
+			model:  "gpt-4o-mini",
+			prompt: `Say "hello"`,
+			options: llm.GenerateOptions{
+				Temperature: &temperature,
+				MaxTokens:   &maxTokens,
+			},
+			want: []string{
+				"-m", "gpt-4o-mini",
+				"-o", "temperature", "0.250000",
+				"-o", "max_tokens", "128",
+				`Say "hello"`,
+			},
+		},
+		{
+			name:   "default model uses prompt only",
+			model:  "default",
+			prompt: "hello",
+			want:   []string{"hello"},
+		},
+		{
+			name:   "empty model uses prompt only",
+			model:  "",
+			prompt: "hello",
+			want:   []string{"hello"},
+		},
+		{
+			name:   "prompt remains one argument",
+			model:  "gpt-4",
+			prompt: "line 1\nline 2 with spaces",
+			want:   []string{"-m", "gpt-4", "line 1\nline 2 with spaces"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotCommand string
+			var gotArgs []string
+			old := llmCLICommandContext
+			llmCLICommandContext = func(ctx context.Context, command string, args ...string) *exec.Cmd {
+				gotCommand = command
+				gotArgs = append([]string(nil), args...)
+
+				cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestLLMCLIProviderHelperProcess", "--")
+				cmd.Env = append(os.Environ(),
+					"PE_WANT_LLM_CLI_HELPER_PROCESS=1",
+					"PE_TEST_OUTPUT=Mocked output",
+				)
+				return cmd
+			}
+			t.Cleanup(func() {
+				llmCLICommandContext = old
+			})
+
+			p := &LLMCLIProvider{executable: "llm", model: tt.model}
+			resp, err := p.Generate(context.Background(), tt.prompt, tt.options)
+			if err != nil {
+				t.Fatalf("Generate() failed: %v", err)
+			}
+			if resp.Text != "Mocked output" {
+				t.Fatalf("resp.Text = %q, want Mocked output", resp.Text)
+			}
+			if gotCommand != "llm" {
+				t.Fatalf("command = %q, want llm", gotCommand)
+			}
+			if !slices.Equal(gotArgs, tt.want) {
+				t.Fatalf("args = %#v, want %#v", gotArgs, tt.want)
+			}
+		})
+	}
+}
+
+func TestLLMCLIProviderHelperProcess(t *testing.T) {
+	if os.Getenv("PE_WANT_LLM_CLI_HELPER_PROCESS") != "1" {
 		return
 	}
 	fmt.Print(os.Getenv("PE_TEST_OUTPUT"))
 	os.Exit(0)
 }
 
-// Integration test that actually runs if PE_INTEGRATION_TEST is set
 func TestLLMCLIProvider_Integration(t *testing.T) {
 	if os.Getenv("PE_INTEGRATION_TEST") == "" {
 		t.Skip("Skipping integration test")

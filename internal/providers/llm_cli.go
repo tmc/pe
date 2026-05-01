@@ -18,6 +18,8 @@ type LLMCLIProvider struct {
 	model      string
 }
 
+var llmCLICommandContext = exec.CommandContext
+
 // NewLLMCLIProvider creates a new llm CLI provider
 func NewLLMCLIProvider(model string, options map[string]interface{}) (*LLMCLIProvider, error) {
 	executable := getStringOption(options, "executable", "llm")
@@ -68,7 +70,7 @@ func (p *LLMCLIProvider) Generate(ctx context.Context, prompt string, options ll
 	// Add prompt as the last argument
 	args = append(args, prompt)
 
-	cmd := exec.CommandContext(ctx, p.executable, args...)
+	cmd := llmCLICommandContext(ctx, p.executable, args...)
 
 	var out bytes.Buffer
 	var errBuf bytes.Buffer
