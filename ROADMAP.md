@@ -251,7 +251,6 @@ Options:
 Recommendation: Option 2 (workaround) for immediate needs, watch Option 1 (upstream PR) for long term.
 
 Related: documented scripttest pipe limitations
-Related: scripttest documentation should mention this limitation
 
 
 #### Maintain roadmap with current status
@@ -270,28 +269,6 @@ Need to:
 5. Remove obsolete TODO and Beads references as they are found
 
 
-#### Correct scripttest framework documentation
-
-- Type: `task`
-
-**Scope**
-
-The scripttest guide exists, but it must match the custom runner in
-tests/scripttest_test.go. In particular, the runner removes `exec` and
-does not support shell pipes or shell redirection.
-
-Tasks:
-1. Remove claims in tests/SCRIPTTEST_GUIDE.md that `exec` is available.
-2. Document that shell pipes (`|`), redirection (`>`, `<`, `>>`), and background jobs (`&`) are not supported.
-3. Document workarounds, including intermediate files instead of pipes and direct commands instead of `exec`.
-4. Ensure tests/testdata/script/README and tests/SCRIPTTEST_GUIDE.md agree on the supported command set.
-
-Reference:
-- tests/scripttest_test.go
-- tests/testdata/script/*.txt examples
-- MARKERS.md for prompt format context
-
-
 #### Document and harden Ollama provider
 
 - Type: `feature`
@@ -306,12 +283,13 @@ Current status:
 - Native provider implements Complete, Stream, and Models.
 - Provider is registered through internal/providers/init.go.
 - Unit tests cover factory, completion, streaming, models, and error paths.
+- Direct Generate option passthrough covers provider-specific options such as
+  `raw` and `seed`.
 
 Tasks:
 1. Document Ollama configuration and provider selection in README and docs.
 2. Add examples for common local model workflows.
 3. Add end-to-end validation notes for representative Ollama models.
-4. Verify direct Generate option passthrough once provider-specific options are extended.
 
 Benefits:
 - Local model support (no API keys needed)
@@ -358,6 +336,8 @@ Tools:
 The base adapter for Simon Willison's llm CLI exists in internal/providers/llm_cli.go
 and is registered as the `llm` provider. Remaining work is hardening,
 documentation, and examples.
+Argument construction is covered by tests that do not require a live `llm`
+installation.
 
 Simon's llm tool (https://llm.datasette.io/) is a powerful CLI for interacting with LLMs
 that supports multiple providers and models through a plugin system.
@@ -366,7 +346,6 @@ Tasks:
 1. Support llm model aliases and advanced `-o` configuration.
 2. Add integration docs covering setup, plugins, and provider selection.
 3. Add examples for common llm model-alias workflows.
-4. Add tests that exercise argument construction without requiring a live llm installation.
 
 Technical Notes:
 - llm supports JSON output via --json flag
@@ -566,55 +545,6 @@ Document in:
 - Known limitations
 
 
-#### Extend GenerateOptions for provider-specific options
-
-- Type: `feature`
-
-**Scope**
-
-NotebookLM audit 2026-04-30 found that direct llm.Provider.Generate calls carry only internal/llm/provider.go GenerateOptions. The evaluator configuration path preserves provider-specific parameters through a map, but direct Generate calls drop options such as Ollama seed and raw.
-
-Evidence:
-- internal/llm/provider.go
-- internal/llm/configured_provider.go
-
-Add a minimal provider-specific extension path for direct generation without widening provider APIs unnecessarily.
-
-**Acceptance Criteria**
-
-- Direct Generate can pass provider-specific options needed by existing providers, including Ollama seed and raw, through a typed extension path or map.
-- Existing evaluator configuration behavior remains unchanged.
-- Regression tests cover direct Generate option passthrough.
-- Package docs describe which options are portable and which are provider-specific.
-
-**Notes**
-
-Created from NotebookLM design audit notebook 50b86925-3d62-4d09-bd1a-59d7ced9a523 conversation 3a1136a7-93aa-4b91-a8df-9966ffc88a5c.
-
-
-#### Honor Promptfoo assertion provider override
-
-- Type: `bug`
-
-**Scope**
-
-NotebookLM audit 2026-04-30 found that internal/promptfoo/types.go records Assertion.Provider, but internal/promptfoo/evaluation/evaluator/assertions.go binds AssertionEvaluator to a single llm.Provider. evaluateLLMJudge always uses the bound provider, so assertion-level provider overrides are parsed but not honored.
-
-Add assertion-level judge provider resolution or reject unsupported overrides explicitly.
-
-**Acceptance Criteria**
-
-- Promptfoo assertions with provider set resolve and route LLM judge calls through that provider context.
-- Missing or invalid assertion providers return clear errors.
-- Unsupported assertion provider overrides are rejected explicitly.
-- Existing default judge provider behavior remains unchanged when provider is unset.
-- Regression tests cover assertion-level provider selection.
-
-**Notes**
-
-Created from NotebookLM design audit notebook 50b86925-3d62-4d09-bd1a-59d7ced9a523 conversation 3a1136a7-93aa-4b91-a8df-9966ffc88a5c.
-
-
 ### P3
 
 #### Review .gitignore for PE project
@@ -699,15 +629,14 @@ Location: internal/promptfoo/evaluation/metrics/
 
 **Scope**
 
-cmd/pe/repl.go contains REPLSession, but the registered `pe interactive`
-command in cmd/pe/stats.go is still a TODO stub. Wire the existing session
-into the CLI entrypoint and verify the promised interactive behavior.
+`pe interactive` now starts the existing REPLSession from the CLI entrypoint
+and accepts provider, config, and temperature flags. Command wiring has tests
+that do not require live provider calls. Remaining work is end-to-end behavior
+verification inside the REPL loop.
 
 Tasks:
-1. Replace the interactiveCmd stub with NewREPLSession(...).Run().
-2. Verify prompt history, context preservation, multiline input, and session save/load through the CLI entrypoint.
-3. Verify provider hot-switching and temperature/token controls from the command loop.
-4. Add tests for command wiring that do not require live provider calls.
+1. Verify prompt history, context preservation, multiline input, and session save/load through the CLI entrypoint.
+2. Verify provider hot-switching and temperature/token controls from the command loop.
 
 Command: pe repl or pe interactive
 
