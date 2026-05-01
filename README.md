@@ -117,66 +117,59 @@ max-tokens 1000
 
 See [docs/TEMPLATE_SYNTAX.md](docs/TEMPLATE_SYNTAX.md) for template syntax details.
 
-## 📋 Available Commands (47 Total - Core Features Stable ✅)
+## 📋 Available Commands (40 Top-Level Commands)
+
+Run `pe --help` for the generated command list. The current top-level surface includes:
 
 ### Core Commands
-- `pe run` - Execute prompts with variable substitution and native providers
-- `pe eval` - Comprehensive evaluation with 20+ assertion types
-- `pe optimize` - Multiple metaprompting optimization algorithms
-- `pe semantic` - Semantic backpropagation and GASO (2025 research)
-- `pe test` - Advanced testing with property-based and regression approaches
-- `pe benchmark` - Performance benchmarking with statistical analysis
-- `pe metrics` - Advanced metrics (BLEU, ROUGE, BERTScore, G-Eval, UniEval)
-- `pe profile` - Performance profiling and observability
-- `pe experimental playground` - Interactive web-based prompt development
-- `pe security` - Complete OWASP LLM Top 10 security testing
+- `pe run` - Execute a prompt immediately with variable substitution.
+- `pe eval` - Evaluate prompt configurations against providers and assertions.
+- `pe test` - Run prompt tests and generate test suites.
+- `pe benchmark` - Benchmark prompts, providers, and configurations.
+- `pe vet` - Validate prompt files and run their evals.
+- `pe build` - Build optimized prompts for production.
+- `pe version` - Print the PE version.
 
-### Pipeline Commands (Unix Composability)
-- `pe ask` - Execute prompts via pipeline
-- `pe stream` - Stream processing with filtering
-- `pe filter` - Filter and transform outputs with JSON support
-- `pe analyze` - Statistical analysis with advanced metrics
-- `pe collect` - Collect results from async operations
-- `pe reduce` - Aggregate and reduce pipeline results
-- `pe stats` - Quick statistical summaries
+### Prompt and Configuration Commands
+- `pe prompt` - Manage prompt files.
+- `pe cat` - Inspect prompt files with variable substitution.
+- `pe fmt` - Format prompts.
+- `pe doc` - Show prompt documentation.
+- `pe template` - Manage prompt templates.
+- `pe convert` - Convert promptfoo configuration files.
+- `pe expand` - Resolve file references and globs in configuration files.
+- `pe extract` - Extract content from XML-like tags.
 
-### Module & Advanced Commands
-- `pe mod init/tidy/vendor` - Core module management (registry features in next-experimental branch)
-- `pe experimental compose` - Component-based prompt composition with type safety
-- `pe exp compose` - Prototype compose command in the experimental command group
-- `pe exp attest` - Cryptographic attestation prototype
-- `pe cat` - Inspect prompt files with variable substitution and component viewing
-- `pe extract` - Extract structured data with XML/JSON parsing
-- `pe evolve` - Evolutionary optimization with NSGA-II algorithms
-- `pe exp distributed` - Distributed execution prototype
-- `pe exp cache` - Content-addressed caching prototype
-- `pe synthesize` - DSPy-style program synthesis
-- `pe work` - Workspace management for complex projects
+### Pipeline Commands
+- `pe ask` - Execute prompts with optional templating.
+- `pe stream` - Stream-process LLM outputs.
+- `pe filter` - Filter and transform pipeline outputs.
+- `pe analyze` - Analyze text with metrics.
+- `pe collect` - Collect async operation results.
+- `pe reduce` - Aggregate pipeline results.
+- `pe stats` and `pe diff` - Summarize and compare evaluation results.
 
-### Recently Completed Features
-- **Native OpenAI/Anthropic Providers**: Full API implementations with 74%/73.3% test coverage
-- **Distributed Execution CLI Surface**: Prototype command entrypoint under `pe exp`
-- **Web Playground Interface**: Interactive prompt development environment
-- **Security Testing Suite**: Full OWASP LLM Top 10 coverage
-- **Advanced Metrics**: BERTScore, G-Eval, UniEval implementations
-- **Cryptographic Attestation CLI Surface**: Prototype command entrypoint under `pe exp`
-- **Prompt File Inspector**: pe cat command with variable substitution and component inspection
+### Project and Extension Commands
+- `pe init` - Initialize a PE repository.
+- `pe mod` - Manage prompt modules.
+- `pe work` - Manage prompt workspaces.
+- `pe push` and `pe get` - Work with prompt modules and metadata.
+- `pe plugin` - Manage PE plugins.
+- `pe security` - Run security testing workflows.
+- `pe profile`, `pe view`, and `pe watch` - Inspect, view, and rerun workflows.
+- `pe interactive` - Start the prompt-development REPL.
 
-### In Development (🚧 - Available in `next-experimental` branch)
-- Module registry system with download/list/get commands
-- Advanced assertion types (toxicity, coherence, factuality, similarity)
-- Interactive REPL mode
-- Extended provider ecosystem (Ollama, local models)
-- REST API server implementation
+### Experimental Commands
+- `pe experimental` and `pe exp` expose prototype optimization, composition,
+  distributed, attestation, cache, workflow, import/export, and report commands.
+  Treat these as active development surfaces unless their subcommand docs state
+  otherwise.
 
-### Planned Features (📝 Roadmap)
-See [ROADMAP.md](ROADMAP.md) for the tracked roadmap and release work.
+### Planned Features
 
-- Multi-modal support (vision, audio)
-- Visual prompt engineering tools
-- IDE integrations (VS Code, JetBrains)
-- Neurosymbolic prompt synthesis
-- Advanced caching strategies
+See [ROADMAP.md](ROADMAP.md) for the tracked roadmap and release work. Current
+release-prep focus areas are documentation accuracy, example validation,
+security review, build/distribution checks, and command-reference cleanup.
 
 ## 🧪 Evaluation Configuration
 
