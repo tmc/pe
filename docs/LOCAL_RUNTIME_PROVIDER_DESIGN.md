@@ -35,6 +35,33 @@ Reuse `pf` concepts, not `pf` as the backend.
   - remains the local Ollama execution path
   - preserves `raw`, `seed`, `num_predict`, base URL, and timing/token counters
 
+## Ollama Configuration
+
+Native Ollama execution is registered through the provider bridge. Use
+`ollama:model` as the provider spec; the text after `ollama:` is the Ollama
+model name sent to the local runtime.
+
+Example provider object:
+
+```yaml
+providers:
+  - id: "ollama:llama3.2"
+    label: "local ollama"
+    config:
+      base_url: "http://localhost:11434"
+      raw: true
+      seed: 1
+      num_predict: 128
+```
+
+`base_url` selects the Ollama daemon URL when `OLLAMA_HOST` is not set. If
+omitted, the native provider uses `http://localhost:11434`; `OLLAMA_HOST`
+overrides the configured or default URL. `raw` controls Ollama raw prompting.
+`seed` and `num_predict` are forwarded as Ollama generation options.
+
+No API key is required. An Ollama daemon must be running, and the configured
+model must already be available to that daemon.
+
 ## Preset Override Rules
 
 Local runtime presets build `executable` plus `args` defaults for each supported runtime.

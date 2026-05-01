@@ -1,0 +1,10 @@
+Answer the question using factual, practical language.
+
+Question: {{.question}}
+
+Return:
+- one sentence answer
+- one short caveat
+
+-- defaults --
+question=What is one benefit of local inference?

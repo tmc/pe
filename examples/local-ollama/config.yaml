@@ -1,0 +1,23 @@
+description: "Local Ollama smoke test"
+
+prompts:
+  - file://prompt.txt
+
+providers:
+  - id: "ollama:llama3.2"
+    label: "local ollama"
+    config:
+      base_url: "http://localhost:11434"
+      raw: true
+      seed: 1
+      num_predict: 128
+
+tests:
+  - description: "local inference answer"
+    vars:
+      question: "What changes when a prompt runs against a local model?"
+    assert:
+      - type: not-contains
+        value: "ERROR"
+      - type: not-contains
+        value: "error"
