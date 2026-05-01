@@ -159,12 +159,21 @@ func (m *ModernAdapter) Generate(ctx context.Context, prompt string, options llm
 		Prompt: prompt,
 		Model:  m.model,
 	}
+	if len(options.ProviderOptions) > 0 {
+		req.Options = cloneLLMOptions(options.ProviderOptions)
+	}
 
 	if options.Temperature != nil {
 		req.Temperature = float32(*options.Temperature)
 	}
 	if options.MaxTokens != nil {
 		req.MaxTokens = *options.MaxTokens
+	}
+	if options.TopP != nil {
+		setRequestOption(&req, "top_p", *options.TopP)
+	}
+	if options.TopK != nil {
+		setRequestOption(&req, "top_k", *options.TopK)
 	}
 	if len(options.Stop) > 0 {
 		req.StopSequences = options.Stop
@@ -279,12 +288,21 @@ func (m *ModernAdapter) GenerateStream(ctx context.Context, prompt string, optio
 		Model:  m.model,
 		Stream: true,
 	}
+	if len(options.ProviderOptions) > 0 {
+		req.Options = cloneLLMOptions(options.ProviderOptions)
+	}
 
 	if options.Temperature != nil {
 		req.Temperature = float32(*options.Temperature)
 	}
 	if options.MaxTokens != nil {
 		req.MaxTokens = *options.MaxTokens
+	}
+	if options.TopP != nil {
+		setRequestOption(&req, "top_p", *options.TopP)
+	}
+	if options.TopK != nil {
+		setRequestOption(&req, "top_k", *options.TopK)
 	}
 	if len(options.Stop) > 0 {
 		req.StopSequences = options.Stop
@@ -335,6 +353,26 @@ func GetLegacyProvider(modern Provider, model string) llm.Provider {
 
 	// Wrap modern provider
 	return NewModernAdapter(modern, model)
+}
+
+func cloneLLMOptions(options map[string]interface{}) map[string]interface{} {
+	if len(options) == 0 {
+		return nil
+	}
+	clone := make(map[string]interface{}, len(options))
+	for k, v := range options {
+		clone[k] = v
+	}
+	return clone
+}
+
+func setRequestOption(req *Request, key string, value interface{}) {
+	if req.Options == nil {
+		req.Options = make(map[string]interface{})
+	}
+	if _, ok := req.Options[key]; !ok {
+		req.Options[key] = value
+	}
 }
 
 // CreateProviderFromSpec creates a Provider from a provider specification string

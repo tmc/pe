@@ -13,11 +13,12 @@ import (
 
 // GenerateOptions contains options for text generation
 type GenerateOptions struct {
-	Temperature *float64
-	MaxTokens   *int
-	TopP        *float64
-	TopK        *int
-	Stop        []string
+	Temperature     *float64
+	MaxTokens       *int
+	TopP            *float64
+	TopK            *int
+	Stop            []string
+	ProviderOptions map[string]interface{}
 }
 
 // GenerateResponse contains the response from a generation request

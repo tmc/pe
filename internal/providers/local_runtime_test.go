@@ -76,6 +76,112 @@ func TestOllamaProviderConfigPropagation(t *testing.T) {
 	}
 }
 
+func TestOllamaProviderDirectGenerateConfigPropagation(t *testing.T) {
+	t.Setenv("PE_TEST_MODE", "true")
+
+	var got struct {
+		Model   string                 `json:"model"`
+		Prompt  string                 `json:"prompt"`
+		Raw     bool                   `json:"raw"`
+		Options map[string]interface{} `json:"options"`
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			t.Fatalf("Decode() failed: %v", err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"model":          got.Model,
+			"response":       "ok",
+			"done":           true,
+			"total_duration": 12_000_000,
+		})
+	}))
+	defer server.Close()
+
+	provider, err := llm.GetProviderWithOptions("ollama:test-model", map[string]interface{}{
+		"base_url":    server.URL,
+		"raw":         true,
+		"seed":        1,
+		"num_predict": 100,
+	})
+	if err != nil {
+		t.Fatalf("GetProviderWithOptions() failed: %v", err)
+	}
+
+	if _, err := provider.Generate(context.Background(), "exact prompt", llm.GenerateOptions{}); err != nil {
+		t.Fatalf("Generate() failed: %v", err)
+	}
+
+	if got.Model != "test-model" {
+		t.Fatalf("request model = %q, want test-model", got.Model)
+	}
+	if got.Prompt != "exact prompt" {
+		t.Fatalf("request prompt = %q, want exact prompt", got.Prompt)
+	}
+	if !got.Raw {
+		t.Fatal("request raw = false, want true")
+	}
+	if got.Options["seed"] != float64(1) {
+		t.Fatalf("request seed = %#v, want 1", got.Options["seed"])
+	}
+	if got.Options["num_predict"] != float64(100) {
+		t.Fatalf("request num_predict = %#v, want 100", got.Options["num_predict"])
+	}
+}
+
+func TestOllamaProviderDirectGenerateOptionsPropagation(t *testing.T) {
+	t.Setenv("PE_TEST_MODE", "true")
+
+	var got struct {
+		Model   string                 `json:"model"`
+		Prompt  string                 `json:"prompt"`
+		Raw     bool                   `json:"raw"`
+		Options map[string]interface{} `json:"options"`
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			t.Fatalf("Decode() failed: %v", err)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"model":          got.Model,
+			"response":       "ok",
+			"done":           true,
+			"total_duration": 12_000_000,
+		})
+	}))
+	defer server.Close()
+
+	provider, err := llm.GetProviderWithOptions("ollama:test-model", map[string]interface{}{
+		"base_url": server.URL,
+	})
+	if err != nil {
+		t.Fatalf("GetProviderWithOptions() failed: %v", err)
+	}
+
+	maxTokens := 100
+	if _, err := provider.Generate(context.Background(), "exact prompt", llm.GenerateOptions{
+		MaxTokens: &maxTokens,
+		ProviderOptions: map[string]interface{}{
+			"raw":  true,
+			"seed": 1,
+		},
+	}); err != nil {
+		t.Fatalf("Generate() failed: %v", err)
+	}
+
+	if !got.Raw {
+		t.Fatal("request raw = false, want true")
+	}
+	if got.Options["seed"] != float64(1) {
+		t.Fatalf("request seed = %#v, want 1", got.Options["seed"])
+	}
+	if got.Options["num_predict"] != float64(100) {
+		t.Fatalf("request num_predict = %#v, want 100", got.Options["num_predict"])
+	}
+}
+
 func TestMLXGoPresetConfigPropagation(t *testing.T) {
 	binDir := t.TempDir()
 	stubPath := filepath.Join(binDir, "mlx-lm-generate")

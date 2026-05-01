@@ -34,6 +34,9 @@ func (p *ConfiguredProvider) SupportsBatch() bool     { return p.base.SupportsBa
 
 func (p *ConfiguredProvider) Generate(ctx context.Context, prompt string, options GenerateOptions) (*GenerateResponse, error) {
 	merged := options
+	if len(options.ProviderOptions) > 0 {
+		merged.ProviderOptions = cloneOptions(options.ProviderOptions)
+	}
 	if merged.Temperature == nil {
 		if v, ok := getFloat64Default(p.defaults, "temperature"); ok {
 			merged.Temperature = &v
@@ -61,6 +64,7 @@ func (p *ConfiguredProvider) Generate(ctx context.Context, prompt string, option
 			merged.Stop = append([]string(nil), stop...)
 		}
 	}
+	mergeProviderOptions(&merged, p.defaults)
 	return p.base.Generate(ctx, prompt, merged)
 }
 
@@ -103,4 +107,38 @@ func getFloat64Default(values map[string]interface{}, key string) (float64, bool
 	default:
 		return 0, false
 	}
+}
+
+func mergeProviderOptions(options *GenerateOptions, defaults map[string]interface{}) {
+	for k, v := range defaults {
+		if isPortableGenerateOption(k) {
+			continue
+		}
+		if options.ProviderOptions == nil {
+			options.ProviderOptions = make(map[string]interface{})
+		}
+		if _, ok := options.ProviderOptions[k]; !ok {
+			options.ProviderOptions[k] = v
+		}
+	}
+}
+
+func isPortableGenerateOption(key string) bool {
+	switch key {
+	case "temperature", "max_tokens", "num_predict", "top_p", "top_k", "stop":
+		return true
+	default:
+		return false
+	}
+}
+
+func cloneOptions(options map[string]interface{}) map[string]interface{} {
+	if len(options) == 0 {
+		return nil
+	}
+	clone := make(map[string]interface{}, len(options))
+	for k, v := range options {
+		clone[k] = v
+	}
+	return clone
 }
