@@ -55,6 +55,7 @@ const (
 type Assertion struct {
 	Type      AssertionType          `json:"type"`
 	Value     interface{}            `json:"value,omitempty"`
+	Provider  string                 `json:"provider,omitempty"`
 	Min       *float64               `json:"min,omitempty"`
 	Max       *float64               `json:"max,omitempty"`
 	Threshold *float64               `json:"threshold,omitempty"`
@@ -77,13 +78,15 @@ type AssertionResult struct {
 
 // AssertionEvaluator handles evaluation of different assertion types
 type AssertionEvaluator struct {
-	llm llm.Provider
+	llm             llm.Provider
+	resolveProvider func(string) (llm.Provider, error)
 }
 
 // NewAssertionEvaluator creates a new assertion evaluator
 func NewAssertionEvaluator(llmProvider llm.Provider) *AssertionEvaluator {
 	return &AssertionEvaluator{
-		llm: llmProvider,
+		llm:             llmProvider,
+		resolveProvider: resolveAssertionProvider,
 	}
 }
 
@@ -95,6 +98,11 @@ func (ae *AssertionEvaluator) EvaluateAssertion(ctx context.Context, assertion A
 		Type:     assertion.Type,
 		Duration: time.Since(start),
 		Metadata: make(map[string]interface{}),
+	}
+	var err error
+
+	if assertion.Provider != "" && assertion.Type != AssertionLLMJudge {
+		return nil, fmt.Errorf("assertion provider override is only supported for llm-judge assertions")
 	}
 
 	switch assertion.Type {
@@ -119,7 +127,10 @@ func (ae *AssertionEvaluator) EvaluateAssertion(ctx context.Context, assertion A
 	case AssertionFactuality:
 		result = ae.evaluateFactuality(ctx, assertion, output)
 	case AssertionLLMJudge:
-		result = ae.evaluateLLMJudge(ctx, assertion, output)
+		result, err = ae.evaluateLLMJudge(ctx, assertion, output)
+		if err != nil {
+			return nil, err
+		}
 	case AssertionClassify:
 		result = ae.evaluateClassify(ctx, assertion, output)
 	case AssertionSimilarity:
@@ -442,7 +453,7 @@ Provide only a numeric score between -1 and 1.`, output)
 	}
 }
 
-func (ae *AssertionEvaluator) evaluateLLMJudge(ctx context.Context, assertion Assertion, output string) *AssertionResult {
+func (ae *AssertionEvaluator) evaluateLLMJudge(ctx context.Context, assertion Assertion, output string) (*AssertionResult, error) {
 	criteria, ok := assertion.Value.(string)
 	if !ok {
 		return &AssertionResult{
@@ -450,7 +461,12 @@ func (ae *AssertionEvaluator) evaluateLLMJudge(ctx context.Context, assertion As
 			Passed:  false,
 			Score:   0.0,
 			Message: "LLM judge assertion requires criteria as string value",
-		}
+		}, nil
+	}
+
+	judgeProvider, err := ae.llmJudgeProvider(assertion)
+	if err != nil {
+		return nil, err
 	}
 
 	judgePrompt := fmt.Sprintf(`You are an expert evaluator. Evaluate the following output based on the given criteria.
@@ -469,14 +485,14 @@ FORMAT:
 SCORE: [0-10]
 REASONING: [brief explanation]`, criteria, output)
 
-	response, err := ae.llm.Generate(ctx, judgePrompt, llm.GenerateOptions{})
+	response, err := judgeProvider.Generate(ctx, judgePrompt, llm.GenerateOptions{})
 	if err != nil {
 		return &AssertionResult{
 			Type:    assertion.Type,
 			Passed:  false,
 			Score:   0.0,
 			Message: fmt.Sprintf("Failed to evaluate with LLM judge: %v", err),
-		}
+		}, nil
 	}
 
 	score, reasoning := ae.parseLLMJudgeResponse(response.Text)
@@ -499,7 +515,37 @@ REASONING: [brief explanation]`, criteria, output)
 			"reasoning": reasoning,
 			"criteria":  criteria,
 		},
+	}, nil
+}
+
+func (ae *AssertionEvaluator) llmJudgeProvider(assertion Assertion) (llm.Provider, error) {
+	if assertion.Provider == "" {
+		if ae.llm == nil {
+			return nil, fmt.Errorf("llm judge assertion requires a provider")
+		}
+		return ae.llm, nil
 	}
+
+	provider := strings.TrimSpace(assertion.Provider)
+	if provider == "" {
+		return nil, fmt.Errorf("llm judge assertion provider is empty")
+	}
+	if ae.resolveProvider == nil {
+		return nil, fmt.Errorf("assertion provider overrides are not supported by this evaluator")
+	}
+
+	judgeProvider, err := ae.resolveProvider(provider)
+	if err != nil {
+		return nil, fmt.Errorf("resolve assertion provider %q: %w", provider, err)
+	}
+	if judgeProvider == nil {
+		return nil, fmt.Errorf("resolve assertion provider %q: provider is nil", provider)
+	}
+	return judgeProvider, nil
+}
+
+func resolveAssertionProvider(provider string) (llm.Provider, error) {
+	return llm.GetProviderWithOptions(provider, nil)
 }
 
 func (ae *AssertionEvaluator) parseLLMJudgeResponse(response string) (float64, string) {
@@ -763,7 +809,7 @@ func (ae *AssertionEvaluator) evaluateFactuality(ctx context.Context, assertion 
 }
 
 func (ae *AssertionEvaluator) evaluateClassify(ctx context.Context, assertion Assertion, output string) *AssertionResult {
-	// NOTE: Classification pending implementation  
+	// NOTE: Classification pending implementation
 	// Will use LLM-based classification in future release
 	return &AssertionResult{
 		Type:    assertion.Type,

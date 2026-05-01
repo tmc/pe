@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/promptfoo"
 	"github.com/tmc/pe/internal/providers"
 	"sigs.k8s.io/yaml"
@@ -136,7 +137,11 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 						return
 					}
 
-					success, grading := evaluateAssertions(response.Output, test.Assert)
+					var judgeProvider llm.Provider
+					if !dryRun {
+						judgeProvider = provider.Executor
+					}
+					success, grading := evaluateAssertionsWithProvider(ctx, response.Output, test.Assert, judgeProvider)
 					resultID := generateResultID(prompt, provider.Spec.ID, test.Vars)
 					latencyMs := latency.Milliseconds()
 					if response.LatencyMs > 0 {
@@ -299,14 +304,17 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 }
 
 func evaluateAssertions(output string, asserts []promptfoo.Assertion) (bool, promptfoo.GradingResult) {
+	return evaluateAssertionsWithProvider(context.Background(), output, asserts, nil)
+}
+
+func evaluateAssertionsWithProvider(ctx context.Context, output string, asserts []promptfoo.Assertion, judgeProvider llm.Provider) (bool, promptfoo.GradingResult) {
 	success := true
 	var componentResults []promptfoo.ComponentResult
 	totalScore := 0.0
 	assertPassCount, assertFailCount := 0, 0
 
 	for _, assert := range asserts {
-		pass := checkAssertion(output, assert.Type, assert.Value)
-		score := ifThenElse(pass, 1.0, 0.0)
+		pass, score, reason := evaluateAssertion(ctx, output, assert, judgeProvider)
 		totalScore += score
 
 		if pass {
@@ -319,7 +327,7 @@ func evaluateAssertions(output string, asserts []promptfoo.Assertion) (bool, pro
 		componentResults = append(componentResults, promptfoo.ComponentResult{
 			Pass:      pass,
 			Score:     score,
-			Reason:    ifThenElseString(pass, "Assertion passed", fmt.Sprintf("Expected output to %s %v", assert.Type, assert.Value)),
+			Reason:    reason,
 			Assertion: assert,
 		})
 	}
@@ -344,6 +352,36 @@ func evaluateAssertions(output string, asserts []promptfoo.Assertion) (bool, pro
 		Reason:           ifThenElseString(success, "All assertions passed", "Some assertions failed"),
 		ComponentResults: componentResults,
 		TokensUsed:       tokenUsage,
+	}
+}
+
+func evaluateAssertion(ctx context.Context, output string, assert promptfoo.Assertion, judgeProvider llm.Provider) (bool, float64, string) {
+	if assert.Type == string(AssertionLLMJudge) && judgeProvider != nil {
+		evaluator := NewAssertionEvaluator(judgeProvider)
+		result, err := evaluator.EvaluateAssertion(ctx, promptfooAssertion(assert), output, nil)
+		if err != nil {
+			return false, 0, err.Error()
+		}
+		return result.Passed, result.Score, result.Message
+	}
+
+	pass := checkAssertion(output, assert.Type, assert.Value)
+	score := ifThenElse(pass, 1.0, 0.0)
+	reason := ifThenElseString(pass, "Assertion passed", fmt.Sprintf("Expected output to %s %v", assert.Type, assert.Value))
+	return pass, score, reason
+}
+
+func promptfooAssertion(assert promptfoo.Assertion) Assertion {
+	var threshold *float64
+	if assert.Threshold != 0 {
+		threshold = &assert.Threshold
+	}
+	return Assertion{
+		Type:      AssertionType(assert.Type),
+		Value:     assert.Value,
+		Provider:  assert.Provider,
+		Threshold: threshold,
+		Config:    assert.Config,
 	}
 }
 
