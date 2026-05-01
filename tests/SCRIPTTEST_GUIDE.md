@@ -1,163 +1,95 @@
 # PE Scripttest Suite Guide
 
-This directory contains a comprehensive scripttest suite for PE (Go for Prompts), modeled after the Go toolchain's testing approach.
+This directory contains PE command-line tests using `rsc.io/script/scripttest`.
 
 ## Overview
 
-The test suite uses `rsc.io/script/scripttest` to provide declarative, readable tests for PE's command-line interface. Tests are written in a txtar-like format that combines shell commands, expected output, and file content.
+`tests/scripttest_test.go` builds the local `pe` binary and the `pe-promptfoo`
+plugin, then runs each `tests/testdata/script/*.txt` file in an isolated work
+directory. The script engine uses `scripttest.DefaultCmds()` with `exec`
+removed and a custom `pe` command added.
 
-## Test Organization
-
-```
-tests/
-├── scripttest_test.go      # Main test runner with mock PE implementation
-├── testdata/
-│   └── script/            # Test files (*.txt)
-│       ├── README         # Detailed test format documentation
-│       ├── basic_smoke.txt # Framework verification test
-│       ├── init.txt       # pe init command tests
-│       ├── run.txt        # pe run command tests
-│       ├── test.txt       # pe test command tests
-│       ├── optimize.txt   # pe optimize command tests
-│       ├── compose.txt    # pe compose command tests
-│       ├── mod.txt        # pe mod (dependency management) tests
-│       ├── build.txt      # pe build command tests
-│       ├── semantic.txt   # pe semantic (2025 GASO/backprop) tests
-│       ├── extract.txt    # pe extract (XML tag extraction) tests
-│       ├── metrics.txt    # pe metrics command tests
-│       ├── pipeline.txt   # Unix pipeline tests
-│       ├── version_control.txt # Git-like version control tests
-│       ├── security.txt   # Security and sandboxing tests
-│       ├── cache.txt      # Verifiable caching tests
-│       ├── plugin.txt     # Plugin system tests
-│       ├── fmt.txt        # pe fmt command tests
-│       └── workflow.txt   # End-to-end workflow tests
-```
+The runner is not a shell. It does not interpret pipes, redirection, heredocs,
+`&&`, `||`, or shell job control. A trailing `&` is scripttest background syntax
+only for commands registered as async; the custom `pe` command is not async.
 
 ## Running Tests
 
-### Run all tests:
+Run all script tests:
+
 ```bash
 go test -v ./tests/...
 ```
 
-### Run specific test file:
+Run one script:
+
 ```bash
 go test -v ./tests/... -run TestScripts/init
 ```
 
-### Debug mode (preserve work directories):
+Preserve work directories for debugging:
+
 ```bash
 go test -v ./tests/... -testwork
 ```
 
-### Update test expectations:
-```bash
-go test -v ./tests/... -update
-```
+## Supported Commands
 
-## Test Format
+PE tests may use:
 
-Tests use the scripttest format with these key commands:
+- `pe args...`: run the built PE binary.
+- File and environment commands: `cat`, `cd`, `chmod`, `cmp`, `cmpenv`, `cp`, `echo`, `env`, `exists`, `grep`, `mkdir`, `mv`, `replace`, `rm`, `sleep`, `symlink`.
+- Assertions and control: `stdout`, `stderr`, `!`, `?`, `[condition]`, `skip`, `stop`, `wait`, `help`.
 
-### Basic Commands
-- `pe <command>` - Run PE commands
-- `exec <cmd>` - Run shell commands
-- `stdin <content>` - Provide stdin input
-- `env KEY=value` - Set environment variables
-- `cd <dir>` - Change directory
+The runner does not register `exec`, `stdin`, `contains`, `concurrent`,
+`count`, `json`, or `yaml`. Use `grep` for file-content checks.
 
-### Assertions
-- `stdout <pattern>` - Check stdout contains pattern
-- `stderr <pattern>` - Check stderr contains pattern
-- `! stdout <pattern>` - Check stdout doesn't contain pattern
-- `exists <file>` - Check file exists
-- `! exists <file>` - Check file doesn't exist
-- `contains <file> <pattern>` - Check file contains pattern
-- `cmp <file1> <file2>` - Compare files
+## Files and Output
 
-### File Creation
-Files are created using the `--` marker:
-
-```
--- prompt.txt --
-You are a helpful assistant.
-
--- config.yaml --
-provider: openai
-model: gpt-4
-```
-
-## Example Test
+Use txtar sections to create input files:
 
 ```txt
-# Test pe run with variables
-
-# Create a template prompt
-pe run 'Translate {{.Text}} to {{.Language}}' --var Text=Hello --var Language=Spanish
-stdout 'Hola'
-
-# Run from file
 pe run prompt.txt
-stdout 'assistant'
-contains prompt.txt 'helpful'
+stdout 'Paris'
 
 -- prompt.txt --
-You are a helpful assistant. Please help the user.
+What is the capital of France?
 ```
 
-## Mock Implementation
+Use PE flags or `cp stdout file` for intermediate files instead of shell
+redirection:
 
-The test suite includes a comprehensive mock PE implementation in `scripttest_test.go` that simulates:
+```txt
+pe run prompt.txt --provider mock
+cp stdout response.xml
+pe extract response.xml --tag answer
+stdout 'Paris'
 
-- All major PE commands (run, test, optimize, build, etc.)
-- File creation and management
-- Realistic output formatting
-- Error conditions
-
-## Adding New Tests
-
-1. Create a new `.txt` file in `testdata/script/`
-2. Follow the scripttest format
-3. Add mock implementations for new commands in `scripttest_test.go`
-4. Run tests to verify
-
-## Coverage
-
-The test suite covers:
-
-- **Core Commands**: init, run, test, build, optimize
-- **Advanced Features**: semantic backprop, GASO, metaprompting
-- **Toolchain Features**: mod, fmt, version control
-- **Pipeline Operations**: Unix-style composition
-- **Security**: Sandboxing, trust management
-- **Infrastructure**: Caching, plugins, metrics
-
-## Best Practices
-
-1. **Test Isolation**: Each test runs in a fresh directory
-2. **Clear Names**: Test files named after functionality
-3. **Comprehensive Checks**: Test both success and failure cases
-4. **Realistic Mocks**: Mock outputs match real PE behavior
-5. **Documentation**: Comment tests to explain purpose
-
-## Integration with CI
-
-Add to GitHub Actions:
-
-```yaml
-- name: Run Scripttests
-  run: go test -v ./tests/...
+-- prompt.txt --
+Answer in <answer>...</answer> tags: capital of France?
 ```
 
-## Comparison with Go Toolchain Tests
+If a command only accepts standard input, add file-input support or a dedicated
+script command before testing it here; do not use `exec sh -c`, `cat file |`,
+or `< file`.
 
-This test suite follows the same patterns as the Go toolchain's `cmd/go/testdata/script/` tests:
+## Conditions and Environment
 
-- Same scripttest framework
-- Similar command structure
-- Comprehensive coverage
-- Declarative test format
-- Easy debugging with `-testwork`
+Available conditions come from `scripttest.DefaultConds()`: `GOOS:<value>`,
+`GOARCH:<value>`, `compiler:<value>`, `root`, `exec:<program>`, `short`, and
+`verbose`.
 
-The main difference is that PE tests focus on prompt engineering workflows rather than Go compilation.
+The runner sets `PE_TEST_MODE=true`, `PE_MOCK_PROVIDER=true`, and a `PATH` that
+starts with the directory containing the built test binaries. Scripttest also
+sets `$WORK` to the per-test work directory and a platform temp directory.
+
+## Adding Tests
+
+1. Create a focused `.txt` file in `tests/testdata/script/`.
+2. Use direct `pe` commands and built-in script commands.
+3. Create inputs with txtar file sections.
+4. Capture outputs with PE output flags or `cp stdout file`.
+5. Check output with `stdout`, `stderr`, `grep`, `exists`, or `cmp`.
+
+Keep scripts sequential unless the command under test exposes concurrency
+through PE flags or configuration.

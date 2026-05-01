@@ -1,13 +1,13 @@
-This directory contains PE's script-based tests, following the Go toolchain's testing patterns.
+This directory contains PE's script-based command tests.
 
-Test files are written in txtar format. Each test is a text archive
-containing a script of commands to run, expected output, and files
-to create in the test's temporary directory.
+Each `.txt` file is a txtar archive. The archive comment is the script to run;
+`-- name --` sections create files in the test work directory before the script
+starts.
 
-The script format is a subset of the Go toolchain's script test format:
-
-Scripts are executedsequentially. Each line beginning with a command
-is executed, and output is checked against expectations.
+The PE runner uses `rsc.io/script/scripttest` with `exec` removed and a custom
+`pe` command added. It is not a shell: `|`, `>`, `<`, heredocs, `&&`, `||`, and
+shell job control are not interpreted. A trailing `&` is only scripttest async
+syntax for commands registered as async; `pe ... &` is not supported.
 
 Commands:
 
@@ -15,73 +15,83 @@ Commands:
     A line beginning with # is a comment.
 
   ! command args...
-    Run the command and expect it to fail (non-zero exit status).
+    Run the command and expect it to fail.
 
   ? command args...
     Run the command and ignore its exit status.
 
   [condition] command args...
   [!condition] command args...
-    Run the command only if the condition is satisfied.
-    Available conditions:
-      - short: the -short test flag is set
-      - darwin, linux, windows: the target OS
-      - go1.21: the Go version is at least 1.21
-      - race: the race detector is supported
+    Run the command only if the condition is satisfied or not satisfied.
+
+  pe args...
+    Run the test-built PE binary.
 
   env KEY=value
     Set an environment variable.
 
   cd dir
-    Change to a directory (relative to the test's working directory).
+    Change directory relative to the test work directory.
 
-  exec command args...
-    Run an external command.
+  cat file...
+    Print file contents to stdout.
 
-  pe args...
-    Run the pe command with the given arguments.
+  echo args...
+    Print the arguments to stdout. It does not support shell redirection.
 
-  exists [-readonly] file...
-    Check that the named files exist.
+  exists [-readonly] [-exec] file...
+    Check that files exist.
 
   ! exists file...
-    Check that the named files do not exist.
+    Check that files do not exist.
 
-  contains file pattern
-    Check that the file contains the pattern.
+  grep [-count=N] [-q] pattern file
+    Check that a file contains text matching a Go regular expression.
 
-  ! contains file pattern
-    Check that the file does not contain the pattern.
-
-  grep [-count=N] pattern file
-    Check that the file contains lines matching the pattern.
-
-  stdout pattern
-    Check that the last command's stdout contains the pattern.
+  stdout [-count=N] [-q] pattern
+    Check that the last command's stdout matches a Go regular expression.
 
   ! stdout pattern
-    Check that the last command's stdout does not contain the pattern.
+    Check that the last command's stdout does not match.
 
-  stderr pattern
-    Check that the last command's stderr contains the pattern.
+  stderr [-count=N] [-q] pattern
+    Check that the last command's stderr matches a Go regular expression.
 
   ! stderr pattern
-    Check that the last command's stderr does not contain the pattern.
+    Check that the last command's stderr does not match.
 
-  cmp [-trim] file1 file2
-    Compare two files for equality.
+  cmp [-q] file1 file2
+    Compare files, or compare stdout/stderr with an expected file.
+
+  cmpenv [-q] file1 file2
+    Like cmp, with environment expansion before comparison.
 
   cp src... dst
-    Copy files to a destination.
+    Copy files. `stdout` and `stderr` may be used as sources.
 
-  mkdir [-p] dir...
-    Create directories.
+  chmod perm file...
+    Set numeric file permissions.
 
-  rm [-rf] file...
-    Remove files or directories.
+  mkdir dir...
+    Create directories, including missing parents.
+
+  mv old new
+    Rename a file or directory.
+
+  replace [old new]... file
+    Replace strings in a file.
+
+  rm path...
+    Remove files or directories recursively.
 
   sleep duration
-    Sleep for a duration (e.g., 100ms, 1s).
+    Sleep for a Go duration such as 100ms or 1s.
+
+  symlink path -> target
+    Create a symbolic link.
+
+  wait
+    Wait for background commands registered as async.
 
   stop [message]
     Stop execution of the script.
@@ -89,76 +99,65 @@ Commands:
   skip [message]
     Skip the rest of the script.
 
-  concurrent command...
-    Run multiple commands concurrently.
+  help [command...]
+    Print available command help to the test log.
 
-  count file pattern n
-    Check that pattern occurs exactly n times in file.
+Unavailable in this runner:
 
-  json file [query]
-    Parse JSON file and optionally query it.
+  exec command args...
+    Not registered. Use direct `pe` commands or add a dedicated script command.
 
-  yaml file [query]
-    Parse YAML file and optionally query it.
+  stdin, contains, concurrent, count, json, yaml
+    Not registered. Use file inputs, `grep`, `stdout`, `stderr`, `cmp`, and PE
+    command flags instead.
 
-Environment variables:
+Conditions:
+
+  GOOS:<value>, GOARCH:<value>, compiler:<value>, root, exec:<program>, short,
+  verbose.
+
+Environment:
 
   $WORK
     The temporary work directory for the test.
 
-  $HOME
-    Set to $WORK/home, isolated from the user's real home directory.
-
-  $PE_HOME
-    The PE configuration directory, set to $WORK/.pe.
+  $TMPDIR or $TMP
+    A temporary directory under $WORK, depending on the platform.
 
   $PE_TEST_MODE
-    Set to "true" to indicate test mode.
+    Set to "true".
 
-  $PE_MOCK_MODE
-    Set to "true" to use mock LLM responses.
+  $PE_MOCK_PROVIDER
+    Set to "true".
 
   PATH
-    Includes the directory containing the test pe binary.
+    Starts with the directory containing the test-built `pe` binary.
 
 Examples:
 
-  # Create and run a simple prompt
-  pe run 'What is 2+2?'
-  stdout '4'
-
-  # Test file operations
-  env CONTENT='Explain pointers'
-  exec echo $CONTENT
-  stdout 'Explain pointers'
-  pe run -
-  stdout 'pointer'
-
-  # Test error handling
-  ! pe run
-  stderr 'error: run requires a prompt'
-
-  # Platform-specific tests
-  [darwin] pe trust list
-  [!windows] pe sandbox status
-
-  # File comparison
-  pe optimize prompt.txt --output optimized.txt
-  exists optimized.txt
-  ! cmp prompt.txt optimized.txt
-
-The -- marker introduces a file to be created in the test's working directory:
-
-  -- go.mod --
-  module example.com/test
-  go 1.21
-
-  -- main.go --
-  package main
-  func main() {}
+  # Create and run a simple prompt.
+  pe run prompt.txt --provider mock
+  stdout 'Paris'
 
   -- prompt.txt --
-  Explain this concept clearly.
+  What is the capital of France?
 
-Tests should be focused, testing one specific behavior. Use descriptive
-filenames that indicate what is being tested.
+  # Capture stdout in an intermediate file instead of using a pipe.
+  pe run tagged.txt --provider mock
+  cp stdout response.xml
+  pe extract response.xml --tag answer
+  stdout 'Paris'
+
+  -- tagged.txt --
+  Answer in <answer>...</answer> tags: capital of France?
+
+  # Use output flags and file assertions instead of shell redirection.
+  pe extract response.xml --tag answer --output answer.txt
+  exists answer.txt
+  grep 'Paris' answer.txt
+
+  -- response.xml --
+  <answer>Paris</answer>
+
+Tests should be focused and should prefer files or explicit PE flags over shell
+features.
