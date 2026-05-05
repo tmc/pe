@@ -67,6 +67,8 @@ source of truth for coverage numbers.
   dependency counts and install-script decision.
 - [RELEASE_PROCESS.md](RELEASE_PROCESS.md) - release testing, deployment,
   rollback, and post-release monitoring process.
+- [PROJECT_MANAGEMENT.md](PROJECT_MANAGEMENT.md) - project board, sprint,
+  review, bug tracking, and validation process.
 - [IMPLEMENTATION_TODOS.md](IMPLEMENTATION_TODOS.md) - tombstone pointing to
   [../ROADMAP.md](../ROADMAP.md).
 - [PLANNED_COMMANDS.md](PLANNED_COMMANDS.md) - aspirational command ideas, not
