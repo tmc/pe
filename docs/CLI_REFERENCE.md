@@ -32,6 +32,8 @@ Use `pe version` to show version information.
 | [`version`](#version) | Print version information | `pe version` |
 | [`security`](#security) | Security testing (OWASP) | `pe security test prompt.txt` |
 | [`build`](#build) | Build optimized prompts | `pe build config.yaml --target anthropic` |
+| [`compose`](#compose) | Compose prompt components | `pe compose context.txt instruction.txt --style cot` |
+| [`config`](#config) | Inspect PE configuration | `pe config list` |
 | [`cat`](#cat) | Display prompt files | `pe cat prompts/analyze.prompt` |
 | [`mod`](#mod) | Manage prompt modules | `pe mod list` |
 | [`template`](#template) | Manage prompt templates | `pe template list` |
@@ -51,6 +53,13 @@ Use `pe version` to show version information.
 | [`eval-prompt`](#eval-prompt) | Run prompt evals | `pe eval-prompt prompt.txt` |
 | [`exp`](#exp) | Prototype command group | `pe exp --help` |
 | [`experimental`](#experimental) | Research commands | `pe experimental optimize config.yaml` |
+| [`optimize`](#optimize) | Optimize prompts with metaprompting | `pe optimize --prompt "Summarize" --method pe2` |
+| [`evolve`](#evolve) | Optimize prompts with evolutionary search | `pe evolve prompt.txt --population 10` |
+| [`semantic`](#semantic) | Semantic optimization commands | `pe semantic analyze prompt.txt` |
+| [`fusion`](#fusion) | Aggregate provider outputs | `pe fusion --input votes.json` |
+| [`gaso`](#gaso) | Optimize agentic systems | `pe gaso --system system.yaml --objective accuracy` |
+| [`pe2`](#pe2) | PE2 prompt optimization shortcut | `pe pe2 --prompt "Classify text"` |
+| [`textgrad`](#textgrad) | Textual-gradient optimization shortcut | `pe textgrad --prompt "Classify text"` |
 | [`push`](#push) | Push module to registry | `pe push tmc/hello` |
 | [`reduce`](#reduce) | Aggregate results | `pe reduce --sum cost` |
 | [`work`](#work) | Workspace management | `pe work init` |
@@ -2302,6 +2311,65 @@ pe eval-prompt prompt.txt --json -o results.json
 
 ---
 
+## compose
+
+Compose prompts from modular components.
+
+### Synopsis
+
+```bash
+pe compose [component files...] [flags]
+```
+
+### Common Flags
+
+```bash
+    --style string       Composition style (default, cot, few-shot, structured, conversational, dspy)
+    --output string      Output file for composed prompt
+    --validate           Validate component compatibility
+    --optimize           Apply TextGrad optimization after composition
+```
+
+### Examples
+
+```bash
+pe compose context.txt instruction.txt examples.txt --style cot
+pe compose components/ --style few-shot --validate --output prompt.txt
+```
+
+---
+
+## config
+
+Inspect, validate, and update PE configuration.
+
+### Synopsis
+
+```bash
+pe config [command]
+```
+
+### Subcommands
+
+```bash
+docs        Print configuration reference
+get         Print one configuration value
+list        Print merged configuration
+migrate     Migrate a config file to canonical PE YAML
+set         Set one configuration value in a config file
+validate    Validate merged configuration
+```
+
+### Examples
+
+```bash
+pe config list
+pe config get provider.default
+pe config validate pe.yaml
+```
+
+---
+
 ## exp
 
 Access prototype commands under active development.
@@ -2337,6 +2405,188 @@ JSON from `results.prompts[].metrics.score`.
 ```bash
 pe exp optimize --input input.json --output result.json
 pe exp optimize --scores eval-results.json --max-rounds 3
+```
+
+---
+
+## optimize
+
+Optimize prompts using metaprompting methods.
+
+### Synopsis
+
+```bash
+pe optimize [prompt-file] [flags]
+```
+
+### Common Flags
+
+```bash
+    --prompt string      Initial prompt to optimize
+-m, --method string      Method: standard, pe2, apex, textgrad, hybrid
+-i, --iterations int     Number of optimization iterations
+    --provider string    Provider name
+-o, --output string      Output JSON file
+```
+
+### Examples
+
+```bash
+pe optimize --prompt "Analyze sentiment" --method pe2 --iterations 5
+pe optimize complex-system.txt --method apex --output results.json
+```
+
+---
+
+## evolve
+
+Optimize prompts with evolutionary algorithms.
+
+### Synopsis
+
+```bash
+pe evolve [prompt-file] [flags]
+```
+
+### Common Flags
+
+```bash
+-n, --population int        Population size
+-g, --generations int       Number of generations
+    --objectives string     Comma-separated objectives
+-o, --output string         Output JSON file
+```
+
+### Examples
+
+```bash
+pe evolve prompt.txt
+pe evolve prompt.txt --objectives accuracy,conciseness --generations 50
+```
+
+---
+
+## semantic
+
+Run semantic analysis and optimization subcommands.
+
+### Synopsis
+
+```bash
+pe semantic [command]
+```
+
+### Subcommands
+
+```bash
+analyze     Analyze semantic structure and dependencies
+backprop    Apply semantic backpropagation
+benchmark   Benchmark semantic optimization
+descent     Apply semantic gradient descent
+flow        Analyze semantic information flow
+gaso        Graph-based Agentic System Optimization
+gradients   Compute semantic gradients
+monitor     Monitor semantic drift
+```
+
+### Examples
+
+```bash
+pe semantic analyze prompt.txt
+pe semantic gradients prompt.txt
+```
+
+---
+
+## fusion
+
+Aggregate provider outputs with deterministic consensus.
+
+### Synopsis
+
+```bash
+pe fusion [--input votes.json] [flags]
+```
+
+### Flags
+
+```bash
+-i, --input string     Input JSON file, or - for stdin
+-o, --output string    Output JSON file, or - for stdout
+```
+
+### Examples
+
+```bash
+pe fusion --input votes.json
+cat votes.json | pe fusion --input - --output result.json
+```
+
+---
+
+## gaso
+
+Optimize multi-component agentic systems with semantic gradients.
+
+### Synopsis
+
+```bash
+pe gaso [flags]
+```
+
+### Common Flags
+
+```bash
+-s, --system string       System definition file
+-b, --objective string    Optimization objective
+-i, --iterations int      Number of iterations
+-f, --format string       Output format: json, yaml, table
+-o, --output string       Output file
+```
+
+### Examples
+
+```bash
+pe gaso --system system.yaml --objective accuracy
+pe gaso --system system.yaml --multi-objective --format table
+```
+
+---
+
+## pe2
+
+Optimize prompts with the PE2 method.
+
+### Synopsis
+
+```bash
+pe pe2 [prompt-file] [flags]
+```
+
+### Examples
+
+```bash
+pe pe2 --prompt "Classify text"
+pe pe2 prompt.txt --iterations 5 --output result.json
+```
+
+---
+
+## textgrad
+
+Optimize prompts with textual gradients.
+
+### Synopsis
+
+```bash
+pe textgrad [prompt-file] [flags]
+```
+
+### Examples
+
+```bash
+pe textgrad --prompt "Classify text"
+pe textgrad prompt.txt --iterations 5 --output result.json
 ```
 
 ---

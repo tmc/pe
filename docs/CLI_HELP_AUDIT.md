@@ -13,7 +13,7 @@ Root commands from generated help, excluding Cobra's built-in `help` and
 `completion`:
 
 ```text
-analyze ask benchmark build cat collect convert diff doc edit eval eval-prompt exp expand experimental extract filter fmt get init interactive mod plugin profile prompt push reduce run run-text security serve stats stream template test version vet view watch work
+analyze ask benchmark build cat collect compose config convert diff doc edit eval eval-prompt evolve exp expand experimental extract filter fmt fusion gaso get init interactive mod optimize pe2 plugin profile prompt push reduce run run-text security semantic serve stats stream template test textgrad version vet view watch work
 ```
 
 Documentation reconciliation:
@@ -22,3 +22,6 @@ Documentation reconciliation:
   listed above.
 - `expand` and `version` were added after this audit found they were missing
   from the command inventory.
+- `compose`, `config`, `evolve`, `fusion`, `gaso`, `optimize`, `pe2`,
+  `semantic`, and `textgrad` are current root commands and should remain visible
+  in release-facing command inventories.

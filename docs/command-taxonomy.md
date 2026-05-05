@@ -1,7 +1,7 @@
 # Command Taxonomy
 
 This inventory was generated from `GOTOOLCHAIN=go1.25.9 go run ./cmd/pe
---help`.
+--help` on 2026-05-05.
 
 ## Current Commands
 
@@ -12,6 +12,8 @@ benchmark
 build
 cat
 collect
+compose
+config
 completion
 convert
 diff
@@ -19,17 +21,22 @@ doc
 edit
 eval
 eval-prompt
+evolve
 exp
 expand
 experimental
 extract
 filter
 fmt
+fusion
+gaso
 get
 help
 init
 interactive
 mod
+optimize
+pe2
 plugin
 profile
 prompt
@@ -38,11 +45,13 @@ reduce
 run
 run-text
 security
+semantic
 serve
 stats
 stream
 template
 test
+textgrad
 version
 vet
 view
@@ -59,11 +68,13 @@ run
 run-text
 build
 test
+ask
 doc
 init
+prompt
+edit
 work
 serve
-version
 ```
 
 Evaluation commands inspect prompt behavior and result files:
@@ -75,16 +86,18 @@ benchmark
 diff
 stats
 view
-analyze
 ```
 
 Optimization commands change prompts or search prompt space:
 
 ```text
-experimental optimize
-experimental evolve
-experimental semantic
-exp optimize
+optimize
+evolve
+semantic
+textgrad
+pe2
+gaso
+fusion
 ```
 
 Module commands manage prompt packages and registries:
@@ -93,19 +106,18 @@ Module commands manage prompt packages and registries:
 mod
 push
 get
-edit
-prompt
 ```
 
 Pipeline commands support Unix-style text flow:
 
 ```text
-ask
 cat
 stream
 filter
+analyze
 extract
 expand
+compose
 collect
 reduce
 ```
@@ -119,8 +131,8 @@ convert
 template
 interactive
 watch
-completion
-plugin
+config
+version
 ```
 
 Experimental commands carry higher-change-risk features:
@@ -132,13 +144,20 @@ security
 profile
 ```
 
+Plugin commands manage extension discovery and lifecycle:
+
+```text
+plugin
+```
+
 ## Relationships
 
 `run`, `run-text`, `cat`, and `ask` form the executable-text path: render or
 execute text, optionally with variables. `mod`, `push`, and `get` form the
 module path. `eval`, `benchmark`, `diff`, `stats`, and `view` form the result
-analysis path. `stream`, `filter`, `extract`, `collect`, and `reduce` form the
-pipeline path.
+analysis path. `stream`, `filter`, `analyze`, `extract`, `compose`, `collect`,
+and `reduce` form the pipeline path. `optimize`, `evolve`, `semantic`,
+`textgrad`, `pe2`, `gaso`, and `fusion` form the optimization path.
 
 The reorganization should preserve existing command names as compatibility
 shims. Grouping should improve help and discovery without making existing
