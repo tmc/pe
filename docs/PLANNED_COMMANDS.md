@@ -1,20 +1,13 @@
-# Planned Commands - Strategic Enhancement Roadmap
+# Planned Commands
 
-This document outlines additional commands planned for PE, designed to fill capability gaps while maintaining Unix philosophy of small, composable tools.
+This document is an aspirational command-idea catalog. It does not own release
+scope, command counts, or implementation status. Keep priorities and remaining
+work in [../ROADMAP.md](../ROADMAP.md), and verify current commands from the
+generated CLI help or command reference before moving any item into active work.
 
-## Analysis of Current State
-
-**Existing Commands (41 implemented):**
-- Core: run, eval, test, build, cat, init
-- Optimization: optimize, semantic, evolve, benchmark
-- Data Processing: extract, stats, csv, structured  
-- Pipeline: pipeline, fusion, passn
-- Module System: mod, get, push, work
-- Security: attest, security
-- Development: repl, playground, profile, doc
-- Distributed: distributed, cache, consensus
-- Templating: template, fmt, compose, view
-- Advanced: tool, plugin, metrics
+Some names below may already exist as current commands or experimental commands.
+Treat those entries as enhancement sketches, not evidence that the command is
+missing.
 
 ## Strategic Gaps Identified
 
@@ -387,25 +380,33 @@ pe report --schedule daily --email team@company.com results/
 
 **Rationale**: Stakeholders need clear reporting on prompt performance.
 
-## Implementation Priority
+## Candidate Grouping
 
-### Phase 1 (High Impact, Low Complexity)
-1. **pe diff** - Essential for version control
-2. **pe lint** - Improves prompt quality  
-3. **pe batch** - High-demand feature
-4. **pe watch** - Developer productivity
+Use this grouping only when promoting ideas into `ROADMAP.md`.
 
-### Phase 2 (Medium Complexity, High Value)
-1. **pe transform** - Common workflow need
-2. **pe import/export** - Migration and deployment
-3. **pe sweep** - Optimization workflows
-4. **pe analyze** - Data-driven development
+### New command candidates
 
-### Phase 3 (High Complexity, Strategic Value)
-1. **pe workflow** - Complex orchestration
-2. **pe sync** - Team collaboration
-3. **pe schedule** - Production deployment
-4. **pe trace** - Advanced debugging
+- `pe transform`
+- `pe merge`
+- `pe batch`
+- `pe sweep`
+- `pe schedule`
+- `pe trace`
+- `pe explain`
+- `pe lint`
+- `pe import`
+- `pe export`
+- `pe sync`
+- `pe workflow`
+- `pe hook`
+- `pe analyze`
+- `pe report`
+
+### Existing command enhancement candidates
+
+- `pe diff`
+- `pe watch`
+- `pe benchmark`
 
 ## Design Principles
 

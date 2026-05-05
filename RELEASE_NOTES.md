@@ -5,14 +5,14 @@
 Release prep is in progress on April 30, 2026. These notes describe the current
 release candidate state of PE.
 
-## Production-Ready Surface
+## Release-Candidate Surface
 
 ### Core Toolchain
 
 - `pe version` reports `v0.5.0` for this build.
-- `pe --help` lists 40 top-level commands, including prompt execution,
-  evaluation, benchmarking, module/workspace commands, templates, plugins,
-  security testing, and the experimental command groups.
+- `pe --help` lists the current generated command surface, including prompt
+  execution, evaluation, benchmarking, module/workspace commands, templates,
+  plugins, security testing, and the experimental command groups.
 - Prompt files support variable substitution, metadata, formatting, validation,
   and evaluation hooks.
 - The promptfoo-compatible evaluation path supports string assertions, structured
@@ -61,8 +61,7 @@ release candidate state of PE.
 ### Fixes
 
 - Normalized promptfoo config conversion.
-- Preserved provider-specific Generate options through the legacy/modern provider
-  bridge.
+- Preserved provider-specific Generate options through the provider bridge.
 - Honored Promptfoo `llm-judge` assertion provider overrides.
 - Made CLI JSON response parsing explicit so ordinary JSON model output is not
   rewritten accidentally.
@@ -83,8 +82,8 @@ release candidate state of PE.
 - Advanced assertion types that require external ML services remain partial.
 - Local runtime examples require the corresponding local daemon or binary
   (`ollama`, `mlx-lm`, `mlx-go-lm`, or configured CLI command).
-- Documentation still contains older archived and future-facing material; release
-  prep is consolidating current user-facing docs.
+- Documentation still contains older archived and future-facing material.
+  `ROADMAP.md` tracks the remaining consolidation work.
 
 ## Validation
 

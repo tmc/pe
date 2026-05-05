@@ -1,3 +1,9 @@
+# Archived README
+
+This file is a legacy snapshot. It is not the source of truth for current PE
+functionality or release status. See [../README.md](../README.md),
+[../RELEASE_NOTES.md](../RELEASE_NOTES.md), and [../ROADMAP.md](../ROADMAP.md).
+
 # PE: Go for Prompts
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/tmc/pe)](https://goreportcard.com/report/github.com/tmc/pe)
@@ -678,7 +684,7 @@ deploy: optimize test benchmark
 
 ### Join the Revolution
 
-**PE represents the future of prompt engineering**, implemented today with production-grade reliability and cutting-edge research.
+**PE represents a historical PE positioning snapshot**, not current release status.
 
 - 🌟 **Star the repo** to show support
 - 🐛 **Report issues** to help improve PE  

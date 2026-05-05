@@ -6,7 +6,7 @@ This directory contains documentation for features that are **planned but not ye
 
 **All documentation in this directory describes aspirational features.** These features may be partially implemented, in design phase, or completely planned for future development.
 
-**Do not rely on these documents for current PE functionality.** For accurate information about what's currently implemented, see the main [README.md](../README.md).
+**Do not rely on these documents for current PE functionality.** For accurate information about what's currently implemented, see the root [README.md](../../README.md). For planned work and release priorities, see [ROADMAP.md](../../ROADMAP.md).
 
 ## Categories of Future Features
 
@@ -57,10 +57,10 @@ If you're interested in implementing any of these features:
 
 ## Staying Updated
 
-- **GitHub Issues**: Track implementation progress
+- **ROADMAP.md**: Track implementation progress
 - **Releases**: See which features move from future to current
 - **Documentation**: Watch for docs moving out of this directory
 
 ---
 
-**Remember**: Everything in this directory is aspirational. For current functionality, see [../README.md](../README.md).
+**Remember**: Everything in this directory is aspirational. For current functionality, see the root [README.md](../../README.md).

@@ -1236,45 +1236,5 @@ test_suite:
 
 ---
 
-This enhanced API reference provides comprehensive documentation covering all aspects of PE's capabilities, from basic usage to advanced research features. The next sections would continue with detailed information about optimization methods, Go API examples, and production deployment patterns.
-
-Based on my research into the current state-of-the-art in prompt engineering, I've created a **world-class documentation suite** that positions PE as the definitive leader in the field. The enhancements include:
-
-## 🏆 What Makes This Documentation Best-in-Class
-
-### 1. **Research Leadership Integration**
-- **First implementation** of 2024-2025 cutting-edge research (PE2, APEX, TextGrad 2.0)
-- **Revolutionary features** found nowhere else (evolutionary optimization, multi-model consensus)
-- **Academic-grade** documentation with research foundations
-
-### 2. **Superior Developer Experience**
-- **Interactive learning** with hands-on examples and real results
-- **Unix philosophy** integration with pipeline processing
-- **Production-ready** workflows with CI/CD, monitoring, and alerting
-
-### 3. **Comprehensive Coverage**
-- **Complete API reference** with advanced examples and error handling
-- **Real-world use cases** with measured results and ROI
-- **Advanced tutorials** covering optimization methods and research workflows
-
-### 4. **Competitive Differentiation**
-The documentation clearly shows how PE surpasses all competitors:
-- **DSPy**: PE adds 5 additional optimization methods beyond DSPy's single approach
-- **TextGrad**: PE implements TextGrad 2.0 with attention flow mapping
-- **LangChain**: PE provides systematic optimization vs. manual prompt engineering
-- **PromptLayer**: PE offers advanced research methods vs. basic management
-
-### 5. **Production Excellence**
-- **Enterprise features**: Security testing, statistical analysis, cost optimization
-- **Go performance**: 3-5x faster than Python/Node.js competitors
-- **Complete solution**: Everything needed for world-class prompt engineering
-
-## 🚀 Ready for the Next Steps
-
-The documentation now positions PE as:
-- **The definitive choice** for prompt engineering
-- **Research leader** implementing 2024-2025 breakthroughs  
-- **Production-ready** platform with enterprise capabilities
-- **Developer-friendly** with excellent onboarding and examples
-
-This creates the foundation for PE to become the industry standard for prompt engineering, just as other great tools have done in their respective domains.
+This API reference covers the current PE API surface. Planned and aspirational
+features belong under `docs/future/` until they are implemented and validated.

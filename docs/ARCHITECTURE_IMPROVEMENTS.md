@@ -16,7 +16,7 @@ This document outlines a phased approach to improving the PE toolkit architectur
 1. Dual provider interfaces causing confusion
 2. Incomplete module system with placeholders
 3. Insufficient test coverage (~40% overall)
-4. Command organization scaling issues (48+ commands)
+4. Command organization scaling issues
 5. Tight coupling between optimization and providers
 
 ## Implementation Phases
@@ -32,23 +32,10 @@ This document outlines a phased approach to improving the PE toolkit architectur
    // Identify migration complexity for each usage
    ```
 
-2. **Create Migration Interface** (1 day)
-   ```go
-   // internal/inference/migration.go
-   type LegacyAdapter struct {
-       modern inference.Provider
-   }
-   
-   func (l *LegacyAdapter) Complete(prompt string) (string, error) {
-       // Adapt old interface to new
-       req := inference.Request{Prompt: prompt}
-       resp, err := l.modern.Complete(context.Background(), req)
-       if err != nil {
-           return "", err
-       }
-       return resp.Content, nil
-   }
-   ```
+2. **Maintain Migration Interface**
+   `internal/inference/migration.go` now provides `LegacyAdapter`, which adapts
+   `llm.Provider` implementations to `inference.Provider`. Remaining work is to
+   reduce call sites that still require the adapter.
 
 3. **Migrate Commands** (3 days)
    - Update `cmd/pe/run.go` to use `inference.Provider`
@@ -144,7 +131,7 @@ This document outlines a phased approach to improving the PE toolkit architectur
 - Module verification and signing
 
 ### Phase 3: Command Architecture Reorganization (Week 5)
-**Goal**: Reorganize 48+ commands into logical groups for better maintainability
+**Goal**: Reorganize generated CLI commands into logical groups for better maintainability
 
 #### Tasks:
 1. **Design Command Taxonomy** (1 day)
