@@ -1240,9 +1240,9 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Implement `pe mod graph` for dependency visualization
 
 ##### Module Security
-- [ ] Implement module signing
-- [ ] Add signature verification
-- [ ] Create trust store for keys
+- [x] Implement module signing
+- [x] Add signature verification
+- [x] Create trust store for keys
 - [x] Add checksum validation
 - [ ] Implement security audit command
 - [ ] Add vulnerability scanning
