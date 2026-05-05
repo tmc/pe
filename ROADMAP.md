@@ -1385,22 +1385,22 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Test optimization cancellation
 
 ##### Evaluation Tests
-- [ ] Add evaluation engine tests
-- [ ] Test all assertion types (20+)
-- [ ] Add Pass@N metric tests
-- [ ] Test parallel evaluation
-- [ ] Add scoring algorithm tests
+- [x] Add evaluation engine tests
+- [x] Test all assertion types (20+)
+- [x] Add Pass@N metric tests
+- [x] Test parallel evaluation
+- [x] Add scoring algorithm tests
 - [ ] Test evaluation caching
-- [ ] Add benchmark tests
+- [x] Add benchmark tests
 
 ##### Module System Tests
-- [ ] Add module resolution tests
-- [ ] Test dependency management
-- [ ] Add version constraint tests
-- [ ] Test module caching
-- [ ] Add registry client tests
-- [ ] Test module verification
-- [ ] Add integration tests
+- [x] Add module resolution tests
+- [x] Test dependency management
+- [x] Add version constraint tests
+- [x] Test module caching
+- [x] Add registry client tests
+- [x] Test module verification
+- [x] Add integration tests
 
 ##### Command Tests
 - [ ] Add tests for core commands
