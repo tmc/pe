@@ -34,6 +34,7 @@ func TestRegisterRootCommands(t *testing.T) {
 		{name: "textgrad", group: "optimization"},
 		{name: "pe2", group: "optimization"},
 		{name: "gaso", group: "optimization"},
+		{name: "fusion", group: "optimization"},
 		{name: "mod", group: "module"},
 		{name: "push", group: "module"},
 		{name: "get", group: "module"},

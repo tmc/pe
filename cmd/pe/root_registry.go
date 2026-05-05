@@ -52,6 +52,7 @@ func rootCommandSpecs() []rootCommandSpec {
 		{group: "optimization", cmd: textgradCmd()},
 		{group: "optimization", cmd: pe2Cmd()},
 		{group: "optimization", cmd: gasoCmd()},
+		{group: "optimization", cmd: fusionCmd()},
 
 		{group: "module", cmd: modCmd},
 		{group: "module", cmd: pushCmd},

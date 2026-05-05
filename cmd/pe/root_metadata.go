@@ -34,6 +34,7 @@ var commandGroups = map[string]string{
 	"textgrad":     "optimization",
 	"pe2":          "optimization",
 	"gaso":         "optimization",
+	"fusion":       "optimization",
 	"mod":          "module",
 	"push":         "module",
 	"get":          "module",
