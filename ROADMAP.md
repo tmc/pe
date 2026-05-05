@@ -1585,13 +1585,13 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Create error formatting
 
 ##### Error Recovery
-- [ ] Create `internal/errors/recovery.go`
-- [ ] Define RecoveryStrategy interface
-- [ ] Implement RetryStrategy
-- [ ] Implement ExponentialBackoff
-- [ ] Add CircuitBreaker pattern
-- [ ] Implement fallback strategies
-- [ ] Add recovery metrics
+- [x] Create `internal/errors/recovery.go`
+- [x] Define RecoveryStrategy interface
+- [x] Implement RetryStrategy
+- [x] Implement ExponentialBackoff
+- [x] Add CircuitBreaker pattern
+- [x] Implement fallback strategies
+- [x] Add recovery metrics
 
 ##### Error Handling Updates
 - [ ] Update provider error handling
