@@ -2,10 +2,13 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/tmc/pe/internal/inference"
 )
 
 func TestRunCmd_BasicUsage(t *testing.T) {
@@ -323,5 +326,19 @@ func TestRunCmd_FlagParsing(t *testing.T) {
 
 	if streamFlag != nil && streamFlag.Value.Type() != "bool" {
 		t.Errorf("Expected stream flag to be bool, got %s", streamFlag.Value.Type())
+	}
+}
+
+func TestRegisterLLMProviderSpec(t *testing.T) {
+	client := inference.NewClient()
+	if err := registerLLMProviderSpec(client, "mock:test"); err != nil {
+		t.Fatalf("registerLLMProviderSpec() failed: %v", err)
+	}
+	resp, err := client.CompleteWith(context.Background(), "mock:test", inference.Request{Prompt: "hello"})
+	if err != nil {
+		t.Fatalf("CompleteWith() failed: %v", err)
+	}
+	if resp.Content == "" {
+		t.Fatal("empty response from registered provider spec")
 	}
 }

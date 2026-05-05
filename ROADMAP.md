@@ -111,7 +111,9 @@ Remaining sub-tasks:
    design-history material; release-facing examples live under `examples/`
 2. DONE: Archive the long-form future-facing tutorial and replace
    `docs/TUTORIAL.md` with a current executable-text tutorial
-3. Test representative live-provider examples with valid credentials
+3. DONE: Test representative live-provider examples with valid credentials;
+   `pe run` and `pe ask` returned `PE_LIVE_PROVIDER_OK` with
+   `--provider openai:gpt-4o-mini`
 4. DONE: Add small runnable examples for current commands with weak coverage: `ask`,
    `template`, `prompt`, `plugin`, `profile`, `build`, `convert`, `reduce`,
    `collect`, and `watch`
@@ -243,8 +245,11 @@ Current status:
 Tasks:
 1. DONE: Rerun and record complete cross-compilation results for every release
    target
-2. Workflow-ready: Dry-run the GitHub release workflow from a test tag or
-   manual `workflow_dispatch` before publishing v0.5.0
+2. BLOCKED remote: Dry-run the GitHub release workflow from a test tag or
+   manual `workflow_dispatch` before publishing v0.5.0. Local `gh workflow run
+   release.yml -f dry_run=true --ref exp` failed because `release.yml` is not
+   present on the remote default branch (`master`); promote the workflow first
+   or run the dry-run after `exp` becomes the release branch.
 3. DONE locally: Verify release archive names and install commands against the
    workflow asset names in `docs/RELEASE_BUILD_MATRIX.md`
 4. DONE: Do not add an install script for v0.5.0; current docs favor direct

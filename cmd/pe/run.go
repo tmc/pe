@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/inference"
 	"github.com/tmc/pe/internal/inference/providers/cgpt"
+	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/prompt"
 )
 
@@ -36,12 +37,12 @@ Examples:
   pe run prompt.txt
   pe run "Hello {{.name}}" --var name=World
   cat data.txt | pe run -`,
-		Args:  cobra.ExactArgs(1),
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Read the prompt
 			input := args[0]
 			var content string
-			
+
 			if input == "-" {
 				// Read from stdin
 				data, err := io.ReadAll(os.Stdin)
@@ -80,12 +81,12 @@ Examples:
 			// Execute the prompt
 			client := inference.NewClient()
 			client.Register("cgpt", cgpt.New())
-			
+
 			// Register mock provider for testing
 			if os.Getenv("PE_TEST_MODE") == "true" {
 				// Create mock response based on content
 				mockResp := "Mock response for: " + content
-				
+
 				// Handle specific test cases like the internal/providers mock does
 				if strings.Contains(content, "2+2") {
 					mockResp = "4"
@@ -103,13 +104,16 @@ Examples:
 				} else if strings.Contains(content, "Count from 1 to 10") {
 					mockResp = "1\n2\n3\n4\n5\n6\n7\n8\n9\n10"
 				}
-				
+
 				client.Register("mock", &mockProvider{response: mockResp})
 				if provider == "cgpt" {
 					provider = "mock"
 				}
 			}
-			
+			if err := registerLLMProviderSpec(client, provider); err != nil {
+				return err
+			}
+
 			req := inference.Request{
 				Prompt: content,
 				Stream: stream,
@@ -152,9 +156,24 @@ Examples:
 // Keep it simple - just cgpt and mock for testing
 func registerProviders(client *inference.Client) {
 	client.Register("cgpt", cgpt.New())
-	
+
 	// Mock provider for testing
 	if os.Getenv("PE_TEST_MODE") == "true" || os.Getenv("PE_MOCK_PROVIDER") == "true" {
 		client.Register("mock", &mockProvider{})
 	}
+}
+
+func registerLLMProviderSpec(client *inference.Client, spec string) error {
+	if spec == "" || spec == "cgpt" || spec == "mock" {
+		return nil
+	}
+	provider, err := llm.GetProviderWithOptions(spec, nil)
+	if err != nil {
+		if !strings.Contains(spec, ":") {
+			return fmt.Errorf("provider %q not found", spec)
+		}
+		return err
+	}
+	client.Register(spec, inference.NewLegacyAdapter(provider))
+	return nil
 }
