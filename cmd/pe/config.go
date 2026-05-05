@@ -19,6 +19,8 @@ func configCmd() *cobra.Command {
 	cmd.AddCommand(configSetCmd())
 	cmd.AddCommand(configListCmd())
 	cmd.AddCommand(configValidateCmd())
+	cmd.AddCommand(configMigrateCmd())
+	cmd.AddCommand(configDocsCmd())
 	return cmd
 }
 
@@ -106,6 +108,38 @@ func configValidateCmd() *cobra.Command {
 			}
 			fmt.Fprintln(cmd.OutOrStdout(), "ok")
 			return nil
+		},
+	}
+}
+
+func configMigrateCmd() *cobra.Command {
+	var out string
+	cmd := &cobra.Command{
+		Use:   "migrate file",
+		Short: "Migrate a config file to canonical PE YAML",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if out == "" {
+				return fmt.Errorf("config migrate requires --out")
+			}
+			if err := config.MigrateFile(args[0], out); err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), "ok")
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&out, "out", "", "destination config file")
+	return cmd
+}
+
+func configDocsCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "docs",
+		Short: "Print configuration reference",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return config.WriteDocumentation(cmd.OutOrStdout())
 		},
 	}
 }

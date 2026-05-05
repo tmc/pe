@@ -1517,7 +1517,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add config file discovery
 - [x] Implement config file merging
 - [x] Add config file validation
-- [ ] Create config migration tool
+- [x] Create config migration tool
 
 ##### Environment Variables
 - [x] Define environment variable schema
@@ -1553,8 +1553,8 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add `pe config set` command
 - [x] Add `pe config list` command
 - [x] Add `pe config validate` command
-- [ ] Add `pe config migrate` command
-- [ ] Create config documentation generator
+- [x] Add `pe config migrate` command
+- [x] Create config documentation generator
 
 #### Phase 7: Error Handling Enhancement (Week 9)
 

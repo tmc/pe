@@ -74,3 +74,43 @@ func TestConfigCmdSet(t *testing.T) {
 		t.Fatalf("config file = %s, want anthropic", data)
 	}
 }
+
+func TestConfigCmdMigrate(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "promptfooconfig.yaml")
+	dst := filepath.Join(dir, ".pe", "config.yaml")
+	if err := os.WriteFile(src, []byte("providers:\n  default: anthropic\n"), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	cmd := configCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"migrate", src, "--out", dst})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("config migrate: %v", err)
+	}
+	if strings.TrimSpace(out.String()) != "ok" {
+		t.Fatalf("output = %q, want ok", out.String())
+	}
+	data, err := os.ReadFile(dst)
+	if err != nil {
+		t.Fatalf("read migrated config: %v", err)
+	}
+	if !strings.Contains(string(data), "default: anthropic") {
+		t.Fatalf("config file = %s, want anthropic", data)
+	}
+}
+
+func TestConfigCmdDocs(t *testing.T) {
+	cmd := configCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"docs"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("config docs: %v", err)
+	}
+	if !strings.Contains(out.String(), "## `providers.openai.api_key`") {
+		t.Fatalf("docs output missing openai api key: %s", out.String())
+	}
+}
