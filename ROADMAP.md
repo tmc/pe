@@ -1431,11 +1431,11 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Test error handling properties
 
 ##### Test Coverage
-- [ ] Set up coverage reporting
-- [ ] Identify coverage gaps
+- [x] Set up coverage reporting
+- [x] Identify coverage gaps
 - [ ] Add tests for uncovered code
 - [ ] Achieve 70% coverage target
-- [ ] Set up coverage CI checks
+- [x] Set up coverage CI checks
 - [ ] Create coverage badges
 
 #### Phase 5: Optimization Decoupling (Week 7)

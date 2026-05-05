@@ -13,34 +13,30 @@ exp
 Integrated commit:
 
 ```text
-03152ba
+edb843e
 ```
 
 Commands used for the measured baseline:
 
 ```sh
-GOTOOLCHAIN=go1.25.9 go test -coverprofile=/tmp/pe-coverage.out ./...
-go tool cover -func=/tmp/pe-coverage.out
+GOTOOLCHAIN=go1.25.9 go test -coverprofile=/tmp/pe-full-coverage.out ./...
+go tool cover -func=/tmp/pe-full-coverage.out
 ```
 
 Results:
 
 | Metric | Value |
 | --- | ---: |
-| Overall statement coverage | 44.4% |
-| Package paths reported by `go test -cover` | 44 |
-| Packages with statements | 41 |
-| Packages with no statements | 3 |
+| Overall statement coverage | 47.6% |
 | Test status | Passing integrated branch |
+| Coverage CI | `.github/workflows/ci.yml` runs `go test -v -race -coverprofile=coverage.out ./...` |
+| Local coverage target | `make coverage` writes `coverage.out` and `coverage.html` |
 
-This supersedes older documentation claims that described overall coverage as
-either about 25%, 40%, or 40.8%.
+The 70% target is not met yet. Coverage is improving, but the next work should
+focus on command/plugin paths and packages with executable code that currently
+show 0% statement coverage.
 
 ## Script Test Coverage
-
-The script-test suite is connected to the release gate through
-`GOTOOLCHAIN=go1.25.9 go test -coverprofile=/tmp/pe-coverage.out ./...`, and
-the integrated run passed `github.com/tmc/pe/tests`.
 
 Script tests validate CLI behavior by building and executing a separate `pe`
 binary from `tests/scripttest_test.go`. That child process is not instrumented by
@@ -59,51 +55,67 @@ expansion.
 | `github.com/tmc/pe/ext/starlark/cmd/starlark-demo` | 0.0% |
 | `github.com/tmc/pe/internal/cli` | 0.0% |
 | `github.com/tmc/pe/internal/optimization` | 0.0% |
-| `github.com/tmc/pe/internal/optimization/optimizers` | 0.0% |
 | `github.com/tmc/pe/internal/promptfoo/evaluation/testing` | 0.0% |
 | `github.com/tmc/pe/internal/testing` | 0.0% |
 | `github.com/tmc/pe/test` | 0.0% |
-| `github.com/tmc/pe/internal/inference` | 19.6% |
 | `github.com/tmc/pe/internal/promptfoo/evaluation/metrics` | 27.9% |
-| `github.com/tmc/pe/internal/optimization/adapters` | 28.4% |
 
 ## Other Measured Packages
 
 | Package | Coverage |
 | --- | ---: |
+| `github.com/tmc/pe/internal/optimization/optimizers` | 30.7% |
 | `github.com/tmc/pe/internal/llm` | 31.0% |
 | `github.com/tmc/pe/ext/starlark` | 38.0% |
-| `github.com/tmc/pe/cmd/pe` | 39.0% |
+| `github.com/tmc/pe/cmd/pe` | 40.3% |
 | `github.com/tmc/pe/internal/metaprompt` | 40.8% |
-| `github.com/tmc/pe/internal/promptfoo/evaluation/evaluator` | 43.0% |
-| `github.com/tmc/pe/internal/module` | 44.7% |
-| `github.com/tmc/pe/internal/errors` | 46.0% |
+| `github.com/tmc/pe/internal/optimization/adapters` | 44.6% |
 | `github.com/tmc/pe/plugins/promptfoo` | 46.4% |
-| `github.com/tmc/pe/internal/inference/providers/cgpt` | 51.3% |
+| `github.com/tmc/pe/internal/errors` | 46.0% |
 | `github.com/tmc/pe/internal/pemod` | 54.4% |
-| `github.com/tmc/pe/internal/providers` | 58.1% |
+| `github.com/tmc/pe/internal/providers` | 57.9% |
+| `github.com/tmc/pe/internal/module` | 58.4% |
 | `github.com/tmc/pe/internal/prompt` | 58.9% |
-| `github.com/tmc/pe/internal/testing/mocks` | 60.4% |
-| `github.com/tmc/pe/internal/promptfoo` | 61.5% |
+| `github.com/tmc/pe/internal/testing/mocks` | 61.1% |
 | `github.com/tmc/pe/internal/observability` | 62.0% |
 | `github.com/tmc/pe/internal/config` | 66.8% |
 | `github.com/tmc/pe/internal/inference/providers/ollama` | 68.0% |
 | `github.com/tmc/pe/internal/plugin` | 68.3% |
 | `github.com/tmc/pe/internal/cgpt` | 69.3% |
+| `github.com/tmc/pe/internal/promptfoo` | 69.2% |
+| `github.com/tmc/pe/internal/inference` | 71.2% |
 | `github.com/tmc/pe/internal/inference/providers/anthropic` | 73.3% |
 | `github.com/tmc/pe/internal/inference/providers/openai` | 74.0% |
+| `github.com/tmc/pe/internal/exectext` | 75.0% |
+| `github.com/tmc/pe/internal/promptfoo/evaluation/evaluator` | 77.8% |
 | `github.com/tmc/pe/internal/starlark` | 81.5% |
 | `github.com/tmc/pe/internal/security` | 81.8% |
 | `github.com/tmc/pe/internal/promptfoo/security/redteam` | 86.4% |
 | `github.com/tmc/pe/internal/structured` | 89.3% |
 | `github.com/tmc/pe/internal/optimization/localopt` | 91.2% |
+| `github.com/tmc/pe/cmd/pe/commands` | 91.4% |
 | `github.com/tmc/pe/internal/templates` | 93.5% |
 | `github.com/tmc/pe/internal/distributed` | 94.3% |
+
+## Next Coverage Work
+
+- Add direct tests for `internal/cli` or remove it if it is dead code.
+- Add tests for the examples that are expected to stay buildable.
+- Add focused unit tests for `internal/optimization` constructors and strategy helpers.
+- Add command-level tests for uncovered `plugins/promptfoo` command branches.
+- Decide whether `test/run-scripttest.go` should be tested directly or excluded from the coverage target as a helper command.
 
 ## Packages With No Statements
 
 | Package |
 | --- |
+| `github.com/tmc/pe/cmd/pe/commands/core` |
+| `github.com/tmc/pe/cmd/pe/commands/evaluation` |
+| `github.com/tmc/pe/cmd/pe/commands/experimental` |
+| `github.com/tmc/pe/cmd/pe/commands/module` |
+| `github.com/tmc/pe/cmd/pe/commands/optimization` |
+| `github.com/tmc/pe/cmd/pe/commands/pipeline` |
+| `github.com/tmc/pe/cmd/pe/commands/utility` |
 | `github.com/tmc/pe/example/getting-started` |
 | `github.com/tmc/pe/internal/inference/providers` |
 | `github.com/tmc/pe/tests` |
