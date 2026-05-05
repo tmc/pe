@@ -191,3 +191,174 @@ func TestPromptHelpCmd_Structure(t *testing.T) {
 		t.Errorf("Unexpected Use: %s", cmd.Use)
 	}
 }
+
+func TestPromptInitCmd_AllOptionsAndForce(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	cmd := promptInitCmd()
+	cmd.Flags().Set("provider", "openai")
+	cmd.Flags().Set("system", "You are helpful")
+	cmd.Flags().Set("with-tests", "true")
+	cmd.Flags().Set("with-variants", "true")
+	if err := cmd.RunE(cmd, []string{"full.prompt"}); err != nil {
+		t.Fatal(err)
+	}
+	content, err := os.ReadFile("full.prompt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(content)
+	for _, want := range []string{"--provider=openai", "---defaults---", "---system---", "---tests---", "---variants---"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("content missing %q:\n%s", want, text)
+		}
+	}
+	cmd = promptInitCmd()
+	cmd.Flags().Set("force", "true")
+	if err := cmd.RunE(cmd, []string{"full.prompt"}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPromptEditCmd_UpdatesProviderAndDefaults(t *testing.T) {
+	tmpDir := t.TempDir()
+	file := filepath.Join(tmpDir, "edit.prompt")
+	content := `#!/usr/bin/env pe run --provider=cgpt
+Hello {{.name}}
+
+---defaults---
+name: World
+unused: gone
+
+---tests---
+- name: smoke
+`
+	if err := os.WriteFile(file, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := promptEditCmd()
+	cmd.Flags().Set("set-provider", "openai")
+	cmd.Flags().Set("set-default", "name=Alice,task=Explain")
+	cmd.Flags().Set("remove-default", "unused")
+	if err := cmd.RunE(cmd, []string{file}); err != nil {
+		t.Fatal(err)
+	}
+	out, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(out)
+	for _, want := range []string{"--provider=openai", "name: Alice", "task: Explain", "---tests---"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("edited content missing %q:\n%s", want, text)
+		}
+	}
+	if strings.Contains(text, "unused:") {
+		t.Fatalf("unused default still present:\n%s", text)
+	}
+
+	noDefaults := filepath.Join(tmpDir, "new-defaults.prompt")
+	if err := os.WriteFile(noDefaults, []byte("#!/usr/bin/env pe run\nHello {{.task}}\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cmd = promptEditCmd()
+	cmd.Flags().Set("set-default", "task=Write")
+	if err := cmd.RunE(cmd, []string{noDefaults}); err != nil {
+		t.Fatal(err)
+	}
+	out, err = os.ReadFile(noDefaults)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(out), "---defaults---") || !strings.Contains(string(out), "task: Write") {
+		t.Fatalf("new defaults content:\n%s", out)
+	}
+}
+
+func TestPromptInfoTidyHelpAndHelpers(t *testing.T) {
+	tmpDir := t.TempDir()
+	file := filepath.Join(tmpDir, "info.prompt")
+	content := `#!/usr/bin/env pe run --provider=openai
+# Describe line one
+# Describe line two
+Hello {{.NAME}} {{.NAME | printf "%s"}} {{.TASK}}
+
+---defaults---
+NAME: World
+UNUSED: remove
+
+---system---
+System prompt
+
+---tests---
+- name: smoke
+
+---variants---
+fast:
+  Be brief
+`
+	if err := os.WriteFile(file, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	info := analyzePromptFile(content)
+	if info["executable"] != true || info["provider"] != "openai" || info["test_count"] != 1 {
+		t.Fatalf("info = %#v", info)
+	}
+	if got := extractDescription(content); got != "Describe line one\nDescribe line two" {
+		t.Fatalf("description = %q", got)
+	}
+	if defaults := extractDefaults(content); defaults["NAME"] != "World" || defaults["UNUSED"] != "remove" {
+		t.Fatalf("defaults = %#v", defaults)
+	}
+	vars := extractPromptVariables(content)
+	if !contains(vars, "NAME") || !contains(vars, "TASK") {
+		t.Fatalf("vars = %#v", vars)
+	}
+	if got := findVariables(`{{.A}} {{.A}} {{.B | printf "%s"}}`); len(got) != 2 || !contains(got, "A") || !contains(got, "B") {
+		t.Fatalf("findVariables = %#v", got)
+	}
+	if got := trimEmptyLines([]string{"", " a ", "", ""}); len(got) != 1 || got[0] != " a " {
+		t.Fatalf("trimmed = %#v", got)
+	}
+	if main := extractMainContent(strings.Split(content, "\n")); !strings.Contains(main, "Hello") || strings.Contains(main, "---defaults---") {
+		t.Fatalf("main = %q", main)
+	}
+
+	cmd := promptInfoCmd()
+	cmd.Flags().Set("verbose", "true")
+	if err := cmd.RunE(cmd, []string{file}); err != nil {
+		t.Fatal(err)
+	}
+	cmd = promptInfoCmd()
+	cmd.Flags().Set("json", "true")
+	if err := cmd.RunE(cmd, []string{file}); err != nil {
+		t.Fatal(err)
+	}
+	cmd = promptTidyCmd()
+	cmd.Flags().Set("remove-unused", "true")
+	if err := cmd.RunE(cmd, []string{file}); err != nil {
+		t.Fatal(err)
+	}
+	out, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(out), "UNUSED:") || !strings.Contains(string(out), "NAME: World") {
+		t.Fatalf("tidied content:\n%s", out)
+	}
+	cmd = promptHelpCmd()
+	if err := cmd.RunE(cmd, []string{file}); err != nil {
+		t.Fatal(err)
+	}
+	cmd = promptHelpCmd()
+	cmd.Flags().Set("as-script", "true")
+	if err := cmd.RunE(cmd, []string{file}); err != nil {
+		t.Fatal(err)
+	}
+	if err := tidyPromptFile(filepath.Join(tmpDir, "missing.prompt"), false, true); err == nil {
+		t.Fatal("missing tidy succeeded")
+	}
+}
