@@ -4,10 +4,11 @@ Each `.txt` file is a txtar archive. The archive comment is the script to run;
 `-- name --` sections create files in the test work directory before the script
 starts.
 
-The PE runner uses `rsc.io/script/scripttest` with `exec` removed and a custom
-`pe` command added. It is not a shell: `|`, `>`, `<`, heredocs, `&&`, `||`, and
-shell job control are not interpreted. A trailing `&` is only scripttest async
-syntax for commands registered as async; `pe ... &` is not supported.
+The PE runner uses `rsc.io/script/scripttest` with `exec` removed and custom
+`pe` and `pipe` commands added. It is not a shell: bare `|`, `>`, `<`,
+heredocs, `&&`, `||`, and shell job control are not interpreted. A trailing `&`
+is only scripttest async syntax for commands registered as async; `pe ... &` is
+not supported.
 
 Commands:
 
@@ -26,6 +27,9 @@ Commands:
 
   pe args...
     Run the test-built PE binary.
+
+  pipe command [args...] | command [args...] ...
+    Run a restricted pipeline. Pipeline stages may use `pe`, `cat`, or `echo`.
 
   env KEY=value
     Set an environment variable.

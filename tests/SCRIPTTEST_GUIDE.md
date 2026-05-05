@@ -7,7 +7,7 @@ This directory contains PE command-line tests using `rsc.io/script/scripttest`.
 `tests/scripttest_test.go` builds the local `pe` binary and the `pe-promptfoo`
 plugin, then runs each `tests/testdata/script/*.txt` file in an isolated work
 directory. The script engine uses `scripttest.DefaultCmds()` with `exec`
-removed and a custom `pe` command added.
+removed and custom `pe` and `pipe` commands added.
 
 The runner is not a shell. It does not interpret pipes, redirection, heredocs,
 `&&`, `||`, or shell job control. A trailing `&` is scripttest background syntax
@@ -38,6 +38,8 @@ go test -v ./tests/... -testwork
 PE tests may use:
 
 - `pe args...`: run the built PE binary.
+- `pipe command [args...] | command [args...] ...`: run a restricted pipeline.
+  Pipeline stages may use `pe`, `cat`, or `echo`.
 - File and environment commands: `cat`, `cd`, `chmod`, `cmp`, `cmpenv`, `cp`, `echo`, `env`, `exists`, `grep`, `mkdir`, `mv`, `replace`, `rm`, `sleep`, `symlink`.
 - Assertions and control: `stdout`, `stderr`, `!`, `?`, `[condition]`, `skip`, `stop`, `wait`, `help`.
 
@@ -56,22 +58,20 @@ stdout 'Paris'
 What is the capital of France?
 ```
 
-Use PE flags or `cp stdout file` for intermediate files instead of shell
-redirection:
+Use `pipe` for stdin-only command composition:
 
 ```txt
-pe run prompt.txt --provider mock
-cp stdout response.xml
-pe extract response.xml --tag answer
+pipe pe run prompt.txt --provider mock | pe extract --tag answer
 stdout 'Paris'
 
 -- prompt.txt --
 Answer in <answer>...</answer> tags: capital of France?
 ```
 
-If a command only accepts standard input, add file-input support or a dedicated
-script command before testing it here; do not use `exec sh -c`, `cat file |`,
-or `< file`.
+Use PE flags or `cp stdout file` for intermediate files instead of shell
+redirection. If a command only accepts standard input and cannot be expressed
+with `pipe`, add file-input support or a dedicated script command before testing
+it here; do not use `exec sh -c` or `< file`.
 
 ## Conditions and Environment
 

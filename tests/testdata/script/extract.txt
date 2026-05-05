@@ -1,14 +1,10 @@
 # Test pe experimental extract command - XML tag extraction from prompt outputs
 
-# Note: The extract command tests require shell pipes which are not supported in scripttest.
-# These tests are commented out until pipe support is added or tests are restructured.
-
 # Basic XML tag extraction
-# TODO: Requires pipe support: pe run prompt.txt --provider mock | pe experimental extract --tag answer
-# exec sh -c 'pe run prompt.txt --provider mock | pe experimental extract --tag answer'
-# stdout 'the capital of france is paris'
-# ! stdout '<answer>'
-# ! stdout '</answer>'
+pipe pe run prompt.txt --provider mock | pe experimental extract --tag answer
+stdout 'The capital of France is Paris'
+! stdout '<answer>'
+! stdout '</answer>'
 
 # Extract multiple tags
 # TODO: Requires pipe support
@@ -17,10 +13,9 @@
 # stdout 'Explanation: the answer to life, the universe, and everything'
 
 # Extract with specific tag
-# TODO: Requires pipe support
-# exec sh -c 'echo "<output><name>John</name><age>30</age></output>" | pe experimental extract --tag name'
-# stdout 'John'
-# ! stdout '<name>'
+pipe echo '<output><name>John</name><age>30</age></output>' | pe experimental extract --tag name
+stdout 'John'
+! stdout '<name>'
 
 # Extract nested tags (disabled - mock provider formatting issue)
 # exec sh -c 'pe run nested.txt --provider mock | pe experimental extract --tag data --nested'
@@ -31,11 +26,10 @@
 # stdout 'This is the final answer'
 
 # Extract to JSON format
-# TODO: Requires pipe support
-# exec sh -c 'pe run structured.txt --provider mock | pe experimental extract --tag data -f json'
-# stdout '{'
-# stdout '"content":'
-# stdout '"metadata":'
+pipe cat structured.txt | pe experimental extract --tag data -f json
+stdout '{'
+stdout '"content":'
+stdout '"metadata":'
 
 # Extract with XPath-like selectors
 # TODO: Requires pipe support
@@ -43,11 +37,10 @@
 # stdout 'Definitely Paris'
 
 # Extract multiple occurrences
-# TODO: Requires pipe support
-# exec sh -c 'pe run listing.txt --provider mock | pe experimental extract --tag item --all'
-# stdout 'Apple'
-# stdout 'Banana'
-# stdout 'Cherry'
+pipe cat listing.txt | pe experimental extract --tag item --all
+stdout 'Apple'
+stdout 'Banana'
+stdout 'Cherry'
 
 # Extract with transformation
 # TODO: Requires pipe support
@@ -71,15 +64,13 @@
 
 # Extract with error handling
 # TODO: Requires pipe support
-# ! exec sh -c 'pe run invalid.txt --provider mock | pe experimental extract --tag missing'
-# stderr 'tag <missing> not found'
+! pipe cat invalid.txt | pe experimental extract --tag missing
+stderr 'tag <missing> not found'
 
 # Extract and save to file
-# TODO: Requires pipe support
-# exec sh -c 'pe run prompt.txt --provider mock | pe experimental extract --tag answer --output response.txt'
-# exists response.txt
-# grep command test
-# grep 'capital of France' response.txt
+pipe pe run prompt.txt --provider mock | pe experimental extract --tag answer --output response.txt
+exists response.txt
+grep 'capital of France' response.txt
 
 # Extract with streaming (streaming not yet fully implemented)
 # exec sh -c 'pe run stream-prompt.txt --provider mock --stream | pe experimental extract --tag chunk --stream'
