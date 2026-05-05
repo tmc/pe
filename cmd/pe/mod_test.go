@@ -161,6 +161,87 @@ require (
 			t.Fatalf("tidy output missing %q\noutput:\n%s", want, got)
 		}
 	}
+	content, err := os.ReadFile("pe.mod")
+	if err != nil {
+		t.Fatalf("reading pe.mod: %v", err)
+	}
+	if !strings.Contains(string(content), "github.com/example/unused v1.0.0") {
+		t.Fatalf("dry-run tidy changed pe.mod:\n%s", content)
+	}
+}
+
+func TestModTidyCmd_WriteUpdatesSafeDeps(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+	oldWrite := modTidyWrite
+	modTidyWrite = true
+	defer func() { modTidyWrite = oldWrite }()
+
+	err := os.WriteFile("pe.mod", []byte(`module example.com/app
+
+pe 1
+
+require (
+	github.com/example/keep v1.0.0
+	github.com/example/remove v1.0.0
+)
+`), 0644)
+	if err != nil {
+		t.Fatalf("writing pe.mod: %v", err)
+	}
+	files := map[string]string{
+		"keep.prompt":    "pe://github.com/example/keep/run\n",
+		"add.prompt":     "pe://github.com/example/add@v1.2.3/run\n",
+		"noversion.yaml": "prompt: pe://github.com/example/noversion/run\n",
+	}
+	for name, body := range files {
+		if err := os.WriteFile(name, []byte(body), 0644); err != nil {
+			t.Fatalf("writing %s: %v", name, err)
+		}
+	}
+	if err := os.Mkdir(".hidden", 0755); err != nil {
+		t.Fatalf("creating hidden dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(".hidden", "ignored.prompt"), []byte("pe://github.com/example/hidden@v1.0.0/run\n"), 0644); err != nil {
+		t.Fatalf("writing hidden prompt: %v", err)
+	}
+
+	var out bytes.Buffer
+	cmd := *modTidyCmd
+	cmd.SetOut(&out)
+	if err := runModTidy(&cmd, nil); err != nil {
+		t.Fatalf("runModTidy: %v", err)
+	}
+
+	got := out.String()
+	for _, want := range []string{
+		"removed dependency: github.com/example/remove",
+		"added dependency: github.com/example/add v1.2.3",
+		"skipped dependency: github.com/example/noversion (no single explicit version in references)",
+		"pe.mod updated",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("tidy output missing %q\noutput:\n%s", want, got)
+		}
+	}
+	content, err := os.ReadFile("pe.mod")
+	if err != nil {
+		t.Fatalf("reading pe.mod: %v", err)
+	}
+	want := `module example.com/app
+
+pe 1
+
+require (
+	github.com/example/add v1.2.3
+	github.com/example/keep v1.0.0
+)
+`
+	if string(content) != want {
+		t.Fatalf("pe.mod mismatch\nwant:\n%s\ngot:\n%s", want, content)
+	}
 }
 
 func TestModuleFromPERef(t *testing.T) {
@@ -179,6 +260,12 @@ func TestModuleFromPERef(t *testing.T) {
 		{
 			name: "github module",
 			ref:  "pe://github.com/example/prompts/review)",
+			want: "github.com/example/prompts",
+			ok:   true,
+		},
+		{
+			name: "github module with version",
+			ref:  "pe://github.com/example/prompts@v1.2.3/review",
 			want: "github.com/example/prompts",
 			ok:   true,
 		},

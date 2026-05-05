@@ -29,7 +29,8 @@ Each module is a gist containing prompt files and metadata.`,
 }
 
 var (
-	modForce bool
+	modForce     bool
+	modTidyWrite bool
 )
 
 func init() {
@@ -103,6 +104,7 @@ var modVendorCmd = &cobra.Command{
 
 func init() {
 	modInitCmd.Flags().BoolVar(&modForce, "force", false, "Overwrite existing module")
+	modTidyCmd.Flags().BoolVarP(&modTidyWrite, "write", "w", false, "Update pe.mod")
 }
 
 // Module represents a prompt module
@@ -498,22 +500,50 @@ func runModTidy(cmd *cobra.Command, args []string) error {
 
 	fmt.Fprintf(out, "found %d module references in %d files\n", countPEModuleReferences(refs), countPEModuleReferenceFiles(refs))
 	for _, mod := range missing {
-		fmt.Fprintf(out, "missing dependency: %s (referenced by %s)\n", mod, strings.Join(refs[mod], ", "))
+		fmt.Fprintf(out, "missing dependency: %s (referenced by %s)\n", mod, strings.Join(peReferenceFiles(refs[mod]), ", "))
 	}
 	for _, mod := range unused {
 		fmt.Fprintf(out, "unused dependency: %s\n", mod)
 	}
 	if len(missing) == 0 && len(unused) == 0 {
 		fmt.Fprintln(out, "pe.mod is tidy")
+		return nil
 	}
+	if !modTidyWrite {
+		return nil
+	}
+
+	for _, mod := range unused {
+		file.RemoveRequire(mod)
+		fmt.Fprintf(out, "removed dependency: %s\n", mod)
+	}
+	for _, mod := range missing {
+		version, ok := singlePEReferenceVersion(refs[mod])
+		if !ok {
+			fmt.Fprintf(out, "skipped dependency: %s (no single explicit version in references)\n", mod)
+			continue
+		}
+		file.AddRequire(mod, version)
+		fmt.Fprintf(out, "added dependency: %s %s\n", mod, version)
+	}
+	formatted := file.Format()
+	if err := os.WriteFile("pe.mod", []byte(formatted), 0644); err != nil {
+		return fmt.Errorf("writing pe.mod: %w", err)
+	}
+	fmt.Fprintln(out, "pe.mod updated")
 
 	return nil
 }
 
 var peRefRE = regexp.MustCompile(`pe://[^\s"'<>]+`)
 
-func scanPEModuleReferences(root string) (map[string][]string, error) {
-	refs := make(map[string][]string)
+type peModuleReference struct {
+	File    string
+	Version string
+}
+
+func scanPEModuleReferences(root string) (map[string][]peModuleReference, error) {
+	refs := make(map[string][]peModuleReference)
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -537,7 +567,7 @@ func scanPEModuleReferences(root string) (map[string][]string, error) {
 			return fmt.Errorf("reading %s: %w", path, err)
 		}
 		for _, raw := range peRefRE.FindAllString(string(data), -1) {
-			mod, ok := moduleFromPERef(raw)
+			mod, version, ok := moduleAndVersionFromPERef(raw)
 			if !ok {
 				continue
 			}
@@ -545,8 +575,8 @@ func scanPEModuleReferences(root string) (map[string][]string, error) {
 			if file == "." {
 				file = name
 			}
-			if !containsPEReferenceFile(refs[mod], file) {
-				refs[mod] = append(refs[mod], file)
+			if !containsPEReference(refs[mod], file, version) {
+				refs[mod] = append(refs[mod], peModuleReference{File: file, Version: version})
 			}
 		}
 		return nil
@@ -555,7 +585,12 @@ func scanPEModuleReferences(root string) (map[string][]string, error) {
 		return nil, fmt.Errorf("scanning module references: %w", err)
 	}
 	for mod := range refs {
-		sort.Strings(refs[mod])
+		sort.Slice(refs[mod], func(i, j int) bool {
+			if refs[mod][i].File != refs[mod][j].File {
+				return refs[mod][i].File < refs[mod][j].File
+			}
+			return refs[mod][i].Version < refs[mod][j].Version
+		})
 	}
 	return refs, nil
 }
@@ -570,25 +605,63 @@ func isPEReferenceFile(path string) bool {
 }
 
 func moduleFromPERef(ref string) (string, bool) {
+	mod, _, ok := moduleAndVersionFromPERef(ref)
+	return mod, ok
+}
+
+func moduleAndVersionFromPERef(ref string) (string, string, bool) {
 	ref = strings.TrimRight(ref, ".,;:)]}")
 	u, err := url.Parse(ref)
 	if err != nil || u.Scheme != "pe" || u.Host == "" {
-		return "", false
+		return "", "", false
 	}
 	parts := strings.FieldsFunc(strings.Trim(u.Path, "/"), func(r rune) bool { return r == '/' })
+	var mod string
 	if strings.Contains(u.Host, ".") {
 		if len(parts) >= 2 {
-			return u.Host + "/" + parts[0] + "/" + parts[1], true
+			mod = u.Host + "/" + parts[0] + "/" + parts[1]
+		} else if len(parts) == 1 {
+			mod = u.Host + "/" + parts[0]
+		} else {
+			mod = u.Host
 		}
-		if len(parts) == 1 {
-			return u.Host + "/" + parts[0], true
-		}
-		return u.Host, true
+	} else {
+		mod = u.Host
 	}
-	return u.Host, true
+	mod, version := splitPEModuleVersion(mod)
+	return mod, version, true
 }
 
-func countPEModuleReferences(refs map[string][]string) int {
+func splitPEModuleVersion(mod string) (string, string) {
+	i := strings.LastIndex(mod, "@")
+	if i < 0 {
+		return mod, ""
+	}
+	version := mod[i+1:]
+	if version == "" || !strings.HasPrefix(version, "v") {
+		return mod, ""
+	}
+	return mod[:i], version
+}
+
+func singlePEReferenceVersion(refs []peModuleReference) (string, bool) {
+	var version string
+	for _, ref := range refs {
+		if ref.Version == "" {
+			return "", false
+		}
+		if version == "" {
+			version = ref.Version
+			continue
+		}
+		if version != ref.Version {
+			return "", false
+		}
+	}
+	return version, version != ""
+}
+
+func countPEModuleReferences(refs map[string][]peModuleReference) int {
 	var n int
 	for _, files := range refs {
 		n += len(files)
@@ -596,19 +669,31 @@ func countPEModuleReferences(refs map[string][]string) int {
 	return n
 }
 
-func countPEModuleReferenceFiles(refs map[string][]string) int {
+func countPEModuleReferenceFiles(refs map[string][]peModuleReference) int {
 	files := make(map[string]bool)
 	for _, refs := range refs {
-		for _, file := range refs {
-			files[file] = true
+		for _, ref := range refs {
+			files[ref.File] = true
 		}
 	}
 	return len(files)
 }
 
-func containsPEReferenceFile(list []string, s string) bool {
+func peReferenceFiles(refs []peModuleReference) []string {
+	seen := make(map[string]bool)
+	var files []string
+	for _, ref := range refs {
+		if !seen[ref.File] {
+			seen[ref.File] = true
+			files = append(files, ref.File)
+		}
+	}
+	return files
+}
+
+func containsPEReference(list []peModuleReference, file, version string) bool {
 	for _, item := range list {
-		if item == s {
+		if item.File == file && item.Version == version {
 			return true
 		}
 	}
