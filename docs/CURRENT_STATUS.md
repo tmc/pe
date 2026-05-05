@@ -12,6 +12,8 @@ is the source of truth for planned work and release-blocking follow-ups.
 
 ### Core Commands (Fully Functional)
 - `pe run` - Execute prompts with variable substitution
+- `pe run-text` - Validate and render executable, templated, composable text
+  without invoking providers, tools, shell commands, or network access
 - `pe ask` - Pipeline-based prompt execution
 - `pe eval` - Comprehensive evaluation framework
 - `pe view` - Browser-based result viewer
@@ -35,6 +37,8 @@ is the source of truth for planned work and release-blocking follow-ups.
 - `pe mod list` - List available modules
 - `pe mod get` - Get module information
 - `pe mod search` - Search modules
+- `pe mod vet` - Validate `pe.mod` capability policy and executable text
+  metadata
 
 ### Template System (Functional)
 - `pe template list` - List templates
@@ -55,6 +59,22 @@ is the source of truth for planned work and release-blocking follow-ups.
 - `pe experimental semantic` - Semantic backpropagation
 - `pe experimental evolve` - Evolutionary optimization
 - `pe experimental compose` - Component composition in experimental command group
+
+### Local Workflow Prototypes
+- `pe exp distributed` - Bounded local task scheduler from JSON task files
+- `pe exp consensus` - Weighted local vote aggregation
+- `pe exp attest` - Unsigned local SHA-256 manifest generation and verification
+- `pe exp cache` - Local content-addressed cache helpers
+
+### Executable Text
+- Plain text is valid executable text input.
+- `pe.text.v1` and `pe.workflow.v1` front matter can declare typed inputs,
+  metadata, safety policy, placement, and local imports.
+- `pe run-text` renders Go templates from explicit `--var` values.
+- `{{ import "name" }}` composes local front matter imports safely.
+- `pe.mod` now parses `capability`, `placement`, and `policy` blocks.
+- `pe mod vet` checks denied provider/tool/data/prompt policy and typed-input
+  requirements for executable text files.
 
 ## Important Implementation Details
 
@@ -81,13 +101,21 @@ pe ask "prompt" --provider cgpt  # Uses cgpt CLI
 
 ## Recent Release-Prep Fixes
 
-1. **pe vet Stack Overflow** - Fixed recursive command execution
-2. **pe view JSON Schema** - Confirmed working with proper format
-3. **Provider Configuration** - Fixed provider:model parsing
-4. **Module Registry** - Created and populated with samples
-5. **Module Download** - Implemented actual downloading
-6. **Template Interactive** - Added guided selection and input
-7. **cgpt Provider** - Registered and implemented
+1. **Executable Text** - Added `pe run-text`, front matter parsing, explicit
+   template inputs, and local import composition.
+2. **pe.mod Capabilities** - Added parser support and `pe mod vet` static
+   validation for module capability policy.
+3. **Release Legal Readiness** - Added MIT `LICENSE`, `docs/MIGRATION.md`, and
+   `docs/NOTICE_DECISION.md`.
+4. **Release Build Matrix** - Recorded passing local cross-compilation results
+   for darwin/arm64, darwin/amd64, linux/amd64, linux/arm64, and windows/amd64.
+5. **pe vet Stack Overflow** - Fixed recursive command execution.
+6. **pe view JSON Schema** - Confirmed working with proper format.
+7. **Provider Configuration** - Fixed provider:model parsing.
+8. **Module Registry** - Created and populated with samples.
+9. **Module Download** - Implemented actual downloading.
+10. **Template Interactive** - Added guided selection and input.
+11. **cgpt Provider** - Registered and implemented.
 
 ## Partially Implemented ⚠️
 
@@ -97,10 +125,6 @@ Basic assertions work, but these are incomplete:
 - coherence scoring
 - factuality checking
 - similarity metrics
-
-### Distributed Execution
-Core implementation exists but CLI integration incomplete:
-- `pe exp distributed --help` - Prototype command is present; operational subcommands are not yet stable
 
 ### REST API Server
 - Code exists but not exposed via CLI
@@ -119,10 +143,10 @@ Core implementation exists but CLI integration incomplete:
 The measured coverage baseline is tracked in
 [TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md):
 
-- Overall statement coverage: 40.8%
+- Overall statement coverage: 44.1%
 - Native OpenAI provider: 74.0%
 - Native Anthropic provider: 73.3%
-- `cmd/pe`: 30.0%
+- `cmd/pe`: 38.5%
 
 Use the coverage report instead of older approximate coverage claims.
 
