@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
+	"github.com/tmc/pe/internal/inference"
 	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/promptfoo/evaluation/testing"
 )
@@ -282,7 +283,7 @@ func runPropertyTests(ctx context.Context, config *AdvancedTestConfig, iteration
 	var results []testing.PropertyTestResult
 
 	for _, providerSpec := range config.Providers {
-		provider, err := llm.GetProvider(providerSpec)
+		provider, err := testingLegacyProvider(providerSpec)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create provider %s: %v", providerSpec, err)
 		}
@@ -325,7 +326,7 @@ func runRegressionTests(ctx context.Context, config *AdvancedTestConfig, baselin
 	var results []testing.RegressionResult
 
 	for _, providerSpec := range config.Providers {
-		provider, err := llm.GetProvider(providerSpec)
+		provider, err := testingLegacyProvider(providerSpec)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create provider %s: %v", providerSpec, err)
 		}
@@ -425,7 +426,7 @@ func saveCurrentAsBaseline(config *AdvancedTestConfig, filename string, cmd *cob
 		return fmt.Errorf("no providers configured")
 	}
 
-	provider, err := llm.GetProvider(config.Providers[0])
+	provider, err := testingLegacyProvider(config.Providers[0])
 	if err != nil {
 		return err
 	}
@@ -442,6 +443,14 @@ func saveCurrentAsBaseline(config *AdvancedTestConfig, filename string, cmd *cob
 
 	tester := testing.NewRegressionTester(provider, options)
 	return tester.SaveBaseline(filename, baseline)
+}
+
+func testingLegacyProvider(providerSpec string) (llm.Provider, error) {
+	provider, err := inference.CreateProviderFromSpec(providerSpec, nil)
+	if err != nil {
+		return nil, err
+	}
+	return inference.AsLegacyProvider(provider, "")
 }
 
 func outputTestResults(results *TestResults, outputFile string, cmd *cobra.Command) error {
