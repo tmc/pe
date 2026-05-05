@@ -1155,7 +1155,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 ##### Command Migration
 - [x] Update `cmd/pe/run.go` to use `inference.Provider`
 - [x] Update `cmd/pe/ask.go` to use new interface
-- [ ] Update `cmd/pe/eval.go` for evaluation commands
+- [x] Update `cmd/pe/eval.go` for evaluation commands
 - [x] Update `cmd/pe/optimize.go` and optimization commands
 - [x] Update `cmd/pe/semantic.go` for semantic optimization
 - [x] Update `cmd/pe/evolve.go` for evolutionary optimization
