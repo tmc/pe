@@ -286,6 +286,51 @@ func TestProviderAdapterFactory_CreateAdapter_AlreadyAdapter(t *testing.T) {
 	}
 }
 
+func TestProviderAdapterFactory_MultipleProviders(t *testing.T) {
+	factory := NewProviderAdapterFactory()
+	direct := NewInferenceProviderAdapter(&MockInferenceProvider{name: "direct-provider"})
+	providers := []struct {
+		name string
+		in   interface{}
+		want string
+	}{
+		{
+			name: "inference",
+			in:   &MockInferenceProvider{name: "inference-provider"},
+			want: "inference-provider",
+		},
+		{
+			name: "llm",
+			in:   &MockLLMProvider{name: "llm-provider", model: "test-model"},
+			want: "llm-provider",
+		},
+		{
+			name: "optimization",
+			in:   direct,
+			want: "direct-provider",
+		},
+	}
+
+	for _, tt := range providers {
+		t.Run(tt.name, func(t *testing.T) {
+			adapter, err := factory.CreateAdapter(tt.in)
+			if err != nil {
+				t.Fatalf("CreateAdapter: %v", err)
+			}
+			if got := adapter.Name(); got != tt.want {
+				t.Fatalf("Name = %q, want %q", got, tt.want)
+			}
+			resp, err := adapter.Generate(context.Background(), "prompt", optimization.GenerationOptions{})
+			if err != nil {
+				t.Fatalf("Generate: %v", err)
+			}
+			if resp.Text == "" {
+				t.Fatal("Generate returned empty text")
+			}
+		})
+	}
+}
+
 func TestProviderAdapterFactory_CreateAdapter_UnsupportedType(t *testing.T) {
 	factory := NewProviderAdapterFactory()
 
