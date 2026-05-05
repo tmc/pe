@@ -1403,23 +1403,23 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add integration tests
 
 ##### Command Tests
-- [ ] Add tests for core commands
-- [ ] Add tests for evaluation commands
-- [ ] Add tests for optimization commands
-- [ ] Add tests for module commands
-- [ ] Add tests for pipeline commands
+- [x] Add tests for core commands
+- [x] Add tests for evaluation commands
+- [x] Add tests for optimization commands
+- [x] Add tests for module commands
+- [x] Add tests for pipeline commands
 - [ ] Add tests for utility commands
-- [ ] Test command help output
-- [ ] Test command error handling
+- [x] Test command help output
+- [x] Test command error handling
 
 ##### Integration Tests
 - [ ] Create `tests/integration/` directory
-- [ ] Add end-to-end workflow tests
-- [ ] Test optimization pipelines
-- [ ] Test evaluation workflows
-- [ ] Test module workflows
+- [x] Add end-to-end workflow tests
+- [x] Test optimization pipelines
+- [x] Test evaluation workflows
+- [x] Test module workflows
 - [ ] Add performance tests
-- [ ] Test concurrent operations
+- [x] Test concurrent operations
 - [ ] Add stress tests
 
 ##### Property-Based Tests
