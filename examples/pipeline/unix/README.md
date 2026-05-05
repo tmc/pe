@@ -6,36 +6,33 @@ PE follows Unix philosophy - each command does one thing well and can be compose
 
 ```bash
 # Chain evaluations through filters and analysis
-pe eval config.yaml | pe filter --success | pe analyze --metric latency
+pe eval config.yaml | pe filter --contains pass | pe analyze --metrics readability
 ```
 
-## Cost Optimization Pipeline
+## Pattern Filtering Pipeline
 
 ```bash
-# Find expensive failures
+# Save rows that mention failures
 pe eval config.yaml | \
-  pe filter --failed --min-cost 0.10 | \
-  pe stats --format json > expensive-failures.json
+  pe filter --contains fail | \
+  tee failures.txt | \
+  pe stats
 ```
 
-## Quality Pipeline
+## Text Transformation Pipeline
 
 ```bash
-# Extract high-quality responses
+# Normalize matching output
 pe eval config.yaml | \
-  pe filter --min-score 0.9 | \
-  pe stream --select prompt,response,score | \
-  tee high-quality.jsonl | \
-  pe analyze --metric score
+  pe filter --pattern PASS | \
+  pe filter --transform lowercase
 ```
 
-## Monitoring Pipeline
+## Stream Pipeline
 
 ```bash
-# Real-time monitoring
-pe eval config.yaml --stream | \
-  pe filter --latency-gt 5000 | \
-  pe alert --webhook https://alerts.example.com/slow
+# Pass evaluation output through the stream command
+pe eval config.yaml | pe stream
 ```
 
 ## Batch Processing
@@ -43,18 +40,15 @@ pe eval config.yaml --stream | \
 ```bash
 # Process multiple configs
 for config in configs/*.yaml; do
-  pe eval "$config" | pe stats --format csv
-done | pe aggregate --by provider > results.csv
+  pe eval "$config" | pe filter --contains pass
+done | pe stats
 ```
 
 ## Data Transformation
 
 ```bash
-# Convert and process results
-pe eval config.yaml | \
-  jq '.results[]' | \
-  pe filter --provider openai | \
-  pe convert --format csv > openai-results.csv
+# Extract a field from newline-delimited JSON
+printf '{"provider":"openai","score":1}\n' | pe filter --json .provider
 ```
 
 ## Advanced Composition
@@ -62,16 +56,15 @@ pe eval config.yaml | \
 ```bash
 # Multi-stage processing
 pe eval stage1.yaml | \
-  pe extract --field response | \
-  pe run "Improve this: {{.input}}" | \
-  pe eval stage2.yaml | \
-  pe diff - baseline.json
+  pe filter --contains pass | \
+  pe ask --template "Improve this: {{.}}" | \
+  pe stream
 ```
 
 ## Tips
 
 1. Use `tee` to save intermediate results
 2. Combine with standard Unix tools (`grep`, `jq`, `awk`)
-3. Use `--stream` for real-time processing
+3. Use `pe stream` for line-oriented pass-through
 4. Chain multiple `pe filter` commands for complex filtering
 5. Use `pe stats` at the end for summaries

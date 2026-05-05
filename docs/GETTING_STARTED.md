@@ -26,10 +26,7 @@ echo "Summarize this text in one sentence: {{.text}}" > summarize.prompt
 pe run summarize.prompt --var text="Artificial intelligence is transforming industries worldwide through automation, data analysis, and machine learning capabilities."
 ```
 
-Expected output:
-```
-AI is revolutionizing global industries via automation, data analysis, and machine learning.
-```
+The exact output depends on the configured provider.
 
 ### 3. Set Up Your Provider
 
@@ -38,13 +35,13 @@ PE works with multiple AI providers. Choose one:
 #### Option A: OpenAI (Recommended for beginners)
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
-pe run summarize.prompt --provider openai --model gpt-4 --var text="Your text here"
+pe eval eval-config.yaml --max-concurrency 4
 ```
 
 #### Option B: Anthropic Claude
 ```bash
 export ANTHROPIC_API_KEY="your-api-key-here"
-pe run summarize.prompt --provider anthropic --model claude-3-sonnet-20240229 --var text="Your text here"
+pe eval eval-config.yaml --timeout 60s
 ```
 
 #### Option C: Local Models with Ollama
@@ -52,10 +49,10 @@ pe run summarize.prompt --provider anthropic --model claude-3-sonnet-20240229 --
 # First install and start Ollama
 ollama pull llama2
 export OLLAMA_HOST="http://localhost:11434"
-pe run summarize.prompt --provider ollama --model llama2 --var text="Your text here"
+pe eval eval-config.yaml --dry-run
 ```
 
-Congratulations! 🎉 You've just run your first prompt with PE.
+You have now run a prompt with PE.
 
 ## 📖 Essential Concepts
 
@@ -154,13 +151,13 @@ pe eval eval-config.yaml
 
 ```bash
 # Benchmark different approaches
-pe benchmark translate.prompt --iterations 10 --providers openai,anthropic,ollama
+pe benchmark eval-config.yaml --iterations 10 --concurrency 3
 
 # Optimize with metaprompting
-pe optimize translate.prompt --target "accuracy and conciseness" --iterations 5
+pe experimental optimize --prompt "Translate to Spanish: {{.text}}" --method textgrad --iterations 5
 
-# Test optimized version
-pe eval eval-config.yaml --prompt optimized-translate.prompt
+# Test the current config
+pe eval eval-config.yaml --output eval-results.json
 ```
 
 ## 🧪 Advanced Features
@@ -188,7 +185,7 @@ tests:
 ```
 
 ```bash
-pe eval code-eval.yaml --provider openai --model gpt-4
+pe eval code-eval.yaml --output code-results.json
 ```
 
 ### 2. Structured Output Validation
@@ -252,17 +249,14 @@ pe exp attest --help
 
 ### Built-in Metrics
 
-PE provides comprehensive evaluation metrics:
+Advanced evaluation metrics are exposed under the experimental command group:
 
 ```bash
 # Text generation metrics
-pe metrics --prompt summarize.prompt --metric bleu,rouge,bertscore
+pe experimental metrics --type bleu,rouge --generated-file output.txt --reference-file expected.txt
 
 # Custom G-Eval scoring
-pe metrics --prompt creative-writing.prompt --metric g-eval --criteria "creativity,coherence,relevance"
-
-# Performance metrics
-pe metrics --prompt fast-qa.prompt --metric latency,tokens-per-second
+pe experimental metrics --type g-eval --criteria accuracy,clarity --generated-file responses.txt
 ```
 
 ### Custom Metrics
@@ -293,9 +287,8 @@ echo "Raw customer feedback data" | pe ask "Extract sentiment" | pe ask "Categor
 # Advanced pipeline with filtering
 cat reviews.txt | \
   pe ask "Extract product mentions" | \
-  pe filter --condition "confidence > 0.8" | \
-  pe collect --group-by product | \
-  pe reduce --operation summarize
+  pe filter --contains "product" | \
+  pe collect --jobs 4
 ```
 
 ## 🎯 Real-World Examples
@@ -354,8 +347,8 @@ echo "Write a 500-word blog post based on this outline: {{.outline}}" > write-co
 
 # Run the full pipeline
 pe run generate-topics.prompt --var subject="AI in healthcare" | \
-  pe ask --prompt create-outline.prompt | \
-  pe ask --prompt write-content.prompt
+  pe ask "Create an outline" | \
+  pe ask "Write content"
 
 # Or use composition for reusable workflows
 pe experimental compose generate-topics.prompt create-outline.prompt write-content.prompt \
@@ -438,8 +431,8 @@ my-ai-project/
 # Initialize a new project
 pe mod init github.com/myorg/ai-prompts
 
-# Add dependencies
-pe mod download github.com/pe-community/base-prompts@v1.2.0
+# Download dependencies listed in pe.mod
+pe mod download
 
 # Keep dependencies clean
 pe mod tidy
@@ -489,17 +482,11 @@ defaults:
 ### Performance Tips
 
 ```bash
-# Cache results for repeated testing
-pe run --cache summarize.prompt --var text="Same text"
-
 # Use parallel evaluation
-pe eval large-test-suite.yaml --parallel 10
-
-# Optimize for speed vs quality
-pe run --temperature 0 --max-tokens 100 quick-response.prompt
+pe eval large-test-suite.yaml --max-concurrency 10
 
 # Profile performance
-pe profile --enable cpu,memory my-complex-prompt.prompt
+pe profile --help
 ```
 
 ## 🆘 Troubleshooting
@@ -508,29 +495,27 @@ pe profile --enable cpu,memory my-complex-prompt.prompt
 
 **"Provider not found"**
 ```bash
-# Check available providers
-pe providers list
-
-# Register providers manually
-pe providers register anthropic openai ollama
+# Check provider-specific command examples
+pe run --help
+pe eval --help
 ```
 
 **"Template variable not found"**
 ```bash
-# Debug template variables
-pe run --debug my-prompt.prompt --var known_var="value"
+# Run with an explicit variable
+pe run my-prompt.prompt --var known_var=value
 
-# List required variables
-pe analyze my-prompt.prompt --show-variables
+# Inspect a prompt file with substitution
+pe cat my-prompt.prompt --set known_var=value
 ```
 
 **"Evaluation failed"**
 ```bash
-# Run with verbose output
-pe eval --verbose my-eval.yaml
+# Validate the configuration
+pe vet my-eval.yaml
 
-# Test individual assertions
-pe eval --test-only "test_name" my-eval.yaml
+# Run a dry-run evaluation
+pe eval my-eval.yaml --dry-run
 ```
 
 ### Getting Help
@@ -540,12 +525,6 @@ pe eval --test-only "test_name" my-eval.yaml
 pe run --help
 pe eval --help
 
-# Show examples
-pe examples
-
-# Check system status
-pe status
-
 # Enable debug logging
 PE_DEBUG=1 pe run my-prompt.prompt
 ```
@@ -554,7 +533,7 @@ PE_DEBUG=1 pe run my-prompt.prompt
 
 Now that you've mastered the basics:
 
-1. **Explore Advanced Features**: Try semantic optimization, distributed evaluation, and custom metrics
+1. **Explore Advanced Features**: Try experimental semantic optimization, distributed prototypes, and advanced metrics
 2. **Join the Community**: Share prompts and best practices 
 3. **Build Real Projects**: Apply PE to your specific use cases
 4. **Contribute**: Help improve PE with feedback and contributions
@@ -563,7 +542,7 @@ Now that you've mastered the basics:
 
 - [API Reference](API_REFERENCE.md) - Complete command documentation
 - [Advanced Features](ADVANCED_FEATURES.md) - Deep dive into power features  
-- [Examples Library](../example/) - Real-world prompt examples
+- [Examples Library](../examples/) - Real-world prompt examples
 - [Architecture Guide](ARCHITECTURE.md) - Understanding PE internals
 
 ### Community

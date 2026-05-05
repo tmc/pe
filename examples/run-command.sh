@@ -13,22 +13,13 @@ pe run "Translate {{.Text}} to {{.Language}}" \
   --var Text="Hello world" \
   --var Language="French"
 
-# With specific temperature (using default model)
-pe run "Write a haiku about coding" \
-  --temperature 0.9
+# Disable streaming when a single buffered response is easier to inspect
+pe run "Write a haiku about coding" --stream=false
 
 # Streaming mode
-pe run "Tell me a story about a robot" \
-  --stream \
-  --max-tokens 200
+pe run "Tell me a story about a robot" --stream
 
-# With system prompt
-pe run "Explain recursion" \
-  --system "You are a computer science teacher. Use simple examples."
-
-# Using different providers (when implemented)
-# pe run "Hello" --provider ollama --model llama2
-# pe run "Hello" --provider anthropic --model claude-3-haiku
+# Provider-specific model selection belongs in evaluation configs.
 
 # Pipeline usage
 echo "What are the main benefits of Go?" | pe run -

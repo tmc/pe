@@ -12,7 +12,8 @@ pe [global-options] command [command-options]
 
 Global options:
 - `--help, -h`: Show help information
-- `--version`: Show version information
+
+Use `pe version` to show version information.
 
 ## Commands Overview
 
@@ -26,7 +27,7 @@ Global options:
 | [`ask`](#ask) | Single prompt query | `pe ask "What is AI?"` |
 | [`benchmark`](#benchmark) | Performance testing | `pe benchmark config.yaml` |
 | [`test`](#test) | Advanced testing framework | `pe test config.yaml --type property` |
-| [`security`](#security) | Security testing (OWASP) | `pe security test --target prompt.txt` |
+| [`security`](#security) | Security testing (OWASP) | `pe security test prompt.txt` |
 | [`build`](#build) | Build optimized prompts | `pe build config.yaml --target anthropic` |
 | [`cat`](#cat) | Display prompt files | `pe cat prompts/analyze.prompt` |
 | [`mod`](#mod) | Manage prompt modules | `pe mod list` |
@@ -50,14 +51,14 @@ Global options:
 | [`work`](#work) | Workspace management | `pe work init` |
 | [`help`](#help) | Get command help | `pe help run` |
 | [`stream`](#stream) | Process results stream | `pe eval config.yaml \| pe stream` |
-| [`filter`](#filter) | Filter results | `pe eval config.yaml \| pe filter --success` |
+| [`filter`](#filter) | Filter results | `pe eval config.yaml \| pe filter --contains pass` |
 | [`analyze`](#analyze) | Statistical analysis | `pe eval config.yaml \| pe analyze` |
 | [`stats`](#stats) | Quick statistics | `pe eval config.yaml \| pe stats` |
 | [`diff`](#diff) | Compare results | `pe diff old.json new.json` |
-| [`fmt`](#fmt) | Format configs | `pe fmt config.yaml` |
+| [`fmt`](#fmt) | Format prompt files | `pe fmt prompt.txt` |
 | [`vet`](#vet) | Validate configs | `pe vet config.yaml` |
 | [`convert`](#convert) | Convert formats | `pe convert config.yaml config.json` |
-| [`init`](#init) | Create config template | `pe init new-config.yaml` |
+| [`init`](#init) | Initialize `.pe/` project files | `pe init` |
 | [`plugin`](#plugin) | Manage plugins | `pe plugin list` |
 
 ---
@@ -83,12 +84,8 @@ The `run` command executes prompts directly without needing a configuration file
 ### Flags
 
 ```bash
--p, --provider string        Inference provider to use (default "cgpt")
--m, --model string           Model to use (e.g., gpt-4, claude-3)
--t, --temperature float32    Temperature for randomness (0.0-1.0) (default 0.7)
-    --max-tokens int         Maximum tokens in response
--s, --system string          System prompt
-    --stream                 Stream the response
+    --provider string        Provider to use (default "cgpt")
+    --stream                 Stream the response (default true)
     --var stringToString     Template variables (can be repeated)
 ```
 
@@ -106,19 +103,8 @@ pe run "Translate {{.Text}} to {{.Language}}" \
   --var Text="Hello world" \
   --var Language="French"
 
-# With specific model and temperature
-pe run "Write a haiku about coding" \
-  --temperature 0.9 \
-  --model gpt-4
-
 # Streaming mode
-pe run "Tell me a story about a robot" \
-  --stream \
-  --max-tokens 200
-
-# With system prompt
-pe run "Explain recursion" \
-  --system "You are a computer science teacher. Use simple examples."
+pe run "Tell me a story about a robot" --stream=false
 
 # From stdin
 echo "What are the benefits of Go?" | pe run -
@@ -220,7 +206,7 @@ Opens a web browser interface to explore evaluation results. Can view results fr
 ```bash
 -f, --file string    View results from specific file
 -p, --port int       Port for local server (default 8080)
-    --no-open        Don't automatically open browser
+ -y, --yes           Skip confirmation and auto-open the URL for promptfoo view
 ```
 
 ### Examples
@@ -238,8 +224,8 @@ pe view -f results.json
 # Custom port
 pe view --port 9000
 
-# Don't open browser automatically
-pe view --no-open
+# Auto-open promptfoo view without confirmation
+pe view --yes
 ```
 
 ---
@@ -423,12 +409,12 @@ Runs multiple iterations of evaluations to measure performance characteristics l
 ### Flags
 
 ```bash
--i, --iterations int         Number of benchmark iterations (default 5)
--c, --concurrency int       Concurrent requests (default 2)
--f, --format string         Output format: text, json, csv (default "text")
+-i, --iterations int        Number of benchmark iterations (default 3)
+-n, --concurrency int       Number of concurrent benchmark runs (default 1)
+-c, --config string         Path to configuration file
+-f, --format string         Output format: json, yaml, csv, or text (default "json")
 -o, --output string         Write results to file
-    --warmup int            Warmup iterations (default 1)
-    --timeout duration      Timeout per iteration (default "60s")
+    --go-bench              Output in Go benchmark format
 ```
 
 ### Examples
@@ -443,8 +429,8 @@ pe benchmark config.yaml --iterations 10 --concurrency 4
 # Save results
 pe benchmark config.yaml --format json -o benchmark.json
 
-# With warmup
-pe benchmark config.yaml --warmup 3 --iterations 10
+# Go benchmark format
+pe benchmark config.yaml --go-bench
 ```
 
 ---
@@ -461,27 +447,17 @@ pe eval config.yaml | pe stream [flags]
 
 ### Description
 
-Processes evaluation results line by line, supporting field selection and format conversion. Designed for Unix pipeline composition.
+Passes input through line by line. Designed for simple Unix pipeline composition.
 
 ### Flags
 
-```bash
--s, --select string         Comma-separated fields to output
--f, --format string         Output format: json, ndjson, csv, tsv (default "json")
-    --filter string         Filter expression
-```
+This command currently has no command-specific flags.
 
 ### Examples
 
 ```bash
-# Select specific fields
-pe eval config.yaml | pe stream --select response,latency,cost
-
-# Convert to NDJSON
-pe eval config.yaml | pe stream --format ndjson
-
-# Filter and select
-pe eval config.yaml | pe stream --select cost,provider --filter "success=true"
+# Pass evaluation output through
+pe eval config.yaml | pe stream
 ```
 
 ---
@@ -498,32 +474,36 @@ pe eval config.yaml | pe filter [flags]
 
 ### Description
 
-Filters evaluation results based on success/failure, provider, performance metrics, and other criteria.
+Filters text streams by pattern, substring, simple matches, or JSON fields.
 
 ### Flags
 
 ```bash
-    --success               Filter for successful results only
-    --failure               Filter for failed results only
-    --provider string       Filter by provider
-    --min-score float       Minimum score threshold (default -1)
-    --max-latency int       Maximum latency in ms (default -1)
+    --pattern string        Filter by substring pattern
+    --contains string       Filter by substring
+    --match string          Match pattern
+    --json string           Extract JSON field
+    --field string          Extract field
+    --transform string      Transform output
+    --if-contains string    Conditional contains
+    --then string           Then command
+    --else string           Else command
 ```
 
 ### Examples
 
 ```bash
-# Show only successful tests
-pe eval config.yaml | pe filter --success
+# Keep lines containing pass
+pe eval config.yaml | pe filter --contains pass
 
-# Filter by provider
-pe eval config.yaml | pe filter --provider "openai:gpt-4"
+# Filter by pattern
+pe eval config.yaml | pe filter --pattern openai
 
-# Performance filters
-pe eval config.yaml | pe filter --max-latency 1000 --min-score 0.8
+# Extract a JSON field from newline-delimited JSON
+cat results.ndjson | pe filter --json .response
 
-# Show only failures
-pe eval config.yaml | pe filter --failure
+# Transform text
+echo "HELLO" | pe filter --transform lowercase
 ```
 
 ---
@@ -540,30 +520,27 @@ pe eval config.yaml | pe analyze [flags]
 
 ### Description
 
-Performs statistical analysis on evaluation results, supporting grouping, percentile calculations, and various metrics.
+Analyzes text from stdin. It can report basic counts, selected text metrics, or JSON output.
 
 ### Flags
 
 ```bash
--m, --metric string         Metric to analyze: score, latency, tokens, cost (default "score")
--g, --group-by string       Group results by field: provider, prompt, test
--p, --percentiles string    Comma-separated percentiles (default "50,90,95,99")
+    --type string           Type of analysis
+    --metrics string        Comma-separated metrics
+    --format string         Output format
 ```
 
 ### Examples
 
 ```bash
-# Analyze scores
-pe eval config.yaml | pe analyze --metric score
+# Basic counts
+pe eval config.yaml | pe analyze
 
-# Group by provider
-pe eval config.yaml | pe analyze --metric latency --group-by provider
+# Text metrics
+cat response.txt | pe analyze --metrics readability,sentiment
 
-# Custom percentiles
-pe eval config.yaml | pe analyze --percentiles "25,50,75,95"
-
-# Cost analysis
-pe eval config.yaml | pe analyze --metric cost --group-by provider
+# JSON output
+cat response.txt | pe analyze --format json
 ```
 
 ---
@@ -580,13 +557,11 @@ pe eval config.yaml | pe stats [flags]
 
 ### Description
 
-Provides quick statistical summaries including success rate, average scores, latency metrics, and cost summaries.
+Displays quick statistics from evaluation results.
 
 ### Flags
 
-```bash
--f, --format string    Output format: table, json, yaml (default "table")
-```
+This command currently has no command-specific flags.
 
 ### Examples
 
@@ -594,11 +569,7 @@ Provides quick statistical summaries including success rate, average scores, lat
 # Quick stats
 pe eval config.yaml | pe stats
 
-# JSON format
-pe eval config.yaml | pe stats --format json
-
-# YAML format
-pe eval config.yaml | pe stats --format yaml
+pe eval config.yaml | pe stats
 ```
 
 ---
@@ -660,33 +631,35 @@ pe fmt [file...] [flags]
 
 ### Description
 
-Formats configuration files for consistency and optionally converts between YAML and JSON formats.
+Formats prompt files according to the selected style.
 
 ### Arguments
 
-- `file...`: Configuration files to format
+- `file...`: Prompt files to format
 
 ### Flags
 
 ```bash
 -w, --write               Write result to source file instead of stdout
--o, --output string       Output format: yaml, json (default is input format)
+    --check               Check whether files are formatted
+    --style string        Formatting style: anthropic, openai, standard
+    --fix                 Automatically fix common issues
 ```
 
 ### Examples
 
 ```bash
 # Format to stdout
-pe fmt config.yaml
+pe fmt prompt.txt
 
 # Format in-place
-pe fmt config.yaml --write
+pe fmt prompt.txt --write
 
-# Convert YAML to JSON
-pe fmt config.yaml --output json
+# Check formatting
+pe fmt prompt.txt --check
 
 # Format multiple files
-pe fmt *.yaml --write
+pe fmt *.prompt --write --style standard
 ```
 
 ---
@@ -775,22 +748,17 @@ Create a new configuration file with a basic template.
 ### Synopsis
 
 ```bash
-pe init [output_file] [flags]
+pe init [flags]
 ```
 
 ### Description
 
-Creates a new configuration file with a basic template to get started quickly.
-
-### Arguments
-
-- `output_file`: Output file path (default: "pe-config.yaml")
+Creates `.pe/` project files, similar to `git init`.
 
 ### Flags
 
 ```bash
--f, --format string    Output format: yaml, json (default "yaml")
-    --force           Overwrite existing file
+    --force           Force reinitialization even if `.pe` exists
 ```
 
 ### Examples
@@ -799,14 +767,8 @@ Creates a new configuration file with a basic template to get started quickly.
 # Create default config
 pe init
 
-# Custom filename
-pe init my-config.yaml
-
-# JSON format
-pe init config.json --format json
-
 # Overwrite existing
-pe init existing-config.yaml --force
+pe init --force
 ```
 
 ---
@@ -2288,8 +2250,8 @@ Reduces and aggregates evaluation results from a pipeline, supporting various ma
 # Sum costs from evaluations
 pe eval config.yaml | pe reduce --sum cost
 
-# Aggregate results
-pe eval config.yaml | pe stream --select cost | pe reduce --sum cost
+# Aggregate streamed results
+pe eval config.yaml | pe stream | pe reduce --sum cost
 ```
 
 ---
@@ -2407,19 +2369,19 @@ PE is designed for Unix-style composition:
 
 ```bash
 # Basic pipeline
-pe eval config.yaml | pe filter --success | pe stats
+pe eval config.yaml | pe filter --contains pass | pe stats
 
 # Complex analysis
 pe eval config.yaml | \
-  pe stream --select provider,score,cost | \
-  pe filter --min-score 0.8 | \
-  pe analyze --metric score --group-by provider
+  pe stream | \
+  pe filter --contains pass | \
+  pe analyze --metrics readability
 
 # Cost monitoring
 pe eval config.yaml | \
-  pe filter --max-cost 0.10 | \
-  pe stream --select cost,provider | \
-  pe analyze --metric cost
+  pe filter --contains cost | \
+  pe stream | \
+  pe analyze
 
 # A/B testing
 pe eval variant-a.yaml -o a.json

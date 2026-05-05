@@ -15,7 +15,7 @@ For the most up-to-date reference, run `pe help` or `pe [command] --help`.
 | `pe exp` | Prototype command group |
 | `pe experimental` | Research command group |
 
-## Global Flags
+## Common Command Flags
 
 Global flags vary by command. Run `pe [command] --help` for exact flags.
 Common examples include:

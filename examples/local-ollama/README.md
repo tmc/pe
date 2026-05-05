@@ -33,7 +33,7 @@ If your daemon listens somewhere other than `http://localhost:11434`, update
 
 ```bash
 cd examples/local-ollama
-pe eval config.yaml --verbose
+pe eval config.yaml
 ```
 
 To run only the prompt:

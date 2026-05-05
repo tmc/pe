@@ -13,8 +13,8 @@ The most frequently used command for quick prompt execution.
 # Simple text prompt
 pe run "What are the benefits of renewable energy?"
 
-# With specific provider and model
-pe run "Explain quantum computing" --provider openai --model gpt-4
+# With the default provider
+pe run "Explain quantum computing"
 
 # With template variables
 pe run "Translate '{{.text}}' to {{.language}}" --var text="Hello world" --var language="Spanish"
@@ -25,9 +25,6 @@ pe run "Translate '{{.text}}' to {{.language}}" --var text="Hello world" --var l
 # Execute prompt from file
 pe run my-prompt.prompt
 
-# With variables from file
-pe run analyze.prompt --vars-file data.json
-
 # With environment variable substitution
 export ANALYSIS_TYPE="sentiment"
 pe run "Perform {{.ANALYSIS_TYPE}} analysis on: {{.text}}" --var text="I love this product!"
@@ -35,17 +32,11 @@ pe run "Perform {{.ANALYSIS_TYPE}} analysis on: {{.text}}" --var text="I love th
 
 #### Advanced Options
 ```bash
-# Control output format
-pe run summarize.prompt --output json --var text="Long document text..."
-
 # Stream responses in real-time
 pe run creative-writing.prompt --stream --var topic="space exploration"
 
-# Save output to file
-pe run report.prompt --output results.txt --var data="$(cat input.csv)"
-
-# Multiple providers for comparison
-pe run "Explain machine learning" --providers openai,anthropic,ollama
+# Save output with shell redirection
+pe run report.prompt --var data="$(cat input.csv)" > results.txt
 ```
 
 ### `pe eval` - Comprehensive Evaluation
@@ -96,7 +87,7 @@ tests:
         threshold: 0.8
 EOF
 
-pe eval code-eval.yaml --provider openai --model gpt-4-turbo
+pe eval code-eval.yaml --output code-results.json
 ```
 
 **Structured Output Validation:**
@@ -135,11 +126,8 @@ pe eval structured-eval.yaml --output results.json
 
 **Multi-Provider Comparison:**
 ```bash
-# Compare providers on same tasks
-pe eval comparison.yaml --providers openai,anthropic,ollama --compare-providers
-
-# Generate comparison report
-pe eval comparison.yaml --providers openai,anthropic --report comparison-report.html
+# Compare providers by listing providers in the config file
+pe eval comparison.yaml --output comparison-results.json
 ```
 
 ### `pe benchmark` - Performance Testing
@@ -148,26 +136,20 @@ Measure and optimize prompt performance.
 
 ```bash
 # Basic benchmarking
-pe benchmark simple-prompt.prompt --iterations 20
+pe benchmark benchmark-config.yaml --iterations 20
 
 # Comprehensive performance analysis
 pe benchmark complex-eval.yaml \
   --iterations 50 \
-  --providers openai,anthropic \
-  --metrics latency,tokens-per-second,cost \
   --output benchmark-results.json
 
 # Stress testing
 pe benchmark load-test.yaml \
-  --concurrent 10 \
-  --duration 5m \
-  --ramp-up 30s
+  --concurrency 10 \
+  --iterations 20
 
-# Cost analysis
-pe benchmark cost-analysis.yaml \
-  --providers openai,anthropic \
-  --metrics cost-per-token,total-cost \
-  --budget-limit 10.00
+# Go benchmark format
+pe benchmark cost-analysis.yaml --go-bench
 ```
 
 ## 🔄 Pipeline Commands
@@ -178,47 +160,37 @@ pe benchmark cost-analysis.yaml \
 # Simple pipeline
 echo "Raw customer feedback" | pe ask "Extract sentiment and key issues"
 
-# With specific configuration
-echo "Product review text" | pe ask \
-  --prompt "Analyze sentiment: {{.input}}" \
-  --provider anthropic \
-  --model claude-3-sonnet-20240229
+# With a template
+echo "Product review text" | pe ask --template "Analyze sentiment: {{.}}"
 
 # JSON processing pipeline
-echo '{"review": "Great product!"}' | pe ask \
-  --prompt "Rate this review from 1-10: {{.input}}" \
-  --input-format json \
-  --output-format json
+echo '{"review": "Great product!"}' | pe ask --template "Rate this review from 1-10: {{.}}"
 ```
 
 ### `pe stream` - Process Result Streams
 
 ```bash
 # Stream evaluation results
-pe eval large-eval.yaml | pe stream --output streaming-results.jsonl
+pe eval large-eval.yaml | pe stream > streaming-results.txt
 
 # Real-time filtering
-pe eval continuous-eval.yaml | pe stream --filter "score > 0.8"
+pe eval continuous-eval.yaml | pe stream | pe filter --contains pass
 
 # Live monitoring
-pe eval production-test.yaml | pe stream --monitor --alert-threshold 0.5
+pe eval production-test.yaml | pe stream
 ```
 
 ### `pe filter` - Result Filtering
 
 ```bash
-# Filter successful results only
-pe eval test-suite.yaml | pe filter --success
+# Filter lines containing pass
+pe eval test-suite.yaml | pe filter --contains pass
 
-# Filter by score threshold
-pe eval quality-test.yaml | pe filter --score-min 0.7
-
-# Complex filtering with expressions
-pe eval comprehensive.yaml | pe filter \
-  --where "score > 0.8 AND latency < 2000 AND provider == 'openai'"
+# Filter by pattern or substring
+pe eval quality-test.yaml | pe filter --contains pass
 
 # Filter and transform
-pe eval results.yaml | pe filter --success | pe filter --transform "extract_metrics"
+pe eval results.yaml | pe filter --contains pass | pe filter --transform lowercase
 ```
 
 ### `pe analyze` - Statistical Analysis
@@ -227,22 +199,10 @@ pe eval results.yaml | pe filter --success | pe filter --transform "extract_metr
 # Basic analysis
 pe eval dataset.yaml | pe analyze
 
-# Detailed statistical report
+# Select metrics and output format
 pe eval performance.yaml | pe analyze \
-  --metrics score,latency,cost \
-  --group-by provider \
-  --output analysis-report.html
-
-# Trend analysis
-pe eval time-series.yaml | pe analyze \
-  --time-series \
-  --window 24h \
-  --trend-detection
-
-# Custom analysis
-pe eval custom.yaml | pe analyze \
-  --script custom-analysis.py \
-  --params threshold=0.8,window=100
+  --metrics readability,sentiment \
+  --format json
 ```
 
 ## 🎨 Composition and Optimization
@@ -268,47 +228,43 @@ pe experimental compose \
   --output composed-prompt.prompt
 ```
 
-### `pe optimize` - Metaprompting Optimization
+### `pe experimental optimize` - Metaprompting Optimization
 
 ```bash
-# Basic optimization
-pe optimize "Summarize this text: {{.text}}" \
-  --target "conciseness and accuracy" \
+# TextGrad optimization
+pe experimental optimize --prompt "Summarize this text: {{.text}}" \
+  --method textgrad \
   --iterations 5
 
-# Advanced semantic optimization
-pe optimize complex-prompt.prompt \
-  --method semantic-backprop \
-  --target "accuracy,latency,cost" \
-  --eval-config validation.yaml \
-  --iterations 10
+# PE2 optimization
+pe experimental optimize --prompt "Classify sentiment: {{.text}}" \
+  --method pe2 \
+  --iterations 5
 
-# Multi-objective optimization
-pe optimize multi-task.prompt \
-  --objectives accuracy:0.4,speed:0.3,cost:0.3 \
-  --method gaso \
-  --convergence-threshold 0.001
+# APEX optimization
+pe experimental optimize --prompt "Review this code: {{.code}}" \
+  --method apex \
+  --iterations 5
 ```
 
-### `pe semantic` - Advanced Optimization
+### `pe experimental semantic` - Advanced Optimization
 
 ```bash
 # Semantic backpropagation
-pe semantic backprop \
+pe experimental semantic backprop \
   --prompt "Analyze sentiment: {{.text}}" \
-  --target "improve accuracy on edge cases" \
-  --learning-rate 0.1 \
+  --objective "improve accuracy on edge cases" \
   --iterations 10
 
 # GASO optimization
-pe semantic gaso \
+pe experimental semantic gaso \
   --system multi-component-system.json \
   --objective "overall performance" \
   --multi-objective \
   --output optimized-system.json
 
 # Gradient descent on prompts
-pe semantic descent \
+pe experimental semantic descent \
   --objective "minimize hallucination" \
   --adaptive \
   --convergence 0.001
@@ -319,17 +275,17 @@ pe semantic descent \
 ### `pe fmt` - Code Formatting
 
 ```bash
-# Format single config
-pe fmt config.yaml
+# Format single prompt
+pe fmt prompt.txt
 
-# Format all configs in directory
-pe fmt configs/
+# Format prompts in place
+pe fmt *.prompt --write --style standard
 
 # Check formatting without changing files
-pe fmt --check --diff configs/
+pe fmt prompt.txt --check
 
 # Custom formatting options
-pe fmt --style compact --sort-keys config.yaml
+pe fmt prompt.txt --style openai --fix
 ```
 
 ### `pe vet` - Configuration Validation
@@ -341,11 +297,8 @@ pe vet config.yaml
 # Validate all configs
 pe vet configs/
 
-# Strict validation
-pe vet --strict --fail-on-warnings config.yaml
-
-# Custom validation rules
-pe vet --rules custom-rules.yaml config.yaml
+# Show validation help
+pe vet --help
 ```
 
 ### `pe convert` - Format Conversion
@@ -368,19 +321,12 @@ pe convert --validate input.yaml output.json
 
 ```bash
 # Basic project setup
-pe init my-project
+mkdir my-project
+cd my-project
+pe init
 
-# With template
-pe init my-project --template evaluation-suite
-
-# Custom configuration
-pe init my-project \
-  --providers openai,anthropic \
-  --template advanced \
-  --with-examples
-
-# Interactive setup
-pe init --interactive
+# Reinitialize an existing .pe directory
+pe init --force
 ```
 
 ## 📊 Analysis and Reporting
@@ -391,14 +337,8 @@ pe init --interactive
 # Basic stats from evaluation
 pe eval results.yaml | pe stats
 
-# Detailed statistics
-pe eval results.yaml | pe stats --detailed --group-by provider
-
-# Export statistics
-pe eval results.yaml | pe stats --format csv --output stats.csv
-
-# Real-time stats
-pe eval live-test.yaml | pe stats --live --refresh 5s
+# Stats currently reads evaluation data from stdin.
+pe eval results.yaml | pe stats
 ```
 
 ### `pe diff` - Result Comparison
@@ -407,35 +347,18 @@ pe eval live-test.yaml | pe stats --live --refresh 5s
 # Compare two result sets
 pe diff baseline-results.json new-results.json
 
-# Detailed comparison with metrics
-pe diff old.json new.json \
-  --metrics score,latency,cost \
-  --threshold 0.05 \
-  --output comparison-report.html
-
-# A/B test comparison
-pe diff variant-a.json variant-b.json \
-  --statistical-test \
-  --confidence 0.95
+# Compare a saved baseline and new run
+pe diff old.json new.json
 ```
 
 ### `pe view` - Interactive Visualization
 
 ```bash
 # View results in browser
-pe eval results.yaml | pe view
+pe view --file results.json
 
-# Custom visualization
-pe view results.json \
-  --chart scatter \
-  --x-axis latency \
-  --y-axis score \
-  --color-by provider
-
-# Dashboard mode
-pe view --dashboard \
-  --refresh 30s \
-  --data live-results.jsonl
+# Choose a port
+pe view --file results.json --port 8081
 ```
 
 ## 🔐 Security and Attestation
@@ -456,15 +379,12 @@ pe exp attest --help
 # OWASP LLM Top 10 testing
 pe security scan prompt-file.prompt
 
-# Custom security tests
-pe security test \
-  --tests injection,prompt-leaking,data-extraction \
-  --severity high \
-  --config security-config.yaml
+# Category-specific security test
+pe security test prompt-file.prompt --category prompt_injection
 
 # Red team testing
 pe security redteam \
-  --automated \
+  --target prompt-file.prompt \
   --duration 1h \
   --output security-report.json
 ```
@@ -480,12 +400,10 @@ pe exp distributed --help
 # Re-check prototype interface
 pe exp distributed --help
 
-# Run distributed evaluation
+# Run a larger evaluation with core concurrency controls
 pe eval large-test-suite.yaml \
-  --distributed \
-  --max-concurrent 20 \
+  --max-concurrency 20 \
   --timeout 5m
-
 ```
 
 ## 📦 Module Management
@@ -496,8 +414,8 @@ pe eval large-test-suite.yaml \
 # Initialize module
 pe mod init github.com/myorg/prompts
 
-# Add dependencies
-pe mod download github.com/pe-community/base-prompts@v1.2.0
+# Download dependencies listed in pe.mod
+pe mod download
 
 # List dependencies
 pe mod list
@@ -509,7 +427,7 @@ pe mod tidy
 pe mod vendor
 
 # Publish module
-pe mod push --tag v1.0.0
+pe mod publish
 ```
 
 ### `pe get` - Download Modules
@@ -586,14 +504,14 @@ echo "📊 View results: open final-report.html"
 # deploy-prompts.sh
 
 # 1. Optimize prompts for production
-pe optimize production-prompts/ \
+pe experimental optimize --prompt production-prompts/ \
   --target "latency,cost" \
   --output optimized/
 
 # 2. Validate optimized prompts
 pe eval production-validation.yaml \
-  --prompts optimized/ \
-  --threshold 0.95
+  --config production-validation.yaml \
+  --output validation-results.json
 
 # 3. Create attestation
 pe exp attest --help
@@ -602,7 +520,7 @@ pe exp attest --help
 pe exp distributed --help
 
 # 5. Health check
-pe eval health-check.yaml --distributed --alert-on-failure
+pe eval health-check.yaml --max-concurrency 20 --timeout 5m
 
 echo "🚀 Production deployment complete!"
 ```
@@ -614,18 +532,18 @@ echo "🚀 Production deployment complete!"
 # research-workflow.sh
 
 # 1. Generate prompt variations
-pe evolve base-prompt.prompt \
+pe experimental evolve base-prompt.prompt \
   --generations 10 \
   --population 20 \
   --mutations creative,logical,concise
 
 # 2. Evaluate all variations
 pe eval research-eval.yaml \
-  --prompts evolved-prompts/ \
-  --providers openai,anthropic,ollama
+  --config research-eval.yaml \
+  --output research-results.json
 
 # 3. Semantic optimization
-pe semantic backprop \
+pe experimental semantic backprop \
   --best-prompts top-5/ \
   --target "research quality" \
   --iterations 15
@@ -644,26 +562,23 @@ echo "📈 Insights: open research-insights.html"
 
 ### Performance Optimization
 ```bash
-# Cache frequently used results
-pe run --cache my-prompt.prompt
-
 # Parallel execution
-pe eval --parallel 8 large-test-suite.yaml
+pe eval large-test-suite.yaml --max-concurrency 8
 
 # Resource limits
-pe eval --memory-limit 4GB --timeout 5m heavy-eval.yaml
+pe eval heavy-eval.yaml --timeout 5m
 ```
 
 ### Development Efficiency
 ```bash
 # Watch for changes during development
-pe watch development-tests.yaml --auto-reload
+pe watch --help
 
 # Quick validation
-pe vet --fast configs/
+pe vet configs/
 
 # Interactive debugging
-pe run --debug --interactive problematic-prompt.prompt
+pe interactive --help
 ```
 
 ### Production Best Practices
@@ -671,11 +586,11 @@ pe run --debug --interactive problematic-prompt.prompt
 # Always use attestation in production
 pe exp attest --help
 
-# Monitor costs
-pe benchmark --cost-tracking --budget 100.00 production-eval.yaml
+# Monitor benchmark output
+pe benchmark production-eval.yaml --format json --output production-benchmark.json
 
 # Graceful degradation
-pe eval --fallback-provider anthropic --primary openai critical-eval.yaml
+pe eval critical-eval.yaml --timeout 5m --max-concurrency 4
 ```
 
 This comprehensive guide covers all PE commands with practical, real-world examples. Each command includes basic usage, advanced options, and integration patterns to help you become proficient with PE quickly!

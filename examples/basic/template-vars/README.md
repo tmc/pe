@@ -17,24 +17,23 @@ PE uses Go's template syntax. Variables must be prefixed with a dot:
 ### Command Line Usage
 ```bash
 # Use default values
-pe run translate.prompt --provider openai
+pe run translate.prompt
 
 # Override variables
 pe run translate.prompt \
   --var text="Good morning!" \
   --var source_lang="English" \
-  --var target_lang="French" \
-  --provider openai
+  --var target_lang="French"
 
 # Multiple languages
-pe run translate.prompt --var target_lang="Japanese" --provider anthropic
-pe run translate.prompt --var target_lang="German" --provider openai
+pe run translate.prompt --var target_lang="Japanese"
+pe run translate.prompt --var target_lang="German"
 ```
 
 ### Preview Variable Substitution
 ```bash
 # See how variables are replaced
-pe cat translate.prompt --var text="Test" --var target_lang="Italian"
+pe cat translate.prompt --set text="Test" --set target_lang="Italian"
 ```
 
 ## Configuration File

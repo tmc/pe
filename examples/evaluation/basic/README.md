@@ -17,11 +17,11 @@ This example demonstrates PE's evaluation capabilities with simple math problems
 # Run the evaluation
 pe eval config.yaml
 
-# Run with verbose output
-pe eval config.yaml --verbose
+# Save JSON results
+pe eval config.yaml --output results.json
 
-# Run with specific provider only
-pe eval config.yaml --provider openai
+# Run without provider calls while checking the evaluation plan
+pe eval config.yaml --dry-run --no-progress-bar
 
 # View results in browser
 pe eval config.yaml --save-db
