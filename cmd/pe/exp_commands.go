@@ -13,6 +13,7 @@ func init() {
 
 	expCmd.AddCommand(expTransformCmd)
 	expCmd.AddCommand(expMergeCmd)
+	expCmd.AddCommand(expOptimizeCmd())
 	expCmd.AddCommand(expBatchCmd)
 	expCmd.AddCommand(expSweepCmd)
 	expCmd.AddCommand(expScheduleCmd)
