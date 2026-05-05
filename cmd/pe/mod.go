@@ -391,7 +391,7 @@ func fetchGist(gistID string) (*Gist, error) {
 		req.Header.Set("Authorization", "token "+token)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := githubHTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

@@ -59,10 +59,9 @@ jq -r '.Issues | group_by(.rule_id)[] | "\(.[0].rule_id)\t\(length)\t\(.[0].deta
   check, and module paths where module names or metadata-provided prompt paths
   can influence files read from `.pe/modules`.
 - Network/providers: OpenAI and Anthropic providers use HTTPS defaults and
-  client timeouts, but `baseURL` is configurable. GitHub gist calls use
-  `http.DefaultClient` without explicit timeout. The `pe serve` local HTTP
-  server sets `ReadHeaderTimeout`, `ReadTimeout`, `WriteTimeout`, and
-  `IdleTimeout`.
+  client timeouts, but `baseURL` is configurable. GitHub gist calls in `cmd/pe`
+  use an explicit 30-second timeout client. The `pe serve` local HTTP server
+  sets `ReadHeaderTimeout`, `ReadTimeout`, `WriteTimeout`, and `IdleTimeout`.
 - Attest/cache: experimental `pe exp attest` and `pe exp cache` workflows are
   unsigned and local-only. They detect local content, manifest, and cache-object
   tamper, but they do not prove identity, origin, or freshness.
@@ -81,9 +80,10 @@ jq -r '.Issues | group_by(.rule_id)[] | "\(.[0].rule_id)\t\(length)\t\(.[0].deta
 - G304 triage: config expansion, Starlark `load_tests`, module cache paths, and
   module publish prompt paths now have containment checks. Broad CLI file reads
   remain intended behavior when users pass local paths.
-- Add an explicit timeout to GitHub API calls, or document why using
-  `http.DefaultClient` is acceptable there. Keep `pe serve` timeout coverage
-  covered by command-level tests or review checks.
+- GitHub API calls now use an explicit 30-second timeout client instead of
+  `http.DefaultClient`; `TestGitHubHTTPClientHasTimeout` covers the setting.
+  Keep `pe serve` timeout coverage covered by command-level tests or review
+  checks.
 - Provider API/body/stderr error propagation now redacts common API keys, bearer
   tokens, GitHub tokens, AWS access keys, and Google API keys before returning
   diagnostics.

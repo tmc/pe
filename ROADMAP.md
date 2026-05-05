@@ -179,13 +179,18 @@ Remaining tasks:
 2. Add or update a concise SECURITY.md disclosure policy
 3. Review file path traversal protections in config expansion, Starlark loading,
    modules, and metadata paths
-4. Review provider stderr/body error propagation for secret redaction
+4. DONE: Review provider stderr/body error propagation for secret redaction
 5. Test representative commands with untrusted input
 
 Tools to use:
 - gosec (static analysis)
 - go list -m all | nancy (or govulncheck)
 - Manual code review of security-sensitive areas
+
+Recent closure:
+- GitHub API calls in `cmd/pe` use an explicit 30-second timeout client instead
+  of `http.DefaultClient`.
+- `TestGitHubHTTPClientHasTimeout` verifies the timeout client.
 
 Critical areas:
 - Command execution (scripttest, providers)
