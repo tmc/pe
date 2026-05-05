@@ -5,127 +5,6 @@ import (
 	"testing"
 )
 
-// InputSanitizer provides methods to sanitize and validate user inputs
-type InputSanitizer struct {
-	maxPromptLength int
-	maxFileSize     int64
-	allowedChars    string
-}
-
-// NewInputSanitizer creates a new input sanitizer with default settings
-func NewInputSanitizer() *InputSanitizer {
-	return &InputSanitizer{
-		maxPromptLength: 10000, // 10KB max prompt
-		maxFileSize:     1024 * 1024 * 10, // 10MB max file
-		allowedChars:    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!?;:()[]{}\"'- \n\r\t",
-	}
-}
-
-// SanitizePrompt cleans user input prompts
-func (s *InputSanitizer) SanitizePrompt(input string) (string, error) {
-	// Check length
-	if len(input) > s.maxPromptLength {
-		return "", NewSecurityError("prompt_too_long", "Prompt exceeds maximum length")
-	}
-
-	// Remove null bytes
-	cleaned := strings.ReplaceAll(input, "\x00", "")
-
-	// Remove other control characters except allowed ones
-	var result strings.Builder
-	for _, r := range cleaned {
-		if r < 32 {
-			// Allow specific whitespace characters
-			if r == '\n' || r == '\r' || r == '\t' {
-				result.WriteRune(r)
-			}
-			// Skip other control characters
-		} else if r == 127 {
-			// Skip DEL character
-		} else {
-			result.WriteRune(r)
-		}
-	}
-
-	return result.String(), nil
-}
-
-// ValidateFilePath validates file paths to prevent directory traversal
-func (s *InputSanitizer) ValidateFilePath(path string) error {
-	// Check for null bytes
-	if strings.Contains(path, "\x00") {
-		return NewSecurityError("invalid_path", "File path contains null bytes")
-	}
-
-	// Check for Windows drive paths (e.g., C:\, D:\, etc.)
-	// These are absolute paths and potentially dangerous
-	if len(path) >= 3 && path[1] == ':' && (path[2] == '\\' || path[2] == '/') {
-		// Single letter followed by colon indicates Windows drive
-		if (path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z') {
-			return NewSecurityError("path_traversal", "File path contains traversal patterns")
-		}
-	}
-
-	// Check for directory traversal patterns
-	dangerous := []string{"../", "..\\", "/..", "\\..", "..."}
-	for _, pattern := range dangerous {
-		if strings.Contains(path, pattern) {
-			return NewSecurityError("path_traversal", "File path contains traversal patterns")
-		}
-	}
-
-	// Check for absolute paths that might be dangerous
-	if strings.HasPrefix(path, "/") && !strings.HasPrefix(path, "/tmp/") && !strings.HasPrefix(path, "/var/tmp/") {
-		return NewSecurityError("absolute_path", "Absolute paths outside temp directories not allowed")
-	}
-
-	return nil
-}
-
-// ValidateAPIKey validates API key format and characteristics
-func (s *InputSanitizer) ValidateAPIKey(apiKey string) error {
-	if apiKey == "" {
-		return NewSecurityError("empty_api_key", "API key cannot be empty")
-	}
-
-	if len(apiKey) < 10 {
-		return NewSecurityError("api_key_too_short", "API key too short")
-	}
-
-	if len(apiKey) > 500 {
-		return NewSecurityError("api_key_too_long", "API key too long")
-	}
-
-	// Check for suspicious patterns
-	if strings.Contains(apiKey, " ") {
-		return NewSecurityError("invalid_api_key", "API key contains spaces")
-	}
-
-	if strings.Contains(apiKey, "\n") || strings.Contains(apiKey, "\r") {
-		return NewSecurityError("invalid_api_key", "API key contains newlines")
-	}
-
-	return nil
-}
-
-// SecurityError represents a security-related error
-type SecurityError struct {
-	Code    string
-	Message string
-}
-
-func (e *SecurityError) Error() string {
-	return e.Message
-}
-
-// NewSecurityError creates a new security error
-func NewSecurityError(code, message string) *SecurityError {
-	return &SecurityError{
-		Code:    code,
-		Message: message,
-	}
-}
-
 // Test Input Sanitization
 
 func TestSanitizePrompt(t *testing.T) {
@@ -225,9 +104,9 @@ func TestValidateFilePath(t *testing.T) {
 	sanitizer := NewInputSanitizer()
 
 	tests := []struct {
-		name     string
-		path     string
-		wantErr  bool
+		name      string
+		path      string
+		wantErr   bool
 		errorCode string
 	}{
 		{
@@ -474,8 +353,8 @@ func TestInputSanitization_EdgeCases(t *testing.T) {
 	sanitizer := NewInputSanitizer()
 
 	tests := []struct {
-		name  string
-		test  func(t *testing.T)
+		name string
+		test func(t *testing.T)
 	}{
 		{
 			name: "very_large_input",
@@ -534,9 +413,9 @@ func TestFilePath_EdgeCases(t *testing.T) {
 	sanitizer := NewInputSanitizer()
 
 	tests := []struct {
-		name     string
-		path     string
-		wantErr  bool
+		name    string
+		path    string
+		wantErr bool
 	}{
 		{
 			name:    "empty_path",
