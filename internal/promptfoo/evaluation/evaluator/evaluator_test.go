@@ -1,12 +1,16 @@
 package evaluator
 
 import (
+	"context"
+	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tmc/pe/internal/distributed"
+	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/promptfoo"
 )
 
@@ -432,4 +436,137 @@ func TestEvaluate_DistributedConsensusFromWorkflowResults(t *testing.T) {
 	assert.Equal(t, "4", consensus.Output)
 	assert.Equal(t, 3, consensus.Weight)
 	assert.Equal(t, []string{"a", "b", "c"}, consensus.Providers)
+}
+
+func TestEvaluate_DistributedRunLocalMaxConcurrency(t *testing.T) {
+	var running int32
+	var maxRunning int32
+	registerEvaluatorTestProvider("limit", func(model string, options map[string]interface{}) llm.Provider {
+		return evaluatorTestProvider{
+			name: "limit",
+			evaluate: func(ctx context.Context, prompt string, vars map[string]interface{}) (*promptfoo.ProviderResponse, error) {
+				n := atomic.AddInt32(&running, 1)
+				defer atomic.AddInt32(&running, -1)
+				for {
+					old := atomic.LoadInt32(&maxRunning)
+					if n <= old || atomic.CompareAndSwapInt32(&maxRunning, old, n) {
+						break
+					}
+				}
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-time.After(10 * time.Millisecond):
+				}
+				return evaluatorTestResponse(prompt), nil
+			},
+		}
+	})
+
+	config := promptfoo.Config{
+		Prompts: []string{"p0", "p1", "p2", "p3", "p4"},
+		Providers: []promptfoo.ProviderConfig{
+			{ID: "limit"},
+		},
+		Tests: []promptfoo.TestCase{
+			{Vars: map[string]interface{}{}},
+		},
+	}
+
+	result, err := Evaluate(config, time.Second, false, 2, false)
+	require.NoError(t, err)
+	require.Len(t, result.Results.Results, 5)
+	assert.LessOrEqual(t, maxRunning, int32(2))
+	for i, r := range result.Results.Results {
+		assert.Equal(t, fmt.Sprintf("p%d", i), r.Prompt["label"])
+	}
+}
+
+func TestEvaluate_DistributedRunLocalKeepsPartialProviderErrors(t *testing.T) {
+	registerEvaluatorTestProvider("partial-ok", func(model string, options map[string]interface{}) llm.Provider {
+		return evaluatorTestProvider{
+			name: "partial-ok",
+			evaluate: func(ctx context.Context, prompt string, vars map[string]interface{}) (*promptfoo.ProviderResponse, error) {
+				return evaluatorTestResponse("ok"), nil
+			},
+		}
+	})
+	registerEvaluatorTestProvider("partial-error", func(model string, options map[string]interface{}) llm.Provider {
+		return evaluatorTestProvider{
+			name: "partial-error",
+			evaluate: func(ctx context.Context, prompt string, vars map[string]interface{}) (*promptfoo.ProviderResponse, error) {
+				return nil, fmt.Errorf("provider exploded")
+			},
+		}
+	})
+
+	config := promptfoo.Config{
+		Prompts: []string{"prompt"},
+		Providers: []promptfoo.ProviderConfig{
+			{ID: "partial-ok"},
+			{ID: "partial-error"},
+		},
+		Tests: []promptfoo.TestCase{
+			{Vars: map[string]interface{}{}},
+		},
+	}
+
+	result, err := Evaluate(config, time.Second, false, 2, false)
+	require.NoError(t, err)
+	require.Len(t, result.Results.Results, 1)
+	assert.Equal(t, "partial-ok", result.Results.Results[0].Provider["id"])
+	assert.Equal(t, 1, result.Results.Stats.Errors)
+	assert.Equal(t, 1, result.Results.Stats.Successes)
+}
+
+type evaluatorTestProvider struct {
+	name     string
+	evaluate func(context.Context, string, map[string]interface{}) (*promptfoo.ProviderResponse, error)
+}
+
+func registerEvaluatorTestProvider(name string, factory func(string, map[string]interface{}) llm.Provider) {
+	llm.RegisterProviderFactory(name, func(model string, options map[string]interface{}) (llm.Provider, error) {
+		return factory(model, options), nil
+	})
+}
+
+func (p evaluatorTestProvider) EvaluatePrompt(ctx context.Context, prompt string, vars map[string]interface{}) (*promptfoo.ProviderResponse, error) {
+	return p.evaluate(ctx, prompt, vars)
+}
+
+func (p evaluatorTestProvider) Name() string {
+	return p.name
+}
+
+func (p evaluatorTestProvider) Model() string {
+	return "test"
+}
+
+func (p evaluatorTestProvider) Generate(ctx context.Context, prompt string, options llm.GenerateOptions) (*llm.GenerateResponse, error) {
+	resp, err := p.evaluate(ctx, prompt, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &llm.GenerateResponse{Text: resp.Output}, nil
+}
+
+func (p evaluatorTestProvider) SupportsStreaming() bool {
+	return false
+}
+
+func (p evaluatorTestProvider) SupportsBatch() bool {
+	return false
+}
+
+func evaluatorTestResponse(output string) *promptfoo.ProviderResponse {
+	return &promptfoo.ProviderResponse{
+		Output: output,
+		TokenUsage: &promptfoo.TokenUsage{
+			Total:       1,
+			Prompt:      1,
+			Completion:  0,
+			NumRequests: 1,
+		},
+		LatencyMs: 1,
+	}
 }
