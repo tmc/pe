@@ -151,6 +151,8 @@ func (ae *AssertionEvaluator) EvaluateAssertion(ctx context.Context, assertion A
 		result = ae.evaluateStructure(assertion, output)
 	case AssertionPassAtN:
 		result = ae.evaluatePassAtN(ctx, assertion, output, metadata)
+	case AssertionStructuredOutput:
+		result = ae.evaluateStructuredOutput(assertion, output)
 	default:
 		return nil, fmt.Errorf("unsupported assertion type: %s", assertion.Type)
 	}
@@ -850,6 +852,15 @@ func (ae *AssertionEvaluator) evaluateStructure(assertion Assertion, output stri
 		Score:   0.0,
 		Message: "Structure evaluation not yet implemented (coming in future release)",
 	}
+}
+
+func (ae *AssertionEvaluator) evaluateStructuredOutput(assertion Assertion, output string) *AssertionResult {
+	result := ae.evaluateJSON(assertion, output)
+	result.Type = assertion.Type
+	if result.Passed {
+		result.Message = "Valid structured output"
+	}
+	return result
 }
 
 func (ae *AssertionEvaluator) evaluatePassAtN(ctx context.Context, assertion Assertion, output string, metadata map[string]interface{}) *AssertionResult {

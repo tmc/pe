@@ -75,6 +75,56 @@ func TestEvaluateAssertionsKeepsPromptfooAssertionProvider(t *testing.T) {
 	assert.Equal(t, "openai:gpt-4o-mini", grading.ComponentResults[0].Assertion.Provider)
 }
 
+func TestAssertionEvaluatorCoversAllAssertionTypes(t *testing.T) {
+	max := 1.0
+	min := 1.0
+	threshold := 0.5
+	evaluator := NewAssertionEvaluator(&assertionJudgeTestProvider{
+		name:     "judge",
+		model:    "test",
+		response: "SCORE: 9\nREASONING: ok",
+	})
+
+	tests := []struct {
+		name      string
+		assertion Assertion
+		output    string
+		metadata  map[string]interface{}
+	}{
+		{"contains", Assertion{Type: AssertionContains, Value: "answer"}, "answer", nil},
+		{"equals", Assertion{Type: AssertionEquals, Value: "answer"}, "answer", nil},
+		{"matches", Assertion{Type: AssertionMatches, Value: `ans.er`}, "answer", nil},
+		{"length", Assertion{Type: AssertionLength, Min: &min}, "answer", nil},
+		{"not contains", Assertion{Type: AssertionNotContains, Value: "missing"}, "answer", nil},
+		{"readability", Assertion{Type: AssertionReadability, Threshold: &threshold}, "This is a short readable sentence.", nil},
+		{"sentiment", Assertion{Type: AssertionSentiment, Value: "neutral"}, "fine", nil},
+		{"toxicity", Assertion{Type: AssertionToxicity}, "answer", nil},
+		{"coherence", Assertion{Type: AssertionCoherence}, "answer", nil},
+		{"factuality", Assertion{Type: AssertionFactuality}, "answer", nil},
+		{"llm judge", Assertion{Type: AssertionLLMJudge, Value: "be correct", Threshold: &threshold}, "answer", nil},
+		{"classify", Assertion{Type: AssertionClassify}, "answer", nil},
+		{"similarity", Assertion{Type: AssertionSimilarity}, "answer", nil},
+		{"latency", Assertion{Type: AssertionLatency, Max: &max}, "answer", map[string]interface{}{"latency": 10 * time.Millisecond}},
+		{"cost", Assertion{Type: AssertionCost, Max: &max}, "answer", map[string]interface{}{"cost": 0.01}},
+		{"tokens", Assertion{Type: AssertionTokens, Max: &max}, "answer", map[string]interface{}{"tokens": 1}},
+		{"json", Assertion{Type: AssertionJSON}, `{"answer":true}`, nil},
+		{"sql", Assertion{Type: AssertionSQL}, "select 1", nil},
+		{"code", Assertion{Type: AssertionCode, Threshold: &threshold, Config: map[string]interface{}{"language": "go"}}, "package main", nil},
+		{"structure", Assertion{Type: AssertionStructure}, "answer", nil},
+		{"pass at n", Assertion{Type: AssertionPassAtN, Threshold: &threshold, Config: map[string]interface{}{"n": float64(2)}}, "answer", map[string]interface{}{"samples": []string{"answer", "other"}}},
+		{"structured output", Assertion{Type: AssertionStructuredOutput}, `{"answer":true}`, nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := evaluator.EvaluateAssertion(context.Background(), tt.assertion, tt.output, tt.metadata)
+			require.NoError(t, err)
+			require.NotNil(t, result)
+			assert.Equal(t, tt.assertion.Type, result.Type)
+		})
+	}
+}
+
 func TestAssertionEvaluatorLLMJudgeUsesProviderOverride(t *testing.T) {
 	const providerName = "assertiontestjudge"
 
