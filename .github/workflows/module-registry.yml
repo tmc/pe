@@ -1,0 +1,33 @@
+name: Module Registry
+
+on:
+  push:
+    paths:
+      - 'examples/modules/**'
+      - 'docs/module-registry.md'
+      - '.github/workflows/module-registry.yml'
+  pull_request:
+    paths:
+      - 'examples/modules/**'
+      - 'docs/module-registry.md'
+      - '.github/workflows/module-registry.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.9'
+
+      - name: Test module packages
+        run: go test ./internal/module ./cmd/pe
+
+      - name: Validate module template policy
+        working-directory: examples/modules/templates/basic-module
+        run: go run ../../../../cmd/pe mod vet prompts/review.pe
+
+      - name: Validate registry seed JSON
+        run: go test ./cmd/pe -run TestModuleRegistrySeed -count=1

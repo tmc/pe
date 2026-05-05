@@ -697,6 +697,30 @@ func TestModAuditCmd_FindsVulnerabilities(t *testing.T) {
 	}
 }
 
+func TestModuleRegistrySeed(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "examples", "modules", "templates", "registry-seed", "modules.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var modules []module.Module
+	if err := json.Unmarshal(data, &modules); err != nil {
+		t.Fatalf("decode registry seed: %v", err)
+	}
+	if len(modules) == 0 {
+		t.Fatal("registry seed is empty")
+	}
+	for _, mod := range modules {
+		if mod.Name == "" || mod.Version == "" || len(mod.Files) == 0 {
+			t.Fatalf("incomplete registry seed module: %+v", mod)
+		}
+		for _, file := range mod.Files {
+			if _, err := os.Stat(filepath.Join("..", "..", "examples", "modules", "templates", "basic-module", file)); err != nil {
+				t.Fatalf("seed file %s: %v", file, err)
+			}
+		}
+	}
+}
+
 func writeVerifyPeMod(t *testing.T) {
 	t.Helper()
 	data := []byte("module example.com/app\n\npe 1\n\nrequire example.com/mod v1.0.0\n")

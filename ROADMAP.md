@@ -1252,7 +1252,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Create registry documentation
 - [x] Publish core modules
 - [x] Create example modules
-- [ ] Set up CI/CD for module publishing
+- [x] Set up CI/CD for module publishing
 - [x] Add module templates
 
 #### Phase 3: Command Architecture Reorganization (Week 5)
