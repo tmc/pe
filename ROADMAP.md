@@ -1594,12 +1594,12 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add recovery metrics
 
 ##### Error Handling Updates
-- [ ] Update provider error handling
-- [ ] Update command error handling
-- [ ] Update optimization error handling
-- [ ] Update evaluation error handling
-- [ ] Update module error handling
-- [ ] Add consistent error logging
+- [x] Update provider error handling
+- [x] Update command error handling
+- [x] Update optimization error handling
+- [x] Update evaluation error handling
+- [x] Update module error handling
+- [x] Add consistent error logging
 
 ##### Error Reporting
 - [x] Create error reporting framework
