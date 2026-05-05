@@ -1181,8 +1181,8 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Update all import statements
 - [ ] Fix compilation errors
 - [x] Run full test suite
-- [ ] Manual testing of critical paths
-- [ ] Performance regression testing
+- [x] Manual testing of critical paths
+- [x] Performance regression testing
 - [x] Update documentation
 
 #### Phase 2: Module System Implementation (Weeks 3-4)
