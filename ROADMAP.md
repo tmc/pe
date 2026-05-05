@@ -1158,7 +1158,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Update `cmd/pe/eval.go` for evaluation commands
 - [x] Update `cmd/pe/optimize.go` and optimization commands
 - [x] Update `cmd/pe/semantic.go` for semantic optimization
-- [ ] Update `cmd/pe/evolve.go` for evolutionary optimization
+- [x] Update `cmd/pe/evolve.go` for evolutionary optimization
 - [ ] Update `cmd/pe/textgrad.go` for textual gradient optimization
 - [ ] Update `cmd/pe/pe2.go` for PE2 optimization
 - [ ] Update `cmd/pe/benchmark.go` for benchmarking

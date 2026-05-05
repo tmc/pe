@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/tmc/pe/internal/inference"
 	"github.com/tmc/pe/internal/metaprompt"
-	"github.com/tmc/pe/internal/providers"
 )
 
 func evolveCmd() *cobra.Command {
@@ -85,10 +85,15 @@ func runEvolve(cmd *cobra.Command, args []string) error {
 	}
 	basePrompt := string(promptBytes)
 
-	// Create provider
-	provider, err := providers.CreateProvider(evolveProvider, map[string]interface{}{})
+	// Create provider through the inference migration path, adapting only at
+	// the evolutionary optimizer boundary.
+	inferenceProvider, err := inference.CreateProviderFromSpec(evolveProvider, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create provider: %w", err)
+	}
+	provider, err := inference.AsLegacyProvider(inferenceProvider, "")
+	if err != nil {
+		return fmt.Errorf("failed to adapt provider: %w", err)
 	}
 
 	// Parse objectives
