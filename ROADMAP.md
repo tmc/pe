@@ -186,7 +186,7 @@ Current status:
 
 Remaining tasks:
 1. Triage gosec G204 and G304 findings
-2. Add or update a concise SECURITY.md disclosure policy
+2. DONE: Add or update a concise SECURITY.md disclosure policy
 3. Review file path traversal protections in config expansion, Starlark loading,
    modules, and metadata paths
 4. DONE: Review provider stderr/body error propagation for secret redaction
@@ -313,9 +313,8 @@ Current status:
 - `exp` contains the integrated distributed scheduler, stats/diff regression
   gates, module tidy JSON/write behavior, localhost `serve`, experimental
   optimize, and unsigned attest/cache work.
-- `cmd/pe/serve.go` already sets `ReadHeaderTimeout`, `ReadTimeout`,
-  `WriteTimeout`, and `IdleTimeout`; stale security-review text still says
-  local HTTP server timeout work may be incomplete.
+- `cmd/pe/serve.go` sets `ReadHeaderTimeout`, `ReadTimeout`, `WriteTimeout`,
+  and `IdleTimeout`; `docs/SECURITY_REVIEW.md` records that current behavior.
 - `pe exp attest manifest` and `pe exp attest verify` are wired; future
   attestation work should focus on signatures and trust, not basic manifest
   command wiring.
@@ -327,10 +326,11 @@ Release blockers:
 2. Update command documentation from generated help for `pe diff`, `pe serve`,
    `pe mod tidy`, `pe exp optimize`, `pe exp attest`, and `pe exp cache`.
    Verification: `go run ./cmd/pe <command> --help`.
-3. Reconcile `docs/SECURITY_REVIEW.md` with current `cmd/pe/serve.go`
+3. DONE: Reconcile `docs/SECURITY_REVIEW.md` with current `cmd/pe/serve.go`
    timeout behavior and the unsigned/local-only attest/cache caveats.
-   Verification: `rg 'ReadTimeout|WriteTimeout|IdleTimeout' cmd/pe/serve.go`
-   and `go run ./cmd/pe exp attest --help`.
+   Verification: `rg 'ReadTimeout|WriteTimeout|IdleTimeout' cmd/pe/serve.go`,
+   `go run ./cmd/pe exp attest --help`, and
+   `go run ./cmd/pe exp cache --help`.
 4. Add release-facing examples for the new local workflows:
    `pe diff --fail-on-regression`, `pe mod tidy --json --write`,
    `pe exp attest manifest/verify`, and `pe exp cache manifest put/verify`.
