@@ -13,15 +13,18 @@ import (
 // Resolver handles module resolution and dependency management
 type Resolver struct {
 	registry Registry
-	cache    *Cache
+	cache    ModuleCache
+	cacheDir string
 	lockFile *LockFile
 }
 
 // NewResolver creates a new module resolver
 func NewResolver(registry Registry, cacheDir string) *Resolver {
+	cache := NewCache(cacheDir)
 	return &Resolver{
 		registry: registry,
-		cache:    NewCache(cacheDir),
+		cache:    cache,
+		cacheDir: cache.dir,
 		lockFile: &LockFile{},
 	}
 }
@@ -46,7 +49,7 @@ func (r *Resolver) Resolve(moduleName string, version string) (*Module, error) {
 	}
 
 	// Download to cache
-	if err := r.registry.Download(module, r.cache.dir); err != nil {
+	if err := r.registry.Download(module, r.cacheDir); err != nil {
 		return nil, fmt.Errorf("failed to download module %s: %w", moduleName, err)
 	}
 
@@ -80,6 +83,15 @@ func (r *Resolver) isVersionCompatible(moduleVersion, constraint string) bool {
 		return false
 	}
 	return vc.Matches(moduleVersion)
+}
+
+// ModuleCache stores resolved module metadata.
+type ModuleCache interface {
+	Get(name, version string) (*Module, error)
+	Put(module *Module) error
+	Invalidate(name, version string) error
+	InvalidateModule(name string) error
+	Clear() error
 }
 
 // Cache manages local module cache
@@ -144,6 +156,10 @@ func (c *Cache) modulePath(name, version string) (string, error) {
 	return containedPath(c.dir, name, version, "module.json")
 }
 
+func (c *Cache) moduleDir(name, version string) (string, error) {
+	return containedPath(c.dir, name, version)
+}
+
 func containedPath(base string, elems ...string) (string, error) {
 	for _, elem := range elems {
 		if elem == "" || filepath.IsAbs(elem) {
@@ -172,6 +188,30 @@ func containedPath(base string, elems ...string) (string, error) {
 // Clear removes all cached modules
 func (c *Cache) Clear() error {
 	return os.RemoveAll(c.dir)
+}
+
+// Invalidate removes one cached module version.
+func (c *Cache) Invalidate(name, version string) error {
+	dir, err := c.moduleDir(name, version)
+	if err != nil {
+		return err
+	}
+	if err := os.RemoveAll(dir); err != nil {
+		return fmt.Errorf("failed to invalidate module %s@%s: %w", name, version, err)
+	}
+	return nil
+}
+
+// InvalidateModule removes all cached versions of a module.
+func (c *Cache) InvalidateModule(name string) error {
+	dir, err := containedPath(c.dir, name)
+	if err != nil {
+		return err
+	}
+	if err := os.RemoveAll(dir); err != nil {
+		return fmt.Errorf("failed to invalidate module %s: %w", name, err)
+	}
+	return nil
 }
 
 // LockFile manages module lock files (similar to go.sum)

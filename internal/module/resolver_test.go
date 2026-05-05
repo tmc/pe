@@ -109,6 +109,50 @@ func TestCache_Clear(t *testing.T) {
 	}
 }
 
+func TestCache_Invalidate(t *testing.T) {
+	tmpDir := t.TempDir()
+	cache := NewCache(tmpDir)
+	module := &Module{Name: "test-module", Version: "v1.0.0"}
+	if err := cache.Put(module); err != nil {
+		t.Fatalf("Put failed: %v", err)
+	}
+	if err := cache.Invalidate(module.Name, module.Version); err != nil {
+		t.Fatalf("Invalidate failed: %v", err)
+	}
+	if _, err := cache.Get(module.Name, module.Version); err == nil {
+		t.Fatal("expected cache miss after invalidation")
+	}
+}
+
+func TestCache_InvalidateModule(t *testing.T) {
+	tmpDir := t.TempDir()
+	cache := NewCache(tmpDir)
+	for _, version := range []string{"v1.0.0", "v1.1.0"} {
+		if err := cache.Put(&Module{Name: "test-module", Version: version}); err != nil {
+			t.Fatalf("Put %s failed: %v", version, err)
+		}
+	}
+	if err := cache.InvalidateModule("test-module"); err != nil {
+		t.Fatalf("InvalidateModule failed: %v", err)
+	}
+	for _, version := range []string{"v1.0.0", "v1.1.0"} {
+		if _, err := cache.Get("test-module", version); err == nil {
+			t.Fatalf("expected cache miss for %s after module invalidation", version)
+		}
+	}
+}
+
+func TestCache_InvalidateRejectsTraversal(t *testing.T) {
+	tmpDir := t.TempDir()
+	cache := NewCache(tmpDir)
+	if err := cache.Invalidate("../escape", "v1.0.0"); err == nil {
+		t.Fatal("Invalidate traversal module succeeded")
+	}
+	if err := cache.InvalidateModule("../escape"); err == nil {
+		t.Fatal("InvalidateModule traversal module succeeded")
+	}
+}
+
 func TestLockFile_LoadAndSave(t *testing.T) {
 	tmpDir := t.TempDir()
 	lockPath := filepath.Join(tmpDir, "pe.lock")

@@ -1212,9 +1212,9 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Implement module path parsing
 - [x] Add version constraint parsing
 - [x] Implement semantic version comparison
-- [ ] Add module cache interface
+- [x] Add module cache interface
 - [x] Implement file-based cache
-- [ ] Add cache invalidation logic
+- [x] Add cache invalidation logic
 - [x] Implement module download functionality
 
 ##### Dependency Management
