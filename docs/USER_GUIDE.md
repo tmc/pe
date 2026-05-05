@@ -140,7 +140,7 @@ pe exp attest --help
 Automatically optimize your prompts using advanced techniques (like PE2, APEX):
 
 ```bash
-pe optimize --prompt prompt.txt --method apex
+pe experimental optimize --prompt prompt.txt --method apex
 ```
 
 ## 8. Command Reference Summary

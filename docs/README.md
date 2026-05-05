@@ -1,10 +1,14 @@
 # PE Documentation
 
-PE is a prompt engineering toolkit inspired by the Go toolchain. This documentation reflects the current implementation status as of March 2026.
+PE is a prompt engineering toolkit inspired by the Go toolchain. This
+documentation reflects the current implementation status as of May 2026.
 
 ## Current Implementation Status
 
-PE is **under active development**. Many features documented elsewhere are aspirational or incomplete. This README provides accurate information about what is currently implemented.
+PE is **under active development**. [../ROADMAP.md](../ROADMAP.md) is the
+source of truth for planned work, and
+[TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md) is the source of truth for
+coverage numbers.
 
 ## Quick Start
 
@@ -57,9 +61,9 @@ See [TEMPLATE_SYNTAX.md](TEMPLATE_SYNTAX.md) for details.
 - **`pe analyze`** - Analyze results with statistics ✅ **IMPLEMENTED**
 
 ### Optimization & Composition
-- **`pe optimize`** - Optimize prompts using metaprompting ✅ **IMPLEMENTED**
-- **`pe semantic`** - Semantic gradient descent optimization ✅ **IMPLEMENTED**
-- **`pe evolve`** - Evolutionary prompt optimization ✅ **IMPLEMENTED**
+- **`pe experimental optimize`** - Optimize prompts using metaprompting ⚠️ **EXPERIMENTAL**
+- **`pe experimental semantic`** - Semantic gradient descent optimization ⚠️ **EXPERIMENTAL**
+- **`pe experimental evolve`** - Evolutionary prompt optimization ⚠️ **EXPERIMENTAL**
 - **`pe experimental compose`** - Component-based prompt composition ✅ **IMPLEMENTED**
 
 ### Module System
@@ -74,7 +78,7 @@ See [TEMPLATE_SYNTAX.md](TEMPLATE_SYNTAX.md) for details.
 
 ### Utilities
 - **`pe extract`** - Extract structured data from prompts ✅ **IMPLEMENTED**
-- **`pe metrics`** - Calculate evaluation metrics ✅ **IMPLEMENTED**
+- **`pe experimental metrics`** - Calculate advanced evaluation metrics ⚠️ **EXPERIMENTAL**
 - **`pe template`** - Manage prompt templates ✅ **IMPLEMENTED**
 - **`pe profile`** - Profiling and observability ✅ **IMPLEMENTED**
 - **`pe interactive`** - Interactive REPL mode ✅ **IMPLEMENTED**
@@ -123,13 +127,13 @@ All documents in [future/](future/) directory describe planned features that are
 1. **Core Evaluation**: Full promptfoo-compatible evaluation system
 2. **Pipeline Commands**: Unix-style commands for composability
 3. **Module System**: Go mod-style dependency management with gist registry
-4. **Attestation**: Cryptographic signing and verification
+4. **Attestation**: Prototype command group under `pe exp attest`
 5. **Plugin System**: Runtime plugin discovery and execution
 6. **Optimization**: Basic metaprompting techniques (PE2, TextGrad, etc.)
 
 ### Major Limitations
 1. **Provider Integration**: Native providers implemented but cgpt still default for compatibility
-2. **Test Coverage**: Improved to ~25% with new test files added
+2. **Test Coverage**: Measured at 40.8% overall; see [TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md)
 3. **Documentation Accuracy**: Documentation reorganized to separate current vs future features
 4. **Distributed System**: Core implementation complete, CLI integration in progress
 5. **Advanced Features**: Many "world-class" features are designs, not implementations
@@ -167,8 +171,8 @@ tests:
 ## Examples
 
 Basic examples are available in:
-- [../example/](../example/) - Working examples
-- [../examples/](../examples/) - Additional examples
+- [../examples/](../examples/) - Working examples
+- [../example/](../example/) - Legacy example package
 - [future/EXAMPLES_LIBRARY.md](future/EXAMPLES_LIBRARY.md) - Comprehensive examples (planned)
 
 ## Getting Help
@@ -181,16 +185,16 @@ Basic examples are available in:
 
 PE is under active development. The most helpful contributions:
 
-1. **Test Coverage**: Improve test coverage from current ~15%
+1. **Test Coverage**: Improve coverage from the current measured 40.8% baseline
 2. **Provider Integration**: Complete native provider implementations
 3. **Documentation Accuracy**: Fix gaps between docs and implementation
 4. **Core Features**: Complete partially implemented features
 
-## Recent Improvements (February 2025)
+## Recent Improvements
 
 - **Native Provider Support**: Added direct API integrations for OpenAI and Anthropic
 - **Go Benchmark Format**: Added `--go-bench` flag for compatibility with Go perf tools
-- **Test Coverage**: Expanded test suite across core packages (~25% coverage)
+- **Test Coverage**: Captured a measured 40.8% baseline in [TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md)
 - **Distributed Systems**: Implemented consensus and distributed execution frameworks
 - **Documentation**: Reorganized to clearly separate implemented vs planned features
 - **Security**: Added comprehensive security architecture documentation

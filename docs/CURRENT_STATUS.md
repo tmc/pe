@@ -1,10 +1,12 @@
 # PE Current Implementation Status
 
-Last Updated: 2026-03-02
+Last Updated: 2026-05-05
 
 ## Overview
 
-PE is a prompt engineering toolkit with 47 implemented commands. This document provides an accurate assessment of what works, what's partially implemented, and what's planned.
+PE is a prompt engineering toolkit with a generated top-level command surface. This
+document summarizes the current implementation; [../ROADMAP.md](../ROADMAP.md)
+is the source of truth for planned work and release-blocking follow-ups.
 
 ## Working Features ✅
 
@@ -49,9 +51,9 @@ PE is a prompt engineering toolkit with 47 implemented commands. This document p
 - ✅ **mock** - For testing
 
 ### Optimization Commands
-- `pe optimize` - Multiple optimization methods
-- `pe semantic` - Semantic backpropagation
-- `pe evolve` - Evolutionary optimization
+- `pe experimental optimize` - Multiple optimization methods
+- `pe experimental semantic` - Semantic backpropagation
+- `pe experimental evolve` - Evolutionary optimization
 - `pe experimental compose` - Component composition in experimental command group
 
 ## Important Implementation Details
@@ -77,7 +79,7 @@ pe ask "prompt" --provider cgpt  # Uses cgpt CLI
 - Sample modules included (greeting, math)
 - Download functionality actually works (not mock)
 
-## Recent Fixes (2025-01-08)
+## Recent Release-Prep Fixes
 
 1. **pe vet Stack Overflow** - Fixed recursive command execution
 2. **pe view JSON Schema** - Confirmed working with proper format
@@ -114,10 +116,15 @@ Core implementation exists but CLI integration incomplete:
 
 ## Testing Coverage
 
-Current test coverage: ~40% overall
-- Providers: 70%+ coverage
-- Core packages: 40-50% coverage
-- Commands: 20-30% coverage
+The measured coverage baseline is tracked in
+[TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md):
+
+- Overall statement coverage: 40.8%
+- Native OpenAI provider: 74.0%
+- Native Anthropic provider: 73.3%
+- `cmd/pe`: 30.0%
+
+Use the coverage report instead of older approximate coverage claims.
 
 ## Configuration Examples
 
@@ -185,4 +192,7 @@ pe ask "What is 2+2?" --provider cgpt
 
 ## Summary
 
-PE has a solid core with 47 working commands. The evaluation framework, pipeline commands, and module system all work. Recent fixes have resolved critical issues. The main gap is between documentation (which is aspirational) and implementation (which is functional but more limited).
+PE has a solid core with a generated top-level command surface. The evaluation
+framework, pipeline commands, and module system all work. The main release risk
+is documentation and example drift: some older documents still mix current
+behavior with planned features tracked in [../ROADMAP.md](../ROADMAP.md).

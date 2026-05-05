@@ -8,7 +8,8 @@ Learn PE through hands-on exercises and real-world projects. This tutorial takes
 1. A customer sentiment analysis system
 2. An automated code review assistant  
 3. A multi-lingual content generation pipeline
-4. A distributed evaluation system
+4. A production evaluation workflow that inspects the distributed and
+   attestation prototype command groups
 
 **What you'll learn:**
 - Core PE concepts and workflows
@@ -20,6 +21,10 @@ Learn PE through hands-on exercises and real-world projects. This tutorial takes
 - PE installed (`go install github.com/tmc/pe/cmd/pe@latest`)
 - API key for at least one provider (OpenAI, Anthropic, or Ollama setup)
 - Basic command line knowledge
+
+Advanced chapters use experimental command groups. Check `pe --help`,
+`pe experimental --help`, and `pe exp --help` before copying commands into
+automation.
 
 ---
 
@@ -493,20 +498,16 @@ EOF
 ```bash
 # Run with multiple providers for comparison
 pe eval evaluations/code-review-eval.yaml \
-  --providers openai,anthropic \
-  --compare-providers \
   --output results/code-review-results.json
 
 # Generate comparative analysis
 pe analyze results/code-review-results.json \
-  --compare-providers \
-  --metrics accuracy,consistency,detail_level \
-  --output results/provider-comparison.html
+  --metrics readability,sentiment \
+  --format json
 
 # Run performance benchmarking
 pe benchmark evaluations/code-review-eval.yaml \
   --iterations 10 \
-  --metrics latency,tokens-per-second,cost \
   --output results/performance-benchmark.json
 ```
 
@@ -709,7 +710,7 @@ pe analyze results/baseline-content.json \
 
 ```bash
 # Optimize for persuasiveness and cultural appropriateness
-pe optimize prompts/content-generation.prompt \
+pe experimental optimize --prompt prompts/content-generation.prompt \
   --target "improve persuasiveness and cultural sensitivity" \
   --eval-config evaluations/content-generation-eval.yaml \
   --method semantic-backprop \
@@ -718,14 +719,11 @@ pe optimize prompts/content-generation.prompt \
 
 # Compare optimized vs baseline
 pe eval evaluations/content-generation-eval.yaml \
-  --prompts prompts/content-generation.prompt,prompts/optimized-content-generation.prompt \
-  --compare \
   --output results/optimization-comparison.json
 
 pe analyze results/optimization-comparison.json \
-  --compare-prompts \
-  --metrics improvement,consistency,quality \
-  --output results/optimization-analysis.html
+  --metrics readability,sentiment \
+  --format json
 ```
 
 #### Step 5: Advanced Semantic Optimization
@@ -767,7 +765,7 @@ cat > configs/multi-objective-optimization.json << 'EOF'
 EOF
 
 # Run GASO optimization
-pe semantic gaso \
+pe experimental semantic gaso \
   --system configs/multi-objective-optimization.json \
   --objective "content generation quality" \
   --eval-config evaluations/content-generation-eval.yaml \
@@ -776,8 +774,6 @@ pe semantic gaso \
 
 # Comprehensive comparison
 pe eval evaluations/content-generation-eval.yaml \
-  --prompts prompts/content-generation.prompt,prompts/optimized-content-generation.prompt,prompts/gaso-optimized-content.prompt \
-  --compare-all \
   --output results/comprehensive-comparison.json
 
 pe analyze results/comprehensive-comparison.json \
@@ -848,8 +844,6 @@ EOF
 
 # Run comprehensive multi-language evaluation
 pe eval evaluations/multi-language-eval.yaml \
-  --providers openai,anthropic \
-  --compare-providers \
   --output results/multi-language-results.json
 
 # Generate detailed report
@@ -866,7 +860,8 @@ pe analyze results/multi-language-results.json \
 
 ### Project: Distributed Evaluation System
 
-Build a production-ready system with distributed evaluation, monitoring, and attestation.
+Build a production evaluation workflow and inspect the prototype distributed
+execution, monitoring, and attestation surfaces.
 
 #### Step 1: Production Configuration
 
@@ -1122,18 +1117,13 @@ health_checks:
     timeout: 10s
 EOF
 
-# Start monitoring
-pe monitor start \
-  --config configs/production/monitoring.yaml \
-  --dashboard \
-  --port 9090 &
+# Inspect profiling and monitoring tools
+pe profile --help
 
-# Run continuous health checks
+# Run a health-check evaluation
 pe eval evaluations/production-test-suite.yaml \
-  --continuous \
-  --interval 5m \
-  --monitor \
-  --alert-on-failure
+  --max-concurrency 20 \
+  --timeout 10m
 ```
 
 #### Step 6: Production Deployment Script
@@ -1157,8 +1147,8 @@ pe security scan prompts/ --config configs/production/security.yaml
 # 3. Run pre-deployment tests
 echo "🧪 Running pre-deployment tests..."
 pe eval evaluations/production-test-suite.yaml \
-  --fail-fast \
-  --threshold 0.95
+  --timeout 10m \
+  --output results/pre-deployment.json
 
 # 4. Start distributed cluster
 echo "🌐 Starting distributed cluster..."
@@ -1173,12 +1163,9 @@ pe eval evaluations/production-test-suite.yaml \
   --config configs/production/ \
   --output results/production-deployment-$(date +%Y%m%d-%H%M%S).json
 
-# 6. Start monitoring
-echo "📊 Starting monitoring..."
-pe monitor start \
-  --config configs/production/monitoring.yaml \
-  --dashboard \
-  --background
+# 6. Inspect profiling and monitoring tools
+echo "📊 Inspecting profiling tools..."
+pe profile --help
 
 # 7. Health check
 echo "🏥 Running final health check..."
@@ -1216,7 +1203,7 @@ echo "🔬 Starting AI Research & Development Workflow"
 
 # 1. Prompt Evolution
 echo "🧬 Evolving initial prompts..."
-pe evolve prompts/base-prompt.prompt \
+pe experimental evolve prompts/base-prompt.prompt \
   --generations 5 \
   --population 10 \
   --mutations creative,logical,technical \
@@ -1225,8 +1212,6 @@ pe evolve prompts/base-prompt.prompt \
 # 2. Automated Evaluation
 echo "📊 Evaluating evolved prompts..."
 pe eval evaluations/research-eval.yaml \
-  --prompts evolved-prompts/ \
-  --providers openai,anthropic,ollama \
   --output results/evolution-results.json
 
 # 3. Statistical Analysis
@@ -1241,7 +1226,7 @@ pe analyze results/evolution-results.json \
 echo "⚡ Optimizing best candidates..."
 best_prompts=$(pe analyze results/evolution-results.json --top 3 --output-list)
 for prompt in $best_prompts; do
-  pe optimize "$prompt" \
+  pe experimental optimize --prompt "$prompt" \
     --method semantic-backprop \
     --target "accuracy,efficiency,creativity" \
     --output "optimized-$(basename "$prompt")"
@@ -1250,8 +1235,6 @@ done
 # 5. Validation
 echo "✅ Validating optimized prompts..."
 pe eval evaluations/validation-suite.yaml \
-  --prompts optimized-*.prompt \
-  --statistical-validation \
   --output results/validation-results.json
 
 echo "🎯 Research workflow complete!"
@@ -1485,7 +1468,7 @@ echo "⚡ Optimizing prompts..."
 
 for prompt in prompts/base/*.prompt; do
   echo "Optimizing $(basename "$prompt")..."
-  pe optimize "$prompt" \
+  pe experimental optimize --prompt "$prompt" \
     --target "accuracy and efficiency" \
     --output "prompts/composed/optimized-$(basename "$prompt")"
 done
@@ -1531,7 +1514,7 @@ cat > docs/README.md << 'DOC_EOF'
 1. Create/modify prompts in `prompts/`
 2. Add tests in `evaluations/`
 3. Run evaluation: `pe eval evaluations/unit/`
-4. Optimize: `pe optimize prompts/your-prompt.prompt`
+4. Optimize: `pe experimental optimize --prompt prompts/your-prompt.prompt`
 5. Validate: `pe eval evaluations/integration/`
 
 ## Deployment
@@ -1565,8 +1548,6 @@ cd my-ai-assistant
 # 3. Test production deployment
 pe eval evaluations/integration/ \
   --config configs/production/ \
-  --distributed \
-  --attest \
   --output results/production/integration-test.json
 
 # 4. Generate comprehensive report
@@ -1616,6 +1597,6 @@ You've completed the comprehensive PE hands-on tutorial! You now have:
 - [API Reference](API_REFERENCE.md) - Complete command documentation
 - [Advanced Features](ADVANCED_FEATURES.md) - Deep dive into power features
 - [Architecture Guide](ARCHITECTURE.md) - Understanding PE internals
-- [Community Examples](../example/) - Real-world prompt libraries
+- [Community Examples](../examples/) - Real-world prompt libraries
 
 Happy building with PE! 🚀✨

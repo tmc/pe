@@ -25,10 +25,17 @@ Results:
 | Package paths reported by `go test -cover` | 41 |
 | Packages with statements | 37 |
 | Packages with no statements | 4 |
-| Test status | Pass |
+| Test status | Baseline pass; see note below |
 
 This supersedes older documentation claims that described overall coverage as
 either about 25% or about 40%.
+
+Note: the 40.8% baseline records the most recent passing measured run. During
+the release documentation audit, an uncached
+`go test -coverprofile=/tmp/pe-coverage.out ./...` run failed in the script
+tests because `tests/testdata/script/extract.txt` expected a `"tag":` JSON
+field that the current command output did not include. Re-run the baseline
+commands after that script expectation is reconciled.
 
 ## Low-Coverage Packages
 
