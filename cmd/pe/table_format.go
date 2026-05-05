@@ -225,8 +225,13 @@ func formatResultsAsEnhancedTable(results promptfoo.EvaluationResult) []byte {
 				if providerResults, ok := resultLookup[provider]; ok {
 					if result, ok := providerResults[prompt]; ok {
 						success, _ := result["success"].(bool)
-						response, _ := result["response"].(map[string]interface{})
-						output, _ := response["output"].(string)
+						output := ""
+						switch response := result["response"].(type) {
+						case promptfoo.ProviderResponse:
+							output = response.Output
+						case map[string]interface{}:
+							output, _ = response["output"].(string)
+						}
 
 						// Match promptfoo's PASS/FAIL format with spaces and color
 						status := "\x1b[32mPASS\x1b[39m" // Green PASS
