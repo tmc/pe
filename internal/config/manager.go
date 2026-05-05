@@ -334,6 +334,23 @@ func (cm *ConfigManager) applyCLIOverrides(config *Config) error {
 // setConfigValue sets a configuration value using dot notation (e.g., "providers.openai.api_key")
 func (cm *ConfigManager) setConfigValue(config *Config, key string, value interface{}) error {
 	keys := strings.Split(key, ".")
+	if len(keys) == 3 && keys[0] == "commands" {
+		if config.Commands == nil {
+			config.Commands = make(map[string]CommandConfig)
+		}
+		command := config.Commands[keys[1]]
+		v := reflect.ValueOf(&command).Elem()
+		field := cm.getFieldByName(v, keys[2])
+		if !field.IsValid() || !field.CanSet() {
+			return fmt.Errorf("cannot set config field %s", key)
+		}
+		if err := cm.setReflectValue(field, value); err != nil {
+			return fmt.Errorf("failed to convert value for %s: %w", key, err)
+		}
+		config.Commands[keys[1]] = command
+		return nil
+	}
+
 	v := reflect.ValueOf(config).Elem()
 
 	// Navigate to the target field

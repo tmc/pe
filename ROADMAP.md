@@ -1535,7 +1535,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 
 ##### Command Configuration
 - [ ] Update commands to use config manager
-- [ ] Add command-specific configs
+- [x] Add command-specific configs
 - [x] Implement config overrides
 - [x] Add config profiles
 - [x] Create config inheritance

@@ -43,6 +43,16 @@ type Config struct {
 
 	// Output and formatting
 	Output OutputConfig `yaml:"output" json:"output"`
+
+	// Command-specific settings
+	Commands map[string]CommandConfig `yaml:"commands" json:"commands"`
+}
+
+// CommandConfig contains settings for one CLI command.
+type CommandConfig struct {
+	Provider string                 `yaml:"provider,omitempty" json:"provider,omitempty"`
+	Timeout  time.Duration          `yaml:"timeout,omitempty" json:"timeout,omitempty"`
+	Options  map[string]interface{} `yaml:"options,omitempty" json:"options,omitempty"`
 }
 
 // AppConfig contains core application settings
@@ -539,6 +549,10 @@ func ValidateConfig(config *Config) error {
 		return fmt.Errorf("output config validation failed: %w", err)
 	}
 
+	if err := validateCommandConfigs(config.Commands); err != nil {
+		return fmt.Errorf("command config validation failed: %w", err)
+	}
+
 	return nil
 }
 
@@ -973,6 +987,18 @@ func validateCacheConfig(config *CacheConfig) error {
 	return nil
 }
 
+func validateCommandConfigs(commands map[string]CommandConfig) error {
+	for name, command := range commands {
+		if strings.TrimSpace(name) == "" {
+			return fmt.Errorf("command name cannot be empty")
+		}
+		if command.Timeout < 0 {
+			return fmt.Errorf("command %s timeout must be non-negative, got: %v", name, command.Timeout)
+		}
+	}
+	return nil
+}
+
 // DefaultConfig returns a configuration with all default values set
 func DefaultConfig() *Config {
 	return &Config{
@@ -1123,5 +1149,6 @@ func DefaultConfig() *Config {
 				MaxColumnWidth: 80,
 			},
 		},
+		Commands: make(map[string]CommandConfig),
 	}
 }
