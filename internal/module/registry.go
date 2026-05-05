@@ -39,6 +39,8 @@ type Registry interface {
 	Publish(module *Module, sourceDir string) error
 	// Search searches for modules matching a query
 	Search(query string) ([]*Module, error)
+	// Health checks whether the registry is reachable
+	Health() error
 }
 
 // Module represents a PE module
@@ -133,6 +135,23 @@ func (r *GitHubRegistry) List() ([]*Module, error) {
 	}
 
 	return modules, nil
+}
+
+// Health checks whether the GitHub registry is reachable.
+func (r *GitHubRegistry) Health() error {
+	req, err := http.NewRequest(http.MethodHead, fmt.Sprintf("https://api.github.com/repos/%s/%s", r.owner, r.repo), nil)
+	if err != nil {
+		return err
+	}
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("GitHub API returned status %d", resp.StatusCode)
+	}
+	return nil
 }
 
 // Get retrieves a specific module by name
@@ -248,6 +267,19 @@ func (r *HTTPRegistry) List() ([]*Module, error) {
 		return nil, err
 	}
 	return modules, nil
+}
+
+// Health checks whether the HTTP registry index is reachable.
+func (r *HTTPRegistry) Health() error {
+	resp, err := r.client.Get(r.baseURL + "/modules.json")
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("HTTP registry returned status %d", resp.StatusCode)
+	}
+	return nil
 }
 
 // Get retrieves a module by name from the HTTP registry.
@@ -386,6 +418,18 @@ func (r *LocalRegistry) List() ([]*Module, error) {
 	}
 
 	return modules, nil
+}
+
+// Health checks whether the local registry directory is accessible.
+func (r *LocalRegistry) Health() error {
+	info, err := os.Stat(r.rootDir)
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("registry path is not a directory")
+	}
+	return nil
 }
 
 // Get retrieves a specific module by name

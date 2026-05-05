@@ -111,3 +111,30 @@ func TestHTTPRegistryRejectsTraversal(t *testing.T) {
 		t.Fatalf("Download traversal module succeeded")
 	}
 }
+
+func TestHTTPRegistryHealth(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/modules.json" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = w.Write([]byte("[]"))
+	}))
+	defer server.Close()
+	if err := NewHTTPRegistry(server.URL).Health(); err != nil {
+		t.Fatalf("Health: %v", err)
+	}
+}
+
+func TestLocalRegistryHealth(t *testing.T) {
+	if err := NewLocalRegistry(t.TempDir()).Health(); err != nil {
+		t.Fatalf("Health: %v", err)
+	}
+	file := filepath.Join(t.TempDir(), "registry")
+	if err := os.WriteFile(file, []byte("not a dir"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := NewLocalRegistry(file).Health(); err == nil {
+		t.Fatalf("Health accepted file path")
+	}
+}

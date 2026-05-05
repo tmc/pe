@@ -1205,7 +1205,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Implement registry authentication
 - [x] Add module search functionality
 - [x] Implement module metadata fetching
-- [ ] Add registry health checks
+- [x] Add registry health checks
 
 ##### Module Resolution
 - [x] Create `internal/module/resolver.go`
