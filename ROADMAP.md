@@ -148,13 +148,15 @@ Consolidate and align README files.
 Current state:
 - README.md points to the generated CLI surface instead of owning a command
   count.
-- docs/README.md still contains stale status, date, and coverage claims.
+- docs/README.md now points to current status, release notes, changelog,
+  coverage, CLI help audit, migration, notice, security, and build-matrix
+  artifacts.
 
 Remaining tasks:
-1. Reconcile docs/README.md with README.md
+1. DONE: Reconcile docs/README.md with README.md
 2. Update badges and links
-3. Link to release notes and changelog from the documentation index
-4. Update contribution guidelines reference
+3. DONE: Link to release notes and changelog from the documentation index
+4. DONE: Update contribution guidelines reference
 
 Key sections to update:
 - Feature list with accurate status
