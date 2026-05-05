@@ -1375,12 +1375,12 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add timeout tests
 
 ##### Optimization Tests
-- [ ] Add textual gradient optimizer tests
-- [ ] Add PE2 optimizer tests
-- [ ] Add GASO optimizer tests
-- [ ] Add semantic optimizer tests
-- [ ] Add evolutionary optimizer tests
-- [ ] Test optimization convergence
+- [x] Add textual gradient optimizer tests
+- [x] Add PE2 optimizer tests
+- [x] Add GASO optimizer tests
+- [x] Add semantic optimizer tests
+- [x] Add evolutionary optimizer tests
+- [x] Test optimization convergence
 - [ ] Add property-based tests for optimization
 - [ ] Test optimization cancellation
 
