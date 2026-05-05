@@ -1424,11 +1424,11 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 
 ##### Property-Based Tests
 - [ ] Add quickcheck for optimization
-- [ ] Test template substitution properties
-- [ ] Test evaluation scoring properties
-- [ ] Test module resolution properties
+- [x] Test template substitution properties
+- [x] Test evaluation scoring properties
+- [x] Test module resolution properties
 - [ ] Test configuration validation
-- [ ] Test error handling properties
+- [x] Test error handling properties
 
 ##### Test Coverage
 - [ ] Set up coverage reporting
