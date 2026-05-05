@@ -27,10 +27,10 @@ Results:
 
 | Metric | Value |
 | --- | ---: |
-| Overall statement coverage | 47.6% |
+| Overall statement coverage | 48.8% |
 | Test status | Passing integrated branch |
-| Coverage CI | `.github/workflows/ci.yml` runs `go test -v -race -coverprofile=coverage.out ./...` |
-| Local coverage target | `make coverage` writes `coverage.out` and `coverage.html` |
+| Coverage CI | `.github/workflows/ci.yml` runs tests and `make coverage-check` |
+| Local coverage target | `make coverage-check` enforces the current floor; `make coverage` writes `coverage.out` and `coverage.html` |
 
 The 70% target is not met yet. Coverage is improving, but the next work should
 focus on command/plugin paths and packages with executable code that currently
@@ -67,7 +67,7 @@ expansion.
 | `github.com/tmc/pe/internal/optimization/optimizers` | 30.7% |
 | `github.com/tmc/pe/internal/llm` | 31.0% |
 | `github.com/tmc/pe/ext/starlark` | 38.0% |
-| `github.com/tmc/pe/cmd/pe` | 40.3% |
+| `github.com/tmc/pe/cmd/pe` | 40.6% |
 | `github.com/tmc/pe/internal/metaprompt` | 40.8% |
 | `github.com/tmc/pe/internal/optimization/adapters` | 44.6% |
 | `github.com/tmc/pe/plugins/promptfoo` | 46.4% |

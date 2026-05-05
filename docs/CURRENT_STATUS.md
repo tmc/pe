@@ -141,10 +141,10 @@ Basic assertions work, but these are incomplete:
 The measured coverage baseline is tracked in
 [TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md):
 
-- Overall statement coverage: 44.1%
+- Latest local coverage-check total: 48.8%
 - Native OpenAI provider: 74.0%
 - Native Anthropic provider: 73.3%
-- `cmd/pe`: 38.5%
+- `cmd/pe`: 40.6%
 
 Use the coverage report instead of older approximate coverage claims.
 

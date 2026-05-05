@@ -1436,7 +1436,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Add tests for uncovered code
 - [ ] Achieve 70% coverage target
 - [x] Set up coverage CI checks
-- [ ] Create coverage badges
+- [x] Create coverage badges
 
 #### Phase 5: Optimization Decoupling (Week 7)
 
@@ -1695,13 +1695,13 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 #### Cross-Cutting Concerns
 
 ##### Documentation Updates
-- [ ] Update architecture documentation
-- [ ] Update API documentation
-- [ ] Update command documentation
-- [ ] Create migration guides
-- [ ] Update examples
-- [ ] Add troubleshooting guides
-- [ ] Create contributor guides
+- [x] Update architecture documentation
+- [x] Update API documentation
+- [x] Update command documentation
+- [x] Create migration guides
+- [x] Update examples
+- [x] Add troubleshooting guides
+- [x] Create contributor guides
 
 ##### CI/CD Updates
 - [x] Update GitHub Actions workflows

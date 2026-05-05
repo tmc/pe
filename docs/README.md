@@ -20,6 +20,8 @@ source of truth for coverage numbers.
   reconciliation for the CLI reference.
 - [COMMAND_EXAMPLES_GUIDE.md](COMMAND_EXAMPLES_GUIDE.md) - command examples and
   workflow snippets.
+- [../examples/README.md](../examples/README.md) - current runnable examples and
+  validation commands.
 - [INSTALLATION.md](INSTALLATION.md) - installation and build notes.
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - common errors and fixes.
 - [../RELEASE_NOTES.md](../RELEASE_NOTES.md) - v0.5.0 release-candidate notes.
@@ -71,6 +73,7 @@ source of truth for coverage numbers.
   rollback, and post-release monitoring process.
 - [PROJECT_MANAGEMENT.md](PROJECT_MANAGEMENT.md) - project board, sprint,
   review, bug tracking, and validation process.
+- [../CONTRIBUTING.md](../CONTRIBUTING.md) - contributor guide.
 - [IMPLEMENTATION_TODOS.md](IMPLEMENTATION_TODOS.md) - tombstone pointing to
   [../ROADMAP.md](../ROADMAP.md).
 - [PLANNED_COMMANDS.md](PLANNED_COMMANDS.md) - aspirational command ideas, not

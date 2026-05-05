@@ -5,6 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-current-blue)](docs/README.md)
 [![Roadmap](https://img.shields.io/badge/roadmap-ROADMAP.md-lightgrey)](ROADMAP.md)
+[![Coverage](https://img.shields.io/badge/coverage-48.8%25-orange)](docs/TEST_COVERAGE_REPORT.md)
 
 **PE is a Go-like toolchain for safe prompting.** Its primary artifact is
 executable, templated, composable text: plain text by default, with optional
