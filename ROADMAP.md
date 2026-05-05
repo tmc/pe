@@ -1163,8 +1163,8 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Update `cmd/pe/pe2.go` for PE2 optimization
 - [x] Update `cmd/pe/benchmark.go` for benchmarking
 - [x] Update `cmd/pe/test.go` for testing commands
-- [ ] Update `cmd/pe/stream.go` for streaming
-- [ ] Update `cmd/pe/fusion.go` for multi-model fusion
+- [x] Update `cmd/pe/stream.go` for streaming
+- [x] Update `cmd/pe/fusion.go` for multi-model fusion
 
 ##### Provider Implementation Updates
 - [ ] Update OpenAI provider to single interface
