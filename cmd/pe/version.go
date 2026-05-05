@@ -7,8 +7,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Version of the PE tool
-const Version = "v0.5.0"
+// Version is the PE release version.
+var Version = "v0.5.0"
+
+// Commit and Date are set by release builds with -ldflags.
+var (
+	Commit string
+	Date   string
+)
+
+func versionLine() string {
+	s := fmt.Sprintf("pe version %s %s/%s", Version, runtime.GOOS, runtime.GOARCH)
+	if Commit != "" {
+		s += " " + Commit
+	}
+	if Date != "" {
+		s += " " + Date
+	}
+	return s
+}
 
 // versionCmd returns a cobra.Command for the 'version' subcommand.
 func versionCmd() *cobra.Command {
@@ -17,7 +34,7 @@ func versionCmd() *cobra.Command {
 		Short: "Print the version number of pe",
 		Long:  `All software has versions. This is pe's.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("pe version %s %s/%s\n", Version, runtime.GOOS, runtime.GOARCH)
+			fmt.Println(versionLine())
 		},
 	}
 }

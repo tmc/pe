@@ -4,7 +4,7 @@ This guide covers installing PE (Go for Prompts) on various platforms and config
 
 ## Prerequisites
 
-- **Go 1.21 or later** (required for building from source)
+- **Go 1.24 or later** (required for building from source)
 - **macOS, Linux, or Windows** (via WSL2)
 - **Git** (optional, for version control features)
 
@@ -27,34 +27,37 @@ go build -o pe cmd/pe/main.go
 sudo mv pe /usr/local/bin/
 ```
 
-### 2. Install with Go (Once Published)
+### 2. Install with Go
 
-When PE is published to a module proxy, you'll be able to use:
+Install the latest tagged version with:
 
 ```bash
-# This will work once PE is properly published
 go install github.com/tmc/pe/cmd/pe@latest
 ```
 
-**Note**: Currently this may not work if the module is not published to a proxy.
+For local development, prefer `go install ./cmd/pe` from a checked-out tree.
 
-### 3. Download Binary (Future)
+### 3. Download Binary
 
-Pre-built binaries will be available from the [releases page](https://github.com/tmc/pe/releases) once releases are created.
+Tagged releases publish archives for macOS, Linux, and Windows from the
+[releases page](https://github.com/tmc/pe/releases).
 
 ```bash
 # macOS (Apple Silicon)
-curl -L https://github.com/tmc/pe/releases/latest/download/pe-darwin-arm64 -o pe
+curl -L https://github.com/tmc/pe/releases/latest/download/pe-darwin-arm64.tar.gz -o pe.tar.gz
+tar -xzf pe.tar.gz
 chmod +x pe
 sudo mv pe /usr/local/bin/
 
 # macOS (Intel)
-curl -L https://github.com/tmc/pe/releases/latest/download/pe-darwin-amd64 -o pe
+curl -L https://github.com/tmc/pe/releases/latest/download/pe-darwin-amd64.tar.gz -o pe.tar.gz
+tar -xzf pe.tar.gz
 chmod +x pe
 sudo mv pe /usr/local/bin/
 
 # Linux
-curl -L https://github.com/tmc/pe/releases/latest/download/pe-linux-amd64 -o pe
+curl -L https://github.com/tmc/pe/releases/latest/download/pe-linux-amd64.tar.gz -o pe.tar.gz
+tar -xzf pe.tar.gz
 chmod +x pe
 sudo mv pe /usr/local/bin/
 ```
@@ -260,7 +263,7 @@ If you encounter build errors:
 
 ```bash
 # Ensure you have the correct Go version
-go version  # Should be 1.21 or later
+go version  # Should be 1.24 or later
 
 # Clean and rebuild
 cd path/to/pe

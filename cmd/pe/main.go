@@ -58,8 +58,9 @@ func main() {
 	HandlePluginExecution()
 
 	root := &cobra.Command{
-		Use:   "pe",
-		Short: "PE - Go for Prompts",
+		Use:     "pe",
+		Short:   "PE - Go for Prompts",
+		Version: versionLine(),
 		Long: `PE is the unified toolchain for prompt engineering, bringing Go's 
 philosophy of simplicity, composability, and performance to LLM development.
 
@@ -67,6 +68,7 @@ Just as Go revolutionized systems programming with its elegant toolchain,
 PE revolutionizes prompt engineering with a comprehensive set of tools that 
 work together seamlessly.`,
 	}
+	root.SetVersionTemplate("{{.Version}}\n")
 
 	// Core commands (like go toolchain)
 	root.AddCommand(runCmd())      // go run for prompts
