@@ -45,8 +45,8 @@ type HistogramBucket struct {
 
 // SummaryData contains summary-specific data
 type SummaryData struct {
-	Count     uint64            `json:"count"`
-	Sum       float64           `json:"sum"`
+	Count     uint64             `json:"count"`
+	Sum       float64            `json:"sum"`
 	Quantiles map[string]float64 `json:"quantiles"`
 }
 
@@ -283,6 +283,58 @@ func (mc *MetricsCollector) Timer(name string, tags map[string]string) func() {
 		mc.Histogram(name+"_duration_ms", duration.Seconds()*1000,
 			[]float64{1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000}, tags)
 	}
+}
+
+// RecordProviderRequest records metrics for an LLM provider request.
+func (mc *MetricsCollector) RecordProviderRequest(provider, model string, latency time.Duration, tokens int, err error) {
+	tags := map[string]string{"provider": provider, "model": model}
+	mc.Histogram("provider_request_latency_ms", latency.Seconds()*1000,
+		[]float64{10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000}, tags)
+	mc.Counter("provider_request_count", 1, tags)
+	mc.Counter("provider_token_usage", float64(tokens), tags)
+	mc.Gauge("provider_available", boolMetric(err == nil), tags)
+	if err != nil {
+		mc.Counter("provider_error_count", 1, tags)
+	}
+}
+
+// RecordOptimization records metrics for an optimization run.
+func (mc *MetricsCollector) RecordOptimization(method string, duration time.Duration, iterations int, converged bool, improvement float64, resources float64, cancelled bool) {
+	tags := map[string]string{"method": method}
+	mc.Histogram("optimization_duration_ms", duration.Seconds()*1000,
+		[]float64{100, 500, 1000, 2500, 5000, 10000, 30000, 60000, 300000}, tags)
+	mc.Counter("optimization_iteration_count", float64(iterations), tags)
+	mc.Gauge("optimization_converged", boolMetric(converged), tags)
+	mc.Gauge("optimization_improvement_score", improvement, tags)
+	mc.Gauge("optimization_resource_usage", resources, tags)
+	if cancelled {
+		mc.Counter("optimization_cancellation_count", 1, tags)
+	}
+}
+
+// RecordEvaluation records metrics for an evaluation run.
+func (mc *MetricsCollector) RecordEvaluation(suite string, latency time.Duration, tests, passed, assertions, parallelism int, score float64) {
+	tags := map[string]string{"suite": suite}
+	mc.Histogram("evaluation_latency_ms", latency.Seconds()*1000,
+		[]float64{10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000}, tags)
+	mc.Gauge("evaluation_pass_rate", passRate(tests, passed), tags)
+	mc.Counter("evaluation_assertion_count", float64(assertions), tags)
+	mc.Gauge("evaluation_parallelism", float64(parallelism), tags)
+	mc.Histogram("evaluation_score", score, []float64{0, 0.25, 0.5, 0.75, 0.9, 0.95, 1}, tags)
+}
+
+func boolMetric(v bool) float64 {
+	if v {
+		return 1
+	}
+	return 0
+}
+
+func passRate(tests, passed int) float64 {
+	if tests <= 0 {
+		return 0
+	}
+	return float64(passed) / float64(tests)
 }
 
 // GetMetrics returns all current metrics

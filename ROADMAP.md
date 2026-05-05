@@ -1629,27 +1629,27 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Create global metrics collector
 
 ##### Provider Metrics
-- [ ] Add request latency metrics
-- [ ] Add request count metrics
-- [ ] Add error rate metrics
-- [ ] Add token usage metrics
-- [ ] Add model-specific metrics
-- [ ] Add provider availability metrics
+- [x] Add request latency metrics
+- [x] Add request count metrics
+- [x] Add error rate metrics
+- [x] Add token usage metrics
+- [x] Add model-specific metrics
+- [x] Add provider availability metrics
 
 ##### Optimization Metrics
-- [ ] Add optimization duration metrics
-- [ ] Add iteration count metrics
-- [ ] Add convergence metrics
-- [ ] Add improvement score metrics
-- [ ] Add resource usage metrics
-- [ ] Add cancellation metrics
+- [x] Add optimization duration metrics
+- [x] Add iteration count metrics
+- [x] Add convergence metrics
+- [x] Add improvement score metrics
+- [x] Add resource usage metrics
+- [x] Add cancellation metrics
 
 ##### Evaluation Metrics
-- [ ] Add evaluation latency metrics
-- [ ] Add test pass rate metrics
-- [ ] Add assertion metrics
-- [ ] Add parallel execution metrics
-- [ ] Add score distribution metrics
+- [x] Add evaluation latency metrics
+- [x] Add test pass rate metrics
+- [x] Add assertion metrics
+- [x] Add parallel execution metrics
+- [x] Add score distribution metrics
 
 ##### Distributed Tracing
 - [x] Add tracing infrastructure under `internal/observability`

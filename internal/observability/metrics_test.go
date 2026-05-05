@@ -250,6 +250,62 @@ func TestMetricsCollector_Timer(t *testing.T) {
 	assert.NotNil(t, metrics)
 }
 
+func TestMetricsCollector_RecordProviderRequest(t *testing.T) {
+	collector := NewMetricsCollector(nil)
+
+	collector.RecordProviderRequest("openai", "gpt-4o-mini", 150*time.Millisecond, 1200, assert.AnError)
+
+	metrics := collector.GetMetrics()
+	assertMetric(t, metrics, "provider_request_count", CounterMetric, 1)
+	assertMetric(t, metrics, "provider_error_count", CounterMetric, 1)
+	assertMetric(t, metrics, "provider_token_usage", CounterMetric, 1200)
+	assertMetric(t, metrics, "provider_available", GaugeMetric, 0)
+
+	report := collector.GenerateReport()
+	assert.Equal(t, 1, report.Summary.TotalHistograms)
+}
+
+func TestMetricsCollector_RecordOptimization(t *testing.T) {
+	collector := NewMetricsCollector(nil)
+
+	collector.RecordOptimization("textgrad", 2*time.Second, 7, true, 0.42, 64, true)
+
+	metrics := collector.GetMetrics()
+	assertMetric(t, metrics, "optimization_iteration_count", CounterMetric, 7)
+	assertMetric(t, metrics, "optimization_converged", GaugeMetric, 1)
+	assertMetric(t, metrics, "optimization_improvement_score", GaugeMetric, 0.42)
+	assertMetric(t, metrics, "optimization_resource_usage", GaugeMetric, 64)
+	assertMetric(t, metrics, "optimization_cancellation_count", CounterMetric, 1)
+
+	report := collector.GenerateReport()
+	assert.Equal(t, 1, report.Summary.TotalHistograms)
+}
+
+func TestMetricsCollector_RecordEvaluation(t *testing.T) {
+	collector := NewMetricsCollector(nil)
+
+	collector.RecordEvaluation("golden", 90*time.Millisecond, 10, 8, 33, 4, 0.87)
+
+	metrics := collector.GetMetrics()
+	assertMetric(t, metrics, "evaluation_pass_rate", GaugeMetric, 0.8)
+	assertMetric(t, metrics, "evaluation_assertion_count", CounterMetric, 33)
+	assertMetric(t, metrics, "evaluation_parallelism", GaugeMetric, 4)
+
+	report := collector.GenerateReport()
+	assert.Equal(t, 2, report.Summary.TotalHistograms)
+}
+
+func assertMetric(t *testing.T, metrics map[string]*Metric, name string, typ MetricType, value float64) {
+	t.Helper()
+	for _, metric := range metrics {
+		if metric.Name == name && metric.Type == typ {
+			assert.Equal(t, value, metric.Value)
+			return
+		}
+	}
+	t.Fatalf("missing metric %s", name)
+}
+
 func TestMetricsCollector_EnableDisable(t *testing.T) {
 	tmpDir := t.TempDir()
 	filename := filepath.Join(tmpDir, "metrics.json")
@@ -386,7 +442,7 @@ func TestErrorCases(t *testing.T) {
 
 		// Should not panic with nil writer
 		collector.Counter("test", 1.0, nil)
-		
+
 		err := collector.Flush()
 		assert.Error(t, err) // Should error with nil writer
 	})
