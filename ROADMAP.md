@@ -1188,14 +1188,14 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 #### Phase 2: Module System Implementation (Weeks 3-4)
 
 ##### Registry Design
-- [ ] Research registry implementation options
-- [ ] Design registry API specification
-- [ ] Define module metadata format
-- [ ] Design module versioning scheme
-- [ ] Create module signature format
-- [ ] Design dependency resolution algorithm
-- [ ] Plan caching strategy
-- [ ] Document registry protocol
+- [x] Research registry implementation options
+- [x] Design registry API specification
+- [x] Define module metadata format
+- [x] Design module versioning scheme
+- [x] Create module signature format
+- [x] Design dependency resolution algorithm
+- [x] Plan caching strategy
+- [x] Document registry protocol
 
 ##### Registry Implementation
 - [x] Create `internal/module/registry.go`
@@ -1248,8 +1248,8 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add vulnerability scanning
 
 ##### Initial Registry Setup
-- [ ] Set up registry infrastructure (GitHub/HTTP)
-- [ ] Create registry documentation
+- [x] Set up registry infrastructure (GitHub/HTTP)
+- [x] Create registry documentation
 - [ ] Publish core modules
 - [ ] Create example modules
 - [ ] Set up CI/CD for module publishing
