@@ -296,6 +296,24 @@ func TestRegisterProviderSpecRejectsNilClient(t *testing.T) {
 	}
 }
 
+func TestCreateProviderFromSpecUsesBaseRegistryName(t *testing.T) {
+	const name = "migration-test-base"
+	inference.Register(name, func(config map[string]interface{}) (inference.Provider, error) {
+		if config["model"] != "test-model" {
+			t.Fatalf("config model = %#v", config["model"])
+		}
+		return &modernProvider{name: name, models: []string{"test-model"}}, nil
+	})
+
+	provider, err := inference.CreateProviderFromSpec(name+":test-model", nil)
+	if err != nil {
+		t.Fatalf("CreateProviderFromSpec: %v", err)
+	}
+	if provider.Name() != name {
+		t.Fatalf("provider name = %q, want %q", provider.Name(), name)
+	}
+}
+
 func TestCompatibilityLayer(t *testing.T) {
 	legacy := &legacyProvider{name: "legacy", model: "legacy-model"}
 	modern, err := inference.AsProvider(legacy)

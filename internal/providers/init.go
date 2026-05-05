@@ -37,6 +37,14 @@ func init() {
 		// Use the provider directly without adapter since it already implements llm.Provider
 		return provider, nil
 	})
+	inference.Register("mock", func(config map[string]interface{}) (inference.Provider, error) {
+		model, _ := config["model"].(string)
+		provider, err := NewMockProvider(model, config)
+		if err != nil {
+			return nil, err
+		}
+		return inference.MigrateProvider(provider), nil
+	})
 
 	// Register cgpt provider factory
 	llm.RegisterProviderFactory("cgpt", func(providerSpec string, options map[string]interface{}) (llm.Provider, error) {

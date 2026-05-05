@@ -4,6 +4,7 @@ package inference
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/tmc/pe/internal/llm"
@@ -420,6 +421,20 @@ func CreateProviderFromSpec(spec string, config map[string]interface{}) (Provide
 	if err == nil {
 		return provider, nil
 	}
+	providerName, model := splitProviderSpec(spec)
+	if providerName != spec {
+		providerConfig := cloneLLMOptions(config)
+		if providerConfig == nil {
+			providerConfig = make(map[string]interface{})
+		}
+		if _, ok := providerConfig["model"]; !ok {
+			providerConfig["model"] = model
+		}
+		provider, err := NewProvider(providerName, providerConfig)
+		if err == nil {
+			return provider, nil
+		}
+	}
 
 	// Fall back to legacy provider creation
 	legacy, err := llm.GetProviderWithOptions(spec, config)
@@ -428,4 +443,13 @@ func CreateProviderFromSpec(spec string, config map[string]interface{}) (Provide
 	}
 
 	return MigrateProvider(legacy), nil
+}
+
+func splitProviderSpec(spec string) (provider, model string) {
+	provider = spec
+	if i := strings.IndexByte(spec, ':'); i >= 0 {
+		provider = spec[:i]
+		model = spec[i+1:]
+	}
+	return provider, model
 }
