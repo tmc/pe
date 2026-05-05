@@ -753,3 +753,147 @@ func TestLoadComponent_NonexistentFile(t *testing.T) {
 		t.Error("Expected error for nonexistent file")
 	}
 }
+
+func TestComposeConfigAndRunPaths(t *testing.T) {
+	tmpDir := t.TempDir()
+	contextFile := filepath.Join(tmpDir, "context.txt")
+	instructionFile := filepath.Join(tmpDir, "instruction.txt")
+	examplesFile := filepath.Join(tmpDir, "examples.json")
+	configFile := filepath.Join(tmpDir, "compose.json")
+	outputFile := filepath.Join(tmpDir, "out.txt")
+	if err := os.WriteFile(contextFile, []byte("You are an expert analyst. Therefore be precise."), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(instructionFile, []byte("Please analyze the data."), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(examplesFile, []byte(`[{"input":"x","output":"y"}]`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(configFile, []byte(`{"style":"structured","target":"model-from-config","metadata":{"x":1}}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := newComposeCmd()
+	cmd.Flags().Set("config", configFile)
+	cmd.Flags().Set("style", "few-shot")
+	cmd.Flags().Set("target", "gpt-test")
+	cmd.Flags().Set("coherence", "true")
+	cmd.Flags().Set("optimize", "true")
+	cmd.Flags().Set("quality-gates", "true")
+	cmd.Flags().Set("program-synthesis", "true")
+	cmd.Flags().Set("parameter-optimization", "true")
+	cmd.Flags().Set("signature-validation", "true")
+	cmd.Flags().Set("multi-stage", "true")
+	cmd.Flags().Set("statistical-validation", "true")
+	cmd.Flags().Set("synthesis-strategy", "evolutionary")
+	cmd.Flags().Set("optimization-method", "grid")
+	cmd.Flags().Set("quality-threshold", "0.9")
+	cmd.Flags().Set("examples", examplesFile)
+	cmd.Flags().Set("output", outputFile)
+	cfg, err := loadComposeConfig(cmd, []string{contextFile, instructionFile})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Style != "few-shot" || cfg.Target != "gpt-test" || !cfg.Coherence || !cfg.Optimize || !cfg.QualityGates || !cfg.ProgramSynthesis || !cfg.ParameterOptimization || !cfg.SignatureValidation || !cfg.MultiStageOptimization || !cfg.StatisticalValidation {
+		t.Fatalf("config = %#v", cfg)
+	}
+	if cfg.Metadata["synthesis_strategy"] != "evolutionary" || cfg.Metadata["optimization_method"] != "grid" || cfg.Metadata["quality_threshold"] != 0.9 {
+		t.Fatalf("metadata = %#v", cfg.Metadata)
+	}
+	if err := runCompose(cmd, []string{contextFile, instructionFile}); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := os.ReadFile(outputFile); err != nil || len(out) == 0 {
+		t.Fatalf("output len=%d err=%v", len(out), err)
+	}
+
+	badCmd := newComposeCmd()
+	badCmd.Flags().Set("config", filepath.Join(tmpDir, "missing.json"))
+	if _, err := loadComposeConfig(badCmd, nil); err == nil {
+		t.Fatal("missing config succeeded")
+	}
+	badConfig := filepath.Join(tmpDir, "bad.json")
+	if err := os.WriteFile(badConfig, []byte("{"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	badCmd = newComposeCmd()
+	badCmd.Flags().Set("config", badConfig)
+	if _, err := loadComposeConfig(badCmd, nil); err == nil {
+		t.Fatal("bad config succeeded")
+	}
+}
+
+func TestComposeLibraryAndCoherenceHelpers(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldDir, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldDir)
+
+	source := filepath.Join(tmpDir, "source.txt")
+	if err := os.WriteFile(source, []byte("Please analyze this."), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := addComponentToLibrary(source, "custom"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join("components", "custom", "source.txt")); err != nil {
+		t.Fatal(err)
+	}
+	if err := listComponents(); err != nil {
+		t.Fatal(err)
+	}
+	if err := importComponents("https://example.com/components.zip"); err != nil {
+		t.Fatal(err)
+	}
+	if err := addComponentToLibrary(filepath.Join(tmpDir, "missing.txt"), "x"); err == nil {
+		t.Fatal("missing add component succeeded")
+	}
+	if err := checkCoherence([]string{source}); err == nil {
+		t.Fatal("single coherence check succeeded")
+	}
+	other := filepath.Join(tmpDir, "other.txt")
+	if err := os.WriteFile(other, []byte("Determine the emotional tone."), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkCoherence([]string{source, other}); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkCoherence([]string{source, filepath.Join(tmpDir, "missing.txt")}); err == nil {
+		t.Fatal("missing coherence file succeeded")
+	}
+	validateComponentCompatibility([]PromptComponent{
+		{Type: "context", Content: "software engineering code"},
+		{Type: "constraint", Content: "specialized medical diagnosis"},
+	})
+}
+
+func TestComposeRunSpecialCases(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldDir, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldDir)
+
+	if err := os.WriteFile("pe.mod", []byte("module example\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := runCompose(newComposeCmd(), nil); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := newComposeCmd()
+	cmd.Flags().Set("add-component", "missing.txt")
+	if err := runCompose(cmd, nil); err == nil {
+		t.Fatal("missing add-component succeeded")
+	}
+	cmd = newComposeCmd()
+	cmd.Flags().Set("list", "true")
+	if err := runCompose(cmd, nil); err == nil {
+		t.Fatal("list without components dir succeeded")
+	}
+	cmd = newComposeCmd()
+	cmd.Flags().Set("import", "https://example.com/x")
+	if err := runCompose(cmd, nil); err != nil {
+		t.Fatal(err)
+	}
+}
