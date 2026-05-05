@@ -1,4 +1,4 @@
-# Test promptfoo plugin integration through dynamic plugin discovery.
+# Test promptfoo plugin integration through PE_PLUGIN_PATH discovery.
 
 pe promptfoo --help
 stdout 'promptfoo \[command\]'

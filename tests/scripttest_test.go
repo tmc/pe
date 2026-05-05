@@ -219,6 +219,7 @@ func TestScripts(t *testing.T) {
 	env := []string{
 		"PE_TEST_MODE=true",
 		"PE_MOCK_PROVIDER=true",
+		"PE_PLUGIN_PATH=" + binDir,
 		"PATH=" + binDir + string(os.PathListSeparator) + os.Getenv("PATH"),
 	}
 
