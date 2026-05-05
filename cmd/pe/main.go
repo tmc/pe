@@ -122,6 +122,7 @@ rules when they need stronger contracts.`,
 
 	// Discover and add plugin commands dynamically
 	dynamicPluginCommands(root)
+	applyRootMetadata(root)
 
 	if err := root.Execute(); err != nil {
 		fmt.Println(err)

@@ -1281,7 +1281,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Move `test` command to core group
 - [ ] Move `ask` command to core group
 - [ ] Update command registrations
-- [ ] Add group-level help
+- [x] Add group-level help
 
 ##### Evaluation Commands Group
 - [x] Create `cmd/pe/commands/evaluation/` directory
@@ -1331,13 +1331,13 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Move `attest` command to experimental group
 - [ ] Move `security` command to experimental group
 - [ ] Move `profile` command to experimental group
-- [ ] Add experimental warning to commands
+- [x] Add experimental warning to commands
 
 ##### Command Integration
 - [ ] Update main.go to use command registry
-- [ ] Implement backward compatibility shims
-- [ ] Add command aliases for compatibility
-- [ ] Update command help system
+- [x] Implement backward compatibility shims
+- [x] Add command aliases for compatibility
+- [x] Update command help system
 - [x] Add command search functionality
 - [ ] Update shell completion scripts
 - [x] Test all command paths
