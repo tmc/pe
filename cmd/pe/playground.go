@@ -639,7 +639,7 @@ func (ps *PlaygroundServer) handleTest(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 
 	// Create LLM provider
-	provider, err := llm.GetProvider(req.Provider)
+	provider, err := commandLegacyProvider(req.Provider, req.Model)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to create provider: %v", err), http.StatusInternalServerError)
 		return
@@ -686,7 +686,7 @@ func (ps *PlaygroundServer) handleOptimize(w http.ResponseWriter, r *http.Reques
 	start := time.Now()
 
 	// Create LLM provider and optimizer
-	provider, err := llm.GetProvider(req.Provider)
+	provider, err := commandLegacyProvider(req.Provider, req.Model)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to create provider: %v", err), http.StatusInternalServerError)
 		return

@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/promptfoo/evaluation/metrics"
 )
 
@@ -313,7 +312,7 @@ func calculateMetrics(generated, reference string, metricTypes, criteria []strin
 				return nil, fmt.Errorf("BERTScore requires reference text")
 			}
 			// Create LLM provider for BERTScore
-			llmProvider, err := llm.GetProvider(provider)
+			llmProvider, err := commandLegacyProvider(provider, model)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create LLM provider: %v", err)
 			}
@@ -331,7 +330,7 @@ func calculateMetrics(generated, reference string, metricTypes, criteria []strin
 
 		case "g-eval", "geval":
 			// Create LLM provider for G-Eval
-			llmProvider, err := llm.GetProvider(provider)
+			llmProvider, err := commandLegacyProvider(provider, model)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create LLM provider: %v", err)
 			}
@@ -357,7 +356,7 @@ func calculateMetrics(generated, reference string, metricTypes, criteria []strin
 
 		case "uni-eval", "unieval":
 			// Create LLM provider for UniEval
-			llmProvider, err := llm.GetProvider(provider)
+			llmProvider, err := commandLegacyProvider(provider, model)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create LLM provider: %v", err)
 			}
@@ -408,7 +407,7 @@ func calculateMetrics(generated, reference string, metricTypes, criteria []strin
 			}
 
 			// Create LLM provider if needed
-			llmProvider, err := llm.GetProvider(provider)
+			llmProvider, err := commandLegacyProvider(provider, model)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create LLM provider: %v", err)
 			}

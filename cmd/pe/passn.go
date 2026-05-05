@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/promptfoo/evaluation/metrics"
 	"github.com/tmc/pe/internal/structured"
 )
@@ -80,7 +79,7 @@ func runPassN(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get provider
-	provider, err := llm.GetProvider(passnProvider)
+	provider, err := commandLegacyProvider(passnProvider, "")
 	if err != nil {
 		return fmt.Errorf("failed to get provider: %w", err)
 	}

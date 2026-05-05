@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/promptfoo/security/redteam"
 )
 
@@ -366,7 +365,7 @@ func runSecurityTest(cmd *cobra.Command, target, targetFile string, categories [
 	}
 
 	// Create LLM provider for testing
-	llmProvider, err := llm.GetProvider(provider)
+	llmProvider, err := commandLegacyProvider(provider, model)
 	if err != nil {
 		return fmt.Errorf("failed to create LLM provider: %v", err)
 	}
