@@ -1413,14 +1413,14 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Test command error handling
 
 ##### Integration Tests
-- [ ] Create `tests/integration/` directory
+- [x] Create `tests/integration/` directory
 - [x] Add end-to-end workflow tests
 - [x] Test optimization pipelines
 - [x] Test evaluation workflows
 - [x] Test module workflows
 - [ ] Add performance tests
 - [x] Test concurrent operations
-- [ ] Add stress tests
+- [x] Add stress tests
 
 ##### Property-Based Tests
 - [x] Add quickcheck for optimization
@@ -1488,9 +1488,9 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Update optimization tests
 - [x] Add adapter tests
 - [x] Test strategy patterns
-- [ ] Add integration tests
+- [x] Add integration tests
 - [ ] Test with multiple providers
-- [ ] Verify no regressions
+- [x] Verify no regressions
 
 #### Phase 6: Configuration Management (Week 8)
 
