@@ -1,6 +1,15 @@
 package main
 
-import "testing"
+import (
+	"bytes"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/tmc/pe/internal/templates"
+)
 
 func TestTemplateCmd_CommandStructure(t *testing.T) {
 	cmd := templateCmd()
@@ -102,4 +111,169 @@ func TestTemplateInteractiveCmd_CommandStructure(t *testing.T) {
 	if cmd.Use != "interactive" {
 		t.Errorf("Unexpected Use: %s", cmd.Use)
 	}
+}
+
+func TestTemplateListSearchShowAndOutput(t *testing.T) {
+	cmd := templateTestCmd()
+	for _, format := range []string{"table", "json", "yaml"} {
+		if err := runTemplateList(cmd, "", "", format); err != nil {
+			t.Fatalf("list %s: %v", format, err)
+		}
+		if err := runTemplateSearch(cmd, "summary", format); err != nil {
+			t.Fatalf("search %s: %v", format, err)
+		}
+	}
+	if err := runTemplateList(cmd, "writing", "", "table"); err != nil {
+		t.Fatal(err)
+	}
+	if err := runTemplateList(cmd, "", "analysis", "table"); err != nil {
+		t.Fatal(err)
+	}
+	if err := runTemplateList(cmd, "", "", "bad"); err == nil {
+		t.Fatal("bad list format succeeded")
+	}
+	if err := runTemplateShow(cmd, "summarization", "json", false); err != nil {
+		t.Fatal(err)
+	}
+	if err := runTemplateShow(cmd, "summarization", "yaml", true); err != nil {
+		t.Fatal(err)
+	}
+	if err := runTemplateShow(cmd, "summarization", "bad", true); err == nil {
+		t.Fatal("bad show format succeeded")
+	}
+	if err := runTemplateShow(cmd, "missing", "json", true); err == nil {
+		t.Fatal("missing template showed")
+	}
+	out := cmd.OutOrStdout().(*bytes.Buffer).String()
+	if !strings.Contains(out, "summarization") {
+		t.Fatalf("output = %s", out)
+	}
+}
+
+func TestTemplateApplyCreateValidateExportImport(t *testing.T) {
+	tmpDir := t.TempDir()
+	cmd := templateTestCmd()
+	varsJSON := filepath.Join(tmpDir, "vars.json")
+	if err := os.WriteFile(varsJSON, []byte(`{"text":"Long article","max_points":3}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	outFile := filepath.Join(tmpDir, "applied.txt")
+	if err := runTemplateApply(cmd, "summarization", varsJSON, outFile, false); err != nil {
+		t.Fatal(err)
+	}
+	if data, err := os.ReadFile(outFile); err != nil || !strings.Contains(string(data), "Long article") {
+		t.Fatalf("applied = %q err=%v", data, err)
+	}
+	varsYAML := filepath.Join(tmpDir, "vars.yaml")
+	if err := os.WriteFile(varsYAML, []byte("text: YAML article\nmax_points: 2\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if vars, err := loadVariablesFromFile(varsYAML); err != nil || vars["text"] != "YAML article" {
+		t.Fatalf("vars = %#v err=%v", vars, err)
+	}
+	if _, err := loadVariablesFromFile(filepath.Join(tmpDir, "missing.json")); err == nil {
+		t.Fatal("missing vars loaded")
+	}
+	badVars := filepath.Join(tmpDir, "bad.vars")
+	if err := os.WriteFile(badVars, []byte(":"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := loadVariablesFromFile(badVars); err == nil {
+		t.Fatal("bad vars loaded")
+	}
+	if err := runTemplateApply(cmd, "summarization", "", "", false); err == nil {
+		t.Fatal("apply without vars succeeded")
+	}
+	if err := runTemplateApply(cmd, "missing", varsJSON, "", false); err == nil {
+		t.Fatal("missing apply succeeded")
+	}
+
+	createJSON := filepath.Join(tmpDir, "created.json")
+	if err := runTemplateCreate(cmd, "mine", createJSON, true); err != nil {
+		t.Fatal(err)
+	}
+	createYAML := filepath.Join(tmpDir, "created.yaml")
+	if err := runTemplateCreate(cmd, "mine-yaml", createYAML, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := runTemplateCreate(cmd, "mine", "", false); err == nil {
+		t.Fatal("non-interactive create succeeded")
+	}
+	if err := runTemplateValidate(cmd, nil); err == nil {
+		t.Fatal("validate without files succeeded")
+	}
+	if err := runTemplateValidate(cmd, []string{createYAML}); err != nil {
+		t.Fatal(err)
+	}
+	invalid := filepath.Join(tmpDir, "invalid.yaml")
+	if err := os.WriteFile(invalid, []byte("name: bad\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := runTemplateValidate(cmd, []string{invalid}); err == nil {
+		t.Fatal("invalid template validated")
+	}
+	exportDir := filepath.Join(tmpDir, "export")
+	if err := os.MkdirAll(exportDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := runTemplateExport(cmd, []string{"summarization"}, "json", exportDir); err != nil {
+		t.Fatal(err)
+	}
+	if err := runTemplateExport(cmd, nil, "yaml", exportDir); err != nil {
+		t.Fatal(err)
+	}
+	if err := runTemplateExport(cmd, []string{"missing"}, "json", exportDir); err == nil {
+		t.Fatal("missing export succeeded")
+	}
+	if err := runTemplateImport(cmd, nil); err == nil {
+		t.Fatal("import without files succeeded")
+	}
+	if err := runTemplateImport(cmd, []string{createYAML, filepath.Join(tmpDir, "missing.yaml")}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestTemplateInteractiveAndVariableCollection(t *testing.T) {
+	cmd := templateTestCmd()
+	tmpl := &templates.Template{
+		Variables: map[string]templates.Variable{
+			"name": {Name: "name", Type: "string", Required: true},
+			"n":    {Name: "n", Type: "number", Required: true},
+			"ok":   {Name: "ok", Type: "boolean", Required: true},
+			"def":  {Name: "def", Type: "string", Default: "default"},
+		},
+	}
+	cmd.SetIn(strings.NewReader("Alice\n2.5\nyes\n\n"))
+	vars, err := collectVariablesInteractively(cmd, tmpl)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if vars["name"] != "Alice" || vars["n"] != 2.5 || vars["ok"] != true || vars["def"] != "default" {
+		t.Fatalf("vars = %#v", vars)
+	}
+	cmd = templateTestCmd()
+	cmd.SetIn(strings.NewReader("\n"))
+	if _, err := collectVariablesInteractively(cmd, &templates.Template{Variables: map[string]templates.Variable{"required": {Name: "required", Type: "string", Required: true}}}); err == nil {
+		t.Fatal("missing required var succeeded")
+	}
+	cmd = templateTestCmd()
+	cmd.SetIn(strings.NewReader("not-number\n"))
+	if _, err := collectVariablesInteractively(cmd, &templates.Template{Variables: map[string]templates.Variable{"n": {Name: "n", Type: "number", Required: true}}}); err == nil {
+		t.Fatal("bad number succeeded")
+	}
+	if vars, err := collectVariablesInteractively(templateTestCmd(), &templates.Template{}); err != nil || len(vars) != 0 {
+		t.Fatalf("empty vars = %#v err=%v", vars, err)
+	}
+	if err := runTemplateInteractive(templateTestCmd(), nil); err == nil {
+		t.Fatal("interactive without loaded templates succeeded")
+	}
+}
+
+func templateTestCmd() *cobra.Command {
+	cmd := &cobra.Command{}
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetIn(strings.NewReader(""))
+	return cmd
 }
