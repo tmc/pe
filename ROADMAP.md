@@ -495,6 +495,12 @@ Tasks:
 3. Add property-based tests where appropriate
 4. Target 80%+ coverage for critical paths
 5. Add benchmark tests for performance-sensitive code
+6. Add first gates for executable, templated, composable text:
+   - parser tests for plain text and optional front matter,
+   - renderer tests for declared template inputs,
+   - static checks for `pe.mod` capability and placement declarations,
+   - conservative composition tests proving child artifacts cannot loosen
+     parent constraints.
 
 Tools:
 - go test -cover

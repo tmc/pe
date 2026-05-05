@@ -93,3 +93,25 @@ sets `$WORK` to the per-test work directory and a platform temp directory.
 
 Keep scripts sequential unless the command under test exposes concurrency
 through PE flags or configuration.
+
+## Executable Text Test Plan
+
+PE is the Go toolchain for safe prompting: executable, templated, composable
+text. Plain text should remain a valid artifact by default. Script tests for
+that direction should start with the CLI gates that prove files are accepted,
+rendered, or rejected before any provider or tool side effect runs.
+
+Initial script-test coverage should exercise:
+
+- plain text files without declarations,
+- files with declared template inputs and deterministic rendered output,
+- metadata, safety, and placement declarations that select allowed data,
+  prompts, providers, and tools,
+- denied capability classes that fail before execution,
+- parent/child composition where a child artifact cannot loosen parent
+  constraints.
+
+Keep policy-composition assertions conservative. A composed artifact should only
+gain the intersection of allowed capabilities and the union of denied
+capabilities. Use unit tests for parser and policy edge cases when a script
+would need shell behavior or runtime features that do not exist yet.

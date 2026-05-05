@@ -63,6 +63,28 @@ expansion.
 | `github.com/tmc/pe/test` | 0.0% |
 | `github.com/tmc/pe/internal/promptfoo/evaluation/metrics` | 27.9% |
 
+## Executable Text Safety Gates
+
+PE is the Go toolchain for safe prompting: executable, templated, composable
+text. Plain text is valid by default. Optional declarations can define template
+inputs, metadata, safety policy, and placement rules for what data, prompts,
+providers, and tools may run where.
+
+The first coverage targets for that direction are test-plan gates, not runtime
+expansion:
+
+| Gate | First coverage target |
+| --- | --- |
+| Executable text parsing | Plain text remains valid; front matter is parsed only when present; unknown required fields fail closed. |
+| Template rendering | Declared inputs are required; rendered text is deterministic; missing inputs and undeclared secret values fail validation. |
+| Static capability checks | `pe.mod` capability, placement, and policy declarations reject denied data, prompt, provider, and tool classes before execution. |
+| Conservative policy composition | Child artifacts and dependencies cannot loosen parent constraints; effective allows narrow and denials accumulate. |
+
+Coverage reports should track these gates as they move from documentation into
+parser and static-validation packages. Script tests should cover release-facing
+CLI behavior; unit tests should cover parser, renderer, and policy-composition
+edge cases directly.
+
 ## Other Measured Packages
 
 | Package | Coverage |
