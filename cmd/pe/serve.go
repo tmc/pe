@@ -56,32 +56,7 @@ The server binds to 127.0.0.1:8080 by default. Use --addr explicitly to bind
 somewhere else.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateServeAddr(addr); err != nil {
-				return err
-			}
-			srv := newServeServer()
-			httpServer := &http.Server{
-				Addr:              addr,
-				Handler:           srv,
-				ReadHeaderTimeout: 5 * time.Second,
-				ReadTimeout:       10 * time.Second,
-				WriteTimeout:      10 * time.Second,
-				IdleTimeout:       30 * time.Second,
-			}
-			errc := make(chan error, 1)
-			go func() {
-				<-cmd.Context().Done()
-				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer cancel()
-				errc <- httpServer.Shutdown(ctx)
-			}()
-
-			fmt.Fprintf(cmd.OutOrStdout(), "serving PE API on http://%s\n", addr)
-			err := httpServer.ListenAndServe()
-			if errors.Is(err, http.ErrServerClosed) {
-				err = <-errc
-			}
-			return err
+			return runServe(cmd.Context(), addr, cmd.OutOrStdout())
 		},
 	}
 
@@ -104,6 +79,39 @@ func validateServeAddr(addr string) error {
 		return fmt.Errorf("invalid addr %q: host is required; use 127.0.0.1:%s for localhost", addr, port)
 	}
 	return nil
+}
+
+func runServe(ctx context.Context, addr string, out io.Writer) error {
+	if err := validateServeAddr(addr); err != nil {
+		return err
+	}
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return fmt.Errorf("listen %s: %w", addr, err)
+	}
+	defer ln.Close()
+
+	httpServer := &http.Server{
+		Handler:           newServeServer(),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       30 * time.Second,
+	}
+	errc := make(chan error, 1)
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		errc <- httpServer.Shutdown(shutdownCtx)
+	}()
+
+	fmt.Fprintf(out, "serving PE API on http://%s\n", ln.Addr().String())
+	err = httpServer.Serve(ln)
+	if errors.Is(err, http.ErrServerClosed) {
+		err = <-errc
+	}
+	return err
 }
 
 func newServeServer() *serveServer {

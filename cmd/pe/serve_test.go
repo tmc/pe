@@ -62,17 +62,7 @@ func TestServeCmdShutdownOnContextCancel(t *testing.T) {
 		done <- cmd.Execute()
 	}()
 
-	deadline := time.After(5 * time.Second)
-	for !strings.Contains(stdout.String(), "serving PE API on http://127.0.0.1:0") {
-		select {
-		case err := <-done:
-			t.Fatalf("Execute returned before serving: %v, stderr=%q", err, stderr.String())
-		case <-deadline:
-			t.Fatalf("server did not start, stdout=%q stderr=%q", stdout.String(), stderr.String())
-		default:
-			time.Sleep(10 * time.Millisecond)
-		}
-	}
+	waitServeAddr(t, &stdout, &stderr, done)
 
 	cancel()
 	select {
@@ -82,6 +72,91 @@ func TestServeCmdShutdownOnContextCancel(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("server did not shut down after context cancel")
+	}
+}
+
+func TestServeCmdOperatesLocalAPI(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	cmd := serveCmd()
+	var stdout, stderr bytes.Buffer
+	cmd.SetContext(ctx)
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"--addr", "127.0.0.1:0"})
+
+	done := make(chan error, 1)
+	go func() {
+		done <- cmd.Execute()
+	}()
+
+	addr := waitServeAddr(t, &stdout, &stderr, done)
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	resp, err := client.Get("http://" + addr + "/healthz")
+	if err != nil {
+		t.Fatalf("GET /healthz: %v", err)
+	}
+	assertJSONStatus(t, resp, http.StatusOK, `"status":"ok"`)
+
+	resp, err = client.Post("http://"+addr+"/api/v1/format", "application/json", strings.NewReader(`{"prompt":"hello","style":"anthropic"}`))
+	if err != nil {
+		t.Fatalf("POST /api/v1/format: %v", err)
+	}
+	assertJSONStatus(t, resp, http.StatusOK, `"prompt":"Human: hello\n"`)
+
+	resp, err = client.Post("http://"+addr+"/api/v1/render", "application/json", strings.NewReader(`{"prompt":"Hello {{.name}}","variables":{"name":"PE"}}`))
+	if err != nil {
+		t.Fatalf("POST /api/v1/render: %v", err)
+	}
+	assertJSONStatus(t, resp, http.StatusOK, `"prompt":"Hello PE"`)
+
+	cancel()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Execute() error = %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("server did not shut down after context cancel")
+	}
+}
+
+func waitServeAddr(t *testing.T, stdout, stderr *bytes.Buffer, done <-chan error) string {
+	t.Helper()
+	deadline := time.After(5 * time.Second)
+	for {
+		line := strings.TrimSpace(stdout.String())
+		if strings.HasPrefix(line, "serving PE API on http://") {
+			return strings.TrimPrefix(line, "serving PE API on http://")
+		}
+		select {
+		case err := <-done:
+			t.Fatalf("Execute returned before serving: %v, stderr=%q", err, stderr.String())
+		case <-deadline:
+			t.Fatalf("server did not start, stdout=%q stderr=%q", stdout.String(), stderr.String())
+		default:
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+}
+
+func assertJSONStatus(t *testing.T, resp *http.Response, status int, contains string) {
+	t.Helper()
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("read response body: %v", err)
+	}
+	if resp.StatusCode != status {
+		t.Fatalf("status = %d, want %d: %s", resp.StatusCode, status, string(body))
+	}
+	if got := resp.Header.Get("Content-Type"); got != "application/json" {
+		t.Fatalf("content-type = %q, want application/json", got)
+	}
+	if !strings.Contains(string(body), contains) {
+		t.Fatalf("body = %q, want %q", string(body), contains)
 	}
 }
 
