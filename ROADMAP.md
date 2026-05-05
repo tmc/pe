@@ -1198,34 +1198,34 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Document registry protocol
 
 ##### Registry Implementation
-- [ ] Create `internal/module/registry.go`
-- [ ] Implement registry client interface
-- [ ] Add GitHub-based registry option
+- [x] Create `internal/module/registry.go`
+- [x] Implement registry client interface
+- [x] Add GitHub-based registry option
 - [ ] Add HTTP API registry option
 - [ ] Implement registry authentication
-- [ ] Add module search functionality
-- [ ] Implement module metadata fetching
+- [x] Add module search functionality
+- [x] Implement module metadata fetching
 - [ ] Add registry health checks
 
 ##### Module Resolution
-- [ ] Create `internal/module/resolver.go`
+- [x] Create `internal/module/resolver.go`
 - [x] Implement module path parsing
 - [x] Add version constraint parsing
 - [x] Implement semantic version comparison
 - [ ] Add module cache interface
-- [ ] Implement file-based cache
+- [x] Implement file-based cache
 - [ ] Add cache invalidation logic
-- [ ] Implement module download functionality
+- [x] Implement module download functionality
 
 ##### Dependency Management
 - [ ] Create `internal/module/deps.go`
-- [ ] Implement dependency graph structure
-- [ ] Add topological sort for dependencies
-- [ ] Implement conflict detection
-- [ ] Add version resolution algorithm
-- [ ] Implement circular dependency detection
+- [x] Implement dependency graph structure
+- [x] Add topological sort for dependencies
+- [x] Implement conflict detection
+- [x] Add version resolution algorithm
+- [x] Implement circular dependency detection
 - [ ] Add dependency pruning
-- [ ] Create lock file format
+- [x] Create lock file format
 
 ##### Module Commands
 - [x] Fix `pe mod init` with proper initialization
