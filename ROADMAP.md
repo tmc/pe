@@ -1536,9 +1536,9 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 ##### Command Configuration
 - [ ] Update commands to use config manager
 - [ ] Add command-specific configs
-- [ ] Implement config overrides
-- [ ] Add config profiles
-- [ ] Create config inheritance
+- [x] Implement config overrides
+- [x] Add config profiles
+- [x] Create config inheritance
 
 ##### Configuration Validation
 - [x] Create `internal/config/validator.go`
