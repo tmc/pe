@@ -65,6 +65,8 @@ source of truth for coverage numbers.
 - [CURRENT_STATUS.md](CURRENT_STATUS.md) - current implementation status.
 - [TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md) - measured coverage
   baseline and low-coverage packages.
+- [PERFORMANCE_PROFILE.md](PERFORMANCE_PROFILE.md) - current benchmark profile
+  notes and hot-loop follow-ups.
 - [RELEASE_BUILD_MATRIX.md](RELEASE_BUILD_MATRIX.md) - latest local
   cross-compilation matrix and binary sizes.
 - [RELEASE_DEPENDENCY_REVIEW.md](RELEASE_DEPENDENCY_REVIEW.md) - release

@@ -25,6 +25,7 @@ func (s *InputSanitizer) SanitizePrompt(input string) (string, error) {
 	}
 	cleaned := strings.ReplaceAll(input, "\x00", "")
 	var result strings.Builder
+	result.Grow(len(cleaned))
 	for _, r := range cleaned {
 		if r < 32 {
 			if r == '\n' || r == '\r' || r == '\t' {

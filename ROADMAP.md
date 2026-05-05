@@ -1712,8 +1712,8 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add automated benchmarks
 
 ##### Performance Optimization
-- [ ] Profile critical paths
-- [ ] Optimize hot loops
+- [x] Profile critical paths
+- [x] Optimize hot loops
 - [x] Add caching layers
 - [x] Implement connection pooling
 - [x] Optimize memory allocations
