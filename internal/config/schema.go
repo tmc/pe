@@ -5,6 +5,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -48,28 +49,28 @@ type Config struct {
 type AppConfig struct {
 	// Version information
 	Version string `yaml:"version" json:"version"`
-	
+
 	// Log level (debug, info, warn, error)
 	LogLevel string `yaml:"log_level" json:"log_level" default:"info"`
-	
+
 	// Enable verbose output
 	Verbose bool `yaml:"verbose" json:"verbose" default:"false"`
-	
+
 	// Enable debug mode
 	Debug bool `yaml:"debug" json:"debug" default:"false"`
-	
+
 	// Working directory override
 	WorkDir string `yaml:"work_dir" json:"work_dir"`
-	
+
 	// Configuration directory
 	ConfigDir string `yaml:"config_dir" json:"config_dir" default:"~/.pe"`
-	
+
 	// Data directory for storage
 	DataDir string `yaml:"data_dir" json:"data_dir" default:"~/.pe/data"`
-	
+
 	// Cache directory
 	CacheDir string `yaml:"cache_dir" json:"cache_dir" default:"~/.pe/cache"`
-	
+
 	// Default timeout for operations
 	DefaultTimeout time.Duration `yaml:"default_timeout" json:"default_timeout" default:"30s"`
 }
@@ -78,19 +79,19 @@ type AppConfig struct {
 type ProvidersConfig struct {
 	// Default provider to use
 	Default string `yaml:"default" json:"default" default:"openai"`
-	
+
 	// OpenAI configuration
 	OpenAI OpenAIConfig `yaml:"openai" json:"openai"`
-	
+
 	// Anthropic configuration
 	Anthropic AnthropicConfig `yaml:"anthropic" json:"anthropic"`
-	
+
 	// Ollama configuration
 	Ollama OllamaConfig `yaml:"ollama" json:"ollama"`
-	
+
 	// CGPT configuration (CLI wrapper)
 	CGPT CGPTConfig `yaml:"cgpt" json:"cgpt"`
-	
+
 	// Custom provider configurations
 	Custom map[string]CustomProviderConfig `yaml:"custom" json:"custom"`
 }
@@ -99,22 +100,22 @@ type ProvidersConfig struct {
 type OpenAIConfig struct {
 	// API key (can be set via environment)
 	APIKey string `yaml:"api_key" json:"api_key" env:"OPENAI_API_KEY"`
-	
+
 	// API base URL
 	BaseURL string `yaml:"base_url" json:"base_url" default:"https://api.openai.com/v1"`
-	
+
 	// Organization ID
 	OrganizationID string `yaml:"organization_id" json:"organization_id" env:"OPENAI_ORG_ID"`
-	
+
 	// Default model
 	DefaultModel string `yaml:"default_model" json:"default_model" default:"gpt-4"`
-	
+
 	// Request timeout
 	Timeout time.Duration `yaml:"timeout" json:"timeout" default:"60s"`
-	
+
 	// Max retries
 	MaxRetries int `yaml:"max_retries" json:"max_retries" default:"3"`
-	
+
 	// Rate limiting
 	RateLimit RateLimitConfig `yaml:"rate_limit" json:"rate_limit"`
 }
@@ -123,19 +124,19 @@ type OpenAIConfig struct {
 type AnthropicConfig struct {
 	// API key (can be set via environment)
 	APIKey string `yaml:"api_key" json:"api_key" env:"ANTHROPIC_API_KEY"`
-	
+
 	// API base URL
 	BaseURL string `yaml:"base_url" json:"base_url" default:"https://api.anthropic.com"`
-	
+
 	// Default model
 	DefaultModel string `yaml:"default_model" json:"default_model" default:"claude-3-haiku-20240307"`
-	
+
 	// Request timeout
 	Timeout time.Duration `yaml:"timeout" json:"timeout" default:"60s"`
-	
+
 	// Max retries
 	MaxRetries int `yaml:"max_retries" json:"max_retries" default:"3"`
-	
+
 	// Rate limiting
 	RateLimit RateLimitConfig `yaml:"rate_limit" json:"rate_limit"`
 }
@@ -144,13 +145,13 @@ type AnthropicConfig struct {
 type OllamaConfig struct {
 	// Host URL
 	Host string `yaml:"host" json:"host" default:"http://localhost:11434"`
-	
+
 	// Default model
 	DefaultModel string `yaml:"default_model" json:"default_model" default:"llama2"`
-	
+
 	// Request timeout
 	Timeout time.Duration `yaml:"timeout" json:"timeout" default:"300s"`
-	
+
 	// Keep alive duration
 	KeepAlive time.Duration `yaml:"keep_alive" json:"keep_alive" default:"5m"`
 }
@@ -159,13 +160,13 @@ type OllamaConfig struct {
 type CGPTConfig struct {
 	// Path to cgpt binary
 	BinaryPath string `yaml:"binary_path" json:"binary_path" default:"cgpt"`
-	
+
 	// Default arguments to pass
 	DefaultArgs []string `yaml:"default_args" json:"default_args"`
-	
+
 	// Environment variables to set
 	Environment map[string]string `yaml:"environment" json:"environment"`
-	
+
 	// Timeout for subprocess
 	Timeout time.Duration `yaml:"timeout" json:"timeout" default:"60s"`
 }
@@ -174,10 +175,10 @@ type CGPTConfig struct {
 type CustomProviderConfig struct {
 	// Provider type or plugin name
 	Type string `yaml:"type" json:"type"`
-	
+
 	// Configuration specific to the provider
 	Config map[string]interface{} `yaml:"config" json:"config"`
-	
+
 	// Whether this provider is enabled
 	Enabled bool `yaml:"enabled" json:"enabled" default:"true"`
 }
@@ -186,10 +187,10 @@ type CustomProviderConfig struct {
 type RateLimitConfig struct {
 	// Requests per minute
 	RequestsPerMinute int `yaml:"requests_per_minute" json:"requests_per_minute" default:"60"`
-	
+
 	// Tokens per minute
 	TokensPerMinute int `yaml:"tokens_per_minute" json:"tokens_per_minute" default:"100000"`
-	
+
 	// Burst allowance
 	Burst int `yaml:"burst" json:"burst" default:"10"`
 }
@@ -198,25 +199,25 @@ type RateLimitConfig struct {
 type EvalConfig struct {
 	// Default configuration file patterns to search
 	DefaultConfigFiles []string `yaml:"default_config_files" json:"default_config_files" default:"[\"promptfooconfig.yaml\", \"pe.config.yaml\", \".pe/config.yaml\"]"`
-	
+
 	// Default output directory
 	OutputDir string `yaml:"output_dir" json:"output_dir" default:"./results"`
-	
+
 	// Default timeout for evaluations
 	Timeout time.Duration `yaml:"timeout" json:"timeout" default:"300s"`
-	
+
 	// Maximum concurrency
 	MaxConcurrency int `yaml:"max_concurrency" json:"max_concurrency" default:"10"`
-	
+
 	// Enable progress bars
 	ShowProgress bool `yaml:"show_progress" json:"show_progress" default:"true"`
-	
+
 	// Save to database by default
 	SaveToDb bool `yaml:"save_to_db" json:"save_to_db" default:"false"`
-	
+
 	// Share results by default
 	Share bool `yaml:"share" json:"share" default:"false"`
-	
+
 	// Cache evaluation results
 	Cache CacheConfig `yaml:"cache" json:"cache"`
 }
@@ -225,16 +226,16 @@ type EvalConfig struct {
 type ModulesConfig struct {
 	// Default registry URL
 	Registry string `yaml:"registry" json:"registry" default:"https://registry.pe.dev"`
-	
+
 	// Local modules directory
 	LocalDir string `yaml:"local_dir" json:"local_dir" default:"~/.pe/modules"`
-	
+
 	// Vendor directory for vendored modules
 	VendorDir string `yaml:"vendor_dir" json:"vendor_dir" default:"./vendor"`
-	
+
 	// Auto-download missing modules
 	AutoDownload bool `yaml:"auto_download" json:"auto_download" default:"true"`
-	
+
 	// Module cache settings
 	Cache CacheConfig `yaml:"cache" json:"cache"`
 }
@@ -243,28 +244,28 @@ type ModulesConfig struct {
 type OptimizationConfig struct {
 	// Default optimization method
 	DefaultMethod string `yaml:"default_method" json:"default_method" default:"semantic"`
-	
+
 	// Maximum iterations for optimization
 	MaxIterations int `yaml:"max_iterations" json:"max_iterations" default:"100"`
-	
+
 	// Convergence threshold
 	ConvergenceThreshold float64 `yaml:"convergence_threshold" json:"convergence_threshold" default:"0.01"`
-	
+
 	// Population size for evolutionary algorithms
 	PopulationSize int `yaml:"population_size" json:"population_size" default:"50"`
-	
+
 	// Learning rate for gradient-based methods
 	LearningRate float64 `yaml:"learning_rate" json:"learning_rate" default:"0.1"`
-	
+
 	// Enable parallel optimization
 	Parallel bool `yaml:"parallel" json:"parallel" default:"true"`
-	
+
 	// Semantic optimization settings
 	Semantic SemanticConfig `yaml:"semantic" json:"semantic"`
-	
+
 	// GASO optimization settings
 	GASO GASOConfig `yaml:"gaso" json:"gaso"`
-	
+
 	// Evolutionary optimization settings
 	Evolution EvolutionConfig `yaml:"evolution" json:"evolution"`
 }
@@ -273,10 +274,10 @@ type OptimizationConfig struct {
 type SemanticConfig struct {
 	// Embedding model to use
 	EmbeddingModel string `yaml:"embedding_model" json:"embedding_model" default:"text-embedding-ada-002"`
-	
+
 	// Similarity threshold
 	SimilarityThreshold float64 `yaml:"similarity_threshold" json:"similarity_threshold" default:"0.8"`
-	
+
 	// Gradient step size
 	StepSize float64 `yaml:"step_size" json:"step_size" default:"0.1"`
 }
@@ -285,10 +286,10 @@ type SemanticConfig struct {
 type GASOConfig struct {
 	// Temperature for sampling
 	Temperature float64 `yaml:"temperature" json:"temperature" default:"0.7"`
-	
+
 	// Top-k sampling
 	TopK int `yaml:"top_k" json:"top_k" default:"40"`
-	
+
 	// Top-p sampling
 	TopP float64 `yaml:"top_p" json:"top_p" default:"0.9"`
 }
@@ -297,13 +298,13 @@ type GASOConfig struct {
 type EvolutionConfig struct {
 	// Mutation rate
 	MutationRate float64 `yaml:"mutation_rate" json:"mutation_rate" default:"0.1"`
-	
+
 	// Crossover rate
 	CrossoverRate float64 `yaml:"crossover_rate" json:"crossover_rate" default:"0.7"`
-	
+
 	// Elite percentage to preserve
 	ElitePercentage float64 `yaml:"elite_percentage" json:"elite_percentage" default:"0.1"`
-	
+
 	// Selection method
 	Selection string `yaml:"selection" json:"selection" default:"tournament"`
 }
@@ -312,16 +313,16 @@ type EvolutionConfig struct {
 type ObservabilityConfig struct {
 	// Enable metrics collection
 	EnableMetrics bool `yaml:"enable_metrics" json:"enable_metrics" default:"true"`
-	
+
 	// Enable tracing
 	EnableTracing bool `yaml:"enable_tracing" json:"enable_tracing" default:"false"`
-	
+
 	// Metrics port
 	MetricsPort int `yaml:"metrics_port" json:"metrics_port" default:"9090"`
-	
+
 	// Tracing endpoint
 	TracingEndpoint string `yaml:"tracing_endpoint" json:"tracing_endpoint"`
-	
+
 	// Log output configuration
 	Logging LoggingConfig `yaml:"logging" json:"logging"`
 }
@@ -330,13 +331,13 @@ type ObservabilityConfig struct {
 type LoggingConfig struct {
 	// Log format (json, text)
 	Format string `yaml:"format" json:"format" default:"text"`
-	
+
 	// Log output (stdout, stderr, file path)
 	Output string `yaml:"output" json:"output" default:"stderr"`
-	
+
 	// Enable structured logging
 	Structured bool `yaml:"structured" json:"structured" default:"false"`
-	
+
 	// Include caller information
 	IncludeCaller bool `yaml:"include_caller" json:"include_caller" default:"false"`
 }
@@ -345,19 +346,19 @@ type LoggingConfig struct {
 type SecurityConfig struct {
 	// Enable input validation
 	ValidateInput bool `yaml:"validate_input" json:"validate_input" default:"true"`
-	
+
 	// Enable output sanitization
 	SanitizeOutput bool `yaml:"sanitize_output" json:"sanitize_output" default:"true"`
-	
+
 	// Maximum input size
 	MaxInputSize int64 `yaml:"max_input_size" json:"max_input_size" default:"1048576"`
-	
+
 	// Allowed file extensions for uploads
 	AllowedExtensions []string `yaml:"allowed_extensions" json:"allowed_extensions" default:"[\".yaml\", \".yml\", \".json\", \".txt\", \".md\"]"`
-	
+
 	// Enable API key validation
 	ValidateAPIKeys bool `yaml:"validate_api_keys" json:"validate_api_keys" default:"true"`
-	
+
 	// TLS configuration
 	TLS TLSConfig `yaml:"tls" json:"tls"`
 }
@@ -366,16 +367,16 @@ type SecurityConfig struct {
 type TLSConfig struct {
 	// Enable TLS
 	Enabled bool `yaml:"enabled" json:"enabled" default:"false"`
-	
+
 	// Certificate file path
 	CertFile string `yaml:"cert_file" json:"cert_file"`
-	
+
 	// Key file path
 	KeyFile string `yaml:"key_file" json:"key_file"`
-	
+
 	// CA certificate file
 	CAFile string `yaml:"ca_file" json:"ca_file"`
-	
+
 	// Skip certificate verification
 	InsecureSkipVerify bool `yaml:"insecure_skip_verify" json:"insecure_skip_verify" default:"false"`
 }
@@ -384,19 +385,19 @@ type TLSConfig struct {
 type PluginsConfig struct {
 	// Plugin directory
 	Directory string `yaml:"directory" json:"directory" default:"~/.pe/plugins"`
-	
+
 	// Auto-discover plugins
 	AutoDiscover bool `yaml:"auto_discover" json:"auto_discover" default:"true"`
-	
+
 	// Plugin search paths
 	SearchPaths []string `yaml:"search_paths" json:"search_paths" default:"[\"/usr/local/bin\", \"/usr/bin\", \"./plugins\"]"`
-	
+
 	// Enabled plugins
 	Enabled []string `yaml:"enabled" json:"enabled"`
-	
+
 	// Disabled plugins
 	Disabled []string `yaml:"disabled" json:"disabled"`
-	
+
 	// Plugin configurations
 	Config map[string]interface{} `yaml:"config" json:"config"`
 }
@@ -405,16 +406,16 @@ type PluginsConfig struct {
 type TemplatesConfig struct {
 	// Template directory
 	Directory string `yaml:"directory" json:"directory" default:"~/.pe/templates"`
-	
+
 	// Default template format
 	DefaultFormat string `yaml:"default_format" json:"default_format" default:"yaml"`
-	
+
 	// Enable template caching
 	Cache bool `yaml:"cache" json:"cache" default:"true"`
-	
+
 	// Template search paths
 	SearchPaths []string `yaml:"search_paths" json:"search_paths" default:"[\"./templates\", \"~/.pe/templates\"]"`
-	
+
 	// Variable delimiter style
 	VariableStyle string `yaml:"variable_style" json:"variable_style" default:"mustache"`
 }
@@ -423,16 +424,16 @@ type TemplatesConfig struct {
 type OutputConfig struct {
 	// Default output format
 	Format string `yaml:"format" json:"format" default:"text"`
-	
+
 	// Enable colored output
 	Color bool `yaml:"color" json:"color" default:"true"`
-	
+
 	// Enable pretty printing
 	Pretty bool `yaml:"pretty" json:"pretty" default:"true"`
-	
+
 	// Pagination settings
 	Pagination PaginationConfig `yaml:"pagination" json:"pagination"`
-	
+
 	// Table formatting
 	Table TableConfig `yaml:"table" json:"table"`
 }
@@ -441,10 +442,10 @@ type OutputConfig struct {
 type PaginationConfig struct {
 	// Enable pagination
 	Enabled bool `yaml:"enabled" json:"enabled" default:"true"`
-	
+
 	// Items per page
 	PageSize int `yaml:"page_size" json:"page_size" default:"20"`
-	
+
 	// Show page numbers
 	ShowPageNumbers bool `yaml:"show_page_numbers" json:"show_page_numbers" default:"true"`
 }
@@ -453,13 +454,13 @@ type PaginationConfig struct {
 type TableConfig struct {
 	// Table style (ascii, unicode, markdown)
 	Style string `yaml:"style" json:"style" default:"unicode"`
-	
+
 	// Show headers
 	ShowHeaders bool `yaml:"show_headers" json:"show_headers" default:"true"`
-	
+
 	// Enable sorting
 	Sortable bool `yaml:"sortable" json:"sortable" default:"true"`
-	
+
 	// Maximum column width
 	MaxColumnWidth int `yaml:"max_column_width" json:"max_column_width" default:"80"`
 }
@@ -468,16 +469,16 @@ type TableConfig struct {
 type CacheConfig struct {
 	// Enable caching
 	Enabled bool `yaml:"enabled" json:"enabled" default:"true"`
-	
+
 	// Cache directory
 	Directory string `yaml:"directory" json:"directory" default:"~/.pe/cache"`
-	
+
 	// Cache TTL
 	TTL time.Duration `yaml:"ttl" json:"ttl" default:"24h"`
-	
+
 	// Maximum cache size
 	MaxSize int64 `yaml:"max_size" json:"max_size" default:"1073741824"`
-	
+
 	// Cleanup interval
 	CleanupInterval time.Duration `yaml:"cleanup_interval" json:"cleanup_interval" default:"1h"`
 }
@@ -554,7 +555,7 @@ func validateAppConfig(config *AppConfig) error {
 			}
 		}
 		if !valid {
-			return fmt.Errorf("invalid log level: %s (must be one of: %s)", 
+			return fmt.Errorf("invalid log level: %s (must be one of: %s)",
 				config.LogLevel, strings.Join(validLogLevels, ", "))
 		}
 	}
@@ -583,7 +584,12 @@ func validateProvidersConfig(config *ProvidersConfig) error {
 		}
 	}
 	if !valid {
-		return fmt.Errorf("invalid default provider: %s (must be one of: %s)", 
+		if custom, ok := config.Custom[config.Default]; ok && custom.Enabled {
+			valid = true
+		}
+	}
+	if !valid {
+		return fmt.Errorf("invalid default provider: %s (must be one of: %s)",
 			config.Default, strings.Join(validProviders, ", "))
 	}
 
@@ -607,11 +613,23 @@ func validateProvidersConfig(config *ProvidersConfig) error {
 		return fmt.Errorf("CGPT config validation failed: %w", err)
 	}
 
+	for name, custom := range config.Custom {
+		if err := validateCustomProviderConfig(name, &custom); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 // validateOpenAIConfig validates OpenAI configuration
 func validateOpenAIConfig(config *OpenAIConfig) error {
+	if config.BaseURL != "" {
+		if err := validateURL(config.BaseURL); err != nil {
+			return fmt.Errorf("base url: %w", err)
+		}
+	}
+
 	// Validate timeout
 	if config.Timeout < 0 {
 		return fmt.Errorf("timeout must be non-negative, got: %v", config.Timeout)
@@ -628,6 +646,12 @@ func validateOpenAIConfig(config *OpenAIConfig) error {
 
 // validateAnthropicConfig validates Anthropic configuration
 func validateAnthropicConfig(config *AnthropicConfig) error {
+	if config.BaseURL != "" {
+		if err := validateURL(config.BaseURL); err != nil {
+			return fmt.Errorf("base url: %w", err)
+		}
+	}
+
 	// Validate timeout
 	if config.Timeout < 0 {
 		return fmt.Errorf("timeout must be non-negative, got: %v", config.Timeout)
@@ -644,6 +668,12 @@ func validateAnthropicConfig(config *AnthropicConfig) error {
 
 // validateOllamaConfig validates Ollama configuration
 func validateOllamaConfig(config *OllamaConfig) error {
+	if config.Host != "" {
+		if err := validateURL(config.Host); err != nil {
+			return fmt.Errorf("host: %w", err)
+		}
+	}
+
 	// Validate timeout
 	if config.Timeout < 0 {
 		return fmt.Errorf("timeout must be non-negative, got: %v", config.Timeout)
@@ -664,6 +694,30 @@ func validateCGPTConfig(config *CGPTConfig) error {
 		return fmt.Errorf("timeout must be non-negative, got: %v", config.Timeout)
 	}
 
+	return nil
+}
+
+func validateCustomProviderConfig(name string, config *CustomProviderConfig) error {
+	if strings.TrimSpace(name) == "" {
+		return fmt.Errorf("custom provider name cannot be empty")
+	}
+	if !config.Enabled {
+		return nil
+	}
+	if strings.TrimSpace(config.Type) == "" {
+		return fmt.Errorf("custom provider %s type cannot be empty", name)
+	}
+	return nil
+}
+
+func validateURL(raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return err
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return fmt.Errorf("must include scheme and host")
+	}
 	return nil
 }
 
@@ -714,7 +768,7 @@ func validateOptimizationConfig(config *OptimizationConfig) error {
 			}
 		}
 		if !valid {
-			return fmt.Errorf("invalid default optimization method: %s (must be one of: %s)", 
+			return fmt.Errorf("invalid default optimization method: %s (must be one of: %s)",
 				config.DefaultMethod, strings.Join(validMethods, ", "))
 		}
 	}
@@ -759,7 +813,7 @@ func validateLoggingConfig(config *LoggingConfig) error {
 			}
 		}
 		if !valid {
-			return fmt.Errorf("invalid log format: %s (must be one of: %s)", 
+			return fmt.Errorf("invalid log format: %s (must be one of: %s)",
 				config.Format, strings.Join(validFormats, ", "))
 		}
 	}
@@ -822,7 +876,7 @@ func validateTemplatesConfig(config *TemplatesConfig) error {
 			}
 		}
 		if !valid {
-			return fmt.Errorf("invalid default template format: %s (must be one of: %s)", 
+			return fmt.Errorf("invalid default template format: %s (must be one of: %s)",
 				config.DefaultFormat, strings.Join(validFormats, ", "))
 		}
 	}
@@ -837,7 +891,7 @@ func validateTemplatesConfig(config *TemplatesConfig) error {
 			}
 		}
 		if !valid {
-			return fmt.Errorf("invalid variable style: %s (must be one of: %s)", 
+			return fmt.Errorf("invalid variable style: %s (must be one of: %s)",
 				config.VariableStyle, strings.Join(validStyles, ", "))
 		}
 	}
@@ -857,7 +911,7 @@ func validateOutputConfig(config *OutputConfig) error {
 			}
 		}
 		if !valid {
-			return fmt.Errorf("invalid output format: %s (must be one of: %s)", 
+			return fmt.Errorf("invalid output format: %s (must be one of: %s)",
 				config.Format, strings.Join(validFormats, ", "))
 		}
 	}
@@ -890,7 +944,7 @@ func validateTableConfig(config *TableConfig) error {
 			}
 		}
 		if !valid {
-			return fmt.Errorf("invalid table style: %s (must be one of: %s)", 
+			return fmt.Errorf("invalid table style: %s (must be one of: %s)",
 				config.Style, strings.Join(validStyles, ", "))
 		}
 	}
@@ -1063,10 +1117,10 @@ func DefaultConfig() *Config {
 				ShowPageNumbers: true,
 			},
 			Table: TableConfig{
-				Style:            "unicode",
-				ShowHeaders:      true,
-				Sortable:         true,
-				MaxColumnWidth:   80,
+				Style:          "unicode",
+				ShowHeaders:    true,
+				Sortable:       true,
+				MaxColumnWidth: 80,
 			},
 		},
 	}

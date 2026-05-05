@@ -34,15 +34,15 @@ func TestValidateConfig(t *testing.T) {
 				},
 				Eval: EvalConfig{
 					MaxConcurrency: 1,
-					Cache:         CacheConfig{MaxSize: 1},
+					Cache:          CacheConfig{MaxSize: 1},
 				},
 				Modules: ModulesConfig{
 					Cache: CacheConfig{MaxSize: 1},
 				},
 				Optimization: OptimizationConfig{
-					MaxIterations: 1,
+					MaxIterations:  1,
 					PopulationSize: 1,
-					LearningRate: 0.1,
+					LearningRate:   0.1,
 				},
 				Observability: ObservabilityConfig{
 					MetricsPort: 8080,
@@ -52,7 +52,7 @@ func TestValidateConfig(t *testing.T) {
 				},
 				Output: OutputConfig{
 					Pagination: PaginationConfig{PageSize: 10},
-					Table:     TableConfig{MaxColumnWidth: 80},
+					Table:      TableConfig{MaxColumnWidth: 80},
 				},
 			},
 			expectError: true,
@@ -69,15 +69,15 @@ func TestValidateConfig(t *testing.T) {
 				},
 				Eval: EvalConfig{
 					MaxConcurrency: 1,
-					Cache:         CacheConfig{MaxSize: 1},
+					Cache:          CacheConfig{MaxSize: 1},
 				},
 				Modules: ModulesConfig{
 					Cache: CacheConfig{MaxSize: 1},
 				},
 				Optimization: OptimizationConfig{
-					MaxIterations: 1,
+					MaxIterations:  1,
 					PopulationSize: 1,
-					LearningRate: 0.1,
+					LearningRate:   0.1,
 				},
 				Observability: ObservabilityConfig{
 					MetricsPort: 8080,
@@ -87,7 +87,7 @@ func TestValidateConfig(t *testing.T) {
 				},
 				Output: OutputConfig{
 					Pagination: PaginationConfig{PageSize: 10},
-					Table:     TableConfig{MaxColumnWidth: 80},
+					Table:      TableConfig{MaxColumnWidth: 80},
 				},
 			},
 			expectError: true,
@@ -102,15 +102,15 @@ func TestValidateConfig(t *testing.T) {
 				},
 				Eval: EvalConfig{
 					MaxConcurrency: 1,
-					Cache:         CacheConfig{MaxSize: 1},
+					Cache:          CacheConfig{MaxSize: 1},
 				},
 				Modules: ModulesConfig{
 					Cache: CacheConfig{MaxSize: 1},
 				},
 				Optimization: OptimizationConfig{
-					MaxIterations: 1,
+					MaxIterations:  1,
 					PopulationSize: 1,
-					LearningRate: 0.1,
+					LearningRate:   0.1,
 				},
 				Observability: ObservabilityConfig{
 					MetricsPort: 8080,
@@ -120,7 +120,7 @@ func TestValidateConfig(t *testing.T) {
 				},
 				Output: OutputConfig{
 					Pagination: PaginationConfig{PageSize: 10},
-					Table:     TableConfig{MaxColumnWidth: 80},
+					Table:      TableConfig{MaxColumnWidth: 80},
 				},
 			},
 			expectError: true,
@@ -135,15 +135,15 @@ func TestValidateConfig(t *testing.T) {
 				},
 				Eval: EvalConfig{
 					MaxConcurrency: 0,
-					Cache:         CacheConfig{MaxSize: 1},
+					Cache:          CacheConfig{MaxSize: 1},
 				},
 				Modules: ModulesConfig{
 					Cache: CacheConfig{MaxSize: 1},
 				},
 				Optimization: OptimizationConfig{
-					MaxIterations: 1,
+					MaxIterations:  1,
 					PopulationSize: 1,
-					LearningRate: 0.1,
+					LearningRate:   0.1,
 				},
 				Observability: ObservabilityConfig{
 					MetricsPort: 8080,
@@ -153,7 +153,7 @@ func TestValidateConfig(t *testing.T) {
 				},
 				Output: OutputConfig{
 					Pagination: PaginationConfig{PageSize: 10},
-					Table:     TableConfig{MaxColumnWidth: 80},
+					Table:      TableConfig{MaxColumnWidth: 80},
 				},
 			},
 			expectError: true,
@@ -168,15 +168,15 @@ func TestValidateConfig(t *testing.T) {
 				},
 				Eval: EvalConfig{
 					MaxConcurrency: 1,
-					Cache:         CacheConfig{MaxSize: 1},
+					Cache:          CacheConfig{MaxSize: 1},
 				},
 				Modules: ModulesConfig{
 					Cache: CacheConfig{MaxSize: 1},
 				},
 				Optimization: OptimizationConfig{
-					MaxIterations: 1,
+					MaxIterations:  1,
 					PopulationSize: 1,
-					LearningRate: 0.1,
+					LearningRate:   0.1,
 				},
 				Observability: ObservabilityConfig{
 					MetricsPort: 70000,
@@ -186,7 +186,7 @@ func TestValidateConfig(t *testing.T) {
 				},
 				Output: OutputConfig{
 					Pagination: PaginationConfig{PageSize: 10},
-					Table:     TableConfig{MaxColumnWidth: 80},
+					Table:      TableConfig{MaxColumnWidth: 80},
 				},
 			},
 			expectError: true,
@@ -197,7 +197,7 @@ func TestValidateConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := ValidateConfig(tt.config)
-			
+
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("expected error containing %q, but got no error", tt.errorMsg)
@@ -214,12 +214,12 @@ func TestValidateConfig(t *testing.T) {
 }
 
 func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && 
-		(s == substr || 
-		 (len(s) > len(substr) && 
-		  (s[:len(substr)] == substr || 
-		   s[len(s)-len(substr):] == substr || 
-		   containsSubstring(s, substr))))
+	return len(s) >= len(substr) &&
+		(s == substr ||
+			(len(s) > len(substr) &&
+				(s[:len(substr)] == substr ||
+					s[len(s)-len(substr):] == substr ||
+					containsSubstring(s, substr))))
 }
 
 func containsSubstring(s, substr string) bool {
@@ -260,7 +260,7 @@ func TestValidateAppConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validateAppConfig(tt.config)
-			
+
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("expected error containing %q, but got no error", tt.errorMsg)
@@ -300,12 +300,33 @@ func TestValidateProvidersConfig(t *testing.T) {
 			expectError: true,
 			errorMsg:    "invalid default provider",
 		},
+		{
+			name: "custom default provider",
+			config: &ProvidersConfig{
+				Default: "local",
+				Custom: map[string]CustomProviderConfig{
+					"local": {Type: "openai-compatible", Enabled: true},
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "custom provider missing type",
+			config: &ProvidersConfig{
+				Default: "openai",
+				Custom: map[string]CustomProviderConfig{
+					"local": {Enabled: true},
+				},
+			},
+			expectError: true,
+			errorMsg:    "type cannot be empty",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validateProvidersConfig(tt.config)
-			
+
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("expected error containing %q, but got no error", tt.errorMsg)

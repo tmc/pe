@@ -1528,10 +1528,10 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 
 ##### Provider Configuration
 - [ ] Update provider configs to use manager
-- [ ] Add API key management
-- [ ] Implement credential storage
-- [ ] Add provider-specific options
-- [ ] Create provider config validation
+- [x] Add API key management
+- [x] Implement credential storage
+- [x] Add provider-specific options
+- [x] Create provider config validation
 
 ##### Command Configuration
 - [ ] Update commands to use config manager
