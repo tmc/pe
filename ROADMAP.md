@@ -1,8 +1,20 @@
 # PE Roadmap
 
-Last updated: 2026-04-30
+Last updated: 2026-05-05
 
 This file is the source of truth for planned PE work. Beads is deprecated for this repository: do not create or update `.beads` issues for new work. Keep roadmap changes in tracked commits with the code or documentation they describe.
+
+## Document Ownership
+
+- `ROADMAP.md`: remaining work, release blockers, priorities, and planning
+  status.
+- `CHANGELOG.md`: concise release deltas only.
+- `RELEASE_NOTES.md`: v0.5.0 release-candidate narrative, known limitations,
+  and validation checklist.
+- `docs/PLANNED_COMMANDS.md`: aspirational command ideas, not status or command
+  counts.
+- `docs/IMPLEMENTATION_TODOS.md`: tombstone pointing here.
+- `docs/future/`: aspirational design material only.
 
 ## Priority Guide
 
@@ -37,9 +49,8 @@ Remaining sub-tasks:
 2. Update all documentation dates
 3. Consolidate getting started documentation
 4. Update docs/CURRENT_STATUS.md with latest
-5. Clean up docs/future/ organization
-6. Review all command documentation
-7. Reconcile docs/README.md with README.md and current release notes
+5. Review all command documentation against generated CLI help
+6. Reconcile docs/README.md with README.md and current release notes
 
 Priority: P1 - Blocking release
 
@@ -55,19 +66,39 @@ Validate and update all examples for release.
 Ensure all examples work with current codebase:
 
 Areas to validate:
-- example/ directory examples (Go packages pass)
-- examples/ directory examples (Go packages pass; examples/README.md refreshed)
-- Code examples in documentation
-- README code samples
-- Tutorial examples
-- Command reference examples
+- example/ directory examples (Go packages pass; legacy README/script/config
+  samples still contain future command surfaces and should not be treated as
+  release-facing)
+- examples/ directory examples (Go packages pass; examples/README.md and
+  current README pages refreshed)
+- Code examples in documentation (README, getting started, command reference,
+  command examples, and gitbook CLI checked against generated help)
+- README code samples (current quick-start and optimization samples refreshed)
+- Tutorial examples (getting-started guide refreshed; long tutorial still needs
+  a deeper rewrite or archive pass)
+- Command reference examples (high-traffic sections refreshed against generated
+  help for run, eval, view, benchmark, stream, filter, analyze, stats, fmt, vet,
+  init, security, and experimental commands)
+
+Evidence:
+- `go test ./cmd/pe ./internal/prompt ./internal/promptfoo ./internal/structured ./internal/providers ./ext/starlark` passed during read-only validation.
+- `go test ./example/... ./examples/...` passed during read-only validation.
+- `PE_TEST_MODE=true pe run ...` and `pe cat ... --set ...` smoke commands from
+  examples/README.md passed during read-only validation.
+- Generated help was checked for root, run, eval, view, benchmark, fmt, vet,
+  init, security test, pipeline commands, and experimental optimize/semantic.
+- Remaining legacy risk is concentrated in `example/` promptfoo/security/
+  attestation demos and advanced long-form tutorial configs that describe
+  future or incompatible config shapes.
 
 Remaining sub-tasks:
-1. Verify documentation code examples
-2. Validate README and tutorial command samples
-3. Validate command reference examples
-4. Test representative live-provider examples with valid credentials
-5. Add missing examples for new features not yet represented
+1. Decide whether to archive or rewrite legacy `example/` demos before release
+2. Rewrite or archive long-form docs/TUTORIAL.md sections that use future config
+   shapes and unsupported assertion types
+3. Test representative live-provider examples with valid credentials
+4. Add small runnable examples for current commands with weak coverage: `ask`,
+   `template`, `prompt`, `plugin`, `profile`, `build`, `convert`, `reduce`,
+   `collect`, and `watch`
 
 Priority: P1 - User-facing quality
 
@@ -90,12 +121,6 @@ Remaining tasks:
 2. Document migration path if breaking changes are identified
 3. Tag version in git when release validation is complete
 
-Recent work to include:
-- Scripttest framework fixes
-- Test improvements
-- Documentation additions (MARKERS.md)
-- .gitignore improvements
-
 
 #### Release prep: README consolidation
 
@@ -106,7 +131,8 @@ Recent work to include:
 Consolidate and align README files.
 
 Current state:
-- README.md now reflects the generated 40-command top-level CLI surface.
+- README.md points to the generated CLI surface instead of owning a command
+  count.
 - docs/README.md still contains stale status, date, and coverage claims.
 
 Remaining tasks:
@@ -114,7 +140,6 @@ Remaining tasks:
 2. Update badges and links
 3. Link to release notes and changelog from the documentation index
 4. Update contribution guidelines reference
-5. Add clear next steps for users
 
 Key sections to update:
 - Feature list with accurate status
@@ -165,21 +190,32 @@ Critical areas:
 
 Prepare build and distribution infrastructure.
 
+Current status:
+- `go install ./cmd/pe` passes locally on darwin/arm64 with Go 1.24.13.
+- `pe version` and `pe --version` report `pe version v0.5.0 darwin/arm64`;
+  tagged release builds can set version, commit, and build date with
+  `-ldflags`.
+- Cross-compilation passes with `CGO_ENABLED=0` for darwin/amd64. The first
+  full matrix run was interrupted by a transient import/cache error after
+  darwin/arm64 succeeded; rerun the complete matrix before tagging.
+- `.github/workflows/release.yml` now builds tag-triggered archives for
+  darwin/arm64, darwin/amd64, linux/amd64, linux/arm64, and windows/amd64.
+- Binary dependency sanity check: `go list -deps ./cmd/pe` reports 216 packages;
+  `go list -m all` reports 39 modules.
+
 Tasks:
-1. Verify 'go install' works correctly
-2. Test cross-compilation (multiple platforms)
-3. Set up GitHub releases workflow (if not exists)
-4. Prepare release binaries
-5. Document build process
-6. Create install script if needed
-7. Test installation from various sources
-8. Verify binary size is reasonable
-9. Check for unnecessary dependencies in binary
+1. Rerun and record complete cross-compilation results for every release target
+2. Dry-run the GitHub release workflow from a test tag before publishing v0.5.0
+3. Verify release archive names and install commands against uploaded assets
+4. Decide whether an install script is worth adding; current docs favor direct
+   `go install` and release archives
+5. Verify final binary sizes after release builds complete
+6. Review imported package/module counts for avoidable dependencies
 
 Platforms to test:
-- macOS (arm64, amd64)
+- macOS (arm64 passes locally; amd64 passes with `CGO_ENABLED=0`)
 - Linux (amd64, arm64)
-- Windows (amd64) if supported
+- Windows (amd64)
 
 Distribution methods:
 - go install (primary)
@@ -370,7 +406,7 @@ Review these docs:
 - docs/COMMAND_EXAMPLES_GUIDE.md
 
 Verify:
-1. All 47 commands documented
+1. Current generated command inventory is documented
 2. Flags and options are accurate
 3. Examples work
 4. Help text matches documentation
@@ -392,9 +428,8 @@ Consider:
 Reorganize documentation for clarity and discoverability.
 
 Current issues:
-- 47 files in docs/ directory
-- Overlapping content (3 getting started docs, multiple tutorials)
-- docs/future/ mixed with current docs
+- Overlapping content across getting-started, tutorial, and reference docs
+- docs/future/ is now marked aspirational, but its files still need curation
 - Hard to find relevant information
 
 Proposed structure:
@@ -421,13 +456,11 @@ docs/
     (aspirational docs clearly marked)
 
 Tasks:
-1. Create new directory structure
-2. Consolidate duplicate docs
-3. Move files to appropriate locations
-4. Update all internal links
-5. Create comprehensive index in docs/README.md
-6. Add navigation/breadcrumbs
-7. Archive outdated docs
+1. Consolidate duplicate getting-started and tutorial docs
+2. Curate docs/future/ into design notes, archived material, and promotable plans
+3. Update internal links after consolidation
+4. Keep docs/README.md as the current-documentation index
+5. Archive outdated docs
 
 
 #### Release prep: License and legal review
@@ -570,19 +603,20 @@ Need to:
 
 Complete the module registry system for sharing and discovering prompts.
 
-Current status (from README):
-- Core module management works (mod init/tidy/vendor)
-- Registry features in next-experimental branch
-- Local registry exists at ~/.pe/registry
+Current status:
+- Core module management exists.
+- `pe mod download`, `pe mod list`, `pe mod search`, and `pe mod publish` have
+  command implementations.
+- Module registry support still needs release validation and clearer user
+  documentation.
 
 Tasks:
-1. Implement remote registry support
-2. Add mod publish command
-3. Add mod search with filtering
-4. Add mod download from remote sources
-5. Add versioning and dependency resolution
-6. Create registry server (optional)
-7. Documentation and examples
+1. Validate the implemented module commands against a real or fixture registry.
+2. Complete `pe mod tidy` and `pe mod vendor` behavior.
+3. Add integrity verification, version upgrade, and dependency graph behavior.
+4. Document supported registry configuration and failure modes.
+5. Decide whether a hosted registry server belongs in this repository or a
+   separate project.
 
 Related:
 - internal/pemod/ has module code
@@ -697,8 +731,8 @@ Current state:
 - May need to consolidate or organize better
 
 Need examples for:
-1. Semantic backpropagation (pe semantic backprop)
-2. GASO optimization (pe semantic gaso)
+1. Semantic backpropagation (`pe experimental semantic backprop`)
+2. GASO optimization (`pe experimental semantic gaso`)
 3. Pass@N evaluation
 4. Structured output validation
 5. Security testing (pe security)
@@ -707,6 +741,9 @@ Need examples for:
 8. Starlark extensions
 9. Advanced metrics (BERTScore, G-Eval)
 10. Prompt composition
+
+These are additive examples for future polish. Release-blocking validation of
+existing examples is tracked under P1.
 
 Organization:
 - Each example should be self-contained
@@ -735,8 +772,8 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Review test coverage for provider-dependent code
 
 ##### Migration Preparation
-- [ ] Create `internal/inference/migration.go` with LegacyAdapter
-- [ ] Implement adapter for `llm.Provider` → `inference.Provider`
+- [x] Create `internal/inference/migration.go` with LegacyAdapter
+- [x] Implement adapter for `llm.Provider` → `inference.Provider`
 - [ ] Write adapter unit tests
 - [ ] Create migration helpers for common patterns
 - [ ] Add temporary compatibility layer
@@ -848,7 +885,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 #### Phase 3: Command Architecture Reorganization (Week 5)
 
 ##### Command Taxonomy Design
-- [ ] Analyze current 48+ commands
+- [ ] Generate current command inventory from CLI help
 - [ ] Define command categories
 - [ ] Create command grouping proposal
 - [ ] Review with stakeholders

@@ -15,10 +15,10 @@ PE implements breakthrough research from 2024-2025:
 - **TextGrad Implementation**: Gradient-based optimization through textual feedback
 - **Multiple Optimization Methods**: PE2, APEX, multistage, reflection, and evolutionary approaches
 
-### Core Capabilities (✅ Stable Core + ⚠️ Prototype Extensions)
+### Core Capabilities (Stable Core + Prototype Extensions)
 - **Multi-Provider Support**: Native OpenAI (74% test coverage) and Anthropic (73.3% test coverage) providers with full API implementations
 - **Advanced Evaluation**: Pass@N metrics, structured output validation, 15+ assertion types (some advanced types in development)
-- **Unix Pipeline Philosophy**: 47 composable CLI commands for streaming prompt processing
+- **Unix Pipeline Philosophy**: generated CLI commands for streaming prompt processing
 - **Performance**: Native Go implementation with comprehensive benchmarking
 - **Module Management**: Core module system (mod init/tidy/vendor) - registry features in development
 - **Security Testing**: Full OWASP LLM Top 10 coverage via integrated security module
@@ -40,10 +40,10 @@ go install github.com/tmc/pe/cmd/pe@latest
 pe run "What is 2+2?"
 
 # From a file with template variables
-pe run translate.prompt --var text="Hello" --var language="French" --provider openai
+pe run translate.prompt --var text="Hello" --var language="French"
 
 # With stdin input
-echo "Long article about AI..." | pe run summarize.prompt --provider anthropic
+cat article.txt | pe run -
 
 # Using pipe from another command
 cat article.txt | pe run summarize --provider cgpt
@@ -55,7 +55,7 @@ PE uses Go template syntax for variables:
 
 ```bash
 # Using --var flags
-pe run translate.prompt --var text="Hello" --var from="English" --var to="Spanish" --provider openai
+pe run translate.prompt --var text="Hello" --var from="English" --var to="Spanish"
 
 # Variables are replaced in the prompt
 # {{.text}} becomes "Hello"
@@ -94,7 +94,7 @@ Let me solve this step by step:
 
 ### Level 4: Full Features
 ```
-#!/usr/bin/env pe run --model gpt-4
+#!/usr/bin/env pe run
 
 Translate the following {{.source_lang}} text to {{.target_lang}}:
 
@@ -117,7 +117,7 @@ max-tokens 1000
 
 See [docs/TEMPLATE_SYNTAX.md](docs/TEMPLATE_SYNTAX.md) for template syntax details.
 
-## 📋 Available Commands (40 Top-Level Commands)
+## 📋 Available Commands
 
 Run `pe --help` for the generated command list. The current top-level surface includes:
 
@@ -250,20 +250,20 @@ assert:
 
 ## 🔬 Optimization Methods
 
-PE implements multiple state-of-the-art optimization techniques:
+PE implements multiple optimization techniques under `pe experimental`:
 
 ```bash
 # TextGrad - Natural language gradients
-pe optimize --prompt "task" --method textgrad --iterations 5
+pe experimental optimize --prompt "task" --method textgrad --iterations 5
 
 # Semantic Backpropagation (2025 research)
-pe semantic backprop --prompt "prompt.txt" --target "accuracy"
+pe experimental semantic backprop --prompt "task" --objective "accuracy"
 
 # PE2 - Prompt Engineering Squared
-pe optimize --prompt "task" --method pe2 --budget 50
+pe experimental optimize --prompt "task" --method pe2 --iterations 5
 
-# Multi-stage optimization
-pe optimize --prompt "task" --method multistage --stages 3
+# APEX long-prompt optimization
+pe experimental optimize --prompt "task" --method apex --iterations 5
 ```
 
 ## 🏗️ Architecture
@@ -290,7 +290,8 @@ PE follows Go's philosophy: simple, composable tools that do one thing well:
 - **Familiar Patterns**: `pe.mod` files work like `go.mod`. Commands compose via pipes.
 - **No Magic**: Everything is explicit and inspectable.
 
-See [docs/future/DESIGN_PHILOSOPHY.md](docs/future/DESIGN_PHILOSOPHY.md) for more details.
+See [docs/future/README.md](docs/future/README.md) for aspirational design
+directions.
 
 ## 📚 Documentation
 
@@ -299,12 +300,16 @@ See [docs/future/DESIGN_PHILOSOPHY.md](docs/future/DESIGN_PHILOSOPHY.md) for mor
 - [Command Reference](docs/CLI_REFERENCE.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [API Reference](docs/API_REFERENCE.md)
-- [Examples](example/)
+- [Examples](examples/)
 - [Future Features](docs/future/) - Planned designs and specifications
 
 ## 🎯 Project Status
 
-PE is production-ready with 47 stable CLI commands, native provider support, and comprehensive evaluation framework. Advanced experimental features are available in the `next-experimental` branch. See [RELEASE_NOTES.md](RELEASE_NOTES.md) for detailed feature status.
+PE has a stable core CLI, native provider support, and a comprehensive
+evaluation framework, with experimental features exposed under `pe exp` and
+`pe experimental`. See [RELEASE_NOTES.md](RELEASE_NOTES.md),
+[docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md), and
+[ROADMAP.md](ROADMAP.md) for release status and remaining work.
 
 ## 📄 License
 
