@@ -335,7 +335,7 @@ Release blockers:
    `pe diff --fail-on-regression`, `pe mod tidy --json --write`,
    `pe exp attest manifest/verify`, and `pe exp cache manifest put/verify`.
    Verification: `PE_BIN=/tmp/pe ./examples/current-commands/release-local-workflows/smoke.sh`.
-5. Record the final branch policy for v0.5.0: `exp` is the integrated
+5. DONE: Record the final branch policy for v0.5.0: `exp` is the integrated
    launchpad unless the maintainer explicitly promotes it to `master` or
    creates `main`.
 

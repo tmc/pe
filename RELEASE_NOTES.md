@@ -5,6 +5,9 @@
 Release prep is in progress as of May 5, 2026. These notes describe the current
 release candidate state of PE.
 
+For v0.5.0, `exp` is the integrated launchpad branch. Tag from `exp` unless the
+maintainer explicitly promotes it to `master` or creates `main`.
+
 ## Release-Candidate Surface
 
 ### Core Toolchain

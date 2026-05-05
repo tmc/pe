@@ -65,6 +65,7 @@ is the source of truth for planned work and release-blocking follow-ups.
 - `pe exp consensus` - Weighted local vote aggregation
 - `pe exp attest` - Unsigned local SHA-256 manifest generation and verification
 - `pe exp cache` - Local content-addressed cache helpers
+- `pe serve` - Localhost-first HTTP API command
 
 ### Executable Text
 - Plain text is valid executable text input.
@@ -125,9 +126,6 @@ Basic assertions work, but these are incomplete:
 - coherence scoring
 - factuality checking
 - similarity metrics
-
-### REST API Server
-- Code exists but not exposed via CLI
 
 ## Not Implemented ❌
 
