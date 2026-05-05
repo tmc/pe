@@ -1237,7 +1237,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add `pe mod search` for registry search
 - [x] Implement `pe mod publish` for module publishing
 - [ ] Add `pe mod upgrade` for version updates
-- [ ] Implement `pe mod graph` for dependency visualization
+- [x] Implement `pe mod graph` for dependency visualization
 
 ##### Module Security
 - [ ] Implement module signing

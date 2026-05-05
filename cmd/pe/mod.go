@@ -45,6 +45,7 @@ func init() {
 	modCmd.AddCommand(modTidyCmd)
 	modCmd.AddCommand(modVendorCmd)
 	modCmd.AddCommand(modVerifyCmd)
+	modCmd.AddCommand(modGraphCmd)
 	modCmd.AddCommand(modSearchCmd)
 	modCmd.AddCommand(modPublishCmd)
 	modCmd.AddCommand(modVetCmd)
@@ -112,6 +113,12 @@ var modVerifyCmd = &cobra.Command{
 	Use:   "verify",
 	Short: "Verify downloaded modules",
 	RunE:  runModVerify,
+}
+
+var modGraphCmd = &cobra.Command{
+	Use:   "graph",
+	Short: "Print module dependency graph",
+	RunE:  runModGraph,
 }
 
 var modVetCmd = &cobra.Command{
@@ -1023,6 +1030,73 @@ func moduleDirectoryChecksum(root string) (string, error) {
 		hash.Write([]byte{0})
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+func runModGraph(cmd *cobra.Command, args []string) error {
+	data, err := os.ReadFile("pe.mod")
+	if err != nil {
+		return fmt.Errorf("reading pe.mod: %w (run 'pe mod init' first)", err)
+	}
+	file, err := pemod.Parse(strings.NewReader(string(data)))
+	if err != nil {
+		return fmt.Errorf("parsing pe.mod: %w", err)
+	}
+	root := "main"
+	if file.Module != nil {
+		root = string(file.Module.Mod)
+	}
+	var edges []string
+	seen := make(map[string]bool)
+	for _, req := range file.Require {
+		to := moduleGraphNode(string(req.Mod), req.Version)
+		edges = append(edges, root+" "+to)
+		if err := appendCachedModuleGraph(&edges, seen, string(req.Mod), req.Version); err != nil {
+			return err
+		}
+	}
+	sort.Strings(edges)
+	out := cmd.OutOrStdout()
+	for _, edge := range edges {
+		fmt.Fprintln(out, edge)
+	}
+	return nil
+}
+
+func appendCachedModuleGraph(edges *[]string, seen map[string]bool, mod, version string) error {
+	key := moduleGraphNode(mod, version)
+	if seen[key] {
+		return nil
+	}
+	seen[key] = true
+	dir, err := downloadedModuleDir(mod, version)
+	if err != nil {
+		return nil
+	}
+	meta, err := readDownloadedModuleMetadata(dir)
+	if err != nil {
+		return nil
+	}
+	var deps []string
+	for dep := range meta.Dependencies {
+		deps = append(deps, dep)
+	}
+	sort.Strings(deps)
+	for _, dep := range deps {
+		depVersion := meta.Dependencies[dep]
+		to := moduleGraphNode(dep, depVersion)
+		*edges = append(*edges, key+" "+to)
+		if err := appendCachedModuleGraph(edges, seen, dep, depVersion); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func moduleGraphNode(mod, version string) string {
+	if version == "" {
+		return mod
+	}
+	return mod + "@" + version
 }
 
 func runModVet(cmd *cobra.Command, args []string) error {

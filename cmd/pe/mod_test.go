@@ -23,7 +23,7 @@ func TestModCmd_CommandStructure(t *testing.T) {
 	}
 
 	// Verify subcommands exist
-	subcommands := []string{"init", "list", "get", "download", "tidy", "vendor", "verify", "search", "publish", "vet"}
+	subcommands := []string{"init", "list", "get", "download", "tidy", "vendor", "verify", "graph", "search", "publish", "vet"}
 	for _, name := range subcommands {
 		found := false
 		for _, cmd := range modCmd.Commands() {
@@ -541,6 +541,40 @@ func TestModuleDirectoryChecksumRejectsSymlink(t *testing.T) {
 	}
 }
 
+func TestModGraphCmd_PrintsCachedDependencies(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	writeVerifyPeMod(t)
+	modDir := filepath.Join(".pe", "cache", "modules", "example.com", "mod@v1.0.0")
+	depDir := filepath.Join(".pe", "cache", "modules", "example.com", "dep@v1.2.0")
+	if err := os.MkdirAll(modDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(depDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	writeModuleJSONWithDependencies(t, modDir, map[string]string{"example.com/dep": "v1.2.0"})
+	writeModuleJSONWithDependencies(t, depDir, nil)
+
+	var out bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+	if err := runModGraph(cmd, nil); err != nil {
+		t.Fatalf("runModGraph: %v", err)
+	}
+	got := strings.TrimSpace(out.String())
+	want := strings.Join([]string{
+		"example.com/app example.com/mod@v1.0.0",
+		"example.com/mod@v1.0.0 example.com/dep@v1.2.0",
+	}, "\n")
+	if got != want {
+		t.Fatalf("graph = %q, want %q", got, want)
+	}
+}
+
 func writeVerifyPeMod(t *testing.T) {
 	t.Helper()
 	data := []byte("module example.com/app\n\npe 1\n\nrequire example.com/mod v1.0.0\n")
@@ -551,10 +585,20 @@ func writeVerifyPeMod(t *testing.T) {
 
 func writeModuleJSON(t *testing.T, dir, sum string) {
 	t.Helper()
+	writeModuleJSONWithDependencies(t, dir, nil, sum)
+}
+
+func writeModuleJSONWithDependencies(t *testing.T, dir string, deps map[string]string, checksum ...string) {
+	t.Helper()
+	sum := ""
+	if len(checksum) > 0 {
+		sum = checksum[0]
+	}
 	data, err := json.Marshal(module.Module{
-		Name:     "example.com/mod",
-		Version:  "v1.0.0",
-		Checksum: sum,
+		Name:         "example.com/mod",
+		Version:      "v1.0.0",
+		Dependencies: deps,
+		Checksum:     sum,
 	})
 	if err != nil {
 		t.Fatal(err)
