@@ -1736,6 +1736,31 @@ Verification:
 - No stable docs claim multimodal, IDE, visual, or neurosymbolic support until
   the implementation and tests land.
 
+## v0.6+ Design Tracks: External Concepts
+
+These tracks are post-v0.5 design inputs, not release blockers. They borrow
+from external systems as constraints and vocabulary; they do not imply adopting
+new DSLs, broad provider rewrites, or arbitrary model-generated code execution.
+
+- **BAML-inspired typed modules (P2)**: add typed prompt module schemas and
+  structured-output Go generation on top of existing PE module and structured
+  output support. Start with schemas/contracts in PE files before considering
+  any separate prompt DSL.
+- **DSPy-inspired optimizer artifacts (P2)**: make optimizer outputs
+  metric-first and reproducible by recording dataset, metric, model/provider,
+  candidate prompts, selected variants, scores, and budgets. Keep the localopt
+  provider adapter deferred to v0.6 so v0.5 stays focused on local,
+  provider-free optimization behavior.
+- **OpenProse-inspired workflow contracts (P3)**: define durable workflow
+  contracts and standardized trace records for agentic/release/audit loops,
+  including roles, handoffs, approval gates, artifacts, costs, and termination
+  reasons.
+- **RLM-inspired bounded recursive context runner (P3)**: explore a typed
+  runner that stores large inputs through cache/attest, executes bounded
+  distributed chunk workers, and aggregates with deterministic consensus. This
+  must use fixed combinators such as chunk, map, reduce, search, recurse, and
+  aggregate; it must not execute arbitrary model-generated code.
+
 
 ## Architecture Implementation Backlog
 
