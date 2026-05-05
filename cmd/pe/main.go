@@ -83,6 +83,7 @@ work together seamlessly.`,
 	root.AddCommand(getCmd)        // pe get for extracting prompt info
 	root.AddCommand(evalPromptCmd) // pe eval-prompt for running evals from prompt files
 	root.AddCommand(workCmd)       // go work for prompts
+	root.AddCommand(serveCmd())    // pe serve for localhost API
 	// root.AddCommand(attestCmd)  // Moved to advanced-features branch
 	root.AddCommand(catCmd())     // pe cat for inspecting prompt files
 	root.AddCommand(versionCmd()) // pe version
