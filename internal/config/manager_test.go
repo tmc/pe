@@ -115,16 +115,12 @@ func TestConfigManager_Get(t *testing.T) {
 }
 
 func TestConfigManager_Set(t *testing.T) {
-	// Test using CLI overrides at construction time instead
-	// Note: Set() has a lock issue (calls Load while holding lock)
-	// so we test the equivalent behavior via WithCLIOverrides
-	overrides := map[string]interface{}{
-		"app.verbose": true,
-	}
-
-	cm, err := NewManager(WithConfigPaths(), WithCLIOverrides(overrides))
+	cm, err := NewManager(WithConfigPaths())
 	if err != nil {
 		t.Fatalf("NewManager failed: %v", err)
+	}
+	if err := cm.Set("app.verbose", true); err != nil {
+		t.Fatalf("Set failed: %v", err)
 	}
 
 	config := cm.Get()

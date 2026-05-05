@@ -16,6 +16,7 @@ func configCmd() *cobra.Command {
 		Short: "Inspect PE configuration",
 	}
 	cmd.AddCommand(configGetCmd())
+	cmd.AddCommand(configSetCmd())
 	cmd.AddCommand(configListCmd())
 	cmd.AddCommand(configValidateCmd())
 	return cmd
@@ -42,6 +43,34 @@ func configGetCmd() *cobra.Command {
 			return nil
 		},
 	}
+}
+
+func configSetCmd() *cobra.Command {
+	var file string
+	cmd := &cobra.Command{
+		Use:   "set key value",
+		Short: "Set one configuration value in a config file",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if file == "" {
+				return fmt.Errorf("config set requires --file")
+			}
+			manager, err := config.NewManager(config.WithConfigPaths(file))
+			if err != nil {
+				return err
+			}
+			if err := manager.Set(args[0], args[1]); err != nil {
+				return err
+			}
+			if err := manager.SaveToFile(file); err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), "ok")
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&file, "file", "", "configuration file to update")
+	return cmd
 }
 
 func configListCmd() *cobra.Command {

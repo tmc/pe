@@ -89,17 +89,17 @@ func NewManager(options ...ConfigOption) (*ConfigManager, error) {
 // getDefaultConfigPaths returns the default configuration file search paths
 func getDefaultConfigPaths() []string {
 	paths := []string{}
-	
+
 	// Current directory configurations
-	paths = append(paths, 
+	paths = append(paths,
 		"./.pe/config.yaml",
-		"./.pe/config.yml", 
+		"./.pe/config.yml",
 		"./pe.config.yaml",
 		"./pe.config.yml",
 		"./promptfooconfig.yaml",
 		"./promptfooconfig.yml",
 	)
-	
+
 	// User home directory configurations
 	if home, err := os.UserHomeDir(); err == nil {
 		paths = append(paths,
@@ -108,13 +108,13 @@ func getDefaultConfigPaths() []string {
 			filepath.Join(home, ".perc"),
 		)
 	}
-	
+
 	// System-wide configurations
 	paths = append(paths,
 		"/etc/pe/config.yaml",
 		"/etc/pe/config.yml",
 	)
-	
+
 	return paths
 }
 
@@ -173,7 +173,7 @@ func (cm *ConfigManager) loadFromFile(path string, config *Config) error {
 
 	// Determine file format by extension
 	ext := strings.ToLower(filepath.Ext(path))
-	
+
 	var fileConfig Config
 	switch ext {
 	case ".yaml", ".yml":
@@ -207,16 +207,16 @@ func (cm *ConfigManager) loadFromEnv(config *Config) error {
 // loadEnvForStruct recursively loads environment variables for a struct
 func (cm *ConfigManager) loadEnvForStruct(v reflect.Value, prefix string) error {
 	t := v.Type()
-	
+
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		fieldType := t.Field(i)
-		
+
 		// Skip unexported fields
 		if !field.CanSet() {
 			continue
 		}
-		
+
 		// Build environment variable name
 		envKey := strings.ToUpper(prefix + fieldType.Name)
 		if prefix == "" {
@@ -224,12 +224,12 @@ func (cm *ConfigManager) loadEnvForStruct(v reflect.Value, prefix string) error 
 		} else {
 			envKey = cm.envPrefix + "_" + envKey
 		}
-		
+
 		// Check for explicit env tag
 		if envTag := fieldType.Tag.Get("env"); envTag != "" {
 			envKey = envTag
 		}
-		
+
 		// Handle nested structs
 		if field.Kind() == reflect.Struct {
 			newPrefix := prefix + fieldType.Name + "_"
@@ -241,19 +241,19 @@ func (cm *ConfigManager) loadEnvForStruct(v reflect.Value, prefix string) error 
 			}
 			continue
 		}
-		
+
 		// Get environment variable value
 		envValue := os.Getenv(envKey)
 		if envValue == "" {
 			continue
 		}
-		
+
 		// Set the value based on field type
 		if err := cm.setFieldFromString(field, envValue); err != nil {
 			return fmt.Errorf("failed to set field %s from env %s: %w", fieldType.Name, envKey, err)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -262,14 +262,14 @@ func (cm *ConfigManager) setFieldFromString(field reflect.Value, value string) e
 	switch field.Kind() {
 	case reflect.String:
 		field.SetString(value)
-		
+
 	case reflect.Bool:
 		b, err := strconv.ParseBool(value)
 		if err != nil {
 			return err
 		}
 		field.SetBool(b)
-		
+
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		// Handle time.Duration specially
 		if field.Type() == reflect.TypeOf(time.Duration(0)) {
@@ -285,14 +285,14 @@ func (cm *ConfigManager) setFieldFromString(field reflect.Value, value string) e
 			}
 			field.SetInt(i)
 		}
-		
+
 	case reflect.Float32, reflect.Float64:
 		f, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return err
 		}
 		field.SetFloat(f)
-		
+
 	case reflect.Slice:
 		// Handle string slices from comma-separated values
 		if field.Type().Elem().Kind() == reflect.String {
@@ -303,7 +303,7 @@ func (cm *ConfigManager) setFieldFromString(field reflect.Value, value string) e
 			}
 			field.Set(slice)
 		}
-		
+
 	case reflect.Map:
 		// Handle maps from JSON-encoded values
 		if field.Type().Key().Kind() == reflect.String {
@@ -313,11 +313,11 @@ func (cm *ConfigManager) setFieldFromString(field reflect.Value, value string) e
 			}
 			field.Set(m)
 		}
-		
+
 	default:
 		return fmt.Errorf("unsupported field type: %s", field.Kind())
 	}
-	
+
 	return nil
 }
 
@@ -335,7 +335,7 @@ func (cm *ConfigManager) applyCLIOverrides(config *Config) error {
 func (cm *ConfigManager) setConfigValue(config *Config, key string, value interface{}) error {
 	keys := strings.Split(key, ".")
 	v := reflect.ValueOf(config).Elem()
-	
+
 	// Navigate to the target field
 	for i, k := range keys[:len(keys)-1] {
 		v = cm.getFieldByName(v, k)
@@ -343,34 +343,34 @@ func (cm *ConfigManager) setConfigValue(config *Config, key string, value interf
 			return fmt.Errorf("invalid config path at %s", strings.Join(keys[:i+1], "."))
 		}
 	}
-	
+
 	// Set the final field
 	finalField := cm.getFieldByName(v, keys[len(keys)-1])
 	if !finalField.IsValid() || !finalField.CanSet() {
 		return fmt.Errorf("cannot set config field %s", key)
 	}
-	
+
 	// Convert value to appropriate type
 	if err := cm.setReflectValue(finalField, value); err != nil {
 		return fmt.Errorf("failed to convert value for %s: %w", key, err)
 	}
-	
+
 	return nil
 }
 
 // getFieldByName gets a struct field by name, handling both direct names and YAML/JSON tags
 func (cm *ConfigManager) getFieldByName(v reflect.Value, name string) reflect.Value {
 	t := v.Type()
-	
+
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		fieldType := t.Field(i)
-		
+
 		// Check direct name match
 		if strings.EqualFold(fieldType.Name, name) {
 			return field
 		}
-		
+
 		// Check YAML tag
 		if yamlTag := fieldType.Tag.Get("yaml"); yamlTag != "" {
 			yamlName := strings.Split(yamlTag, ",")[0]
@@ -378,7 +378,7 @@ func (cm *ConfigManager) getFieldByName(v reflect.Value, name string) reflect.Va
 				return field
 			}
 		}
-		
+
 		// Check JSON tag
 		if jsonTag := fieldType.Tag.Get("json"); jsonTag != "" {
 			jsonName := strings.Split(jsonTag, ",")[0]
@@ -387,7 +387,7 @@ func (cm *ConfigManager) getFieldByName(v reflect.Value, name string) reflect.Va
 			}
 		}
 	}
-	
+
 	return reflect.Value{}
 }
 
@@ -395,24 +395,24 @@ func (cm *ConfigManager) getFieldByName(v reflect.Value, name string) reflect.Va
 func (cm *ConfigManager) setReflectValue(field reflect.Value, value interface{}) error {
 	valueType := reflect.TypeOf(value)
 	fieldType := field.Type()
-	
+
 	// Direct assignment if types match
 	if valueType.AssignableTo(fieldType) {
 		field.Set(reflect.ValueOf(value))
 		return nil
 	}
-	
+
 	// Convert string values
 	if valueType.Kind() == reflect.String {
 		return cm.setFieldFromString(field, value.(string))
 	}
-	
+
 	// Convert numeric values
 	if valueType.ConvertibleTo(fieldType) {
 		field.Set(reflect.ValueOf(value).Convert(fieldType))
 		return nil
 	}
-	
+
 	return fmt.Errorf("cannot convert %T to %s", value, fieldType)
 }
 
@@ -424,17 +424,17 @@ func mergeConfig(target, source *Config) error {
 // mergeStruct recursively merges two structs
 func mergeStruct(target, source reflect.Value) error {
 	targetType := target.Type()
-	
+
 	for i := 0; i < target.NumField(); i++ {
 		targetField := target.Field(i)
 		sourceField := source.Field(i)
 		fieldType := targetType.Field(i)
-		
+
 		// Skip unexported fields
 		if !targetField.CanSet() {
 			continue
 		}
-		
+
 		// Handle different field types
 		switch targetField.Kind() {
 		case reflect.Struct:
@@ -448,7 +448,7 @@ func mergeStruct(target, source reflect.Value) error {
 					return fmt.Errorf("failed to merge field %s: %w", fieldType.Name, err)
 				}
 			}
-			
+
 		case reflect.Map:
 			if !sourceField.IsNil() && sourceField.Len() > 0 {
 				if targetField.IsNil() {
@@ -459,12 +459,12 @@ func mergeStruct(target, source reflect.Value) error {
 					targetField.SetMapIndex(key, sourceField.MapIndex(key))
 				}
 			}
-			
+
 		case reflect.Slice:
 			if !sourceField.IsNil() && sourceField.Len() > 0 {
 				targetField.Set(sourceField)
 			}
-			
+
 		default:
 			// For primitive types, use source value if it's not zero
 			if !sourceField.IsZero() {
@@ -472,7 +472,7 @@ func mergeStruct(target, source reflect.Value) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -480,7 +480,7 @@ func mergeStruct(target, source reflect.Value) error {
 func (cm *ConfigManager) Get() *Config {
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
-	
+
 	// Return a copy to prevent external modifications
 	config := *cm.config
 	return &config
@@ -489,13 +489,11 @@ func (cm *ConfigManager) Get() *Config {
 // Set updates a configuration value and triggers a reload
 func (cm *ConfigManager) Set(key string, value interface{}) error {
 	cm.mu.Lock()
-	defer cm.mu.Unlock()
-	
 	if cm.cliOverrides == nil {
 		cm.cliOverrides = make(map[string]interface{})
 	}
-	
 	cm.cliOverrides[key] = value
+	cm.mu.Unlock()
 	return cm.Load()
 }
 
@@ -504,14 +502,14 @@ func (cm *ConfigManager) StartWatching() error {
 	if len(cm.watchCallbacks) == 0 {
 		return nil // No watchers configured
 	}
-	
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return fmt.Errorf("failed to create file watcher: %w", err)
 	}
-	
+
 	cm.watcher = watcher
-	
+
 	// Watch all existing config files
 	for _, path := range cm.configPaths {
 		if strings.HasPrefix(path, "~/") {
@@ -521,17 +519,17 @@ func (cm *ConfigManager) StartWatching() error {
 			}
 			path = filepath.Join(home, path[2:])
 		}
-		
+
 		if _, err := os.Stat(path); err == nil {
 			if err := watcher.Add(path); err != nil {
 				continue // Skip files we can't watch
 			}
 		}
 	}
-	
+
 	// Start the watcher goroutine
 	go cm.watchLoop()
-	
+
 	return nil
 }
 
@@ -543,21 +541,21 @@ func (cm *ConfigManager) watchLoop() {
 			if !ok {
 				return
 			}
-			
+
 			// Only reload on write events
 			if event.Op&fsnotify.Write == fsnotify.Write {
 				if err := cm.Load(); err != nil {
 					// Log error but continue watching
 					continue
 				}
-				
+
 				// Notify all callbacks
 				config := cm.Get()
 				for _, callback := range cm.watchCallbacks {
 					callback(config)
 				}
 			}
-			
+
 		case err, ok := <-cm.watcher.Errors:
 			if !ok {
 				return
@@ -581,13 +579,13 @@ func (cm *ConfigManager) SaveToFile(path string) error {
 	cm.mu.RLock()
 	config := cm.config
 	cm.mu.RUnlock()
-	
+
 	// Determine format from file extension
 	ext := strings.ToLower(filepath.Ext(path))
-	
+
 	var data []byte
 	var err error
-	
+
 	switch ext {
 	case ".yaml", ".yml":
 		data, err = yaml.Marshal(config)
@@ -597,20 +595,20 @@ func (cm *ConfigManager) SaveToFile(path string) error {
 		// Default to YAML
 		data, err = yaml.Marshal(config)
 	}
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
-	
+
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
-	
+
 	if err := os.WriteFile(path, data, 0644); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
-	
+
 	return nil
 }
 

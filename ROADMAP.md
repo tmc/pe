@@ -1550,7 +1550,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 
 ##### Configuration Tools
 - [x] Add `pe config get` command
-- [ ] Add `pe config set` command
+- [x] Add `pe config set` command
 - [x] Add `pe config list` command
 - [x] Add `pe config validate` command
 - [ ] Add `pe config migrate` command
