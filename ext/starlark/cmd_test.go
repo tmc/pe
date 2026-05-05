@@ -48,7 +48,7 @@ def test_fail(response):
 `)
 
 	out, err := captureStdout(t, func() error {
-		return RunStarlarkTest(file, "ok response", "")
+		return RunStarlarkTest(file, "ok response", "test_pass")
 	})
 	if err != nil {
 		t.Fatal(err)
