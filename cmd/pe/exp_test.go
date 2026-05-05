@@ -16,6 +16,7 @@ func TestExpCommandsRegistry(t *testing.T) {
 		"transform",
 		"merge",
 		"optimize",
+		"consensus",
 		"batch",
 		"sweep",
 		"schedule",
@@ -43,7 +44,7 @@ func TestExpCommandsRegistry(t *testing.T) {
 
 			// 2. Verify Execution (Stub Output)
 			// Skip real commands with flags/args requirements.
-			if cmdName == "compose" || cmdName == "distributed" || cmdName == "optimize" {
+			if cmdName == "compose" || cmdName == "distributed" || cmdName == "optimize" || cmdName == "consensus" {
 				return
 			}
 
