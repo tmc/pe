@@ -49,8 +49,8 @@ is the source of truth for planned work and release-blocking follow-ups.
 - `pe template validate` - Validate templates
 
 ### Provider Support
-- ✅ **OpenAI** - Native implementation (74% test coverage)
-- ✅ **Anthropic** - Native implementation (73.3% test coverage)
+- ✅ **OpenAI** - Native implementation; measured coverage is tracked in [TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md)
+- ✅ **Anthropic** - Native implementation; measured coverage is tracked in [TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md)
 - ✅ **cgpt** - CLI wrapper (newly registered and working)
 - ✅ **mock** - For testing
 

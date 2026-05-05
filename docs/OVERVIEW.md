@@ -125,12 +125,10 @@ pe plugin install plugin-name
 ```
 
 #### Native Provider Integration
-Fully implemented native providers with high test coverage:
+Fully implemented native providers; see [TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md) for measured coverage.
 ```bash
 pe run prompt.txt --provider openai:gpt-4
 pe run prompt.txt --provider anthropic:claude-3-haiku
-# OpenAI: 74.0% test coverage
-# Anthropic: 73.3% test coverage
 ```
 
 ## Key Features
@@ -157,7 +155,7 @@ Enterprise-focused capabilities:
 - **Cryptographic Attestation**: Prototype CLI entrypoint (`pe exp attest`)
 - **Content-Addressed Caching**: Prototype CLI entrypoint (`pe exp cache`)
 - **Distributed Execution**: Prototype CLI entrypoint (`pe exp distributed`)
-- **Native Providers**: OpenAI (74% coverage) and Anthropic (73.3% coverage)
+- **Native Providers**: OpenAI and Anthropic; measured coverage is tracked in [TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md)
 - **Module System**: Complete dependency management (init/download/tidy/vendor)
 
 ### Performance & Monitoring (✅ Implemented)
@@ -176,7 +174,7 @@ pe (CLI - 47 Commands)
 ├── Core Commands (run, eval, optimize, semantic, test)
 ├── Pipeline Commands (ask, stream, filter, analyze, collect, reduce)
 ├── Core Engine
-│   ├── Native Provider Interface (OpenAI 74%, Anthropic 73.3% test coverage)
+│   ├── Native Provider Interface (coverage tracked in TEST_COVERAGE_REPORT.md)
 │   ├── Metaprompting Engine (PE2, TextGrad, GASO, APEX)
 │   ├── Evaluation System (20+ assertion types, pass@n)
 │   └── Distributed System (P2P networking, consensus)

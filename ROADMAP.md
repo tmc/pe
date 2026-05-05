@@ -48,7 +48,7 @@ Current Issues:
   command from that inventory.
 
 Remaining sub-tasks:
-1. Replace stale coverage claims with references to docs/TEST_COVERAGE_REPORT.md
+1. DONE: Replace stale coverage claims with references to docs/TEST_COVERAGE_REPORT.md
 2. Update all documentation dates
 3. Consolidate getting started documentation
 4. DONE: Update docs/CURRENT_STATUS.md with latest

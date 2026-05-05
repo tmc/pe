@@ -19,7 +19,7 @@ PE includes local prompt optimization experiments:
 - **Multiple Optimization Methods**: PE2, APEX, multistage, reflection, and evolutionary approaches
 
 ### Core Capabilities (Stable Core + Prototype Extensions)
-- **Multi-Provider Support**: Native OpenAI (74% test coverage) and Anthropic (73.3% test coverage) providers with full API implementations
+- **Multi-Provider Support**: Native OpenAI and Anthropic providers with full API implementations; see [docs/TEST_COVERAGE_REPORT.md](docs/TEST_COVERAGE_REPORT.md) for measured coverage
 - **Advanced Evaluation**: Pass@N metrics, structured output validation, 15+ assertion types (some advanced types in development)
 - **Unix Pipeline Philosophy**: generated CLI commands for streaming prompt processing
 - **Performance**: Native Go implementation with comprehensive benchmarking
