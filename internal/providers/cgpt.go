@@ -9,6 +9,7 @@ import (
 
 	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/promptfoo"
+	"github.com/tmc/pe/internal/security"
 )
 
 // CGPTProvider implements the Provider interface using the cgpt CLI tool
@@ -19,12 +20,12 @@ type CGPTProvider struct {
 // NewCGPTProvider creates a new cgpt provider
 func NewCGPTProvider(options map[string]interface{}) (*CGPTProvider, error) {
 	executable := getStringOption(options, "executable", "cgpt")
-	
+
 	// Check if cgpt is available
 	if _, err := exec.LookPath(executable); err != nil {
 		return nil, fmt.Errorf("cgpt executable not found: %w", err)
 	}
-	
+
 	return &CGPTProvider{
 		executable: executable,
 	}, nil
@@ -44,21 +45,21 @@ func (p *CGPTProvider) Model() string {
 func (p *CGPTProvider) Generate(ctx context.Context, prompt string, options llm.GenerateOptions) (*llm.GenerateResponse, error) {
 	cmd := exec.CommandContext(ctx, p.executable)
 	cmd.Stdin = strings.NewReader(prompt)
-	
+
 	var out bytes.Buffer
 	var errBuf bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &errBuf
-	
+
 	if err := cmd.Run(); err != nil {
 		if errBuf.Len() > 0 {
-			return nil, fmt.Errorf("cgpt error: %s", errBuf.String())
+			return nil, fmt.Errorf("cgpt error: %s", security.RedactSecrets(errBuf.String()))
 		}
 		return nil, fmt.Errorf("cgpt execution failed: %w", err)
 	}
-	
+
 	return &llm.GenerateResponse{
-		Text: out.String(),
+		Text:  out.String(),
 		Model: "cgpt",
 	}, nil
 }
@@ -76,12 +77,12 @@ func (p *CGPTProvider) EvaluatePrompt(ctx context.Context, prompt string, vars m
 			finalPrompt = strings.ReplaceAll(finalPrompt, placeholder, fmt.Sprintf("%v", value))
 		}
 	}
-	
+
 	result, err := p.Generate(ctx, finalPrompt, llm.GenerateOptions{})
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &promptfoo.ProviderResponse{
 		Output: result.Text,
 	}, nil

@@ -12,6 +12,7 @@ import (
 
 	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/promptfoo"
+	"github.com/tmc/pe/internal/security"
 )
 
 // AnthropicProvider implements the LLM provider interface for Anthropic Claude API
@@ -183,9 +184,9 @@ func (p *AnthropicProvider) Generate(ctx context.Context, prompt string, options
 	if resp.StatusCode != http.StatusOK {
 		var errResp AnthropicErrorResponse
 		if err := json.Unmarshal(respBody, &errResp); err == nil {
-			return nil, fmt.Errorf("Anthropic API error: %s", errResp.Error.Message)
+			return nil, fmt.Errorf("Anthropic API error: %s", security.RedactSecrets(errResp.Error.Message))
 		}
-		return nil, fmt.Errorf("Anthropic API error: status %d, body: %s", resp.StatusCode, string(respBody))
+		return nil, fmt.Errorf("Anthropic API error: status %d, body: %s", resp.StatusCode, security.RedactSecrets(string(respBody)))
 	}
 
 	// Parse successful response
@@ -265,7 +266,7 @@ func (p *AnthropicProvider) GenerateStream(ctx context.Context, prompt string, o
 	if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("Anthropic API error: status %d, body: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("Anthropic API error: status %d, body: %s", resp.StatusCode, security.RedactSecrets(string(body)))
 	}
 
 	// Create response channel

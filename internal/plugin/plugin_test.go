@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -107,6 +108,55 @@ func TestManager_discoverInDir_WithExecutable(t *testing.T) {
 		t.Error("expected to discover test-plugin")
 	} else if plugin.Name != "test-plugin" {
 		t.Errorf("expected name 'test-plugin', got '%s'", plugin.Name)
+	}
+}
+
+func TestManager_DiscoverIgnoresPATH(t *testing.T) {
+	m := NewManager()
+	tmpDir := t.TempDir()
+	marker := filepath.Join(tmpDir, "executed")
+	pluginPath := filepath.Join(tmpDir, "pe-path-plugin")
+	script := "#!/bin/sh\ntouch " + marker + "\n"
+	if err := os.WriteFile(pluginPath, []byte(script), 0755); err != nil {
+		t.Fatalf("failed to create mock plugin: %v", err)
+	}
+
+	t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("PE_PLUGIN_PATH", "")
+
+	if err := m.Discover(); err != nil {
+		t.Fatalf("Discover failed: %v", err)
+	}
+	if _, ok := m.Get("path-plugin"); ok {
+		t.Fatal("discovered plugin from PATH")
+	}
+	if _, err := os.Stat(marker); !os.IsNotExist(err) {
+		t.Fatal("executed plugin from PATH during discovery")
+	}
+}
+
+func TestManager_discoverInDir_DoesNotExecuteMetadata(t *testing.T) {
+	m := NewManager()
+	tmpDir := t.TempDir()
+	marker := filepath.Join(tmpDir, "executed")
+	pluginPath := filepath.Join(tmpDir, "pe-test-plugin")
+	script := "#!/bin/sh\ntouch " + marker + "\necho '{\"description\":\"test\",\"version\":\"1.0.0\"}'\n"
+	if err := os.WriteFile(pluginPath, []byte(script), 0755); err != nil {
+		t.Fatalf("failed to create mock plugin: %v", err)
+	}
+
+	if err := m.discoverInDir(tmpDir); err != nil {
+		t.Fatalf("discoverInDir failed: %v", err)
+	}
+	plugin, ok := m.Get("test-plugin")
+	if !ok {
+		t.Fatal("expected to discover test-plugin")
+	}
+	if !strings.Contains(plugin.Description, "test-plugin") {
+		t.Fatalf("Description = %q, want fallback", plugin.Description)
+	}
+	if _, err := os.Stat(marker); !os.IsNotExist(err) {
+		t.Fatal("executed plugin during metadata discovery")
 	}
 }
 

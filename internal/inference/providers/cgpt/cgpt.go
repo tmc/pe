@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/tmc/pe/internal/inference"
+	"github.com/tmc/pe/internal/security"
 )
 
 func init() {
@@ -100,7 +101,7 @@ func (p *Provider) Complete(ctx context.Context, req inference.Request) (*infere
 
 	// Run the command
 	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("cgpt error: %w\nstderr: %s", err, stderr.String())
+		return nil, fmt.Errorf("cgpt error: %w\nstderr: %s", err, security.RedactSecrets(stderr.String()))
 	}
 
 	// Parse the response
@@ -189,7 +190,7 @@ func (p *Provider) Stream(ctx context.Context, req inference.Request) (<-chan in
 		// Check if cgpt had any errors
 		if err := cmd.Wait(); err != nil {
 			chunks <- inference.StreamChunk{
-				Error: fmt.Errorf("cgpt error: %w\nstderr: %s", err, stderrBuf.String()),
+				Error: fmt.Errorf("cgpt error: %w\nstderr: %s", err, security.RedactSecrets(stderrBuf.String())),
 			}
 			return
 		}

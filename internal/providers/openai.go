@@ -12,6 +12,7 @@ import (
 
 	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/promptfoo"
+	"github.com/tmc/pe/internal/security"
 )
 
 // OpenAIProvider implements the LLM provider interface for OpenAI API
@@ -185,9 +186,9 @@ func (p *OpenAIProvider) Generate(ctx context.Context, prompt string, options ll
 	if resp.StatusCode != http.StatusOK {
 		var errResp ErrorResponse
 		if err := json.Unmarshal(respBody, &errResp); err == nil {
-			return nil, fmt.Errorf("OpenAI API error: %s", errResp.Error.Message)
+			return nil, fmt.Errorf("OpenAI API error: %s", security.RedactSecrets(errResp.Error.Message))
 		}
-		return nil, fmt.Errorf("OpenAI API error: status %d, body: %s", resp.StatusCode, string(respBody))
+		return nil, fmt.Errorf("OpenAI API error: status %d, body: %s", resp.StatusCode, security.RedactSecrets(string(respBody)))
 	}
 
 	// Parse successful response
@@ -263,7 +264,7 @@ func (p *OpenAIProvider) GenerateStream(ctx context.Context, prompt string, opti
 	if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("OpenAI API error: status %d, body: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("OpenAI API error: status %d, body: %s", resp.StatusCode, security.RedactSecrets(string(body)))
 	}
 
 	// Create response channel

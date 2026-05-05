@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/tmc/pe/internal/security"
 )
 
 var pushCmd = &cobra.Command{
@@ -90,7 +91,10 @@ func runPush(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load module from local
-	moduleDir := filepath.Join(".pe", "modules", strings.ReplaceAll(moduleName, "/", string(os.PathSeparator)))
+	moduleDir, err := localModuleDir(moduleName)
+	if err != nil {
+		return err
+	}
 	metaPath := filepath.Join(moduleDir, "module.json")
 
 	data, err := os.ReadFile(metaPath)
@@ -112,7 +116,10 @@ func runPush(cmd *cobra.Command, args []string) error {
 	}
 
 	// Add prompt file
-	promptPath := filepath.Join(moduleDir, module.PromptFile)
+	promptPath, err := moduleFilePath(moduleDir, module.PromptFile)
+	if err != nil {
+		return err
+	}
 	promptData, err := os.ReadFile(promptPath)
 	if err != nil {
 		return fmt.Errorf("reading prompt file: %w", err)
@@ -212,7 +219,7 @@ func createGist(token, description string, public bool, files map[string]GistFil
 
 	if resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("GitHub API error: %s - %s", resp.Status, string(body))
+		return nil, fmt.Errorf("GitHub API error: %s - %s", resp.Status, security.RedactSecrets(string(body)))
 	}
 
 	var gist Gist
@@ -323,7 +330,7 @@ func getGist(token, gistID string) (*Gist, error) {
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("GitHub API error: %s - %s", resp.Status, string(body))
+		return nil, fmt.Errorf("GitHub API error: %s - %s", resp.Status, security.RedactSecrets(string(body)))
 	}
 
 	var gist Gist
@@ -332,4 +339,38 @@ func getGist(token, gistID string) (*Gist, error) {
 	}
 
 	return &gist, nil
+}
+
+func localModuleDir(name string) (string, error) {
+	if name == "" || filepath.IsAbs(name) {
+		return "", fmt.Errorf("invalid module name: %q", name)
+	}
+	return containedFilePath(filepath.Join(".pe", "modules"), strings.Split(name, "/")...)
+}
+
+func moduleFilePath(moduleDir, name string) (string, error) {
+	if name == "" || filepath.IsAbs(name) {
+		return "", fmt.Errorf("invalid module file: %q", name)
+	}
+	return containedFilePath(moduleDir, name)
+}
+
+func containedFilePath(base string, elems ...string) (string, error) {
+	baseAbs, err := filepath.Abs(base)
+	if err != nil {
+		return "", fmt.Errorf("resolve base path: %w", err)
+	}
+	parts := append([]string{baseAbs}, elems...)
+	path, err := filepath.Abs(filepath.Join(parts...))
+	if err != nil {
+		return "", fmt.Errorf("resolve path: %w", err)
+	}
+	rel, err := filepath.Rel(baseAbs, path)
+	if err != nil {
+		return "", fmt.Errorf("resolve relative path: %w", err)
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return "", fmt.Errorf("path escapes module directory")
+	}
+	return path, nil
 }

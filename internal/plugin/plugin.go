@@ -57,17 +57,6 @@ func (m *Manager) Discover() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// Look for plugins in PATH
-	paths := strings.Split(os.Getenv("PATH"), string(os.PathListSeparator))
-
-	for _, dir := range paths {
-		if err := m.discoverInDir(dir); err != nil {
-			// Log but don't fail on individual directory errors
-			continue
-		}
-	}
-
-	// Also look in PE_PLUGIN_PATH if set
 	if pluginPath := os.Getenv("PE_PLUGIN_PATH"); pluginPath != "" {
 		for _, dir := range strings.Split(pluginPath, string(os.PathListSeparator)) {
 			if err := m.discoverInDir(dir); err != nil {
@@ -125,7 +114,19 @@ func (m *Manager) discoverInDir(dir string) error {
 
 // loadPlugin loads information about a plugin
 func (m *Manager) loadPlugin(name, path string) (*Plugin, error) {
-	// Call the plugin with --pe-plugin-info to get metadata
+	return m.loadPluginInfo(name, path, false)
+}
+
+func (m *Manager) loadPluginInfo(name, path string, execInfo bool) (*Plugin, error) {
+	if !execInfo {
+		return &Plugin{
+			Name:        name,
+			Path:        path,
+			Description: fmt.Sprintf("Plugin: %s", name),
+		}, nil
+	}
+
+	// Call the plugin with --pe-plugin-info to get metadata.
 	cmd := exec.Command(path, "--pe-plugin-info")
 	output, err := cmd.Output()
 	if err != nil {

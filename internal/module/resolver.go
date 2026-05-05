@@ -31,34 +31,34 @@ func (r *Resolver) Resolve(moduleName string, version string) (*Module, error) {
 	if cached, err := r.cache.Get(moduleName, version); err == nil {
 		return cached, nil
 	}
-	
+
 	// Query registry
 	module, err := r.registry.Get(moduleName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get module %s: %w", moduleName, err)
 	}
-	
+
 	// Check version compatibility
 	if version != "" && !r.isVersionCompatible(module.Version, version) {
-		return nil, fmt.Errorf("module %s version %s is not compatible with requested %s", 
+		return nil, fmt.Errorf("module %s version %s is not compatible with requested %s",
 			moduleName, module.Version, version)
 	}
-	
+
 	// Download to cache
 	if err := r.registry.Download(module, r.cache.dir); err != nil {
 		return nil, fmt.Errorf("failed to download module %s: %w", moduleName, err)
 	}
-	
+
 	// Cache the module
 	if err := r.cache.Put(module); err != nil {
 		return nil, fmt.Errorf("failed to cache module %s: %w", moduleName, err)
 	}
-	
+
 	// Resolve dependencies recursively
 	if err := r.resolveDependencies(module); err != nil {
 		return nil, fmt.Errorf("failed to resolve dependencies for %s: %w", moduleName, err)
 	}
-	
+
 	return module, nil
 }
 
@@ -79,12 +79,12 @@ func (r *Resolver) isVersionCompatible(moduleVersion, constraint string) bool {
 	if constraint == "" || constraint == "*" || constraint == "latest" {
 		return true
 	}
-	
+
 	// Exact match
 	if moduleVersion == constraint {
 		return true
 	}
-	
+
 	// Range matching (e.g., "^1.0.0", "~1.2.0")
 	if strings.HasPrefix(constraint, "^") {
 		// Compatible with same major version
@@ -92,7 +92,7 @@ func (r *Resolver) isVersionCompatible(moduleVersion, constraint string) bool {
 		major2 := strings.Split(constraint[1:], ".")[0]
 		return major1 == major2
 	}
-	
+
 	if strings.HasPrefix(constraint, "~") {
 		// Compatible with same minor version
 		parts1 := strings.Split(moduleVersion, ".")
@@ -101,7 +101,7 @@ func (r *Resolver) isVersionCompatible(moduleVersion, constraint string) bool {
 			return parts1[0] == parts2[0] && parts1[1] == parts2[1]
 		}
 	}
-	
+
 	return false
 }
 
@@ -122,39 +122,74 @@ func NewCache(dir string) *Cache {
 
 // Get retrieves a module from cache
 func (c *Cache) Get(name, version string) (*Module, error) {
-	modulePath := filepath.Join(c.dir, name, version, "module.json")
-	
+	modulePath, err := c.modulePath(name, version)
+	if err != nil {
+		return nil, err
+	}
+
 	data, err := os.ReadFile(modulePath)
 	if err != nil {
 		return nil, fmt.Errorf("module not in cache: %w", err)
 	}
-	
+
 	var module Module
 	if err := json.Unmarshal(data, &module); err != nil {
 		return nil, fmt.Errorf("failed to parse cached module: %w", err)
 	}
-	
+
 	return &module, nil
 }
 
 // Put stores a module in cache
 func (c *Cache) Put(module *Module) error {
-	modulePath := filepath.Join(c.dir, module.Name, module.Version, "module.json")
-	
+	modulePath, err := c.modulePath(module.Name, module.Version)
+	if err != nil {
+		return err
+	}
+
 	if err := os.MkdirAll(filepath.Dir(modulePath), 0755); err != nil {
 		return fmt.Errorf("failed to create cache directory: %w", err)
 	}
-	
+
 	data, err := json.MarshalIndent(module, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal module: %w", err)
 	}
-	
+
 	if err := os.WriteFile(modulePath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write to cache: %w", err)
 	}
-	
+
 	return nil
+}
+
+func (c *Cache) modulePath(name, version string) (string, error) {
+	return containedPath(c.dir, name, version, "module.json")
+}
+
+func containedPath(base string, elems ...string) (string, error) {
+	for _, elem := range elems {
+		if elem == "" || filepath.IsAbs(elem) {
+			return "", fmt.Errorf("invalid path element: %q", elem)
+		}
+	}
+	baseAbs, err := filepath.Abs(base)
+	if err != nil {
+		return "", fmt.Errorf("resolve base path: %w", err)
+	}
+	parts := append([]string{baseAbs}, elems...)
+	path, err := filepath.Abs(filepath.Join(parts...))
+	if err != nil {
+		return "", fmt.Errorf("resolve path: %w", err)
+	}
+	rel, err := filepath.Rel(baseAbs, path)
+	if err != nil {
+		return "", fmt.Errorf("resolve relative path: %w", err)
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return "", fmt.Errorf("path escapes base directory")
+	}
+	return path, nil
 }
 
 // Clear removes all cached modules
@@ -178,7 +213,7 @@ func (l *LockFile) Load(path string) error {
 	if path == "" {
 		path = "pe.lock"
 	}
-	
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -188,15 +223,15 @@ func (l *LockFile) Load(path string) error {
 		}
 		return fmt.Errorf("failed to read lock file: %w", err)
 	}
-	
+
 	if err := json.Unmarshal(data, l); err != nil {
 		return fmt.Errorf("failed to parse lock file: %w", err)
 	}
-	
+
 	if l.Modules == nil {
 		l.Modules = make(map[string]LockEntry)
 	}
-	
+
 	return nil
 }
 
@@ -205,16 +240,16 @@ func (l *LockFile) Save(path string) error {
 	if path == "" {
 		path = "pe.lock"
 	}
-	
+
 	data, err := json.MarshalIndent(l, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal lock file: %w", err)
 	}
-	
+
 	if err := os.WriteFile(path, data, 0644); err != nil {
 		return fmt.Errorf("failed to write lock file: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -223,7 +258,7 @@ func (l *LockFile) Add(module *Module) {
 	if l.Modules == nil {
 		l.Modules = make(map[string]LockEntry)
 	}
-	
+
 	l.Modules[module.Name] = LockEntry{
 		Version:  module.Version,
 		Checksum: module.Checksum,
@@ -247,7 +282,7 @@ func NewDependencyGraph() *DependencyGraph {
 // AddModule adds a module to the graph
 func (g *DependencyGraph) AddModule(module *Module) {
 	g.modules[module.Name] = module
-	
+
 	// Add edges for dependencies
 	for depName := range module.Dependencies {
 		g.edges[module.Name] = append(g.edges[module.Name], depName)
@@ -266,7 +301,7 @@ func (g *DependencyGraph) TopologicalSort() ([]*Module, error) {
 			inDegree[dep]++
 		}
 	}
-	
+
 	// Find modules with no dependencies
 	var queue []string
 	for name, degree := range inDegree {
@@ -274,25 +309,25 @@ func (g *DependencyGraph) TopologicalSort() ([]*Module, error) {
 			queue = append(queue, name)
 		}
 	}
-	
+
 	var sorted []*Module
 	visited := make(map[string]bool)
-	
+
 	for len(queue) > 0 {
 		// Pop from queue
 		name := queue[0]
 		queue = queue[1:]
-		
+
 		if visited[name] {
 			continue
 		}
 		visited[name] = true
-		
+
 		// Add to sorted list
 		if module, ok := g.modules[name]; ok {
 			sorted = append(sorted, module)
 		}
-		
+
 		// Reduce in-degree of dependencies
 		for _, dep := range g.edges[name] {
 			inDegree[dep]--
@@ -301,12 +336,12 @@ func (g *DependencyGraph) TopologicalSort() ([]*Module, error) {
 			}
 		}
 	}
-	
+
 	// Check for cycles
 	if len(sorted) != len(g.modules) {
 		return nil, fmt.Errorf("circular dependency detected")
 	}
-	
+
 	return sorted, nil
 }
 
@@ -316,13 +351,13 @@ func (g *DependencyGraph) DetectCycles() ([][]string, error) {
 	visited := make(map[string]bool)
 	recStack := make(map[string]bool)
 	path := []string{}
-	
+
 	var dfs func(node string) bool
 	dfs = func(node string) bool {
 		visited[node] = true
 		recStack[node] = true
 		path = append(path, node)
-		
+
 		for _, neighbor := range g.edges[node] {
 			if !visited[neighbor] {
 				if dfs(neighbor) {
@@ -342,34 +377,34 @@ func (g *DependencyGraph) DetectCycles() ([][]string, error) {
 				return true
 			}
 		}
-		
+
 		path = path[:len(path)-1]
 		recStack[node] = false
 		return false
 	}
-	
+
 	for node := range g.modules {
 		if !visited[node] {
 			dfs(node)
 		}
 	}
-	
+
 	if len(cycles) > 0 {
 		return cycles, fmt.Errorf("found %d circular dependencies", len(cycles))
 	}
-	
+
 	return nil, nil
 }
 
 // ResolveDependencies resolves all dependencies and returns them in order
 func ResolveDependencies(modules []*Module) ([]*Module, error) {
 	graph := NewDependencyGraph()
-	
+
 	// Build dependency graph
 	for _, module := range modules {
 		graph.AddModule(module)
 	}
-	
+
 	// Check for cycles
 	if cycles, err := graph.DetectCycles(); err != nil {
 		// Format cycle information
@@ -379,13 +414,13 @@ func ResolveDependencies(modules []*Module) ([]*Module, error) {
 		}
 		return nil, fmt.Errorf("circular dependencies detected: %s", strings.Join(cycleStrs, "; "))
 	}
-	
+
 	// Sort modules in dependency order
 	sorted, err := graph.TopologicalSort()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return sorted, nil
 }
 
@@ -398,11 +433,11 @@ type VersionConstraint struct {
 // ParseVersionConstraint parses a version constraint string
 func ParseVersionConstraint(constraint string) (*VersionConstraint, error) {
 	constraint = strings.TrimSpace(constraint)
-	
+
 	if constraint == "" || constraint == "*" || constraint == "latest" {
 		return &VersionConstraint{Op: "*", Version: ""}, nil
 	}
-	
+
 	// Check for operators
 	for _, op := range []string{">=", "<=", "^", "~", ">", "<", "="} {
 		if strings.HasPrefix(constraint, op) {
@@ -410,7 +445,7 @@ func ParseVersionConstraint(constraint string) (*VersionConstraint, error) {
 			return &VersionConstraint{Op: op, Version: version}, nil
 		}
 	}
-	
+
 	// No operator means exact match
 	return &VersionConstraint{Op: "=", Version: constraint}, nil
 }
@@ -420,7 +455,7 @@ func (c *VersionConstraint) Matches(version string) bool {
 	if c.Op == "*" {
 		return true
 	}
-	
+
 	// Simple string comparison for now
 	// TODO: Implement proper semantic versioning
 	switch c.Op {
@@ -442,23 +477,23 @@ func (c *VersionConstraint) Matches(version string) bool {
 		// For now, just do exact matching for other operators
 		return version == c.Version
 	}
-	
+
 	return false
 }
 
 // ResolveVersionConflicts resolves version conflicts between dependencies
 func ResolveVersionConflicts(modules []*Module) (map[string]string, error) {
 	versions := make(map[string][]string)
-	
+
 	// Collect all version requirements
 	for _, module := range modules {
 		for depName, depVersion := range module.Dependencies {
 			versions[depName] = append(versions[depName], depVersion)
 		}
 	}
-	
+
 	resolved := make(map[string]string)
-	
+
 	// Resolve conflicts
 	for name, versionList := range versions {
 		// Remove duplicates
@@ -466,7 +501,7 @@ func ResolveVersionConflicts(modules []*Module) (map[string]string, error) {
 		for _, v := range versionList {
 			unique[v] = true
 		}
-		
+
 		if len(unique) == 1 {
 			// No conflict
 			for v := range unique {
@@ -485,6 +520,6 @@ func ResolveVersionConflicts(modules []*Module) (map[string]string, error) {
 			resolved[name] = latest
 		}
 	}
-	
+
 	return resolved, nil
 }

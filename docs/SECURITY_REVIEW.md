@@ -71,13 +71,16 @@ jq -r '.Issues | group_by(.rule_id)[] | "\(.[0].rule_id)\t\(length)\t\(.[0].deta
 
 - Release vulnerability checks should use Go 1.25.9 or newer. The default
   Go 1.24.13 toolchain still reports called standard-library vulnerabilities.
-- Triage `gosec` G204 and G304 first. Document which command/file inclusions are
-  intended CLI behavior and add containment checks for config-relative imports,
-  Starlark loads, module names, and module metadata paths where appropriate.
+- G204 triage: plugin execution is now limited to `PE_PLUGIN_PATH` discovery and
+  explicit plugin runs instead of PATH-wide startup execution. Generic CLI,
+  cgpt, custom metric, and scripttest subprocesses remain intended behavior for
+  trusted local configuration or test fixtures.
+- G304 triage: config expansion, Starlark `load_tests`, module cache paths, and
+  module publish prompt paths now have containment checks. Broad CLI file reads
+  remain intended behavior when users pass local paths.
 - Add explicit timeouts to GitHub API calls and local HTTP servers, or document
   why the local-only endpoints are acceptable.
-- Review API/body/stderr error propagation and redact secrets before logging or
-  returning errors from provider paths.
-- Decide whether `README_SECURITY.md` is product roadmap material or current
-  security documentation. Add a concise `SECURITY.md` disclosure policy if this
-  repository is being prepared for public release.
+- Provider API/body/stderr error propagation now redacts common API keys, bearer
+  tokens, GitHub tokens, AWS access keys, and Google API keys before returning
+  diagnostics.
+- `SECURITY.md` is now the current vulnerability disclosure policy.

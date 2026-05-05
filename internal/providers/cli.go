@@ -15,6 +15,7 @@ import (
 	"github.com/kballard/go-shellquote"
 	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/promptfoo"
+	"github.com/tmc/pe/internal/security"
 )
 
 // GenericCLIProvider implements the Provider interface for any CLI tool
@@ -120,7 +121,7 @@ func (p *GenericCLIProvider) Generate(ctx context.Context, prompt string, option
 	start := time.Now()
 	if err := cmd.Run(); err != nil {
 		if errBuf.Len() > 0 {
-			return nil, fmt.Errorf("cli error: %s", errBuf.String())
+			return nil, fmt.Errorf("cli error: %s", security.RedactSecrets(errBuf.String()))
 		}
 		return nil, fmt.Errorf("cli execution failed: %w", err)
 	}

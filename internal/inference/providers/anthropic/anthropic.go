@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/tmc/pe/internal/inference"
+	"github.com/tmc/pe/internal/security"
 )
 
 func init() {
@@ -173,7 +174,7 @@ func (p *Provider) Complete(ctx context.Context, req inference.Request) (*infere
 
 	// Check status
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Anthropic API error (status %d): %s", resp.StatusCode, string(respBody))
+		return nil, fmt.Errorf("Anthropic API error (status %d): %s", resp.StatusCode, security.RedactSecrets(string(respBody)))
 	}
 
 	// Parse response
@@ -256,7 +257,7 @@ func (p *Provider) Stream(ctx context.Context, req inference.Request) (<-chan in
 	if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("Anthropic API error (status %d): %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("Anthropic API error (status %d): %s", resp.StatusCode, security.RedactSecrets(string(body)))
 	}
 
 	// Create channel for streaming

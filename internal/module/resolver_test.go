@@ -59,6 +59,21 @@ func TestCache_PutAndGet(t *testing.T) {
 	}
 }
 
+func TestCache_RejectsTraversal(t *testing.T) {
+	tmpDir := t.TempDir()
+	cache := NewCache(tmpDir)
+
+	if err := cache.Put(&Module{Name: "../escape", Version: "v1.0.0"}); err == nil {
+		t.Fatal("Put traversal module succeeded")
+	}
+	if _, err := cache.Get("../escape", "v1.0.0"); err == nil {
+		t.Fatal("Get traversal module succeeded")
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "..", "escape")); !os.IsNotExist(err) {
+		t.Fatal("created path outside cache")
+	}
+}
+
 func TestCache_Get_NotFound(t *testing.T) {
 	tmpDir := t.TempDir()
 	cache := NewCache(tmpDir)

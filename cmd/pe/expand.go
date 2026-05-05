@@ -158,8 +158,10 @@ func resolvePrompts(prompts interface{}, baseDir string) ([]interface{}, error) 
 }
 
 func loadPromptsFromGlob(pattern, baseDir string) ([]string, error) {
-	pattern = strings.TrimPrefix(pattern, "file://")
-	fullPattern := filepath.Join(baseDir, pattern)
+	fullPattern, err := safeConfigPath(baseDir, strings.TrimPrefix(pattern, "file://"))
+	if err != nil {
+		return nil, err
+	}
 	matches, err := filepath.Glob(fullPattern)
 	if err != nil {
 		return nil, err
@@ -226,8 +228,10 @@ func resolveTests(tests interface{}, baseDir string) ([]interface{}, error) {
 }
 
 func loadTestsFromFile(pathStr, baseDir string) ([]interface{}, error) {
-	pathStr = strings.TrimPrefix(pathStr, "file://")
-	fullPath := filepath.Join(baseDir, pathStr)
+	fullPath, err := safeConfigPath(baseDir, strings.TrimPrefix(pathStr, "file://"))
+	if err != nil {
+		return nil, err
+	}
 
 	f, err := os.Open(fullPath)
 	if err != nil {
@@ -258,6 +262,28 @@ func loadTestsFromFile(pathStr, baseDir string) ([]interface{}, error) {
 	}
 
 	return tests, nil
+}
+
+func safeConfigPath(baseDir, ref string) (string, error) {
+	if ref == "" || filepath.IsAbs(ref) {
+		return "", fmt.Errorf("invalid config file reference: %q", ref)
+	}
+	baseAbs, err := filepath.Abs(baseDir)
+	if err != nil {
+		return "", fmt.Errorf("resolve config directory: %w", err)
+	}
+	path, err := filepath.Abs(filepath.Join(baseAbs, ref))
+	if err != nil {
+		return "", fmt.Errorf("resolve config file reference: %w", err)
+	}
+	rel, err := filepath.Rel(baseAbs, path)
+	if err != nil {
+		return "", fmt.Errorf("resolve relative config file reference: %w", err)
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return "", fmt.Errorf("config file reference escapes config directory: %s", ref)
+	}
+	return path, nil
 }
 
 func isFileRef(s string) bool {

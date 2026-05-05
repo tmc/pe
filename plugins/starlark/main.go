@@ -7,10 +7,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
-	"github.com/tmc/pe/internal/promptfoo/evaluation/evaluator"
 	"github.com/tmc/pe/internal/promptfoo"
+	"github.com/tmc/pe/internal/promptfoo/evaluation/evaluator"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
@@ -203,9 +204,10 @@ func (e *StarlarkEvaluator) setupBuiltins() {
 			return nil, err
 		}
 
-		// Resolve path relative to current file
-		basePath := filepath.Dir(e.configPath)
-		fullPath := filepath.Join(basePath, string(path))
+		fullPath, err := resolveRelativeFile(e.configPath, string(path))
+		if err != nil {
+			return nil, err
+		}
 
 		// Execute the loaded file
 		globals, err := starlark.ExecFile(thread, fullPath, nil, e.globals)
@@ -390,6 +392,28 @@ func starlarkValueToGo(v starlark.Value) interface{} {
 	default:
 		return v.String()
 	}
+}
+
+func resolveRelativeFile(configPath, path string) (string, error) {
+	if filepath.IsAbs(path) {
+		return "", fmt.Errorf("absolute load path not allowed: %s", path)
+	}
+	basePath, err := filepath.Abs(filepath.Dir(configPath))
+	if err != nil {
+		return "", fmt.Errorf("resolve config directory: %w", err)
+	}
+	fullPath, err := filepath.Abs(filepath.Join(basePath, path))
+	if err != nil {
+		return "", fmt.Errorf("resolve load path: %w", err)
+	}
+	rel, err := filepath.Rel(basePath, fullPath)
+	if err != nil {
+		return "", fmt.Errorf("resolve relative load path: %w", err)
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return "", fmt.Errorf("load path escapes config directory: %s", path)
+	}
+	return fullPath, nil
 }
 
 // starlarkDictToMap converts a Starlark dict to a Go map

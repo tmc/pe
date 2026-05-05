@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -199,5 +200,21 @@ tests: [tests.json]
 	}
 	if len(got.Tests) != 1 {
 		t.Errorf("Tests expanded incorrectly: %v", got.Tests)
+	}
+}
+
+func TestSafeConfigPathRejectsTraversal(t *testing.T) {
+	base := t.TempDir()
+	tests := []string{
+		"../secret.txt",
+		"file:///tmp/secret.txt",
+		filepath.Join("..", "secret.txt"),
+	}
+	for _, ref := range tests {
+		t.Run(ref, func(t *testing.T) {
+			if _, err := safeConfigPath(base, strings.TrimPrefix(ref, "file://")); err == nil {
+				t.Fatalf("safeConfigPath(%q) succeeded, want error", ref)
+			}
+		})
 	}
 }
