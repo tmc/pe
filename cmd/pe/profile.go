@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -100,7 +102,7 @@ func profileReportCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file")
-	cmd.Flags().StringVarP(&format, "format", "f", "json", "Output format: json, text")
+	cmd.Flags().StringVarP(&format, "format", "f", "json", "Output format: json, text, dot")
 
 	return cmd
 }
@@ -432,32 +434,44 @@ func runTraceStop(cmd *cobra.Command, args []string) error {
 }
 
 func runTraceReport(cmd *cobra.Command, traceFile, outputFile, format string) error {
-	// For now, just indicate that trace analysis would be implemented here
-	fmt.Fprintf(cmd.OutOrStdout(), "Trace analysis not yet implemented\n")
-	fmt.Fprintf(cmd.OutOrStdout(), "Trace file: %s\n", traceFile)
-
-	if _, err := os.Stat(traceFile); err != nil {
-		return fmt.Errorf("trace file not found: %s", traceFile)
+	file, err := os.Open(traceFile)
+	if err != nil {
+		return fmt.Errorf("open trace file: %w", err)
 	}
-
-	// In a real implementation, this would parse the trace file and generate reports
-	report := map[string]interface{}{
-		"trace_file": traceFile,
-		"status":     "analysis_pending",
-		"message":    "Trace analysis functionality will be implemented",
-	}
-
-	data, err := json.MarshalIndent(report, "", "  ")
+	defer file.Close()
+	spans, err := observability.ReadTraceSpans(file)
 	if err != nil {
 		return err
 	}
+	report := observability.AnalyzeTraceSpans(spans)
 
-	if outputFile != "" {
-		return os.WriteFile(outputFile, data, 0644)
+	var buf bytes.Buffer
+	switch format {
+	case "json":
+		data, err := json.MarshalIndent(report, "", "  ")
+		if err != nil {
+			return err
+		}
+		buf.Write(data)
+		buf.WriteByte('\n')
+	case "text":
+		if err := observability.WriteTextTraceReport(&buf, report); err != nil {
+			return err
+		}
+	case "dot":
+		if err := observability.WriteDOTTraceReport(&buf, report); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unsupported format: %s", format)
 	}
 
-	fmt.Fprintln(cmd.OutOrStdout(), string(data))
-	return nil
+	if outputFile != "" {
+		return os.WriteFile(outputFile, buf.Bytes(), 0644)
+	}
+
+	_, err = io.Copy(cmd.OutOrStdout(), &buf)
+	return err
 }
 
 func runMetricsStart(cmd *cobra.Command, outputFile, intervalStr string) error {
