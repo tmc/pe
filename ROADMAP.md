@@ -1520,11 +1520,11 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Create config migration tool
 
 ##### Environment Variables
-- [ ] Define environment variable schema
-- [ ] Implement env var parsing
-- [ ] Add env var validation
-- [ ] Create env var documentation
-- [ ] Add env var precedence rules
+- [x] Define environment variable schema
+- [x] Implement env var parsing
+- [x] Add env var validation
+- [x] Create env var documentation
+- [x] Add env var precedence rules
 
 ##### Provider Configuration
 - [ ] Update provider configs to use manager
