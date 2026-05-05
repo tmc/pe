@@ -167,13 +167,9 @@ func (f *ProviderAdapterFactory) CreateAdapter(provider interface{}) (optimizati
 
 // CreateAdapterFromSpec creates an adapter from a provider specification
 func (f *ProviderAdapterFactory) CreateAdapterFromSpec(providerSpec string, options map[string]interface{}) (optimization.LanguageModelProvider, error) {
-	// Try to create LLM provider first (preferred)
-	llmProvider, err := llm.GetProvider(providerSpec)
-	if err == nil {
-		return NewLLMProviderAdapter(llmProvider), nil
+	provider, err := inference.CreateProviderFromSpec(providerSpec, options)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create provider from spec %q: %w", providerSpec, err)
 	}
-
-	// If that fails, we could try inference provider here
-	// For now, return the error from LLM provider creation
-	return nil, fmt.Errorf("failed to create provider from spec '%s': %w", providerSpec, err)
+	return f.CreateAdapter(provider)
 }
