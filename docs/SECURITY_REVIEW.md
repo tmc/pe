@@ -34,9 +34,8 @@ jq -r '.Issues | group_by(.rule_id)[] | "\(.[0].rule_id)\t\(length)\t\(.[0].deta
   was identified.
 - Local key material: `.pe/keys` had no files, and no `.pe` key files were
   tracked by git in this checkout.
-- Security docs: no canonical `SECURITY.md` was present. `README_SECURITY.md`
-  exists, but it reads as an architecture/roadmap document rather than a current
-  vulnerability disclosure policy.
+- Security docs: `SECURITY.md` is now the current vulnerability disclosure
+  policy.
 - Vulnerabilities: `govulncheck ./...` found called standard-library
   vulnerabilities when run with the default Go 1.24.13 toolchain:
   GO-2026-4947, GO-2026-4946, GO-2026-4870, GO-2026-4602, and GO-2026-4601.
@@ -61,8 +60,12 @@ jq -r '.Issues | group_by(.rule_id)[] | "\(.[0].rule_id)\t\(length)\t\(.[0].deta
   can influence files read from `.pe/modules`.
 - Network/providers: OpenAI and Anthropic providers use HTTPS defaults and
   client timeouts, but `baseURL` is configurable. GitHub gist calls use
-  `http.DefaultClient` without explicit timeout. Local viewer/playground HTTP
-  servers have missing or incomplete server timeouts.
+  `http.DefaultClient` without explicit timeout. The `pe serve` local HTTP
+  server sets `ReadHeaderTimeout`, `ReadTimeout`, `WriteTimeout`, and
+  `IdleTimeout`.
+- Attest/cache: experimental `pe exp attest` and `pe exp cache` workflows are
+  unsigned and local-only. They detect local content, manifest, and cache-object
+  tamper, but they do not prove identity, origin, or freshness.
 - Error disclosure: provider and command wrappers sometimes return remote API
   bodies, subprocess stderr, or generated output in errors. This is useful for
   debugging but can leak prompts, API response details, or secrets into logs.
@@ -78,9 +81,13 @@ jq -r '.Issues | group_by(.rule_id)[] | "\(.[0].rule_id)\t\(length)\t\(.[0].deta
 - G304 triage: config expansion, Starlark `load_tests`, module cache paths, and
   module publish prompt paths now have containment checks. Broad CLI file reads
   remain intended behavior when users pass local paths.
-- Add explicit timeouts to GitHub API calls and local HTTP servers, or document
-  why the local-only endpoints are acceptable.
+- Add an explicit timeout to GitHub API calls, or document why using
+  `http.DefaultClient` is acceptable there. Keep `pe serve` timeout coverage
+  covered by command-level tests or review checks.
 - Provider API/body/stderr error propagation now redacts common API keys, bearer
   tokens, GitHub tokens, AWS access keys, and Google API keys before returning
   diagnostics.
 - `SECURITY.md` is now the current vulnerability disclosure policy.
+- Keep attest/cache docs and help text clear that unsigned local manifests and
+  cache entries detect tamper only; they are not identity, origin, or freshness
+  proofs.

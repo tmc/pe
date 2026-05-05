@@ -26,3 +26,7 @@ PE executes local tools, provider CLIs, plugins, and evaluation scripts when
 configured to do so. Treat prompt configs, modules, plugins, and eval files from
 untrusted sources as executable or file-reading input unless the command
 explicitly documents a narrower sandbox.
+
+Experimental `pe exp attest` and `pe exp cache` commands are unsigned and
+local-only. They can detect local content, manifest, and cache-object tamper,
+but they do not prove identity, origin, or freshness.
