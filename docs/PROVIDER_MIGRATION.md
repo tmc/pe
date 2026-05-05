@@ -20,6 +20,16 @@ resp, err := client.CompleteWith(ctx, spec, inference.Request{Prompt: prompt})
 Use the provider spec as the client key. A spec can be a short provider name,
 such as `cgpt`, or a provider/model pair, such as `openai:gpt-4o-mini`.
 
+Command code that still calls a package requiring `llm.Provider` should use the
+command helper instead of calling `llm.GetProvider` directly:
+
+```go
+provider, err := commandLegacyProvider(providerName, modelName)
+if err != nil {
+	return err
+}
+```
+
 ## Bridging Existing Code
 
 Use the adapters in `internal/inference/migration.go` at package boundaries:
@@ -34,6 +44,9 @@ Use the adapters in `internal/inference/migration.go` at package boundaries:
   returns an `llm.Provider`.
 - `inference.RegisterProviderSpec(client, spec, config)` creates and registers
   a provider from a provider spec.
+- `inference.CreateProviderFromSpec(spec, config)` resolves exact provider
+  specs and `provider:model` specs through the inference registry before using
+  legacy fallback.
 
 Do not add new direct calls to `llm.GetProvider` from command code. If a package
 still requires `llm.Provider`, keep the legacy type at that package boundary and
@@ -54,6 +67,9 @@ Preserve these option names when crossing the interface boundary:
 
 Unknown provider options should stay in the options map. Do not silently drop
 provider-specific fields.
+
+Remote provider config accepts both historical and inference-native spellings:
+`apiKey` maps to `api_key`, and `baseURL` maps to `base_url`.
 
 ## Migration Order
 
