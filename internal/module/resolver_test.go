@@ -346,6 +346,14 @@ func TestVersionConstraint_Matches(t *testing.T) {
 		{"caret different major", "^", "1.0.0", "2.0.0", false},
 		{"tilde same minor", "~", "1.2.0", "1.2.5", true},
 		{"tilde different minor", "~", "1.2.0", "1.3.0", false},
+		{"greater than", ">", "1.2.0", "1.2.1", true},
+		{"greater than no match", ">", "1.2.0", "1.2.0", false},
+		{"greater equal exact", ">=", "1.2.0", "1.2.0", true},
+		{"less than", "<", "2.0.0", "1.9.9", true},
+		{"less equal exact", "<=", "2.0.0", "2.0.0", true},
+		{"v prefix", "=", "v1.2.3", "1.2.3", true},
+		{"prerelease compares base", "=", "1.2.3-beta.1", "1.2.3", true},
+		{"invalid version no match", "=", "1.2.3", "not-a-version", false},
 	}
 
 	for _, tt := range tests {

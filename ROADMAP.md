@@ -1210,8 +1210,8 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 ##### Module Resolution
 - [ ] Create `internal/module/resolver.go`
 - [ ] Implement module path parsing
-- [ ] Add version constraint parsing
-- [ ] Implement semantic version comparison
+- [x] Add version constraint parsing
+- [x] Implement semantic version comparison
 - [ ] Add module cache interface
 - [ ] Implement file-based cache
 - [ ] Add cache invalidation logic

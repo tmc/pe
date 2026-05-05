@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -74,35 +75,11 @@ func (r *Resolver) resolveDependencies(module *Module) error {
 
 // isVersionCompatible checks if a module version is compatible with a constraint
 func (r *Resolver) isVersionCompatible(moduleVersion, constraint string) bool {
-	// Simple version matching for now
-	// TODO: Implement semantic versioning comparison
-	if constraint == "" || constraint == "*" || constraint == "latest" {
-		return true
+	vc, err := ParseVersionConstraint(constraint)
+	if err != nil {
+		return false
 	}
-
-	// Exact match
-	if moduleVersion == constraint {
-		return true
-	}
-
-	// Range matching (e.g., "^1.0.0", "~1.2.0")
-	if strings.HasPrefix(constraint, "^") {
-		// Compatible with same major version
-		major1 := strings.Split(moduleVersion, ".")[0]
-		major2 := strings.Split(constraint[1:], ".")[0]
-		return major1 == major2
-	}
-
-	if strings.HasPrefix(constraint, "~") {
-		// Compatible with same minor version
-		parts1 := strings.Split(moduleVersion, ".")
-		parts2 := strings.Split(constraint[1:], ".")
-		if len(parts1) >= 2 && len(parts2) >= 2 {
-			return parts1[0] == parts2[0] && parts1[1] == parts2[1]
-		}
-	}
-
-	return false
+	return vc.Matches(moduleVersion)
 }
 
 // Cache manages local module cache
@@ -456,29 +433,82 @@ func (c *VersionConstraint) Matches(version string) bool {
 		return true
 	}
 
-	// Simple string comparison for now
-	// TODO: Implement proper semantic versioning
+	got, err := parseSemver(version)
+	if err != nil {
+		return false
+	}
+	want, err := parseSemver(c.Version)
+	if err != nil {
+		return false
+	}
+
 	switch c.Op {
 	case "=":
-		return version == c.Version
+		return got.compare(want) == 0
+	case ">":
+		return got.compare(want) > 0
+	case ">=":
+		return got.compare(want) >= 0
+	case "<":
+		return got.compare(want) < 0
+	case "<=":
+		return got.compare(want) <= 0
 	case "^":
-		// Compatible with same major version
-		major1 := strings.Split(version, ".")[0]
-		major2 := strings.Split(c.Version, ".")[0]
-		return major1 == major2
+		return got.compare(want) >= 0 && got.compare(want.nextMajor()) < 0
 	case "~":
-		// Compatible with same minor version
-		parts1 := strings.Split(version, ".")
-		parts2 := strings.Split(c.Version, ".")
-		if len(parts1) >= 2 && len(parts2) >= 2 {
-			return parts1[0] == parts2[0] && parts1[1] == parts2[1]
-		}
-	default:
-		// For now, just do exact matching for other operators
-		return version == c.Version
+		return got.compare(want) >= 0 && got.compare(want.nextMinor()) < 0
 	}
 
 	return false
+}
+
+type semver struct {
+	major int
+	minor int
+	patch int
+}
+
+func parseSemver(version string) (semver, error) {
+	version = strings.TrimPrefix(strings.TrimSpace(version), "v")
+	if i := strings.IndexAny(version, "-+"); i >= 0 {
+		version = version[:i]
+	}
+	parts := strings.Split(version, ".")
+	if len(parts) > 3 {
+		return semver{}, fmt.Errorf("invalid version %q", version)
+	}
+	var v semver
+	fields := []*int{&v.major, &v.minor, &v.patch}
+	for i, part := range parts {
+		if part == "" {
+			return semver{}, fmt.Errorf("invalid version %q", version)
+		}
+		n, err := strconv.Atoi(part)
+		if err != nil || n < 0 {
+			return semver{}, fmt.Errorf("invalid version %q", version)
+		}
+		*fields[i] = n
+	}
+	return v, nil
+}
+
+func (v semver) compare(other semver) int {
+	switch {
+	case v.major != other.major:
+		return v.major - other.major
+	case v.minor != other.minor:
+		return v.minor - other.minor
+	default:
+		return v.patch - other.patch
+	}
+}
+
+func (v semver) nextMajor() semver {
+	return semver{major: v.major + 1}
+}
+
+func (v semver) nextMinor() semver {
+	return semver{major: v.major, minor: v.minor + 1}
 }
 
 // ResolveVersionConflicts resolves version conflicts between dependencies
