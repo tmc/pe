@@ -1,122 +1,161 @@
 package metaprompt
 
 import (
+	"context"
+	"errors"
+	"strings"
 	"testing"
-	"time"
+
+	"github.com/tmc/pe/internal/llm"
 )
 
-func TestNewEvolutionaryOptimizer(t *testing.T) {
-	provider := &mockProvider{}
-	config := EvolutionConfig{
-		PopulationSize: 20,
-		MutationRate:   0.1,
-		CrossoverRate:  0.7,
-	}
-	optimizer := NewEvolutionaryOptimizer(provider, config)
-
-	if optimizer == nil {
-		t.Fatal("NewEvolutionaryOptimizer returned nil")
-	}
-	if optimizer.provider == nil {
-		t.Error("EvolutionaryOptimizer has nil provider")
-	}
+type evolutionProvider struct {
+	err   error
+	calls []string
 }
 
-func TestEvolutionConfigStruct(t *testing.T) {
-	config := EvolutionConfig{
-		PopulationSize: 20,
-		Generations:    10,
-		MutationRate:   0.1,
-		CrossoverRate:  0.7,
-		ElitismRate:    0.1,
+func (p *evolutionProvider) Generate(ctx context.Context, prompt string, options llm.GenerateOptions) (*llm.GenerateResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if p.err != nil {
+		return nil, p.err
+	}
+	p.calls = append(p.calls, prompt)
+	text := "improved prompt with details"
+	if strings.Contains(prompt, "Rate the prompt") {
+		text = "0.8"
+	}
+	if strings.Contains(prompt, "variant") {
+		text = "variant prompt with specific structure"
+	}
+	if strings.Contains(prompt, "hybrid") {
+		text = "hybrid prompt"
+	}
+	if strings.Contains(prompt, "Rephrase") || strings.Contains(prompt, "Expand") || strings.Contains(prompt, "Make this prompt") || strings.Contains(prompt, "Enhance") || strings.Contains(prompt, "Simplify") {
+		text = "mutated prompt"
+	}
+	return &llm.GenerateResponse{Text: text}, nil
+}
+
+func TestEvolutionaryOptimizerEvolve(t *testing.T) {
+	provider := &evolutionProvider{}
+	cfg := EvolutionConfig{
+		PopulationSize: 3,
+		Generations:    1,
+		MutationRate:   1,
+		CrossoverRate:  1,
+		ElitismRate:    0.34,
 		Objectives:     []string{"clarity", "specificity"},
-		FitnessMetrics: []string{"length", "structure"},
 	}
-
-	if config.PopulationSize != 20 {
-		t.Error("EvolutionConfig.PopulationSize mismatch")
+	optimizer := NewEvolutionaryOptimizer(provider, cfg)
+	result, err := optimizer.Evolve(context.Background(), "base prompt", cfg)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if len(config.Objectives) != 2 {
-		t.Error("EvolutionConfig.Objectives length mismatch")
+	if result.BestIndividual.Prompt == "" || result.FinalPopulation.Generation != 1 {
+		t.Fatalf("result = %#v", result)
 	}
-}
-
-func TestEvolutionResultStruct(t *testing.T) {
-	result := EvolutionResult{
-		BestIndividual: Individual{
-			Prompt:  "optimized prompt",
-			Fitness: 0.92,
-		},
-		FinalPopulation:  Population{},
-		EvolutionHistory: []Population{},
-		ParetoFrontier:   []Individual{},
-		ConvergenceData:  []float64{0.5, 0.6, 0.7},
-		Config:           EvolutionConfig{},
+	if len(result.EvolutionHistory) != 1 || len(result.ParetoFrontier) == 0 {
+		t.Fatalf("history/frontier = %#v", result)
 	}
-
-	if result.BestIndividual.Fitness != 0.92 {
-		t.Error("EvolutionResult.BestIndividual.Fitness mismatch")
+	if len(provider.calls) == 0 {
+		t.Fatal("provider was not called")
 	}
 }
 
-func TestIndividualStruct(t *testing.T) {
-	individual := Individual{
-		Prompt:     "test prompt",
-		Fitness:    0.85,
-		Objectives: map[string]float64{"clarity": 0.9},
-		Generation: 5,
-		Genealogy:  []string{"parent1"},
-		Mutations:  []MutationRecord{},
+func TestEvolutionaryOptimizerHelpers(t *testing.T) {
+	optimizer := NewEvolutionaryOptimizer(&evolutionProvider{}, EvolutionConfig{PopulationSize: 2, Objectives: []string{"clarity"}})
+	pop, err := optimizer.initializePopulation(context.Background(), "base prompt")
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	if individual.Fitness != 0.85 {
-		t.Error("Individual.Fitness mismatch")
+	if len(pop.Individuals) != 2 || pop.Individuals[0].Genealogy[0] != "base" {
+		t.Fatalf("population = %#v", pop)
+	}
+	fitness, objectives, err := optimizer.evaluateFitness(context.Background(), "Analyze this detailed prompt.")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fitness <= 0 || objectives["clarity"] == 0 {
+		t.Fatalf("fitness = %v objectives = %#v", fitness, objectives)
+	}
+	if score := optimizer.heuristicEvaluation("Analyze this detailed prompt."); score <= 0.5 {
+		t.Fatalf("heuristic score = %v", score)
+	}
+	if !contains("long enough text", []string{"x"}) {
+		t.Fatal("contains helper returned false")
+	}
+	if optimizer.calculatePromptDistance("abc", "abc") != 0 {
+		t.Fatal("same prompt distance not zero")
+	}
+	if optimizer.calculatePromptDistance("", "") != 0 {
+		t.Fatal("empty prompt distance not zero")
+	}
+	if optimizer.calculatePopulationDiversity([]Individual{{Prompt: "a"}}) != 0 {
+		t.Fatal("single population diversity not zero")
+	}
+	pop.Individuals[0].Fitness = 0.2
+	pop.Individuals[1].Fitness = 0.9
+	optimizer.updatePopulationStats(&pop)
+	if pop.BestFitness != 0.9 || pop.AvgFitness <= 0 || pop.Diversity < 0 {
+		t.Fatalf("population stats = %#v", pop)
+	}
+	if !optimizer.hasConverged([]float64{.9, .9, .9, .9, .9}, 10) {
+		t.Fatal("expected convergence")
+	}
+	if optimizer.hasConverged([]float64{.1, .2, .3}, 3) {
+		t.Fatal("early convergence")
 	}
 }
 
-func TestPopulationStruct(t *testing.T) {
-	pop := Population{
-		Individuals: []Individual{
-			{Prompt: "prompt1", Fitness: 0.8},
-			{Prompt: "prompt2", Fitness: 0.7},
-		},
-		Generation:  5,
-		BestFitness: 0.8,
-		AvgFitness:  0.75,
-		Diversity:   0.6,
+func TestEvolutionaryOptimizerOperators(t *testing.T) {
+	optimizer := NewEvolutionaryOptimizer(&evolutionProvider{}, EvolutionConfig{PopulationSize: 4, MutationRate: 1, CrossoverRate: 1, ElitismRate: 0.25})
+	parent1 := Individual{Prompt: "parent one", Fitness: 0.9, Genealogy: []string{"p1"}, Objectives: map[string]float64{"a": 0.9}}
+	parent2 := Individual{Prompt: "parent two", Fitness: 0.8, Genealogy: []string{"p2"}, Objectives: map[string]float64{"a": 0.8}}
+	offspring, err := optimizer.crossover(context.Background(), parent1, parent2)
+	if err != nil || offspring.Prompt == "" || len(offspring.Genealogy) != 2 {
+		t.Fatalf("offspring = %#v err=%v", offspring, err)
 	}
-
-	if len(pop.Individuals) != 2 {
-		t.Error("Population.Individuals length mismatch")
+	mutated, err := optimizer.mutate(context.Background(), parent1)
+	if err != nil || mutated.Prompt == parent1.Prompt || len(mutated.Mutations) != 1 {
+		t.Fatalf("mutated = %#v err=%v", mutated, err)
 	}
-}
-
-func TestMutationRecordStruct(t *testing.T) {
-	record := MutationRecord{
-		Type:        string(Rephrase),
-		Description: "Rephrased for clarity",
-		Generation:  3,
-		Timestamp:   time.Now(),
-	}
-
-	if record.Type != "rephrase" {
-		t.Error("MutationRecord.Type mismatch")
-	}
-}
-
-func TestMutationOperators(t *testing.T) {
-	operators := []MutationOperator{
-		Rephrase,
-		Expand,
-		Prune,
-		Reorder,
-		Enhance,
-		Simplify,
-	}
-
-	for _, op := range operators {
-		if string(op) == "" {
-			t.Errorf("MutationOperator %v has empty string value", op)
+	for _, op := range []MutationOperator{Rephrase, Expand, Prune, Enhance, Simplify, MutationOperator("other")} {
+		if prompt := optimizer.createMutationPrompt("base", op); !strings.Contains(prompt, "base") {
+			t.Fatalf("mutation prompt for %s = %q", op, prompt)
 		}
+	}
+	next, err := optimizer.createNextGeneration(context.Background(), Population{Individuals: []Individual{parent1, parent2}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(next.Individuals) != 4 || next.Generation != 1 {
+		t.Fatalf("next = %#v", next)
+	}
+	frontier := optimizer.extractParetoFrontier([]Individual{parent1, parent2})
+	if len(frontier) != 1 || frontier[0].Prompt != parent1.Prompt {
+		t.Fatalf("frontier = %#v", frontier)
+	}
+	if !optimizer.dominatesMultiObjective(parent1, parent2) || optimizer.dominatesMultiObjective(parent2, parent1) {
+		t.Fatal("dominance failed")
+	}
+}
+
+func TestEvolutionaryOptimizerErrors(t *testing.T) {
+	boom := errors.New("boom")
+	optimizer := NewEvolutionaryOptimizer(&evolutionProvider{err: boom}, EvolutionConfig{PopulationSize: 1, Objectives: []string{"clarity"}})
+	if _, err := optimizer.generateVariant(context.Background(), "base", 1); !errors.Is(err, boom) {
+		t.Fatalf("variant error = %v", err)
+	}
+	if score, err := optimizer.evaluateObjective(context.Background(), "base", "clarity"); !errors.Is(err, boom) || score != 0.5 {
+		t.Fatalf("objective = %v err=%v", score, err)
+	}
+	individual := Individual{Prompt: "x", Genealogy: []string{"x"}, Objectives: map[string]float64{}}
+	if got, err := optimizer.crossover(context.Background(), individual, individual); !errors.Is(err, boom) || got.Prompt != individual.Prompt {
+		t.Fatalf("crossover fallback = %#v err=%v", got, err)
+	}
+	if got, err := optimizer.mutate(context.Background(), individual); !errors.Is(err, boom) || got.Prompt != individual.Prompt {
+		t.Fatalf("mutate fallback = %#v err=%v", got, err)
 	}
 }
