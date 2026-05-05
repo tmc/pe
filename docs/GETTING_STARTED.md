@@ -220,19 +220,18 @@ tests:
             required: ["sentiment", "confidence"]
 ```
 
-### 3. Distributed Evaluation
+### 3. Local Scheduling and Consensus
 
-Distributed execution is currently a prototype command group:
+The `pe exp distributed` and `pe exp consensus` groups are local deterministic
+prototypes. They do not start daemons, open network connections, or coordinate
+remote workers.
 
 ```bash
-# Inspect distributed prototype interface
-pe exp distributed --help
+# Run local task fixtures with bounded concurrency
+pe exp distributed tasks.json --workers 2 --format text
 
-# Run evaluation with core CLI controls
-pe eval large-eval.yaml --max-concurrency 20
-
-# Re-check prototype surface
-pe exp distributed --help
+# Aggregate local provider votes
+pe exp consensus --input votes.json --output consensus.json
 ```
 
 ### 4. Local Manifests and Cache

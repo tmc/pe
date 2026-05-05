@@ -411,20 +411,50 @@ pe security redteam \
 
 ## 🌐 Distributed Computing
 
-### `pe exp distributed` - Distributed Execution
+### `pe exp distributed` - Local Task Scheduling
 
 ```bash
-# Inspect distributed prototype command surface
-pe exp distributed --help
+# Run local deterministic tasks with bounded concurrency
+pe exp distributed tasks.json --workers 2 --format text
 
-# Re-check prototype interface
-pe exp distributed --help
-
-# Run a larger evaluation with core concurrency controls
-pe eval large-test-suite.yaml \
-  --max-concurrency 20 \
-  --timeout 5m
+# Emit JSON for automation
+pe exp distributed tasks.json --workers 2 --format json
 ```
+
+Example `tasks.json`:
+
+```json
+{
+  "tasks": [
+    {"name": "one", "output": "first"},
+    {"name": "two", "output": "second", "delay_ms": 10}
+  ]
+}
+```
+
+### `pe exp consensus` - Local Vote Aggregation
+
+```bash
+# Aggregate weighted local votes
+pe exp consensus --input votes.json --output consensus.json
+```
+
+Example `votes.json`:
+
+```json
+{
+  "votes": [
+    {"provider": "a", "output": "yes", "weight": 2},
+    {"provider": "b", "output": "yes", "weight": 1},
+    {"provider": "c", "output": "no", "weight": 1},
+    {"provider": "d", "error": "timeout"}
+  ]
+}
+```
+
+These commands are local deterministic prototypes. They do not start daemons,
+open network connections, or coordinate remote workers.
+
 
 ## 📦 Module Management
 
@@ -534,8 +564,8 @@ pe eval production-validation.yaml \
 # 3. Create an unsigned local manifest
 pe exp attest manifest prompts/ > manifest.json
 
-# 4. Deploy with monitoring
-pe exp distributed --help
+# 4. Re-run local deployment checks
+pe exp distributed tasks.json --workers 2 --format text
 
 # 5. Health check
 pe eval health-check.yaml --max-concurrency 20 --timeout 5m

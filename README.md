@@ -22,7 +22,7 @@ PE implements breakthrough research from 2024-2025:
 - **Performance**: Native Go implementation with comprehensive benchmarking
 - **Module Management**: Core module system (mod init/tidy/vendor) - registry features in development
 - **Security Testing**: Full OWASP LLM Top 10 coverage via integrated security module
-- **Distributed Execution**: Prototype command group exposed under `pe exp distributed`
+- **Local Scheduling**: Bounded local task and consensus prototypes under `pe exp`
 - **Local Attestation**: Unsigned SHA-256 manifest prototype exposed under `pe exp attest`
 
 ## 🎯 Quick Start
@@ -161,7 +161,8 @@ Run `pe --help` for the generated command list. The current top-level surface in
 
 ### Experimental Commands
 - `pe experimental` and `pe exp` expose prototype optimization, composition,
-  distributed, unsigned attestation, local cache, workflow, import/export, and report commands.
+  local scheduling, consensus, unsigned attestation, local cache, workflow,
+  import/export, and report commands.
   Treat these as active development surfaces unless their subcommand docs state
   otherwise.
 

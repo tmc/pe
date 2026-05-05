@@ -37,7 +37,8 @@ Use `pe version` to show version information.
 | [`attest`](#attest) | Unsigned local file manifests | `pe exp attest manifest .` |
 | [`cache`](#cache) | Local content-addressed cache | `pe exp cache key file.txt` |
 | [`profile`](#profile) | Profiling & observability | `pe profile start --type cpu` |
-| [`distributed`](#distributed) | Distributed execution (prototype) | `pe exp distributed --help` |
+| [`distributed`](#distributed) | Local bounded task scheduler | `pe exp distributed tasks.json --workers 2` |
+| [`consensus`](#consensus) | Local weighted vote aggregation | `pe exp consensus --input votes.json` |
 | [`doc`](#doc) | Show prompt documentation | `pe doc math-solver` |
 | [`extract`](#extract) | Extract XML-like tags | `pe run prompt.txt \| pe extract --tag answer` |
 | [`get`](#get) | Get prompt file fields | `pe get summarize.txt variables` |
@@ -1770,24 +1771,64 @@ pe prompt tidy *.prompt
 
 ## distributed
 
-Manage distributed execution prototypes.
+Run local deterministic tasks with bounded concurrency.
 
 ### Synopsis
 
 ```bash
-pe exp distributed --help
+pe exp distributed <tasks.json> [flags]
 ```
 
 ### Description
 
-`pe exp distributed` is currently a prototype entrypoint in the `pe exp` command group.
-At this stage, use `--help` to inspect the currently exposed interface.
+`pe exp distributed` runs a local scheduler prototype from a JSON task file.
+It does not start daemons, open network connections, or coordinate remote
+workers.
+
+### Flags
+
+```bash
+--format string    output format: json or text (default "json")
+--timeout-ms int   optional timeout in milliseconds
+--workers int      maximum concurrent local tasks (default 1)
+```
 
 ### Examples
 
 ```bash
-pe exp --help
-pe exp distributed --help
+pe exp distributed tasks.json --workers 2 --format text
+pe exp distributed tasks.json --workers 2 --timeout-ms 5000
+```
+
+---
+
+## consensus
+
+Aggregate local provider votes deterministically.
+
+### Synopsis
+
+```bash
+pe exp consensus [--input votes.json] [flags]
+```
+
+### Description
+
+`pe exp consensus` reads local vote JSON. Rows with an error are reported and
+excluded; successful rows are passed to the local weighted majority aggregator.
+
+### Flags
+
+```bash
+-i, --input string    input JSON file, or - for stdin
+-o, --output string   output JSON file, or - for stdout (default "-")
+```
+
+### Examples
+
+```bash
+pe exp consensus --input votes.json --output consensus.json
+pe exp consensus --input votes.json --output -
 ```
 
 ---
@@ -2178,7 +2219,7 @@ pe exp [command]
 ### Description
 
 `pe exp` groups prototype commands. Current entries include `attest`, `cache`,
-`compose`, `distributed`, and `optimize`.
+`compose`, `consensus`, `distributed`, and `optimize`.
 
 ### Examples
 
@@ -2186,6 +2227,8 @@ pe exp [command]
 pe exp --help
 pe exp optimize --help
 pe exp compose --help
+pe exp distributed --help
+pe exp consensus --help
 pe exp attest manifest prompts/ > manifest.json
 ```
 
