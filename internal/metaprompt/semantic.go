@@ -15,11 +15,11 @@ import (
 // SemanticOptimizer implements semantic backpropagation and gradient descent
 // Based on 2025 KAUST/IDSIA research on semantic optimization
 type SemanticOptimizer struct {
-	llm llm.Provider
+	llm Generator
 }
 
 // NewSemanticOptimizer creates a new semantic optimizer
-func NewSemanticOptimizer(llmProvider llm.Provider) *SemanticOptimizer {
+func NewSemanticOptimizer(llmProvider Generator) *SemanticOptimizer {
 	return &SemanticOptimizer{
 		llm: llmProvider,
 	}

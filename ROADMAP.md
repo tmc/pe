@@ -1471,8 +1471,8 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Refactor textual gradient optimizer to use interfaces
 - [x] Refactor PE2 to use interfaces
 - [x] Refactor GASO to use interfaces
-- [ ] Refactor semantic optimizer
-- [ ] Refactor evolutionary optimizer
+- [x] Refactor semantic optimizer
+- [x] Refactor evolutionary optimizer
 - [ ] Update hybrid optimizer
 - [ ] Remove provider coupling
 

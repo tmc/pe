@@ -14,7 +14,7 @@ import (
 // EvolutionaryOptimizer implements evolutionary prompt optimization
 // based on genetic algorithms and population-based improvement
 type EvolutionaryOptimizer struct {
-	provider       llm.Provider
+	provider       Generator
 	populationSize int
 	mutationRate   float64
 	crossoverRate  float64
@@ -83,7 +83,7 @@ const (
 )
 
 // NewEvolutionaryOptimizer creates a new evolutionary optimizer
-func NewEvolutionaryOptimizer(provider llm.Provider, config EvolutionConfig) *EvolutionaryOptimizer {
+func NewEvolutionaryOptimizer(provider Generator, config EvolutionConfig) *EvolutionaryOptimizer {
 	return &EvolutionaryOptimizer{
 		provider:       provider,
 		populationSize: config.PopulationSize,
