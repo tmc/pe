@@ -1,0 +1,17 @@
+---
+kind: pe.text.v1
+inputs:
+  topic:
+    type: string
+metadata:
+  purpose: review
+policy:
+  data: internal
+  providers: local
+---
+Review {{ .topic }}.
+
+Return:
+- blockers
+- risks
+- next action

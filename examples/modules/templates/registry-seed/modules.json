@@ -1,0 +1,11 @@
+[
+  {
+    "name": "example.com/prompts/basic",
+    "version": "v0.1.0",
+    "description": "Basic executable-text prompt module template",
+    "author": "pe",
+    "tags": ["template", "review"],
+    "files": ["prompts/review.pe"],
+    "checksum": ""
+  }
+]

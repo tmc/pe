@@ -1250,10 +1250,10 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 ##### Initial Registry Setup
 - [x] Set up registry infrastructure (GitHub/HTTP)
 - [x] Create registry documentation
-- [ ] Publish core modules
-- [ ] Create example modules
+- [x] Publish core modules
+- [x] Create example modules
 - [ ] Set up CI/CD for module publishing
-- [ ] Add module templates
+- [x] Add module templates
 
 #### Phase 3: Command Architecture Reorganization (Week 5)
 

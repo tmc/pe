@@ -1,0 +1,14 @@
+description: basic module smoke
+
+prompts:
+  - file://prompts/review.pe
+
+providers:
+  - mock
+
+tests:
+  - vars:
+      topic: release readiness
+    assert:
+      - type: contains
+        value: release
