@@ -65,6 +65,8 @@ source of truth for coverage numbers.
   cross-compilation matrix and binary sizes.
 - [RELEASE_DEPENDENCY_REVIEW.md](RELEASE_DEPENDENCY_REVIEW.md) - release
   dependency counts and install-script decision.
+- [RELEASE_PROCESS.md](RELEASE_PROCESS.md) - release testing, deployment,
+  rollback, and post-release monitoring process.
 - [IMPLEMENTATION_TODOS.md](IMPLEMENTATION_TODOS.md) - tombstone pointing to
   [../ROADMAP.md](../ROADMAP.md).
 - [PLANNED_COMMANDS.md](PLANNED_COMMANDS.md) - aspirational command ideas, not
