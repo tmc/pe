@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/tmc/pe/internal/distributed"
@@ -21,6 +22,31 @@ import (
 type evalOutcome struct {
 	result promptfoo.TestResult
 	err    error
+}
+
+type responseCache struct {
+	mu      sync.Mutex
+	entries map[string]*promptfoo.ProviderResponse
+}
+
+func newResponseCache() *responseCache {
+	return &responseCache{entries: make(map[string]*promptfoo.ProviderResponse)}
+}
+
+func (c *responseCache) get(key string) (*promptfoo.ProviderResponse, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	response, ok := c.entries[key]
+	if !ok {
+		return nil, false
+	}
+	return cloneProviderResponse(response), true
+}
+
+func (c *responseCache) put(key string, response *promptfoo.ProviderResponse) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.entries[key] = cloneProviderResponse(response)
 }
 
 func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxConcurrency int, showProgressBar bool) (promptfoo.EvaluationResult, error) {
@@ -67,6 +93,7 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
+	cache := newResponseCache()
 	var tasks []distributed.Task[evalOutcome]
 	for _, prompt := range config.Prompts {
 		for _, provider := range materializedProviders {
@@ -80,7 +107,7 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 				tasks = append(tasks, distributed.Task[evalOutcome]{
 					ID: fmt.Sprintf("%s/%s/%d", prompt, provider.Spec.ID, k),
 					Run: func(ctx context.Context) (evalOutcome, error) {
-						outcome, err := evaluateOne(ctx, prompt, provider, test, dryRun)
+						outcome, err := evaluateOne(ctx, prompt, provider, test, dryRun, cache)
 						if err != nil && ctx.Err() != nil {
 							return evalOutcome{}, err
 						}
@@ -243,7 +270,7 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 	}, nil
 }
 
-func evaluateOne(ctx context.Context, prompt string, provider *providers.MaterializedProvider, test promptfoo.TestCase, dryRun bool) (evalOutcome, error) {
+func evaluateOne(ctx context.Context, prompt string, provider *providers.MaterializedProvider, test promptfoo.TestCase, dryRun bool, cache *responseCache) (evalOutcome, error) {
 	if err := ctx.Err(); err != nil {
 		return evalOutcome{}, err
 	}
@@ -274,7 +301,22 @@ func evaluateOne(ctx context.Context, prompt string, provider *providers.Materia
 	var response *promptfoo.ProviderResponse
 	var err error
 	if !dryRun {
-		response, err = provider.Executor.EvaluatePrompt(ctx, processedPrompt, evalVars)
+		cacheKey := evaluationCacheKey(provider.Spec, processedPrompt, evalVars)
+		if cache != nil {
+			if cached, ok := cache.get(cacheKey); ok {
+				cached.Cached = true
+				if cached.TokenUsage != nil {
+					cached.TokenUsage.Cached = cached.TokenUsage.Total
+				}
+				response = cached
+			}
+		}
+		if response == nil {
+			response, err = provider.Executor.EvaluatePrompt(ctx, processedPrompt, evalVars)
+			if err == nil && cache != nil {
+				cache.put(cacheKey, response)
+			}
+		}
 	} else {
 		response = &promptfoo.ProviderResponse{
 			Output: "Dry run response",
@@ -324,6 +366,42 @@ func evaluateOne(ctx context.Context, prompt string, provider *providers.Materia
 			LatencyMs:     latencyMs,
 		},
 	}, nil
+}
+
+func evaluationCacheKey(provider promptfoo.ProviderConfig, prompt string, vars map[string]interface{}) string {
+	data, _ := json.Marshal(struct {
+		Provider promptfoo.ProviderConfig `json:"provider"`
+		Prompt   string                   `json:"prompt"`
+		Vars     map[string]interface{}   `json:"vars"`
+	}{
+		Provider: provider,
+		Prompt:   prompt,
+		Vars:     vars,
+	})
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
+func cloneProviderResponse(response *promptfoo.ProviderResponse) *promptfoo.ProviderResponse {
+	if response == nil {
+		return nil
+	}
+	clone := *response
+	if response.TokenUsage != nil {
+		tokenUsage := *response.TokenUsage
+		if response.TokenUsage.Details != nil {
+			details := *response.TokenUsage.Details
+			tokenUsage.Details = &details
+		}
+		clone.TokenUsage = &tokenUsage
+	}
+	if response.Metadata != nil {
+		clone.Metadata = make(map[string]interface{}, len(response.Metadata))
+		for k, v := range response.Metadata {
+			clone.Metadata[k] = v
+		}
+	}
+	return &clone
 }
 
 func evaluateAssertions(output string, asserts []promptfoo.Assertion) (bool, promptfoo.GradingResult) {

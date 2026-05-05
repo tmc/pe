@@ -173,6 +173,41 @@ func TestEvaluate(t *testing.T) {
 	}
 }
 
+func TestEvaluateCachesDuplicateProviderResponses(t *testing.T) {
+	t.Setenv("PE_TEST_MODE", "true")
+
+	result, err := Evaluate(promptfoo.Config{
+		Prompts:   []string{"hello {{name}}"},
+		Providers: []promptfoo.ProviderConfig{{ID: "mock:test"}},
+		Tests: []promptfoo.TestCase{
+			{
+				Vars: map[string]interface{}{"name": "gopher"},
+				Assert: []promptfoo.Assertion{
+					{Type: "contains", Value: "Mock"},
+				},
+			},
+			{
+				Vars: map[string]interface{}{"name": "gopher"},
+				Assert: []promptfoo.Assertion{
+					{Type: "contains", Value: "Mock"},
+				},
+			},
+		},
+	}, 10*time.Second, false, 1, false)
+
+	require.NoError(t, err)
+	require.Len(t, result.Results.Results, 2)
+	cached := 0
+	for _, r := range result.Results.Results {
+		if r.Response.Cached {
+			cached++
+			require.NotNil(t, r.Response.TokenUsage)
+			assert.Equal(t, r.Response.TokenUsage.Total, r.Response.TokenUsage.Cached)
+		}
+	}
+	assert.Equal(t, 1, cached)
+}
+
 func TestReplaceVariables(t *testing.T) {
 	tests := []struct {
 		name     string

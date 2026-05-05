@@ -1390,7 +1390,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add Pass@N metric tests
 - [x] Test parallel evaluation
 - [x] Add scoring algorithm tests
-- [ ] Test evaluation caching
+- [x] Test evaluation caching
 - [x] Add benchmark tests
 
 ##### Module System Tests
