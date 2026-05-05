@@ -382,10 +382,14 @@ Current direction:
 - Every run emits an auditable JSON trace and declared artifacts.
 
 Initial artifacts:
-1. Maintain `docs/future/EXECUTABLE_TEXT.md` as the primary design note.
-2. Fold recursive-context design notes under the executable-text framing when they land.
-3. Define `pe.text.v1`, `pe.workflow.v1`, and `pe.trace.v1` before broad runtime code.
-4. Sketch future `pe run-text`, `pe vet-text`, `pe exp workflow validate`, `pe exp workflow run`, and `pe exp recurse` commands.
+1. DONE: Maintain `docs/future/EXECUTABLE_TEXT.md` as the primary design note.
+2. DONE initial pass: Fold recursive-context design notes under the
+   executable-text framing when they land.
+3. DONE initial pass: Define `pe.text.v1`, `pe.workflow.v1`, and `pe.trace.v1`
+   before broad runtime code.
+4. DONE initial pass: Sketch future `pe run-text`, `pe vet-text`,
+   `pe exp workflow validate`, `pe exp workflow run`, and `pe exp recurse`
+   commands.
 
 Verification:
 - `test -f docs/future/EXECUTABLE_TEXT.md`
