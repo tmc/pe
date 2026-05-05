@@ -309,6 +309,36 @@ Suggested agent lanes:
 
 ### P2
 
+#### Executable, templated, composable text
+
+- Type: `epic`
+
+**Scope**
+
+Make PE the Go toolchain for safe prompting. A prompt, workflow, audit, or recursive long-context run should be a text artifact that can be as simple as a shebang file, then grow into templated, composed, validated, traced, and replayable execution when needed.
+
+This is not a v0.5 release blocker. It is the design umbrella for future workflow, structured-output, optimization, and recursive-context work.
+
+Current direction:
+- Plain text is the baseline; a shebang can select a PE runner such as `pe run-text`.
+- Text is executable only when PE can lower it into known bounded operators.
+- Templates bind inputs; they do not grant execution rights.
+- Text artifacts can carry metadata and declare safety policy: what data, prompts, providers, tools, and placement are allowed.
+- Composition is explicit through imports, typed inputs, typed outputs, graph edges, and conservative policy merging.
+- Recursive long-context execution is bounded over external context, not arbitrary model-generated code.
+- Every run emits an auditable JSON trace and declared artifacts.
+
+Initial artifacts:
+1. Maintain `docs/future/EXECUTABLE_TEXT.md` as the primary design note.
+2. Fold recursive-context design notes under the executable-text framing when they land.
+3. Define `pe.text.v1`, `pe.workflow.v1`, and `pe.trace.v1` before broad runtime code.
+4. Sketch future `pe run-text`, `pe vet-text`, `pe exp workflow validate`, `pe exp workflow run`, and `pe exp recurse` commands.
+
+Verification:
+- `test -f docs/future/EXECUTABLE_TEXT.md`
+- `rg "pe run-text|pe.text.v1|pe.workflow.v1|pe.trace.v1|Operator Standard Library" docs/future/EXECUTABLE_TEXT.md`
+
+
 #### Add pipe support to scripttest framework
 
 - Type: `feature`
