@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
 	"testing"
 	"time"
 )
@@ -38,7 +39,7 @@ func TestPEError_WithComponent(t *testing.T) {
 func TestPEError_Wrap(t *testing.T) {
 	cause := fmt.Errorf("original error")
 	err := Wrap(cause, ErrCodeInternal, "wrapped")
-	
+
 	if err.Cause != cause {
 		t.Errorf("expected cause to be original error")
 	}
@@ -51,7 +52,7 @@ func TestPEError_Is(t *testing.T) {
 	err1 := New(ErrCodeInvalidInput, "test1")
 	err2 := New(ErrCodeInvalidInput, "test2")
 	err3 := New(ErrCodeInternal, "test3")
-	
+
 	if !err1.Is(err2) {
 		t.Error("expected err1.Is(err2) to be true (same code)")
 	}
@@ -134,12 +135,12 @@ func TestSecurityError(t *testing.T) {
 func TestWrapProvider(t *testing.T) {
 	originalErr := fmt.Errorf("timeout")
 	err := WrapProvider(originalErr, "openai", "gpt-4")
-	
+
 	providerErr, ok := err.(*ProviderError)
 	if !ok {
 		t.Fatal("expected ProviderError")
 	}
-	
+
 	if providerErr.Provider != "openai" {
 		t.Errorf("expected provider 'openai', got '%s'", providerErr.Provider)
 	}
@@ -158,14 +159,14 @@ func TestWrapNetwork(t *testing.T) {
 		Net: "tcp",
 		Err: &TimeoutError{},
 	}
-	
+
 	err := WrapNetwork(timeoutErr, "connect")
-	
+
 	peErr, ok := err.(*PEError)
 	if !ok {
 		t.Fatal("expected PEError")
 	}
-	
+
 	if peErr.Code != ErrCodeNetworkTimeout {
 		t.Errorf("expected code %s, got %s", ErrCodeNetworkTimeout, peErr.Code)
 	}
@@ -177,27 +178,27 @@ func TestWrapNetwork(t *testing.T) {
 func TestWrapContext(t *testing.T) {
 	// Test with context timeout
 	err := WrapContext(context.DeadlineExceeded, "test operation")
-	
+
 	peErr, ok := err.(*PEError)
 	if !ok {
 		t.Fatal("expected PEError")
 	}
-	
+
 	if peErr.Code != ErrCodeNetworkTimeout {
 		t.Errorf("expected code %s, got %s", ErrCodeNetworkTimeout, peErr.Code)
 	}
 	if !peErr.Retryable {
 		t.Error("expected timeout to be retryable")
 	}
-	
+
 	// Test with context cancellation
 	err = WrapContext(context.Canceled, "test operation")
-	
+
 	peErr, ok = err.(*PEError)
 	if !ok {
 		t.Fatal("expected PEError")
 	}
-	
+
 	if peErr.Code != ErrCodeInternal {
 		t.Errorf("expected code %s, got %s", ErrCodeInternal, peErr.Code)
 	}
@@ -209,14 +210,14 @@ func TestWrapContext(t *testing.T) {
 func TestChain(t *testing.T) {
 	err1 := New(ErrCodeInvalidInput, "error 1")
 	err2 := New(ErrCodeInternal, "error 2")
-	
+
 	chainErr := Chain(err1, err2)
-	
+
 	peErr, ok := chainErr.(*PEError)
 	if !ok {
 		t.Fatal("expected PEError")
 	}
-	
+
 	if peErr.Context["error_count"] != 2 {
 		t.Errorf("expected error count 2, got %v", peErr.Context["error_count"])
 	}
@@ -228,12 +229,12 @@ func TestChain(t *testing.T) {
 func TestAnnotate(t *testing.T) {
 	originalErr := fmt.Errorf("original error")
 	annotatedErr := Annotate(originalErr, "test_key", "test_value")
-	
+
 	peErr, ok := annotatedErr.(*PEError)
 	if !ok {
 		t.Fatal("expected PEError")
 	}
-	
+
 	if peErr.Context["test_key"] != "test_value" {
 		t.Errorf("expected context test_key=test_value, got %v", peErr.Context)
 	}
@@ -241,7 +242,7 @@ func TestAnnotate(t *testing.T) {
 
 func TestWithTimeout(t *testing.T) {
 	ctx := context.Background()
-	
+
 	// Test successful operation
 	err := WithTimeout(ctx, time.Second, "test", func(ctx context.Context) error {
 		return nil
@@ -249,7 +250,7 @@ func TestWithTimeout(t *testing.T) {
 	if err != nil {
 		t.Errorf("expected no error, got %v", err)
 	}
-	
+
 	// Test timeout
 	err = WithTimeout(ctx, time.Millisecond, "test", func(ctx context.Context) error {
 		time.Sleep(time.Second)
@@ -263,30 +264,41 @@ func TestWithTimeout(t *testing.T) {
 func TestUtilityFunctions(t *testing.T) {
 	err := New(ErrCodeProviderAuth, "auth error").WithComponent("provider")
 	err.Retryable = true
-	
+
 	// Test IsCode
 	if !IsCode(err, ErrCodeProviderAuth) {
 		t.Error("expected IsCode to return true")
 	}
-	
+
 	// Test GetCode
 	if GetCode(err) != ErrCodeProviderAuth {
 		t.Errorf("expected code %s, got %s", ErrCodeProviderAuth, GetCode(err))
 	}
-	
+
 	// Test IsRetryable
 	if !IsRetryable(err) {
 		t.Error("expected IsRetryable to return true")
 	}
-	
+
 	// Test GetSeverity
 	if GetSeverity(err) != SeverityMedium {
 		t.Errorf("expected severity %s, got %s", SeverityMedium, GetSeverity(err))
 	}
-	
+
 	// Test GetComponent
 	if GetComponent(err) != "provider" {
 		t.Errorf("expected component 'provider', got '%s'", GetComponent(err))
+	}
+}
+
+func TestSuggestion(t *testing.T) {
+	err := NewProviderAuthError("openai", "missing key")
+	got := Suggestion(err)
+	if got == "" {
+		t.Fatal("Suggestion returned empty string")
+	}
+	if !strings.Contains(got, "credentials") {
+		t.Fatalf("Suggestion = %q, want credentials guidance", got)
 	}
 }
 

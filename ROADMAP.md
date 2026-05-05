@@ -1610,12 +1610,12 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Add error notifications
 
 ##### User-Facing Errors
-- [ ] Improve error messages
-- [ ] Add error suggestions
-- [ ] Create error documentation
-- [ ] Add error codes to docs
+- [x] Improve error messages
+- [x] Add error suggestions
+- [x] Create error documentation
+- [x] Add error codes to docs
 - [ ] Implement error translation
-- [ ] Add troubleshooting guides
+- [x] Add troubleshooting guides
 
 #### Phase 8: Observability (Week 10)
 

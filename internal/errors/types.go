@@ -202,8 +202,7 @@ func Wrapf(err error, code ErrorCode, format string, args ...interface{}) *PEErr
 
 // IsCode checks if an error has a specific error code.
 func IsCode(err error, code ErrorCode) bool {
-	var peErr *PEError
-	if errors.As(err, &peErr) {
+	if peErr := asPEError(err); peErr != nil {
 		return peErr.Code == code
 	}
 	return false
@@ -211,8 +210,7 @@ func IsCode(err error, code ErrorCode) bool {
 
 // GetCode extracts the error code from an error.
 func GetCode(err error) ErrorCode {
-	var peErr *PEError
-	if errors.As(err, &peErr) {
+	if peErr := asPEError(err); peErr != nil {
 		return peErr.Code
 	}
 	return ErrCodeUnknown
@@ -220,8 +218,7 @@ func GetCode(err error) ErrorCode {
 
 // IsRetryable checks if an error indicates a retryable condition.
 func IsRetryable(err error) bool {
-	var peErr *PEError
-	if errors.As(err, &peErr) {
+	if peErr := asPEError(err); peErr != nil {
 		return peErr.Retryable
 	}
 	return false
@@ -229,8 +226,7 @@ func IsRetryable(err error) bool {
 
 // GetSeverity extracts the severity level from an error.
 func GetSeverity(err error) Severity {
-	var peErr *PEError
-	if errors.As(err, &peErr) {
+	if peErr := asPEError(err); peErr != nil {
 		return peErr.Severity
 	}
 	return SeverityMedium
@@ -238,8 +234,7 @@ func GetSeverity(err error) Severity {
 
 // GetComponent extracts the component name from an error.
 func GetComponent(err error) string {
-	var peErr *PEError
-	if errors.As(err, &peErr) {
+	if peErr := asPEError(err); peErr != nil {
 		return peErr.Component
 	}
 	return ""
@@ -247,9 +242,65 @@ func GetComponent(err error) string {
 
 // GetContext extracts context information from an error.
 func GetContext(err error) map[string]interface{} {
-	var peErr *PEError
-	if errors.As(err, &peErr) {
+	if peErr := asPEError(err); peErr != nil {
 		return peErr.Context
 	}
 	return nil
+}
+
+func asPEError(err error) *PEError {
+	var peErr *PEError
+	if errors.As(err, &peErr) {
+		return peErr
+	}
+	switch e := err.(type) {
+	case *ProviderError:
+		return e.PEError
+	case *InferenceError:
+		return e.PEError
+	case *OptimizationError:
+		return e.PEError
+	case *EvaluationError:
+		return e.PEError
+	case *FileError:
+		return e.PEError
+	case *ModuleError:
+		return e.PEError
+	case *ConfigurationError:
+		return e.PEError
+	case *ValidationError:
+		return e.PEError
+	case *NetworkError:
+		return e.PEError
+	case *AuthenticationError:
+		return e.PEError
+	case *SecurityError:
+		return e.PEError
+	}
+	return nil
+}
+
+// Suggestion returns a short user-facing recovery suggestion for err.
+func Suggestion(err error) string {
+	switch GetCode(err) {
+	case ErrCodeInvalidInput:
+		return "check the command input and run with --help for accepted arguments"
+	case ErrCodeInvalidConfig:
+		return "run pe config validate and inspect the reported configuration key"
+	case ErrCodeProviderAuth, ErrCodeAuthentication:
+		return "check provider credentials and required environment variables"
+	case ErrCodeProviderRateLimit, ErrCodeProviderQuota:
+		return "retry later or reduce request concurrency"
+	case ErrCodeNetworkTimeout, ErrCodeNetworkUnavailable, ErrCodeNetworkDNS:
+		return "check network connectivity and retry the operation"
+	case ErrCodeFileNotFound, ErrCodeFileRead:
+		return "check that the file path exists and is readable"
+	case ErrCodeModuleNotFound, ErrCodeModuleRegistry:
+		return "check module name, version, and registry configuration"
+	default:
+		if IsRetryable(err) {
+			return "retry the operation"
+		}
+		return "inspect the error code and component for the failing subsystem"
+	}
 }
