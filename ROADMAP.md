@@ -1171,7 +1171,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Update Anthropic provider to single interface
 - [x] Update cgpt provider wrapper
 - [x] Update mock provider for testing
-- [ ] Remove duplicate provider implementations
+- [x] Remove duplicate provider implementations
 - [x] Consolidate provider registration logic
 - [x] Update provider factory methods
 
