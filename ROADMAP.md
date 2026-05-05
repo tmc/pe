@@ -402,53 +402,28 @@ Verification:
 
 **Scope**
 
-The scripttest framework doesn't currently support shell pipes, which prevents testing commands that use pipes.
+The scripttest framework now has a restricted `pipe` command for integration
+tests that need Unix-style composition without enabling arbitrary shell
+execution.
 
 Impact:
-- tests/testdata/script/extract.txt - All tests commented out (require pipes)
-- Future workflow tests will be limited
+- tests/testdata/script/extract.txt uses `pipe` for extraction workflows
+- tests/testdata/script/pipeline.txt uses `pipe` for pipeline workflows
+- The restricted implementation supports `pe`, `cat`, and `echo` stages
 
 Options:
-1. Add native pipe support to scripttest
-2. Create intermediate file approach (command1 output to file, command2 reads file)
-3. Wait for upstream scripttest to add pipe support
+1. DONE: Add repository-local restricted pipe support to scripttest
+2. DONE where useful: Create intermediate file approach for commands that need files
+3. Watch upstream scripttest/testscript only if broader shell semantics are needed
 
-Currently extract.txt has a minimal test using grep to verify the file works.
+Verification:
+- `GOTOOLCHAIN=go1.25.9 go test ./tests -run 'TestPipeStages|TestScripts/(pipeline|extract)' -count=1`
 
 **Notes**
 
-Pipe support blocked by scripttest framework limitations
-
-Current situation:
-- scripttest framework doesn't support shell pipes (|)
-- Multiple test files need pipe support:
-  * pipeline.txt - Entire file commented out
-  * extract.txt - Pipe-dependent tests commented out
-  * Future workflow tests will be limited
-
-Options:
-1. Add native pipe support to scripttest framework
-   - Requires modifying rogpeppe/go-internal/testscript
-   - Complex implementation
-   - Would benefit upstream project
-
-2. Intermediate file approach (workaround)
-   - command1 writes to temp file
-   - command2 reads from temp file
-   - Works but verbose and less intuitive
-
-3. Wait for upstream testscript
-   - Monitor rogpeppe/go-internal for pipe support
-   - Contribute PR to upstream if motivated
-
-4. Alternative test framework
-   - Consider bash-based integration tests
-   - Use bats or similar
-   - Maintain both scripttest and bash tests
-
-Recommendation: Option 2 (workaround) for immediate needs, watch Option 1 (upstream PR) for long term.
-
-Related: documented scripttest pipe limitations
+The restricted `pipe` command intentionally does not provide arbitrary shell
+semantics. Keep broader shell execution out of script tests unless there is a
+specific release need and a reviewed safety model.
 
 
 #### Maintain roadmap with current status
