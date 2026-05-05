@@ -57,6 +57,14 @@ or JSONL test results. With no file argument, stats reads stdin.`,
 // diffCmd compares two evaluation results
 func diffCmd() *cobra.Command {
 	var format string
+	var failOnChange bool
+	var failOnRegression bool
+	var maxPassRateDrop float64
+	var maxScoreDrop float64
+	var maxLatencyIncrease float64
+	var maxTokenIncrease int32
+	var maxFailureIncrease int
+	var maxErrorIncrease int
 
 	cmd := &cobra.Command{
 		Use:   "diff [baseline] [current]",
@@ -66,7 +74,7 @@ func diffCmd() *cobra.Command {
 Use "-" as the current file to read the current result from stdin.`,
 		Example: `  pe diff baseline.json current.json
   pe diff --format json baseline.json current.json
-  pe eval config.yaml -o current.json && pe diff baseline.json current.json`,
+  pe eval config.yaml -o current.json && pe diff --fail-on-regression baseline.json current.json`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			base, err := readResultSummaryFile(args[0], cmd.InOrStdin())
@@ -77,10 +85,40 @@ Use "-" as the current file to read the current result from stdin.`,
 			if err != nil {
 				return fmt.Errorf("read current: %w", err)
 			}
-			return writeDiff(cmd.OutOrStdout(), compareSummaries(base, current), format)
+			diff := compareSummaries(base, current)
+			gate := evaluateDiffGate(diff, diffGateConfig{
+				FailOnChange:         failOnChange,
+				FailOnRegression:     failOnRegression,
+				MaxPassRateDrop:      maxPassRateDrop / 100,
+				MaxScoreDrop:         maxScoreDrop,
+				MaxLatencyIncreaseMs: maxLatencyIncrease,
+				MaxTokenIncrease:     maxTokenIncrease,
+				MaxFailureIncrease:   maxFailureIncrease,
+				MaxErrorIncrease:     maxErrorIncrease,
+			})
+			if gate.Enabled {
+				diff.Gate = &gate
+			}
+			if err := writeDiff(cmd.OutOrStdout(), diff, format); err != nil {
+				return err
+			}
+			if gate.Enabled && !gate.Passed {
+				cmd.SilenceUsage = true
+				cmd.SilenceErrors = true
+				return fmt.Errorf("diff gate failed: %s", strings.Join(gate.Reasons, "; "))
+			}
+			return nil
 		},
 	}
 	cmd.Flags().StringVarP(&format, "format", "f", "text", "Output format: text or json")
+	cmd.Flags().BoolVar(&failOnChange, "fail-on-change", false, "Exit non-zero if any compared metric changes")
+	cmd.Flags().BoolVar(&failOnRegression, "fail-on-regression", false, "Exit non-zero if regression metrics exceed thresholds")
+	cmd.Flags().Float64Var(&maxPassRateDrop, "max-pass-rate-drop", 0, "Allowed pass-rate drop in percentage points with --fail-on-regression")
+	cmd.Flags().Float64Var(&maxScoreDrop, "max-score-drop", 0, "Allowed average score drop with --fail-on-regression")
+	cmd.Flags().Float64Var(&maxLatencyIncrease, "max-latency-increase-ms", 0, "Allowed average latency increase in milliseconds with --fail-on-regression")
+	cmd.Flags().Int32Var(&maxTokenIncrease, "max-token-increase", 0, "Allowed token total increase with --fail-on-regression")
+	cmd.Flags().IntVar(&maxFailureIncrease, "max-failure-increase", 0, "Allowed failure count increase with --fail-on-regression")
+	cmd.Flags().IntVar(&maxErrorIncrease, "max-error-increase", 0, "Allowed error count increase with --fail-on-regression")
 
 	return cmd
 }
@@ -131,6 +169,7 @@ type resultDiff struct {
 	Baseline resultSummary `json:"baseline"`
 	Current  resultSummary `json:"current"`
 	Delta    diffDelta     `json:"delta"`
+	Gate     *diffGate     `json:"gate,omitempty"`
 }
 
 type diffDelta struct {
@@ -143,6 +182,23 @@ type diffDelta struct {
 	AverageLatencyMs float64 `json:"averageLatencyMs"`
 	TokenTotal       int32   `json:"tokenTotal"`
 	Cost             float64 `json:"cost"`
+}
+
+type diffGateConfig struct {
+	FailOnChange         bool
+	FailOnRegression     bool
+	MaxPassRateDrop      float64
+	MaxScoreDrop         float64
+	MaxLatencyIncreaseMs float64
+	MaxTokenIncrease     int32
+	MaxFailureIncrease   int
+	MaxErrorIncrease     int
+}
+
+type diffGate struct {
+	Enabled bool     `json:"enabled"`
+	Passed  bool     `json:"passed"`
+	Reasons []string `json:"reasons,omitempty"`
 }
 
 func readResultSummaryFile(name string, stdin io.Reader) (resultSummary, error) {
@@ -422,6 +478,62 @@ func compareSummaries(base, current resultSummary) resultDiff {
 	}
 }
 
+func evaluateDiffGate(diff resultDiff, cfg diffGateConfig) diffGate {
+	gate := diffGate{
+		Enabled: cfg.FailOnChange || cfg.FailOnRegression,
+		Passed:  true,
+	}
+	if !gate.Enabled {
+		return gate
+	}
+
+	if cfg.FailOnChange {
+		addChangeReason(&gate, "total tests", float64(diff.Delta.TotalTests))
+		addChangeReason(&gate, "successes", float64(diff.Delta.Successes))
+		addChangeReason(&gate, "failures", float64(diff.Delta.Failures))
+		addChangeReason(&gate, "errors", float64(diff.Delta.Errors))
+		addChangeReason(&gate, "pass rate", diff.Delta.PassRate*100)
+		addChangeReason(&gate, "average score", diff.Delta.AverageScore)
+		addChangeReason(&gate, "average latency", diff.Delta.AverageLatencyMs)
+		addChangeReason(&gate, "total tokens", float64(diff.Delta.TokenTotal))
+		addChangeReason(&gate, "cost", diff.Delta.Cost)
+	}
+
+	if cfg.FailOnRegression {
+		if drop := -diff.Delta.PassRate; drop > cfg.MaxPassRateDrop {
+			gate.fail(fmt.Sprintf("pass rate dropped %.2f percentage points", drop*100))
+		}
+		if drop := -diff.Delta.AverageScore; drop > cfg.MaxScoreDrop {
+			gate.fail(fmt.Sprintf("average score dropped %.4f", drop))
+		}
+		if diff.Delta.AverageLatencyMs > cfg.MaxLatencyIncreaseMs {
+			gate.fail(fmt.Sprintf("average latency increased %.2f ms", diff.Delta.AverageLatencyMs))
+		}
+		if diff.Delta.TokenTotal > cfg.MaxTokenIncrease {
+			gate.fail(fmt.Sprintf("total tokens increased %+d", diff.Delta.TokenTotal))
+		}
+		if diff.Delta.Failures > cfg.MaxFailureIncrease {
+			gate.fail(fmt.Sprintf("failures increased %+d", diff.Delta.Failures))
+		}
+		if diff.Delta.Errors > cfg.MaxErrorIncrease {
+			gate.fail(fmt.Sprintf("errors increased %+d", diff.Delta.Errors))
+		}
+	}
+
+	return gate
+}
+
+func addChangeReason(gate *diffGate, name string, delta float64) {
+	if absFloat(delta) > 0.0000001 {
+		gate.fail(fmt.Sprintf("%s changed", name))
+	}
+}
+
+func (g *diffGate) fail(reason string) {
+	g.Passed = false
+	g.Reasons = append(g.Reasons, reason)
+}
+
 func writeDiff(w io.Writer, diff resultDiff, format string) error {
 	switch format {
 	case "", "text":
@@ -435,6 +547,16 @@ func writeDiff(w io.Writer, diff resultDiff, format string) error {
 		fmt.Fprintf(w, "  Average latency: %+.2f ms\n", diff.Delta.AverageLatencyMs)
 		fmt.Fprintf(w, "  Total tokens: %+d\n", diff.Delta.TokenTotal)
 		fmt.Fprintf(w, "  Cost: %+.6f\n", diff.Delta.Cost)
+		if diff.Gate != nil {
+			status := "pass"
+			if !diff.Gate.Passed {
+				status = "fail"
+			}
+			fmt.Fprintf(w, "\nGate: %s\n", status)
+			for _, reason := range diff.Gate.Reasons {
+				fmt.Fprintf(w, "  - %s\n", reason)
+			}
+		}
 		return nil
 	case "json":
 		enc := json.NewEncoder(w)
@@ -447,6 +569,13 @@ func writeDiff(w io.Writer, diff resultDiff, format string) error {
 
 func signedInt(n int) string {
 	return fmt.Sprintf("%+d", n)
+}
+
+func absFloat(n float64) float64 {
+	if n < 0 {
+		return -n
+	}
+	return n
 }
 
 // interactiveCmd starts interactive REPL mode
