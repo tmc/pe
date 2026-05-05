@@ -40,6 +40,8 @@ source of truth for coverage numbers.
 - [observability/RUNBOOKS.md](observability/RUNBOOKS.md) - operational runbooks
   for provider, evaluation, optimization, memory, and release-gate incidents.
 - [MIGRATION.md](MIGRATION.md) - v0.5.0 migration decision.
+- [UPGRADING.md](UPGRADING.md) - compatibility shims, migration tooling, and
+  breaking-change policy.
 - [NOTICE_DECISION.md](NOTICE_DECISION.md) - v0.5.0 NOTICE decision.
 - [ATTESTATION.md](ATTESTATION.md) - attestation design and prototype status.
 
