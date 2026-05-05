@@ -1176,7 +1176,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Update provider factory methods
 
 ##### Cleanup & Validation
-- [ ] Delete `internal/llm/provider.go`
+- [x] Delete `internal/llm/provider.go`
 - [ ] Remove all legacy provider implementations
 - [ ] Update all import statements
 - [ ] Fix compilation errors
