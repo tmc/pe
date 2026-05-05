@@ -69,3 +69,22 @@ func TestRegisterRootCommands(t *testing.T) {
 		})
 	}
 }
+
+func TestApplyRootMetadataInheritsSubcommandGroups(t *testing.T) {
+	root := &cobra.Command{Use: "pe"}
+	mod := &cobra.Command{Use: "mod"}
+	mod.AddCommand(&cobra.Command{Use: "init"}, &cobra.Command{Use: "tidy"})
+	root.AddCommand(mod)
+
+	applyRootMetadata(root)
+
+	for _, name := range []string{"init", "tidy"} {
+		cmd, _, err := root.Find([]string{"mod", name})
+		if err != nil {
+			t.Fatalf("Find mod %s: %v", name, err)
+		}
+		if got, want := cmd.Annotations[commandGroupAnnotation], "module"; got != want {
+			t.Fatalf("mod %s group = %q, want %q", name, got, want)
+		}
+	}
+}

@@ -68,15 +68,10 @@ var commandAliases = map[string][]string{
 // applyRootMetadata attaches compatibility aliases, group metadata, and grouped help.
 func applyRootMetadata(root *cobra.Command) {
 	for _, cmd := range root.Commands() {
+		group := applyCommandMetadata(cmd, "")
 		name := cmd.Name()
-		if group := commandGroups[name]; group != "" {
-			if cmd.Annotations == nil {
-				cmd.Annotations = make(map[string]string)
-			}
-			cmd.Annotations[commandGroupAnnotation] = group
-			if group == "experimental" && cmd.Deprecated == "" {
-				cmd.Deprecated = "experimental command; behavior may change"
-			}
+		if group == "experimental" && cmd.Deprecated == "" {
+			cmd.Deprecated = "experimental command; behavior may change"
 		}
 		for _, alias := range commandAliases[name] {
 			if !hasString(cmd.Aliases, alias) {
@@ -94,6 +89,24 @@ func applyRootMetadata(root *cobra.Command) {
 			writeCommandGroups(cmd.OutOrStdout(), cmd)
 		}
 	})
+}
+
+func applyCommandMetadata(cmd *cobra.Command, inheritedGroup string) string {
+	name := cmd.Name()
+	group := inheritedGroup
+	if group == "" {
+		group = commandGroups[name]
+	}
+	if group != "" {
+		if cmd.Annotations == nil {
+			cmd.Annotations = make(map[string]string)
+		}
+		cmd.Annotations[commandGroupAnnotation] = group
+	}
+	for _, child := range cmd.Commands() {
+		applyCommandMetadata(child, group)
+	}
+	return group
 }
 
 func writeCommandGroups(w io.Writer, root *cobra.Command) {

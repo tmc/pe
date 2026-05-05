@@ -26,12 +26,11 @@ Examples:
 	cmd.AddCommand(optimizeCmd())
 	cmd.AddCommand(evolveCmd())
 	cmd.AddCommand(semanticCmd())
-	cmd.AddCommand(composeCmd)
 	// fusionCmd moved to advanced-features branch
 	cmd.AddCommand(synthesizeCmd)
 	cmd.AddCommand(metricsCmd())
 	cmd.AddCommand(playgroundCmd())
-	
+
 	// Pipeline and utility commands
 	cmd.AddCommand(extractCmd())
 	cmd.AddCommand(pluginCmd())

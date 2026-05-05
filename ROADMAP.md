@@ -1304,10 +1304,10 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 
 ##### Module Commands Group
 - [x] Create `cmd/pe/commands/module/` directory
-- [ ] Move all `mod` subcommands to module group
+- [x] Move all `mod` subcommands to module group
 - [x] Move `push` command to module group
 - [x] Move `get` command to module group
-- [ ] Update module command structure
+- [x] Update module command structure
 
 ##### Pipeline Commands Group
 - [x] Create `cmd/pe/commands/pipeline/` directory
