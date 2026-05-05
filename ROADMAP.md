@@ -1167,8 +1167,8 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Update `cmd/pe/fusion.go` for multi-model fusion
 
 ##### Provider Implementation Updates
-- [ ] Update OpenAI provider to single interface
-- [ ] Update Anthropic provider to single interface
+- [x] Update OpenAI provider to single interface
+- [x] Update Anthropic provider to single interface
 - [ ] Update cgpt provider wrapper
 - [ ] Update mock provider for testing
 - [ ] Remove duplicate provider implementations

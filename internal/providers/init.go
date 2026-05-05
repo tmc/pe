@@ -2,35 +2,29 @@ package providers
 
 import (
 	"github.com/tmc/pe/internal/inference"
+	inferenceanthropic "github.com/tmc/pe/internal/inference/providers/anthropic"
 	inferenceollama "github.com/tmc/pe/internal/inference/providers/ollama"
+	inferenceopenai "github.com/tmc/pe/internal/inference/providers/openai"
 	"github.com/tmc/pe/internal/llm"
 )
 
 func init() {
 	// Register OpenAI provider factory
 	llm.RegisterProviderFactory("openai", func(providerSpec string, options map[string]interface{}) (llm.Provider, error) {
-		// The providerSpec here is just the model name, not the full spec
-		// The provider name has already been extracted by the caller
-		model := providerSpec
-		provider, err := NewOpenAIProvider(model, options)
+		provider, err := inferenceopenai.Factory(remoteProviderConfig(options))
 		if err != nil {
 			return nil, err
 		}
-		// Use the provider directly without adapter since it already implements llm.Provider
-		return provider, nil
+		return inference.NewModernAdapter(provider, providerSpec), nil
 	})
 
 	// Register Anthropic provider factory
 	llm.RegisterProviderFactory("anthropic", func(providerSpec string, options map[string]interface{}) (llm.Provider, error) {
-		// The providerSpec here is just the model name, not the full spec
-		// The provider name has already been extracted by the caller
-		model := providerSpec
-		provider, err := NewAnthropicProvider(model, options)
+		provider, err := inferenceanthropic.Factory(remoteProviderConfig(options))
 		if err != nil {
 			return nil, err
 		}
-		// Use the provider directly without adapter since it already implements llm.Provider
-		return provider, nil
+		return inference.NewModernAdapter(provider, providerSpec), nil
 	})
 
 	// Register Mock provider factory (for testing)
@@ -112,4 +106,15 @@ func init() {
 		}
 		return provider, nil
 	})
+}
+
+func remoteProviderConfig(options map[string]interface{}) map[string]interface{} {
+	config := cloneOptions(options)
+	if v, ok := config["apiKey"]; ok {
+		config["api_key"] = v
+	}
+	if v, ok := config["baseURL"]; ok {
+		config["base_url"] = v
+	}
+	return config
 }
