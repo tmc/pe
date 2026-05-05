@@ -1,0 +1,68 @@
+# Test pe mod tidy dry-run and write safety boundaries.
+
+pe mod tidy
+stdout 'missing dependency: github.com/example/add'
+stdout 'referenced by add.prompt'
+stdout 'missing dependency: github.com/example/conflict'
+stdout 'referenced by conflict-a.prompt, conflict-b.prompt'
+stdout 'missing dependency: github.com/example/noversion'
+stdout 'referenced by noversion.yaml'
+stdout 'unused dependency: github.com/example/remove'
+grep 'github.com/example/remove v1.0.0' pe.mod
+! grep 'github.com/example/add v1.2.3' pe.mod
+
+pe mod tidy -w
+stdout 'removed dependency: github.com/example/remove'
+stdout 'added dependency: github.com/example/add v1.2.3'
+stdout 'skipped dependency: github.com/example/conflict'
+stdout 'skipped dependency: github.com/example/noversion'
+stdout 'no single explicit version in references'
+stdout 'pe.mod updated'
+! stdout 'hidden'
+! stdout 'vendor'
+! stdout '.beads'
+cmp pe.mod expected.mod
+
+-- pe.mod --
+module example.com/app
+
+pe 1
+
+require (
+	github.com/example/keep v1.0.0
+	github.com/example/remove v1.0.0
+)
+
+-- keep.prompt --
+pe://github.com/example/keep/run
+
+-- add.prompt --
+pe://github.com/example/add@v1.2.3/run
+
+-- noversion.yaml --
+prompt: pe://github.com/example/noversion/run
+
+-- conflict-a.prompt --
+pe://github.com/example/conflict@v1.0.0/run
+
+-- conflict-b.prompt --
+pe://github.com/example/conflict@v1.1.0/run
+
+-- .hidden/ignored.prompt --
+pe://github.com/example/hidden@v1.0.0/run
+
+-- vendor/ignored.prompt --
+pe://github.com/example/vendor@v1.0.0/run
+
+-- .beads/ignored.prompt --
+pe://github.com/example/beads@v1.0.0/run
+
+-- expected.mod --
+module example.com/app
+
+pe 1
+
+require (
+	github.com/example/add v1.2.3
+	github.com/example/keep v1.0.0
+)
