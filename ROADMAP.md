@@ -1427,7 +1427,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Test template substitution properties
 - [x] Test evaluation scoring properties
 - [x] Test module resolution properties
-- [ ] Test configuration validation
+- [x] Test configuration validation
 - [x] Test error handling properties
 
 ##### Test Coverage
@@ -1495,28 +1495,28 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 #### Phase 6: Configuration Management (Week 8)
 
 ##### Configuration Schema
-- [ ] Design configuration schema
-- [ ] Create `internal/config/schema.go`
-- [ ] Define configuration types
-- [ ] Add validation rules
-- [ ] Create default configurations
-- [ ] Document configuration options
+- [x] Design configuration schema
+- [x] Create `internal/config/schema.go`
+- [x] Define configuration types
+- [x] Add validation rules
+- [x] Create default configurations
+- [x] Document configuration options
 
 ##### Config Manager Implementation
-- [ ] Create `internal/config/manager.go`
-- [ ] Implement ConfigManager type
-- [ ] Add hierarchical lookup (CLI > ENV > File > Default)
-- [ ] Implement configuration sources
-- [ ] Add configuration caching
-- [ ] Implement hot reload
-- [ ] Add configuration watchers
+- [x] Create `internal/config/manager.go`
+- [x] Implement ConfigManager type
+- [x] Add hierarchical lookup (CLI > ENV > File > Default)
+- [x] Implement configuration sources
+- [x] Add configuration caching
+- [x] Implement hot reload
+- [x] Add configuration watchers
 
 ##### Configuration Files
-- [ ] Define config file format (YAML/TOML/JSON)
-- [ ] Create config file parser
-- [ ] Add config file discovery
-- [ ] Implement config file merging
-- [ ] Add config file validation
+- [x] Define config file format (YAML/JSON; TOML reserved)
+- [x] Create config file parser
+- [x] Add config file discovery
+- [x] Implement config file merging
+- [x] Add config file validation
 - [ ] Create config migration tool
 
 ##### Environment Variables
