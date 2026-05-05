@@ -320,7 +320,7 @@ Current status:
   command wiring.
 
 Release blockers:
-1. Refresh `docs/TEST_COVERAGE_REPORT.md` after the integrated branch:
+1. DONE: Refresh `docs/TEST_COVERAGE_REPORT.md` after the integrated branch:
    `go test -coverprofile=/tmp/pe-coverage.out ./...` then
    `go tool cover -func=/tmp/pe-coverage.out`.
 2. Update command documentation from generated help for `pe diff`, `pe serve`,

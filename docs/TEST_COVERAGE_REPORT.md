@@ -7,13 +7,13 @@ Generated: 2026-05-05
 Integrated baseline branch:
 
 ```text
-agent/pe-coverage-integrated
+exp
 ```
 
-Integrated base:
+Integrated commit:
 
 ```text
-agent/pe-phase12-integrated at 38ad70adbd9c7326170eac0d4feee92f9d8158d1
+03152ba
 ```
 
 Commands used for the measured baseline:
@@ -27,11 +27,11 @@ Results:
 
 | Metric | Value |
 | --- | ---: |
-| Overall statement coverage | 44.1% |
-| Package paths reported by `go test -cover` | 41 |
-| Packages with statements | 39 |
-| Packages with no statements | 2 |
-| Test status | Passing integrated baseline |
+| Overall statement coverage | 44.4% |
+| Package paths reported by `go test -cover` | 44 |
+| Packages with statements | 41 |
+| Packages with no statements | 3 |
+| Test status | Passing integrated branch |
 
 This supersedes older documentation claims that described overall coverage as
 either about 25%, 40%, or 40.8%.
@@ -54,6 +54,7 @@ expansion.
 
 | Package | Coverage |
 | --- | ---: |
+| `github.com/tmc/pe/example/structured/with-go-structs` | 0.0% |
 | `github.com/tmc/pe/examples/inference` | 0.0% |
 | `github.com/tmc/pe/ext/starlark/cmd/starlark-demo` | 0.0% |
 | `github.com/tmc/pe/internal/cli` | 0.0% |
@@ -72,14 +73,14 @@ expansion.
 | --- | ---: |
 | `github.com/tmc/pe/internal/llm` | 31.0% |
 | `github.com/tmc/pe/ext/starlark` | 38.0% |
-| `github.com/tmc/pe/cmd/pe` | 38.5% |
+| `github.com/tmc/pe/cmd/pe` | 39.0% |
 | `github.com/tmc/pe/internal/metaprompt` | 40.8% |
 | `github.com/tmc/pe/internal/promptfoo/evaluation/evaluator` | 43.0% |
 | `github.com/tmc/pe/internal/module` | 44.7% |
 | `github.com/tmc/pe/internal/errors` | 46.0% |
 | `github.com/tmc/pe/plugins/promptfoo` | 46.4% |
-| `github.com/tmc/pe/internal/pemod` | 48.7% |
 | `github.com/tmc/pe/internal/inference/providers/cgpt` | 51.3% |
+| `github.com/tmc/pe/internal/pemod` | 54.4% |
 | `github.com/tmc/pe/internal/providers` | 58.1% |
 | `github.com/tmc/pe/internal/prompt` | 58.9% |
 | `github.com/tmc/pe/internal/testing/mocks` | 60.4% |
@@ -103,5 +104,6 @@ expansion.
 
 | Package |
 | --- |
+| `github.com/tmc/pe/example/getting-started` |
 | `github.com/tmc/pe/internal/inference/providers` |
 | `github.com/tmc/pe/tests` |
