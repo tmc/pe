@@ -1,0 +1,10 @@
+Review {{.artifact}} for {{.audience}}.
+
+Return:
+1. The smallest useful summary
+2. Any missing input
+3. The next safe action
+
+-- defaults --
+artifact=the deployment note
+audience=the release owner

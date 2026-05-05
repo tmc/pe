@@ -28,6 +28,8 @@ legacy development material unless a demo has been refreshed here; see
 
 - [Inference API](inference/) - Go example using PE's internal inference client.
 - [Creating Modules](modules/create/) - Minimal `pe.mod` module creation example.
+- [Executable Text](executable-text/) - Plain, templated, and composable text
+  sketches with conservative placement policy.
 - [Starlark](starlark/) - Starlark and YAML/Starlark evaluation examples.
 
 ## Pipeline
@@ -94,6 +96,7 @@ examples/
 ├── inference/
 ├── local-ollama/
 ├── current-commands/
+├── executable-text/
 ├── modules/
 │   └── create/
 ├── pipeline/

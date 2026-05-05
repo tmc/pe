@@ -1,0 +1,43 @@
+# Sketch: composable executable text.
+#
+# This file is documentation for the intended shape. It is not executed by the
+# current smoke.
+workflow: release-note-review
+inputs:
+  artifact:
+    type: text
+  audience:
+    type: text
+metadata:
+  owner: release
+  purpose: review
+safety:
+  data:
+    allow:
+      - release-notes
+      - test-results
+  prompts:
+    allow:
+      - ./plain.prompt
+      - ./templated.prompt
+  providers:
+    allow:
+      - local
+  tools:
+    allow:
+      - pe cat
+placement:
+  run:
+    allow:
+      - local
+  write:
+    allow:
+      - tmp
+steps:
+  - name: read
+    text: ./plain.prompt
+  - name: review
+    text: ./templated.prompt
+    with:
+      artifact: "{{.artifact}}"
+      audience: "{{.audience}}"
