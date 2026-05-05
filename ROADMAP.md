@@ -1275,7 +1275,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Create command help generator
 
 ##### Core Commands Group
-- [ ] Create `cmd/pe/commands/core/` directory
+- [x] Create `cmd/pe/commands/core/` directory
 - [ ] Move `run` command to core group
 - [ ] Move `build` command to core group
 - [ ] Move `test` command to core group
@@ -1284,7 +1284,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Add group-level help
 
 ##### Evaluation Commands Group
-- [ ] Create `cmd/pe/commands/evaluation/` directory
+- [x] Create `cmd/pe/commands/evaluation/` directory
 - [ ] Move `eval` command to evaluation group
 - [ ] Move `benchmark` command to evaluation group
 - [ ] Move `diff` command to evaluation group
@@ -1293,7 +1293,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Update command registrations
 
 ##### Optimization Commands Group
-- [ ] Create `cmd/pe/commands/optimization/` directory
+- [x] Create `cmd/pe/commands/optimization/` directory
 - [ ] Move `optimize` command to optimization group
 - [ ] Move `semantic` command to optimization group
 - [ ] Move `evolve` command to optimization group
@@ -1303,14 +1303,14 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Move `fusion` command to optimization group
 
 ##### Module Commands Group
-- [ ] Create `cmd/pe/commands/module/` directory
+- [x] Create `cmd/pe/commands/module/` directory
 - [ ] Move all `mod` subcommands to module group
 - [ ] Move `push` command to module group
 - [ ] Move `get` command to module group
 - [ ] Update module command structure
 
 ##### Pipeline Commands Group
-- [ ] Create `cmd/pe/commands/pipeline/` directory
+- [x] Create `cmd/pe/commands/pipeline/` directory
 - [ ] Move `stream` command to pipeline group
 - [ ] Move `filter` command to pipeline group
 - [ ] Move `extract` command to pipeline group
@@ -1318,7 +1318,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Move `cat` command to pipeline group
 
 ##### Utility Commands Group
-- [ ] Create `cmd/pe/commands/utility/` directory
+- [x] Create `cmd/pe/commands/utility/` directory
 - [ ] Move `fmt` command to utility group
 - [ ] Move `vet` command to utility group
 - [ ] Move `convert` command to utility group
@@ -1327,7 +1327,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Move `watch` command to utility group
 
 ##### Experimental Commands Group
-- [ ] Create `cmd/pe/commands/experimental/` directory
+- [x] Create `cmd/pe/commands/experimental/` directory
 - [ ] Move `attest` command to experimental group
 - [ ] Move `security` command to experimental group
 - [ ] Move `profile` command to experimental group
