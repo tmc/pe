@@ -112,7 +112,7 @@ func (m *mockProvider) SupportsBatch() bool {
 func TestNewOptimizer(t *testing.T) {
 	tests := []struct {
 		name     string
-		provider llm.Provider
+		provider Generator
 	}{
 		{
 			name:     "with mock provider",

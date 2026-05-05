@@ -13,11 +13,11 @@ import (
 
 // ReflectionEngine performs meta-analysis of prompt engineering processes
 type ReflectionEngine struct {
-	llm llm.Provider
+	llm Generator
 }
 
 // NewReflectionEngine creates a new reflection engine
-func NewReflectionEngine(llmProvider llm.Provider) *ReflectionEngine {
+func NewReflectionEngine(llmProvider Generator) *ReflectionEngine {
 	return &ReflectionEngine{
 		llm: llmProvider,
 	}

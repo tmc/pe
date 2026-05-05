@@ -48,14 +48,14 @@ type IterationResult struct {
 
 // Optimizer implements prompt optimization using metaprompting techniques
 type Optimizer struct {
-	llm      llm.Provider
+	llm      Generator
 	textGrad *TextGradOptimizer
 	pe2      *PE2Optimizer
 	apex     *APEXOptimizer
 }
 
 // NewOptimizer creates a new prompt optimizer
-func NewOptimizer(llmProvider llm.Provider) *Optimizer {
+func NewOptimizer(llmProvider Generator) *Optimizer {
 	return &Optimizer{
 		llm:      llmProvider,
 		textGrad: NewTextGradOptimizer(llmProvider),

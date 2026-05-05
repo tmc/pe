@@ -7,8 +7,6 @@ import (
 	"math"
 	"strings"
 	"time"
-
-	"github.com/tmc/pe/internal/llm"
 )
 
 // PromptComposer implements advanced prompt composition techniques with DSPy-style features
@@ -18,7 +16,7 @@ type PromptComposer struct {
 	programSynthesizer *ProgramSynthesizer
 	parameterOptimizer *ParameterOptimizerEngine
 	qualityGates       *QualityGateManager
-	llmProvider        llm.Provider
+	llmProvider        Generator
 }
 
 // StyleHandler defines the interface for style-specific composition logic
@@ -55,7 +53,7 @@ func NewPromptComposer() *PromptComposer {
 }
 
 // NewPromptComposerWithLLM creates a composer with LLM provider for advanced features
-func NewPromptComposerWithLLM(llmProvider llm.Provider) *PromptComposer {
+func NewPromptComposerWithLLM(llmProvider Generator) *PromptComposer {
 	composer := NewPromptComposer()
 	composer.llmProvider = llmProvider
 	composer.programSynthesizer.llmProvider = llmProvider
@@ -604,7 +602,7 @@ func (sr *SignatureRegistry) validateAgainstSchema(content string, schema Schema
 
 // ProgramSynthesizer implements automated prompt construction
 type ProgramSynthesizer struct {
-	llmProvider         llm.Provider
+	llmProvider         Generator
 	synthesisStrategies map[string]SynthesisStrategy
 	optimizationHistory []SynthesisResult
 }
@@ -925,7 +923,7 @@ func calculateVariance(values []int) float64 {
 
 // ParameterOptimizerEngine implements algorithmic parameter tuning
 type ParameterOptimizerEngine struct {
-	llmProvider    llm.Provider
+	llmProvider    Generator
 	optimizers     map[string]ComposerOptimizer
 	history        []OptimizationRun
 	bestParameters map[string]interface{}

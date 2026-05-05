@@ -207,13 +207,13 @@ func TestAnalyzeConvergence(t *testing.T) {
 	optimizer := NewGASOOptimizer(provider)
 
 	tests := []struct {
-		name    string
-		history []GASOIteration
+		name          string
+		history       []GASOIteration
 		wantConverged bool
 	}{
 		{
-			name:    "empty history",
-			history: []GASOIteration{},
+			name:          "empty history",
+			history:       []GASOIteration{},
 			wantConverged: false,
 		},
 		{

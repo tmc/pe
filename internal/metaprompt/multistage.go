@@ -11,13 +11,13 @@ import (
 
 // MultiStageOptimizer orchestrates sequential prompt refinements
 type MultiStageOptimizer struct {
-	llm              llm.Provider
+	llm              Generator
 	textGradAnalyzer *TextGradAnalyzer
 	gradientComputer *GradientComputer
 }
 
 // NewMultiStageOptimizer creates a new multi-stage optimizer
-func NewMultiStageOptimizer(llmProvider llm.Provider) *MultiStageOptimizer {
+func NewMultiStageOptimizer(llmProvider Generator) *MultiStageOptimizer {
 	return &MultiStageOptimizer{
 		llm:              llmProvider,
 		textGradAnalyzer: NewTextGradAnalyzer(llmProvider),

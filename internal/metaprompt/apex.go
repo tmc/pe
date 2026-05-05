@@ -17,7 +17,7 @@ import (
 // APEX uses greedy algorithms with beam-search for efficiency and
 // leverages search history to significantly enhance LLM-based mutation
 type APEXOptimizer struct {
-	llm llm.Provider
+	llm Generator
 }
 
 // APEXConfig contains configuration for APEX optimization
@@ -49,7 +49,7 @@ type APEXSearchHistory struct {
 }
 
 // NewAPEXOptimizer creates a new APEX optimizer
-func NewAPEXOptimizer(llmProvider llm.Provider) *APEXOptimizer {
+func NewAPEXOptimizer(llmProvider Generator) *APEXOptimizer {
 	return &APEXOptimizer{
 		llm: llmProvider,
 	}

@@ -1473,8 +1473,8 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Refactor GASO to use interfaces
 - [x] Refactor semantic optimizer
 - [x] Refactor evolutionary optimizer
-- [ ] Update hybrid optimizer
-- [ ] Remove provider coupling
+- [x] Update hybrid optimizer
+- [x] Remove provider coupling
 
 ##### Evaluation Abstraction
 - [x] Create evaluation adapter interface

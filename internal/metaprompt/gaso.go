@@ -15,11 +15,11 @@ import (
 // GASOOptimizer implements Graph-based Agentic System Optimization
 // Based on 2025 KAUST/IDSIA research on semantic optimization for multi-component systems
 type GASOOptimizer struct {
-	llm llm.Provider
+	llm Generator
 }
 
 // NewGASOOptimizer creates a new GASO optimizer
-func NewGASOOptimizer(llmProvider llm.Provider) *GASOOptimizer {
+func NewGASOOptimizer(llmProvider Generator) *GASOOptimizer {
 	return &GASOOptimizer{
 		llm: llmProvider,
 	}

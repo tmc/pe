@@ -12,11 +12,11 @@ import (
 
 // GradientComputer computes optimization trajectories for prompt refinement
 type GradientComputer struct {
-	llm llm.Provider
+	llm Generator
 }
 
 // NewGradientComputer creates a new prompt gradient computer
-func NewGradientComputer(llmProvider llm.Provider) *GradientComputer {
+func NewGradientComputer(llmProvider Generator) *GradientComputer {
 	return &GradientComputer{
 		llm: llmProvider,
 	}

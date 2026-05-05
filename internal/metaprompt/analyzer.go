@@ -11,11 +11,11 @@ import (
 
 // TextGradAnalyzer analyzes prompt-response gradients using attention patterns
 type TextGradAnalyzer struct {
-	llm llm.Provider
+	llm Generator
 }
 
 // NewTextGradAnalyzer creates a new TextGrad analyzer
-func NewTextGradAnalyzer(llmProvider llm.Provider) *TextGradAnalyzer {
+func NewTextGradAnalyzer(llmProvider Generator) *TextGradAnalyzer {
 	return &TextGradAnalyzer{
 		llm: llmProvider,
 	}

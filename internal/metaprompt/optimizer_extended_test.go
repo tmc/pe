@@ -63,11 +63,11 @@ Second improvement text`,
 
 func TestParseEvaluationResponse(t *testing.T) {
 	tests := []struct {
-		name        string
-		response    string
-		wantIndex   int
-		wantScore   float64
-		wantReason  string
+		name       string
+		response   string
+		wantIndex  int
+		wantScore  float64
+		wantReason string
 	}{
 		{
 			name: "full evaluation",

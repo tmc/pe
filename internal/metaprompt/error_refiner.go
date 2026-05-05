@@ -11,11 +11,11 @@ import (
 
 // ErrorDrivenRefiner identifies and fixes prompt failure modes
 type ErrorDrivenRefiner struct {
-	llm llm.Provider
+	llm Generator
 }
 
 // NewErrorDrivenRefiner creates a new error-driven refiner
-func NewErrorDrivenRefiner(llmProvider llm.Provider) *ErrorDrivenRefiner {
+func NewErrorDrivenRefiner(llmProvider Generator) *ErrorDrivenRefiner {
 	return &ErrorDrivenRefiner{
 		llm: llmProvider,
 	}

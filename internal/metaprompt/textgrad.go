@@ -14,7 +14,7 @@ import (
 // TextGradOptimizer implements TextGrad 2.0 optimization with attention flow mapping
 // Based on 2024-2025 research on natural language gradients
 type TextGradOptimizer struct {
-	llm                 llm.Provider
+	llm                 Generator
 	enhancedMode        bool
 	attentionFlowMapper *AttentionFlowMapper
 }
@@ -25,7 +25,7 @@ type AttentionFlowMapper struct {
 }
 
 // NewTextGradOptimizer creates a new TextGrad optimizer
-func NewTextGradOptimizer(provider llm.Provider) *TextGradOptimizer {
+func NewTextGradOptimizer(provider Generator) *TextGradOptimizer {
 	return &TextGradOptimizer{
 		llm:                 provider,
 		enhancedMode:        true,
