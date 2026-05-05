@@ -258,6 +258,55 @@ Follow-ups after release:
 - Add release checklist automation for migration-guide and legal-file presence.
 
 
+#### Release prep: Post-integration validation
+
+- Type: `epic`
+
+**Scope**
+
+Validate and document the integrated `exp` branch before tagging v0.5.0. This
+section comes from the 2026-05-05 NotebookLM roadmap pass after syncing the
+current repository as `pe-current` and the integration reports as `pe-status`.
+NotebookLM claims were checked against the filesystem before inclusion here.
+
+Current status:
+- `exp` contains the integrated distributed scheduler, stats/diff regression
+  gates, module tidy JSON/write behavior, localhost `serve`, experimental
+  optimize, and unsigned attest/cache work.
+- `cmd/pe/serve.go` already sets `ReadHeaderTimeout`, `ReadTimeout`,
+  `WriteTimeout`, and `IdleTimeout`; stale security-review text still says
+  local HTTP server timeout work may be incomplete.
+- `pe exp attest manifest` and `pe exp attest verify` are wired; future
+  attestation work should focus on signatures and trust, not basic manifest
+  command wiring.
+
+Release blockers:
+1. Refresh `docs/TEST_COVERAGE_REPORT.md` after the integrated branch:
+   `go test -coverprofile=/tmp/pe-coverage.out ./...` then
+   `go tool cover -func=/tmp/pe-coverage.out`.
+2. Update command documentation from generated help for `pe diff`, `pe serve`,
+   `pe mod tidy`, `pe exp optimize`, `pe exp attest`, and `pe exp cache`.
+   Verification: `go run ./cmd/pe <command> --help`.
+3. Reconcile `docs/SECURITY_REVIEW.md` with current `cmd/pe/serve.go`
+   timeout behavior and the unsigned/local-only attest/cache caveats.
+   Verification: `rg 'ReadTimeout|WriteTimeout|IdleTimeout' cmd/pe/serve.go`
+   and `go run ./cmd/pe exp attest --help`.
+4. Add release-facing examples for the new local workflows:
+   `pe diff --fail-on-regression`, `pe mod tidy --json --write`,
+   `pe exp attest manifest/verify`, and `pe exp cache manifest put/verify`.
+5. Record the final branch policy for v0.5.0: `exp` is the integrated
+   launchpad unless the maintainer explicitly promotes it to `master` or
+   creates `main`.
+
+Suggested agent lanes:
+- `agent/pe-coverage-refresh`: update the coverage report only.
+- `agent/pe-docs-cli-sync`: update generated-help-derived command docs only.
+- `agent/pe-security-review-sync`: reconcile the security review with current
+  serve and attest/cache behavior.
+- `agent/pe-new-examples`: add runnable examples and smoke scripts for the new
+  local workflows.
+
+
 ### P2
 
 #### Add pipe support to scripttest framework
@@ -656,6 +705,92 @@ Related:
 - docs/MODULE_REGISTRY.md may have design docs
 
 
+#### Wire experimental distributed CLI
+
+- Type: `task`
+
+**Scope**
+
+Expose the integrated local deterministic scheduler through a real experimental
+CLI command.
+
+Current status:
+- `internal/distributed/local.go` implements `RunLocal` and `Majority`.
+- The promptfoo evaluator already uses `distributed.RunLocal` internally.
+- `cmd/pe/exp_commands.go` still registers `expDistributedCmd` as a stub.
+
+Tasks:
+1. Replace the `exp distributed` stub with a small command that reads a local
+   task description and runs it through `distributed.RunLocal`.
+2. Keep the first command provider-free and deterministic.
+3. Add tests for ordering, worker limits, cancellation, and invalid inputs at
+   the CLI boundary.
+4. Document that this is a local scheduler prototype, not a remote worker
+   system.
+
+Verification:
+- `rg 'expDistributedCmd|RunLocal' cmd/pe internal/distributed`
+- `go test ./cmd/pe ./internal/distributed`
+
+
+#### Wire consensus evaluation mode
+
+- Type: `task`
+
+**Scope**
+
+Make the integrated deterministic majority vote helper usable from evaluation
+workflows.
+
+Current status:
+- `internal/distributed/local.go` provides `Majority`.
+- Evaluator tests build consensus manually from evaluation results.
+- No user-facing `pe eval` or `pe fusion` flag exposes this path.
+
+Tasks:
+1. Decide whether consensus belongs on `pe eval` or a separate `pe fusion`
+   command.
+2. Add the smallest CLI surface that can aggregate multiple provider or prompt
+   outputs with deterministic tie handling.
+3. Preserve existing eval output schemas or add an explicit versioned field for
+   consensus metadata.
+4. Add tests for ties, empty votes, weighted votes, and provider error rows.
+
+Verification:
+- `rg 'Majority\\(' cmd/pe internal/promptfoo/evaluation/evaluator`
+- `go test ./cmd/pe ./internal/promptfoo/evaluation/evaluator`
+
+
+#### Connect local optimizer to provider-backed semantic refinement
+
+- Type: `spike`
+
+**Scope**
+
+Bridge the deterministic `internal/optimization/localopt` package to the
+existing provider/metaprompt machinery without making the local optimizer depend
+on provider packages.
+
+Current status:
+- `pe exp optimize` can refine local scored variants and promptfoo-style score
+  JSON without provider calls.
+- `internal/optimization/localopt` is intentionally provider-free.
+- Existing metaprompt and provider code can generate candidate text, but the
+  adapter boundary is not defined.
+
+Tasks:
+1. Design a small adapter interface between provider-backed candidate
+   generation and `localopt.Optimizer`.
+2. Prototype with a fake provider first; keep live-provider tests opt-in.
+3. Preserve deterministic tests for score parsing and local refinement.
+4. Document whether this graduates under `pe exp optimize` or a separate
+   semantic command.
+
+Verification:
+- `rg 'localopt|Semantic|GASO|Provider' cmd/pe internal`
+- `go test ./cmd/pe ./internal/optimization/localopt ./internal/metaprompt`
+
+
 #### Add advanced assertion types
 
 - Type: `feature`
@@ -748,6 +883,109 @@ Consider:
 - JWT for auth
 - CORS support
 - Health check endpoint
+
+
+#### Sign attest manifests
+
+- Type: `epic`
+
+**Scope**
+
+Add cryptographic identity and origin checks on top of the unsigned manifest and
+cache workflows.
+
+Current status:
+- `pe exp attest manifest` and `pe exp attest verify` are implemented for
+  deterministic local SHA-256 manifests.
+- Help text correctly says these manifests are unsigned and local-only: they
+  detect content changes but do not prove identity, origin, or freshness.
+
+Tasks:
+1. Define a signed manifest envelope that preserves the existing unsigned
+   manifest payload.
+2. Start with Ed25519 from the standard library.
+3. Add explicit key-generation, signing, verification, and failure-mode docs.
+4. Keep unsigned manifests available for local integrity workflows.
+
+Verification:
+- `go run ./cmd/pe exp attest --help`
+- `rg 'unsignedManifestType|ed25519|signature' cmd/pe`
+
+
+#### Build remote registry download path
+
+- Type: `epic`
+
+**Scope**
+
+Turn the module registry code into a verified remote download path with clear
+integrity and failure semantics.
+
+Current status:
+- Module commands and registry code exist.
+- `pe mod tidy --json --write` is implemented for local dependency hygiene.
+- Remote registry behavior still needs fixture-backed validation and user docs.
+
+Tasks:
+1. Add a fixture-backed remote registry test path before relying on live
+   services.
+2. Verify `pe mod download` extracts exactly the expected files and rejects
+   path escapes.
+3. Define integrity checks for downloaded modules.
+4. Document supported registry configuration and failure modes.
+
+Verification:
+- `rg 'GitHubRegistry|download|registry' internal cmd/pe docs`
+- `go test ./cmd/pe ./internal/module ./internal/pemod`
+
+
+#### Add DAG scheduling for optimization graphs
+
+- Type: `spike`
+
+**Scope**
+
+Extend the local scheduler beyond flat task slices so it can execute dependency
+graphs produced by semantic optimization work.
+
+Current status:
+- `distributed.RunLocal` executes independent tasks with bounded concurrency.
+- GASO and semantic optimization code model graph-like dependencies elsewhere.
+
+Tasks:
+1. Define a minimal DAG task type without replacing the existing flat
+   `RunLocal` API.
+2. Add topological scheduling with cycle detection.
+3. Preserve deterministic result ordering and cancellation behavior.
+4. Test dependency blocking, failed parent behavior, and cycle errors.
+
+Verification:
+- `rg 'RunLocal|Dependencies|GASOComputationalGraph' internal`
+- `go test ./internal/distributed ./internal/metaprompt`
+
+
+#### Visualize semantic optimization graphs
+
+- Type: `spike`
+
+**Scope**
+
+Provide a local visualization path for semantic/GASO optimization graphs.
+
+Current status:
+- Semantic optimization can produce graph-like structures.
+- `pe serve` now has a localhost-first API foundation.
+- No current UI renders optimization graph structure for debugging.
+
+Tasks:
+1. Define a stable JSON representation for optimization graph nodes and edges.
+2. Add a small local-only HTML view or `pe serve` endpoint for inspection.
+3. Keep the first version static and provider-free.
+4. Add sample graph fixtures and snapshot-style tests.
+
+Verification:
+- `rg 'GASOComputationalGraph|serve|render' cmd/pe internal`
+- `go test ./cmd/pe ./internal/metaprompt`
 
 
 #### Add examples for new features
