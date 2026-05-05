@@ -72,6 +72,10 @@ rules when they need stronger contracts.`,
 	registerRootCommands(root)
 	dynamicPluginCommands(root)
 	applyRootMetadata(root)
+	if err := applyRootConfigDefaults(root); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	instrumentCommandTracing(root)
 
 	if err := root.Execute(); err != nil {

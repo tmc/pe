@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"github.com/tmc/pe/internal/config"
 	"github.com/tmc/pe/internal/inference"
 	inferenceanthropic "github.com/tmc/pe/internal/inference/providers/anthropic"
 	inferencecgpt "github.com/tmc/pe/internal/inference/providers/cgpt"
@@ -12,7 +13,7 @@ import (
 func init() {
 	// Register OpenAI provider factory
 	llm.RegisterProviderFactory("openai", func(providerSpec string, options map[string]interface{}) (llm.Provider, error) {
-		provider, err := inferenceopenai.Factory(remoteProviderConfig(options))
+		provider, err := inferenceopenai.Factory(remoteProviderConfig("openai", options))
 		if err != nil {
 			return nil, err
 		}
@@ -21,7 +22,7 @@ func init() {
 
 	// Register Anthropic provider factory
 	llm.RegisterProviderFactory("anthropic", func(providerSpec string, options map[string]interface{}) (llm.Provider, error) {
-		provider, err := inferenceanthropic.Factory(remoteProviderConfig(options))
+		provider, err := inferenceanthropic.Factory(remoteProviderConfig("anthropic", options))
 		if err != nil {
 			return nil, err
 		}
@@ -117,21 +118,37 @@ func init() {
 	})
 }
 
-func remoteProviderConfig(options map[string]interface{}) map[string]interface{} {
-	config := cloneOptions(options)
-	if v, ok := config["apiKey"]; ok {
-		config["api_key"] = v
+func remoteProviderConfig(name string, options map[string]interface{}) map[string]interface{} {
+	cfg := providerOptionsFromManager(name)
+	mergeOptions(cfg, options)
+	if v, ok := cfg["apiKey"]; ok {
+		cfg["api_key"] = v
 	}
-	if v, ok := config["baseURL"]; ok {
-		config["base_url"] = v
+	if v, ok := cfg["baseURL"]; ok {
+		cfg["base_url"] = v
 	}
-	return config
+	return cfg
 }
 
 func cgptProviderConfig(options map[string]interface{}) map[string]interface{} {
-	config := cloneOptions(options)
-	if v, ok := config["executable"]; ok {
-		config["binary"] = v
+	cfg := providerOptionsFromManager("cgpt")
+	mergeOptions(cfg, options)
+	if v, ok := cfg["executable"]; ok {
+		cfg["binary"] = v
 	}
-	return config
+	return cfg
+}
+
+func providerOptionsFromManager(name string) map[string]interface{} {
+	manager, err := config.NewManager()
+	if err != nil {
+		return make(map[string]interface{})
+	}
+	return manager.Get().ProviderOptions(name)
+}
+
+func mergeOptions(dst, src map[string]interface{}) {
+	for k, v := range src {
+		dst[k] = v
+	}
 }

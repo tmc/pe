@@ -1527,14 +1527,14 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add env var precedence rules
 
 ##### Provider Configuration
-- [ ] Update provider configs to use manager
+- [x] Update provider configs to use manager
 - [x] Add API key management
 - [x] Implement credential storage
 - [x] Add provider-specific options
 - [x] Create provider config validation
 
 ##### Command Configuration
-- [ ] Update commands to use config manager
+- [x] Update commands to use config manager
 - [x] Add command-specific configs
 - [x] Implement config overrides
 - [x] Add config profiles
