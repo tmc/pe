@@ -150,6 +150,50 @@ func TestREPLSession_handleCommand(t *testing.T) {
 	}
 }
 
+func TestREPLSession_handleCommand_quitSetsDone(t *testing.T) {
+	cmd := &cobra.Command{}
+	var stdout bytes.Buffer
+	cmd.SetOut(&stdout)
+
+	session := NewREPLSession(cmd, "openai:gpt-4", "", 0.7)
+
+	if !session.handleCommand(":quit") {
+		t.Fatal("handleCommand(:quit) = false, want true")
+	}
+	if !session.done {
+		t.Fatal("session.done = false, want true")
+	}
+	if got := stdout.String(); !bytes.Contains([]byte(got), []byte("Goodbye!")) {
+		t.Fatalf("stdout = %q, want goodbye message", got)
+	}
+}
+
+func TestREPLSession_RunStopsOnQuit(t *testing.T) {
+	cmd := &cobra.Command{}
+	var stdout, stderr bytes.Buffer
+	cmd.SetIn(bytes.NewBufferString(":quit\nthis should not run\n"))
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+
+	session := NewREPLSession(cmd, "mock", "", 0.7)
+	if err := session.Run(); err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("stderr = %q, want empty", stderr.String())
+	}
+	output := stdout.String()
+	if !bytes.Contains([]byte(output), []byte("Goodbye!")) {
+		t.Fatalf("stdout missing goodbye:\n%s", output)
+	}
+	if bytes.Contains([]byte(output), []byte("this should not run")) {
+		t.Fatalf("Run processed input after quit:\n%s", output)
+	}
+	if len(session.history) != 1 || session.history[0] != ":quit" {
+		t.Fatalf("history = %#v, want only :quit", session.history)
+	}
+}
+
 func TestREPLSession_handleCommand_provider(t *testing.T) {
 	cmd := &cobra.Command{}
 	var stdout bytes.Buffer

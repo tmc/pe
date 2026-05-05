@@ -21,6 +21,7 @@ type REPLSession struct {
 	configFile  string
 	outputFile  string
 	cmd         *cobra.Command
+	done        bool
 }
 
 // NewREPLSession creates a new REPL session
@@ -56,6 +57,9 @@ func (r *REPLSession) Run() error {
 
 		// Handle special commands
 		if r.handleCommand(input) {
+			if r.done {
+				break
+			}
 			continue
 		}
 
@@ -121,7 +125,7 @@ func (r *REPLSession) handleCommand(input string) bool {
 	switch command {
 	case ":quit", ":q", ":exit":
 		fmt.Fprintln(r.cmd.OutOrStdout(), "Goodbye!")
-		os.Exit(0)
+		r.done = true
 
 	case ":help", ":h":
 		r.printHelp()
