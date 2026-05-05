@@ -43,7 +43,6 @@ func createStubCmd(use, short string) *cobra.Command {
 
 // Disabled/Moved commands
 var expDistributedCmd = createStubCmd("distributed", "Distributed execution (prototype)")
-var expAttestCmd = createStubCmd("attest", "Cryptographic attestation (prototype)")
 var expCacheCmd = createStubCmd("cache", "Content-addressed caching (prototype)")
 var expComposeCmd = createStubCmd("compose", "Compose prompts from verified components with type-safe composition")
 
