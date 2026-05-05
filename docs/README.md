@@ -36,6 +36,8 @@ source of truth for coverage numbers.
 - [PROMPTFOO_INTEGRATION.md](PROMPTFOO_INTEGRATION.md) - promptfoo-compatible
   evaluation configuration.
 - [SECURITY_REVIEW.md](SECURITY_REVIEW.md) - release security review notes.
+- [SECURITY_AUDIT_2026-05-05.md](SECURITY_AUDIT_2026-05-05.md) - scoped
+  security audit for recent config, security, compatibility, and performance work.
 - [../SECURITY.md](../SECURITY.md) - vulnerability disclosure policy.
 - [observability/GRAFANA_DASHBOARDS.md](observability/GRAFANA_DASHBOARDS.md) -
   dashboard definitions for release metrics.
