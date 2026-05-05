@@ -218,6 +218,13 @@ func resolveManifestPath(rootAbs, path string) (string, string, error) {
 }
 
 func hashManifestFile(path, rel string) (unsignedManifestEntry, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return unsignedManifestEntry{}, fmt.Errorf("stat %s: %w", rel, err)
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return unsignedManifestEntry{}, fmt.Errorf("symlinks are not supported in unsigned manifests: %s", rel)
+	}
 	file, err := os.Open(path) // #nosec G304 -- caller resolves path under the manifest root.
 	if err != nil {
 		return unsignedManifestEntry{}, fmt.Errorf("open %s: %w", rel, err)

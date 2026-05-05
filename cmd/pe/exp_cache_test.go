@@ -147,3 +147,144 @@ func TestExpCacheCommands(t *testing.T) {
 		t.Fatalf("verify output = %q", verifyOut.String())
 	}
 }
+
+func TestCacheManifestWorkflowDetectsTamper(t *testing.T) {
+	dir := t.TempDir()
+	cacheDir := filepath.Join(dir, "cache")
+	root := filepath.Join(dir, "root")
+	if err := os.Mkdir(root, 0755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(root, "prompt.txt"), "hello")
+
+	manifest, err := buildUnsignedManifest(root, []string{"prompt.txt"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifestData, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifestPath := filepath.Join(dir, "manifest.json")
+	writeFile(t, manifestPath, string(manifestData))
+
+	key, err := putManifestCacheFile(cacheDir, manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyCachedManifest(cacheDir, root, key); err != nil {
+		t.Fatalf("verify cached manifest before tamper failed: %v", err)
+	}
+
+	writeFile(t, filepath.Join(root, "prompt.txt"), "changed")
+	if err := verifyCachedManifest(cacheDir, root, key); err == nil {
+		t.Fatal("verify cached manifest accepted changed content")
+	}
+	writeFile(t, filepath.Join(root, "prompt.txt"), "hello")
+
+	objectPath, err := cacheObjectPath(cacheDir, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, objectPath, strings.Replace(string(manifestData), "prompt.txt", "other.txt", 1))
+	if err := verifyCachedManifest(cacheDir, root, key); err == nil {
+		t.Fatal("verify cached manifest accepted tampered manifest object")
+	}
+}
+
+func TestCacheManifestRejectsUnsafePaths(t *testing.T) {
+	dir := t.TempDir()
+	cacheDir := filepath.Join(dir, "cache")
+	root := filepath.Join(dir, "root")
+	if err := os.Mkdir(root, 0755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(root, "prompt.txt"), "hello")
+
+	manifest := unsignedFileManifest{
+		Type:      unsignedManifestType,
+		Algorithm: "sha256",
+		Entries: []unsignedManifestEntry{
+			{Path: "../prompt.txt", Size: 5, SHA256: strings.Repeat("a", 64)},
+		},
+	}
+	manifestData, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifestPath := filepath.Join(dir, "manifest.json")
+	writeFile(t, manifestPath, string(manifestData))
+	key, err := putManifestCacheFile(cacheDir, manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyCachedManifest(cacheDir, root, key); err == nil {
+		t.Fatal("verify cached manifest accepted escaping path")
+	}
+
+	link := filepath.Join(root, "link.txt")
+	if err := os.Symlink(filepath.Join(root, "prompt.txt"), link); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	linkManifest, err := buildUnsignedManifest(root, []string{"prompt.txt"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	linkManifest.Entries[0].Path = "link.txt"
+	linkData, err := json.Marshal(linkManifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	linkManifestPath := filepath.Join(dir, "link-manifest.json")
+	writeFile(t, linkManifestPath, string(linkData))
+	linkKey, err := putManifestCacheFile(cacheDir, linkManifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyCachedManifest(cacheDir, root, linkKey); err == nil {
+		t.Fatal("verify cached manifest accepted symlink path")
+	}
+}
+
+func TestExpCacheManifestCommands(t *testing.T) {
+	dir := t.TempDir()
+	cacheDir := filepath.Join(dir, "cache")
+	root := filepath.Join(dir, "root")
+	if err := os.Mkdir(root, 0755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(root, "prompt.txt"), "hello")
+
+	attestCmd := newExpAttestCmd()
+	var manifestOut bytes.Buffer
+	attestCmd.SetOut(&manifestOut)
+	attestCmd.SetErr(&manifestOut)
+	attestCmd.SetArgs([]string{"manifest", "--root", root, "prompt.txt"})
+	if err := attestCmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	manifestPath := filepath.Join(dir, "manifest.json")
+	writeFile(t, manifestPath, manifestOut.String())
+
+	putCmd := newExpCacheCmd()
+	var putOut bytes.Buffer
+	putCmd.SetOut(&putOut)
+	putCmd.SetErr(&putOut)
+	putCmd.SetArgs([]string{"manifest", "put", "--cache-dir", cacheDir, manifestPath})
+	if err := putCmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	key := strings.TrimSpace(putOut.String())
+
+	verifyCmd := newExpCacheCmd()
+	var verifyOut bytes.Buffer
+	verifyCmd.SetOut(&verifyOut)
+	verifyCmd.SetErr(&verifyOut)
+	verifyCmd.SetArgs([]string{"manifest", "verify", "--cache-dir", cacheDir, "--root", root, key})
+	if err := verifyCmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(verifyOut.String(), "cached manifest verified") {
+		t.Fatalf("verify output = %q", verifyOut.String())
+	}
+}

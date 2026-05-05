@@ -97,7 +97,57 @@ not prove identity, origin, or freshness.`,
 	}
 	verifyCmd.Flags().StringVar(&verifyCacheDir, "cache-dir", ".pe/cache", "cache directory")
 
-	cmd.AddCommand(keyCmd, putCmd, getCmd, verifyCmd)
+	cmd.AddCommand(keyCmd, putCmd, getCmd, verifyCmd, newExpCacheManifestCmd())
+	return cmd
+}
+
+func newExpCacheManifestCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "manifest",
+		Short: "Store and verify unsigned manifests in the local cache",
+		Long: `Store and verify unsigned manifests in the local content-addressed cache.
+
+The manifest digest is the SHA-256 of canonical unsigned manifest JSON. This
+detects local tampering but does not prove identity, origin, or freshness.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Println("Use 'put' to store a manifest or 'verify' to check a cached manifest.")
+		},
+	}
+
+	var putCacheDir string
+	putCmd := &cobra.Command{
+		Use:   "put <manifest.json>",
+		Short: "Store canonical unsigned manifest JSON in the cache",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			key, err := putManifestCacheFile(putCacheDir, args[0])
+			if err != nil {
+				return err
+			}
+			cmd.Println(key)
+			return nil
+		},
+	}
+	putCmd.Flags().StringVar(&putCacheDir, "cache-dir", ".pe/cache", "cache directory")
+
+	var verifyCacheDir string
+	var verifyRoot string
+	verifyCmd := &cobra.Command{
+		Use:   "verify <sha256>",
+		Short: "Verify a cached manifest and its local files",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := verifyCachedManifest(verifyCacheDir, verifyRoot, args[0]); err != nil {
+				return err
+			}
+			cmd.Println("cached manifest verified")
+			return nil
+		},
+	}
+	verifyCmd.Flags().StringVar(&verifyCacheDir, "cache-dir", ".pe/cache", "cache directory")
+	verifyCmd.Flags().StringVar(&verifyRoot, "root", ".", "root directory for manifest paths")
+
+	cmd.AddCommand(putCmd, verifyCmd)
 	return cmd
 }
 
@@ -119,21 +169,77 @@ func unsignedManifestDigestFile(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	canonical, err := canonicalUnsignedManifestJSON(data)
+	if err != nil {
+		return "", err
+	}
+	return contentKey(canonical), nil
+}
+
+func putManifestCacheFile(cacheDir, manifestPath string) (string, error) {
+	data, err := readRegularFile(manifestPath)
+	if err != nil {
+		return "", err
+	}
+	canonical, err := canonicalUnsignedManifestJSON(data)
+	if err != nil {
+		return "", err
+	}
+	key := contentKey(canonical)
+	objectPath, err := cacheObjectPath(cacheDir, key)
+	if err != nil {
+		return "", err
+	}
+	if err := writeCacheObject(objectPath, canonical); err != nil {
+		return "", err
+	}
+	return key, nil
+}
+
+func verifyCachedManifest(cacheDir, root, key string) error {
+	data, err := getCacheBytes(cacheDir, key)
+	if err != nil {
+		return err
+	}
+	canonical, err := canonicalUnsignedManifestJSON(data)
+	if err != nil {
+		return err
+	}
+	if got := contentKey(canonical); got != strings.ToLower(key) {
+		return fmt.Errorf("cached manifest hash mismatch: got %s", got)
+	}
+	tmp, err := os.CreateTemp("", "pe-cache-manifest-*.json")
+	if err != nil {
+		return fmt.Errorf("create manifest temp file: %w", err)
+	}
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName)
+	if _, err := tmp.Write(canonical); err != nil {
+		tmp.Close()
+		return fmt.Errorf("write manifest temp file: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("close manifest temp file: %w", err)
+	}
+	return verifyUnsignedManifestFile(root, tmpName)
+}
+
+func canonicalUnsignedManifestJSON(data []byte) ([]byte, error) {
 	var manifest unsignedFileManifest
 	if err := json.Unmarshal(data, &manifest); err != nil {
-		return "", fmt.Errorf("parse manifest: %w", err)
+		return nil, fmt.Errorf("parse manifest: %w", err)
 	}
 	if manifest.Type != unsignedManifestType {
-		return "", fmt.Errorf("unsupported manifest type %q", manifest.Type)
+		return nil, fmt.Errorf("unsupported manifest type %q", manifest.Type)
 	}
 	if manifest.Algorithm != "sha256" {
-		return "", fmt.Errorf("unsupported manifest algorithm %q", manifest.Algorithm)
+		return nil, fmt.Errorf("unsupported manifest algorithm %q", manifest.Algorithm)
 	}
 	canonical, err := json.Marshal(manifest)
 	if err != nil {
-		return "", fmt.Errorf("canonicalize manifest: %w", err)
+		return nil, fmt.Errorf("canonicalize manifest: %w", err)
 	}
-	return contentKey(canonical), nil
+	return canonical, nil
 }
 
 func putCacheFile(cacheDir, path string) (string, error) {
@@ -146,28 +252,35 @@ func putCacheFile(cacheDir, path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if err := writeCacheObject(objectPath, data); err != nil {
+		return "", err
+	}
+	return key, nil
+}
+
+func writeCacheObject(objectPath string, data []byte) error {
 	if err := os.MkdirAll(filepath.Dir(objectPath), 0755); err != nil {
-		return "", fmt.Errorf("create cache directory: %w", err)
+		return fmt.Errorf("create cache directory: %w", err)
 	}
 	tmp, err := os.CreateTemp(filepath.Dir(objectPath), ".tmp-*")
 	if err != nil {
-		return "", fmt.Errorf("create cache temp file: %w", err)
+		return fmt.Errorf("create cache temp file: %w", err)
 	}
 	tmpName := tmp.Name()
 	if _, err := tmp.Write(data); err != nil {
 		tmp.Close()
 		os.Remove(tmpName)
-		return "", fmt.Errorf("write cache temp file: %w", err)
+		return fmt.Errorf("write cache temp file: %w", err)
 	}
 	if err := tmp.Close(); err != nil {
 		os.Remove(tmpName)
-		return "", fmt.Errorf("close cache temp file: %w", err)
+		return fmt.Errorf("close cache temp file: %w", err)
 	}
 	if err := os.Rename(tmpName, objectPath); err != nil {
 		os.Remove(tmpName)
-		return "", fmt.Errorf("store cache object: %w", err)
+		return fmt.Errorf("store cache object: %w", err)
 	}
-	return key, nil
+	return nil
 }
 
 func getCacheBytes(cacheDir, key string) ([]byte, error) {
