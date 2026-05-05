@@ -7,7 +7,10 @@ directory for generated files and does not require provider credentials.
 ## Files
 
 - `build.yaml` - Minimal input for `pe build`.
+- `consensus-local/` - Local weighted consensus smoke for `pe exp consensus`.
 - `convert.yaml` - Minimal input for `pe convert`.
+- `distributed-local/` - Local bounded-concurrency smoke for
+  `pe exp distributed`.
 - `eval-regression-gate/` - Regression gate fixture for `pe diff --fail-on-regression`.
 - `prompt.txt` - Plain prompt file used by prompt-oriented commands.
 - `release-local-workflows/` - Release-facing local workflow smokes for `diff`,
@@ -43,6 +46,8 @@ pe collect --jobs 3
 pe reduce --sum sum
 pe watch --help
 PE_BIN=/tmp/pe ./eval-regression-gate/smoke.sh
+PE_BIN=/tmp/pe ./distributed-local/smoke.sh
+PE_BIN=/tmp/pe ./consensus-local/smoke.sh
 PE_BIN=/tmp/pe ./release-local-workflows/smoke.sh
 ```
 

@@ -40,6 +40,10 @@ legacy development material unless a demo has been refreshed here; see
 - [Current Commands](current-commands/) - Offline smoke examples for `ask`,
   `template`, `prompt`, `plugin`, `profile`, `build`, `convert`, `collect`,
   `reduce`, and `watch`.
+- [Distributed Local](current-commands/distributed-local/) - Provider-free
+  `pe exp distributed` local scheduler smoke.
+- [Consensus Local](current-commands/consensus-local/) - Provider-free
+  `pe exp consensus` weighted vote smoke.
 - [Eval Regression Gate](current-commands/eval-regression-gate/) - Offline
   `pe diff --fail-on-regression` gate fixture.
 - [Release Local Workflows](current-commands/release-local-workflows/) -

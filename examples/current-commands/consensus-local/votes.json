@@ -1,0 +1,8 @@
+{
+  "votes": [
+    {"provider": "a", "output": "north", "weight": 1},
+    {"provider": "b", "output": "south", "weight": 3},
+    {"provider": "c", "output": "north", "weight": 1},
+    {"provider": "timeout", "error": "provider timeout", "weight": 100}
+  ]
+}

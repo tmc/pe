@@ -1,0 +1,6 @@
+{
+  "tasks": [
+    {"name": "slow", "output": "first", "delay_ms": 20},
+    {"name": "fast", "output": "second"}
+  ]
+}
