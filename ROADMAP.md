@@ -686,6 +686,41 @@ Document in:
 
 ### P3
 
+#### pe.mod capabilities and placement
+
+- Type: `epic`
+
+**Scope**
+
+Define `pe.mod` as the module-level capability and placement contract for safe prompting. This extends the Go-like module boundary so executable text can declare what data, prompts, providers, tools, and execution placements are allowed at module scope.
+
+This is not a v0.5 release blocker. v0.5 work is documentation only.
+
+Current status:
+- `internal/pemod` already models module identity, PE version, dependencies, replacements, trust, signing, registry, and security policy.
+- Current docs are registry/dependency-centric. They do not define capabilities, placement, data classes, prompt provenance, provider/tool allow-deny, typed IO requirements, or conservative dependency policy composition.
+
+Design direction:
+1. Keep `pe.mod` Go-like and module-scoped.
+2. Put module-wide `capability`, `placement`, and `policy` blocks in `pe.mod`.
+3. Keep prompt-specific inputs, output schemas, shebang runners, and local metadata in per-file front matter.
+4. Keep runtime facts in trace artifacts.
+5. Compose policies conservatively: intersect allows, union denials, and fail strict dependencies that request denied capabilities.
+
+Initial artifact:
+- `docs/future/PEMOD_CAPABILITIES_DESIGN.md`
+
+Version plan:
+1. v0.5: docs only.
+2. v0.6: parser/schema support in `internal/pemod`.
+3. v0.6: static validation through `pe mod` / `pe vet`.
+4. v0.7: runtime enforcement for providers, tools, file writes, network, and placement.
+
+Verification:
+- `test -f docs/future/PEMOD_CAPABILITIES_DESIGN.md`
+- `rg "capability|placement|policy|Conservative Composition" docs/future/PEMOD_CAPABILITIES_DESIGN.md`
+
+
 #### Review .gitignore for PE project
 
 - Type: `task`
