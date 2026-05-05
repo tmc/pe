@@ -1541,12 +1541,12 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Create config inheritance
 
 ##### Configuration Validation
-- [ ] Create `internal/config/validator.go`
-- [ ] Implement schema validation
-- [ ] Add type checking
-- [ ] Implement required field validation
-- [ ] Add custom validators
-- [ ] Create validation reports
+- [x] Create `internal/config/validator.go`
+- [x] Implement schema validation
+- [x] Add type checking
+- [x] Implement required field validation
+- [x] Add custom validators
+- [x] Create validation reports
 
 ##### Configuration Tools
 - [x] Add `pe config get` command
