@@ -23,7 +23,7 @@ func TestModCmd_CommandStructure(t *testing.T) {
 	}
 
 	// Verify subcommands exist
-	subcommands := []string{"init", "list", "get", "download", "tidy", "vendor", "verify", "graph", "search", "publish", "vet"}
+	subcommands := []string{"init", "list", "get", "download", "tidy", "vendor", "verify", "graph", "upgrade", "search", "publish", "vet"}
 	for _, name := range subcommands {
 		found := false
 		for _, cmd := range modCmd.Commands() {
@@ -572,6 +572,58 @@ func TestModGraphCmd_PrintsCachedDependencies(t *testing.T) {
 	}, "\n")
 	if got != want {
 		t.Fatalf("graph = %q, want %q", got, want)
+	}
+}
+
+func TestModUpgradeCmd_UpdatesRequirements(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	t.Setenv("PE_REGISTRY_TYPE", "local")
+	t.Setenv("PE_REGISTRY_DIR", filepath.Join(tmpDir, "registry"))
+	registry := module.NewLocalRegistry(filepath.Join(tmpDir, "registry"))
+	if err := registry.Publish(&module.Module{Name: "example.com/mod", Version: "v1.2.0"}, t.TempDir()); err != nil {
+		t.Fatalf("Publish: %v", err)
+	}
+	data := []byte("module example.com/app\n\npe 1\n\nrequire example.com/mod v1.0.0\n")
+	if err := os.WriteFile("pe.mod", data, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+	if err := runModUpgrade(cmd, nil); err != nil {
+		t.Fatalf("runModUpgrade: %v", err)
+	}
+	if !strings.Contains(out.String(), "upgraded example.com/mod v1.0.0 => v1.2.0") {
+		t.Fatalf("output = %q", out.String())
+	}
+	got, err := os.ReadFile("pe.mod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(got), "require example.com/mod v1.2.0") {
+		t.Fatalf("pe.mod = %s", got)
+	}
+}
+
+func TestModUpgradeCmd_RejectsUnrequiredModule(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	t.Setenv("PE_REGISTRY_TYPE", "local")
+	t.Setenv("PE_REGISTRY_DIR", filepath.Join(tmpDir, "registry"))
+	if err := os.WriteFile("pe.mod", []byte("module example.com/app\n\npe 1\n\nrequire example.com/mod v1.0.0\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	err := runModUpgrade(&cobra.Command{}, []string{"example.com/other"})
+	if err == nil || !strings.Contains(err.Error(), "is not required") {
+		t.Fatalf("runModUpgrade error = %v, want not required", err)
 	}
 }
 

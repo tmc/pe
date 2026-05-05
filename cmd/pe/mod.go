@@ -46,6 +46,7 @@ func init() {
 	modCmd.AddCommand(modVendorCmd)
 	modCmd.AddCommand(modVerifyCmd)
 	modCmd.AddCommand(modGraphCmd)
+	modCmd.AddCommand(modUpgradeCmd)
 	modCmd.AddCommand(modSearchCmd)
 	modCmd.AddCommand(modPublishCmd)
 	modCmd.AddCommand(modVetCmd)
@@ -119,6 +120,12 @@ var modGraphCmd = &cobra.Command{
 	Use:   "graph",
 	Short: "Print module dependency graph",
 	RunE:  runModGraph,
+}
+
+var modUpgradeCmd = &cobra.Command{
+	Use:   "upgrade [module...]",
+	Short: "Upgrade module requirements",
+	RunE:  runModUpgrade,
 }
 
 var modVetCmd = &cobra.Command{
@@ -1097,6 +1104,65 @@ func moduleGraphNode(mod, version string) string {
 		return mod
 	}
 	return mod + "@" + version
+}
+
+func runModUpgrade(cmd *cobra.Command, args []string) error {
+	data, err := os.ReadFile("pe.mod")
+	if err != nil {
+		return fmt.Errorf("reading pe.mod: %w (run 'pe mod init' first)", err)
+	}
+	file, err := pemod.Parse(strings.NewReader(string(data)))
+	if err != nil {
+		return fmt.Errorf("parsing pe.mod: %w", err)
+	}
+	selected := make(map[string]bool)
+	for _, arg := range args {
+		ref, err := module.ParseModulePath(arg)
+		if err != nil {
+			return fmt.Errorf("invalid module %s: %w", arg, err)
+		}
+		selected[ref.Path] = false
+	}
+	registry := module.DefaultRegistry()
+	out := cmd.OutOrStdout()
+	changed := false
+	for i := range file.Require {
+		req := &file.Require[i]
+		name := string(req.Mod)
+		if len(selected) > 0 {
+			if _, ok := selected[name]; !ok {
+				continue
+			}
+			selected[name] = true
+		}
+		latest, err := registry.Get(name)
+		if err != nil {
+			return fmt.Errorf("checking %s: %w", name, err)
+		}
+		if latest.Version == "" {
+			return fmt.Errorf("checking %s: registry returned empty version", name)
+		}
+		if req.Version == latest.Version {
+			fmt.Fprintf(out, "%s %s is current\n", name, req.Version)
+			continue
+		}
+		old := req.Version
+		req.Version = latest.Version
+		changed = true
+		fmt.Fprintf(out, "upgraded %s %s => %s\n", name, old, latest.Version)
+	}
+	for name, found := range selected {
+		if !found {
+			return fmt.Errorf("module %s is not required", name)
+		}
+	}
+	if !changed {
+		return nil
+	}
+	if err := os.WriteFile("pe.mod", []byte(file.Format()), 0644); err != nil {
+		return fmt.Errorf("writing pe.mod: %w", err)
+	}
+	return nil
 }
 
 func runModVet(cmd *cobra.Command, args []string) error {
