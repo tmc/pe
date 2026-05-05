@@ -117,9 +117,11 @@ Current status:
   candidate.
 
 Remaining tasks:
-1. Verify v0.5.0 consistency across all current user-facing docs
-2. Document migration path if breaking changes are identified
-3. Tag version in git when release validation is complete
+1. Verify v0.5.0 consistency across all current user-facing docs.
+2. Document the migration decision: either add `docs/MIGRATION.md` /
+   `docs/UPGRADING.md` for breaking changes, or record that v0.5.0 has no
+   required migration steps.
+3. Tag version in git when all P1 release blockers below are closed.
 
 
 #### Release prep: README consolidation
@@ -222,6 +224,38 @@ Distribution methods:
 - GitHub releases (binaries)
 - Homebrew formula (future)
 - Docker image (future)
+
+
+#### Release prep: Legal and migration readiness
+
+- Type: `task`
+
+**Scope**
+
+Close release-blocking legal, contributor, and migration decisions before
+tagging v0.5.0.
+
+Current status:
+- `README.md` links to `LICENSE`, but no `LICENSE` file is present.
+- `SECURITY.md` now provides the vulnerability disclosure policy.
+- `CONTRIBUTING.md` exists but still needs a release-readiness pass.
+- No migration guide exists yet; the release still needs an explicit decision
+  about whether v0.5.0 has user-visible breaking changes.
+
+Release blockers:
+1. Add the missing MIT `LICENSE` file or change the release/license claim.
+2. Decide whether a `NOTICE` file is required for current dependencies and
+   embedded/reference material.
+3. Review `CONTRIBUTING.md` for current build, test, roadmap, and release
+   process guidance.
+4. Review v0.5.0 changes for breaking API, CLI, provider, config, and module
+   behavior.
+5. Add `docs/MIGRATION.md` or `docs/UPGRADING.md` if migration steps are
+   required; otherwise record the no-migration decision in release notes.
+
+Follow-ups after release:
+- Automate license inventory if needed.
+- Add release checklist automation for migration-guide and legal-file presence.
 
 
 ### P2
@@ -469,17 +503,15 @@ Tasks:
 
 **Scope**
 
-Review license and legal documentation for release.
+Detailed follow-up tracking for license and legal documentation. Release
+blockers are tracked in P1 under "Legal and migration readiness."
 
 Tasks:
-1. Verify LICENSE file is present and correct (MIT)
-2. Check all source files have proper license headers
-3. Review third-party dependencies and licenses
-4. Ensure NOTICE file if required by dependencies
-5. Verify no GPL/AGPL code included
-6. Check attribution requirements
-7. Update copyright years if needed
-8. Review CONTRIBUTING.md for legal clarity
+1. Check source-file header policy after the release license file is in place
+2. Review third-party dependencies and licenses
+3. Verify no GPL/AGPL code included
+4. Check attribution requirements
+5. Update copyright years if needed
 
 Run:
 - go-licenses check (if available)
@@ -522,7 +554,8 @@ Checks to add:
 
 **Scope**
 
-Create migration guide if there are breaking changes.
+Detailed migration-guide follow-up. The release-blocking decision is tracked in
+P1 under "Legal and migration readiness."
 
 Assess:
 1. Review commits for breaking changes
