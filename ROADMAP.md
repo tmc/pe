@@ -1365,14 +1365,14 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Implement mock provider scenarios
 
 ##### Provider Tests
-- [ ] Add OpenAI provider unit tests
-- [ ] Add Anthropic provider unit tests
-- [ ] Add cgpt provider unit tests
-- [ ] Test provider registration
-- [ ] Test provider factory
-- [ ] Add streaming tests
-- [ ] Test error handling
-- [ ] Add timeout tests
+- [x] Add OpenAI provider unit tests
+- [x] Add Anthropic provider unit tests
+- [x] Add cgpt provider unit tests
+- [x] Test provider registration
+- [x] Test provider factory
+- [x] Add streaming tests
+- [x] Test error handling
+- [x] Add timeout tests
 
 ##### Optimization Tests
 - [ ] Add textual gradient optimizer tests
