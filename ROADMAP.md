@@ -717,7 +717,7 @@ CLI command.
 Current status:
 - `internal/distributed/local.go` implements `RunLocal` and `Majority`.
 - The promptfoo evaluator already uses `distributed.RunLocal` internally.
-- `cmd/pe/exp_commands.go` still registers `expDistributedCmd` as a stub.
+- `cmd/pe/exp_distributed.go` wires `exp distributed` to the local scheduler.
 
 Tasks:
 1. Replace the `exp distributed` stub with a small command that reads a local

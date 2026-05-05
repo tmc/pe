@@ -43,7 +43,7 @@ func TestExpCommandsRegistry(t *testing.T) {
 
 			// 2. Verify Execution (Stub Output)
 			// Skip real commands with flags/args requirements.
-			if cmdName == "compose" || cmdName == "optimize" {
+			if cmdName == "compose" || cmdName == "distributed" || cmdName == "optimize" {
 				return
 			}
 
