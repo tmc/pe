@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tmc/pe/internal/llm"
+	"github.com/tmc/pe/internal/inference"
 	"github.com/tmc/pe/internal/metaprompt"
 )
 
@@ -64,10 +64,16 @@ automated prompt engineering and systematic optimization.`,
 				return fmt.Errorf("initial prompt is required")
 			}
 
-			// Create LLM provider
-			llmProvider, err := llm.GetProvider(provider)
+			// Create provider through the inference migration path, adapting
+			// only at the metaprompt boundary.
+			providerSpec := commandProviderSpec(provider, model)
+			inferenceProvider, err := inference.CreateProviderFromSpec(providerSpec, nil)
 			if err != nil {
 				return fmt.Errorf("failed to create provider: %w", err)
+			}
+			llmProvider, err := inference.AsLegacyProvider(inferenceProvider, model)
+			if err != nil {
+				return fmt.Errorf("failed to adapt provider: %w", err)
 			}
 
 			// Configure optimization
