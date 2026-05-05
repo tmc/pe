@@ -74,7 +74,9 @@ func TestApplyRootMetadataInheritsSubcommandGroups(t *testing.T) {
 	root := &cobra.Command{Use: "pe"}
 	mod := &cobra.Command{Use: "mod"}
 	mod.AddCommand(&cobra.Command{Use: "init"}, &cobra.Command{Use: "tidy"})
-	root.AddCommand(mod)
+	exp := &cobra.Command{Use: "exp"}
+	exp.AddCommand(&cobra.Command{Use: "attest"})
+	root.AddCommand(mod, exp)
 
 	applyRootMetadata(root)
 
@@ -86,5 +88,12 @@ func TestApplyRootMetadataInheritsSubcommandGroups(t *testing.T) {
 		if got, want := cmd.Annotations[commandGroupAnnotation], "module"; got != want {
 			t.Fatalf("mod %s group = %q, want %q", name, got, want)
 		}
+	}
+	attest, _, err := root.Find([]string{"exp", "attest"})
+	if err != nil {
+		t.Fatalf("Find exp attest: %v", err)
+	}
+	if got, want := attest.Annotations[commandGroupAnnotation], "experimental"; got != want {
+		t.Fatalf("exp attest group = %q, want %q", got, want)
 	}
 }

@@ -1328,7 +1328,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 
 ##### Experimental Commands Group
 - [x] Create `cmd/pe/commands/experimental/` directory
-- [ ] Move `attest` command to experimental group
+- [x] Move `attest` command to experimental group
 - [x] Move `security` command to experimental group
 - [x] Move `profile` command to experimental group
 - [x] Add experimental warning to commands
