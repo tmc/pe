@@ -1340,7 +1340,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Update command help system
 - [x] Add command search functionality
 - [ ] Update shell completion scripts
-- [ ] Test all command paths
+- [x] Test all command paths
 
 #### Phase 4: Testing Infrastructure (Week 6)
 
@@ -1408,7 +1408,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add tests for optimization commands
 - [x] Add tests for module commands
 - [x] Add tests for pipeline commands
-- [ ] Add tests for utility commands
+- [x] Add tests for utility commands
 - [x] Test command help output
 - [x] Test command error handling
 
@@ -1418,7 +1418,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Test optimization pipelines
 - [x] Test evaluation workflows
 - [x] Test module workflows
-- [ ] Add performance tests
+- [x] Add performance tests
 - [x] Test concurrent operations
 - [x] Add stress tests
 
