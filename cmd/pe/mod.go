@@ -105,8 +105,8 @@ var modVendorCmd = &cobra.Command{
 
 func init() {
 	modInitCmd.Flags().BoolVar(&modForce, "force", false, "Overwrite existing module")
-	modTidyCmd.Flags().BoolVarP(&modTidyWrite, "write", "w", false, "Update pe.mod")
-	modTidyCmd.Flags().BoolVar(&modTidyJSON, "json", false, "Write dependency report as JSON")
+	modTidyCmd.Flags().BoolVarP(&modTidyWrite, "write", "w", false, "Update pe.mod; add only refs with one explicit version")
+	modTidyCmd.Flags().BoolVar(&modTidyJSON, "json", false, "Write dependency audit report as JSON")
 }
 
 // Module represents a prompt module
