@@ -1209,7 +1209,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 
 ##### Module Resolution
 - [ ] Create `internal/module/resolver.go`
-- [ ] Implement module path parsing
+- [x] Implement module path parsing
 - [x] Add version constraint parsing
 - [x] Implement semantic version comparison
 - [ ] Add module cache interface
