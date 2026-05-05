@@ -1549,10 +1549,10 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Create validation reports
 
 ##### Configuration Tools
-- [ ] Add `pe config get` command
+- [x] Add `pe config get` command
 - [ ] Add `pe config set` command
-- [ ] Add `pe config list` command
-- [ ] Add `pe config validate` command
+- [x] Add `pe config list` command
+- [x] Add `pe config validate` command
 - [ ] Add `pe config migrate` command
 - [ ] Create config documentation generator
 

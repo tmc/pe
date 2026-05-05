@@ -87,6 +87,7 @@ rules when they need stronger contracts.`,
 	// root.AddCommand(attestCmd)  // Moved to advanced-features branch
 	root.AddCommand(catCmd())     // pe cat for inspecting prompt files
 	root.AddCommand(versionCmd()) // pe version
+	root.AddCommand(configCmd())  // pe config for configuration inspection
 
 	// Existing commands
 	root.AddCommand(evalCmd())
