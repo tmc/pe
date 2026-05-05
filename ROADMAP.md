@@ -1689,8 +1689,8 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add memory profiling
 - [x] Add goroutine profiling
 - [x] Add block profiling
-- [ ] Create profile analysis tools
-- [ ] Add continuous profiling
+- [x] Create profile analysis tools
+- [x] Add continuous profiling
 
 #### Cross-Cutting Concerns
 
