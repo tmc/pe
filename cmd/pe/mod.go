@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -42,6 +44,7 @@ func init() {
 	modCmd.AddCommand(modDownloadCmd)
 	modCmd.AddCommand(modTidyCmd)
 	modCmd.AddCommand(modVendorCmd)
+	modCmd.AddCommand(modVerifyCmd)
 	modCmd.AddCommand(modSearchCmd)
 	modCmd.AddCommand(modPublishCmd)
 	modCmd.AddCommand(modVetCmd)
@@ -103,6 +106,12 @@ var modVendorCmd = &cobra.Command{
 	Use:   "vendor",
 	Short: "Copy dependencies to vendor directory",
 	RunE:  runModVendor,
+}
+
+var modVerifyCmd = &cobra.Command{
+	Use:   "verify",
+	Short: "Verify downloaded modules",
+	RunE:  runModVerify,
 }
 
 var modVetCmd = &cobra.Command{
@@ -865,6 +874,124 @@ func runModVendor(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Vendored %d modules\n", len(modulesList))
 	return nil
+}
+
+func runModVerify(cmd *cobra.Command, args []string) error {
+	data, err := os.ReadFile("pe.mod")
+	if err != nil {
+		return fmt.Errorf("reading pe.mod: %w (run 'pe mod init' first)", err)
+	}
+	file, err := pemod.Parse(strings.NewReader(string(data)))
+	if err != nil {
+		return fmt.Errorf("parsing pe.mod: %w", err)
+	}
+	out := cmd.OutOrStdout()
+	for _, req := range file.Require {
+		if _, err := module.ParseModulePath(string(req.Mod) + "@" + req.Version); err != nil {
+			return fmt.Errorf("invalid module reference %s@%s: %w", req.Mod, req.Version, err)
+		}
+		dir, err := downloadedModuleDir(string(req.Mod), req.Version)
+		if err != nil {
+			return err
+		}
+		meta, err := readDownloadedModuleMetadata(dir)
+		if err != nil {
+			return fmt.Errorf("verifying %s@%s: %w", req.Mod, req.Version, err)
+		}
+		if meta.Checksum == "" {
+			return fmt.Errorf("verifying %s@%s: missing checksum", req.Mod, req.Version)
+		}
+		sum, err := moduleDirectoryChecksum(dir)
+		if err != nil {
+			return fmt.Errorf("verifying %s@%s: %w", req.Mod, req.Version, err)
+		}
+		if sum != meta.Checksum {
+			return fmt.Errorf("verifying %s@%s: checksum mismatch", req.Mod, req.Version)
+		}
+		fmt.Fprintf(out, "verified %s@%s\n", req.Mod, req.Version)
+	}
+	fmt.Fprintf(out, "verified %d modules\n", len(file.Require))
+	return nil
+}
+
+func downloadedModuleDir(mod, version string) (string, error) {
+	names := []struct {
+		base string
+		path string
+	}{
+		{filepath.Join(".pe", "cache", "modules"), filepath.FromSlash(mod + "@" + version)},
+		{filepath.Join(".pe", "cache"), filepath.FromSlash(mod + "/" + version)},
+	}
+	for _, name := range names {
+		dir, err := containedFilePath(name.base, name.path)
+		if err != nil {
+			return "", err
+		}
+		info, err := os.Stat(dir)
+		if err == nil {
+			if !info.IsDir() {
+				return "", fmt.Errorf("module cache path is not a directory: %s", dir)
+			}
+			return dir, nil
+		}
+		if !os.IsNotExist(err) {
+			return "", fmt.Errorf("checking module cache %s: %w", dir, err)
+		}
+	}
+	return "", fmt.Errorf("module %s@%s not found in cache; run 'pe mod download' first", mod, version)
+}
+
+func readDownloadedModuleMetadata(dir string) (*module.Module, error) {
+	f, err := os.Open(filepath.Join(dir, "module.json"))
+	if err != nil {
+		return nil, fmt.Errorf("opening module.json: %w", err)
+	}
+	defer f.Close()
+	var meta module.Module
+	if err := json.NewDecoder(f).Decode(&meta); err != nil {
+		return nil, fmt.Errorf("parsing module.json: %w", err)
+	}
+	return &meta, nil
+}
+
+func moduleDirectoryChecksum(root string) (string, error) {
+	var names []string
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if path == root || entry.IsDir() {
+			return nil
+		}
+		if entry.Type()&os.ModeSymlink != 0 {
+			return fmt.Errorf("refusing symlink %s", path)
+		}
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		if filepath.ToSlash(rel) == "module.json" {
+			return nil
+		}
+		names = append(names, rel)
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	sort.Strings(names)
+	hash := sha256.New()
+	for _, name := range names {
+		data, err := os.ReadFile(filepath.Join(root, name))
+		if err != nil {
+			return "", err
+		}
+		hash.Write([]byte(filepath.ToSlash(name)))
+		hash.Write([]byte{0})
+		hash.Write(data)
+		hash.Write([]byte{0})
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
 func runModVet(cmd *cobra.Command, args []string) error {

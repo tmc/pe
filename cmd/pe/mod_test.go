@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/tmc/pe/internal/module"
 )
 
 func TestModCmd_CommandStructure(t *testing.T) {
@@ -22,7 +23,7 @@ func TestModCmd_CommandStructure(t *testing.T) {
 	}
 
 	// Verify subcommands exist
-	subcommands := []string{"init", "list", "get", "download", "tidy", "vendor", "search", "publish", "vet"}
+	subcommands := []string{"init", "list", "get", "download", "tidy", "vendor", "verify", "search", "publish", "vet"}
 	for _, name := range subcommands {
 		found := false
 		for _, cmd := range modCmd.Commands() {
@@ -392,6 +393,117 @@ func TestModDownloadCmd_NoPeMod(t *testing.T) {
 	err := runModDownload(modDownloadCmd, nil)
 	if err == nil {
 		t.Error("Expected error when pe.mod doesn't exist")
+	}
+}
+
+func TestModVerifyCmd_VerifiesChecksums(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	writeVerifyPeMod(t)
+	dir := filepath.Join(".pe", "cache", "modules", "example.com", "mod@v1.0.0")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "prompt.pe"), []byte("hello\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	sum, err := moduleDirectoryChecksum(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeModuleJSON(t, dir, sum)
+
+	var out bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+	if err := runModVerify(cmd, nil); err != nil {
+		t.Fatalf("runModVerify: %v", err)
+	}
+	if !strings.Contains(out.String(), "verified example.com/mod@v1.0.0") {
+		t.Fatalf("output = %q", out.String())
+	}
+}
+
+func TestModVerifyCmd_DetectsTamper(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	writeVerifyPeMod(t)
+	dir := filepath.Join(".pe", "cache", "modules", "example.com", "mod@v1.0.0")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	name := filepath.Join(dir, "prompt.pe")
+	if err := os.WriteFile(name, []byte("hello\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	sum, err := moduleDirectoryChecksum(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeModuleJSON(t, dir, sum)
+	if err := os.WriteFile(name, []byte("changed\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err = runModVerify(&cobra.Command{}, nil)
+	if err == nil || !strings.Contains(err.Error(), "checksum mismatch") {
+		t.Fatalf("runModVerify error = %v, want checksum mismatch", err)
+	}
+}
+
+func TestModVerifyCmd_MissingModule(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	writeVerifyPeMod(t)
+	err := runModVerify(&cobra.Command{}, nil)
+	if err == nil || !strings.Contains(err.Error(), "not found in cache") {
+		t.Fatalf("runModVerify error = %v, want missing cache error", err)
+	}
+}
+
+func TestModuleDirectoryChecksumRejectsSymlink(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "target"), []byte("x"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("target", filepath.Join(tmpDir, "link")); err != nil {
+		t.Skipf("symlink not available: %v", err)
+	}
+	_, err := moduleDirectoryChecksum(tmpDir)
+	if err == nil || !strings.Contains(err.Error(), "refusing symlink") {
+		t.Fatalf("moduleDirectoryChecksum error = %v, want symlink error", err)
+	}
+}
+
+func writeVerifyPeMod(t *testing.T) {
+	t.Helper()
+	data := []byte("module example.com/app\n\npe 1\n\nrequire example.com/mod v1.0.0\n")
+	if err := os.WriteFile("pe.mod", data, 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeModuleJSON(t *testing.T, dir, sum string) {
+	t.Helper()
+	data, err := json.Marshal(module.Module{
+		Name:     "example.com/mod",
+		Version:  "v1.0.0",
+		Checksum: sum,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "module.json"), data, 0644); err != nil {
+		t.Fatal(err)
 	}
 }
 

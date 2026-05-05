@@ -1232,7 +1232,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Implement `pe mod download` with real registry
 - [ ] Complete `pe mod tidy` functionality
 - [ ] Implement `pe mod vendor` properly
-- [ ] Add `pe mod verify` for integrity checking
+- [x] Add `pe mod verify` for integrity checking
 - [x] Implement `pe mod list` for installed modules
 - [x] Add `pe mod search` for registry search
 - [x] Implement `pe mod publish` for module publishing
@@ -1243,7 +1243,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Implement module signing
 - [ ] Add signature verification
 - [ ] Create trust store for keys
-- [ ] Add checksum validation
+- [x] Add checksum validation
 - [ ] Implement security audit command
 - [ ] Add vulnerability scanning
 
