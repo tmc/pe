@@ -422,7 +422,7 @@ func CreateProviderFromSpec(spec string, config map[string]interface{}) (Provide
 	}
 
 	// Fall back to legacy provider creation
-	legacy, err := llm.GetProvider(spec)
+	legacy, err := llm.GetProviderWithOptions(spec, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create provider %s: %w", spec, err)
 	}

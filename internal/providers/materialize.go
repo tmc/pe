@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tmc/pe/internal/inference"
 	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/promptfoo"
 )
@@ -55,7 +56,11 @@ func MaterializeProvider(spec promptfoo.ProviderConfig) (*MaterializedProvider, 
 		options["env"] = env
 	}
 
-	executor, err := llm.GetProviderWithOptions(spec.ID, options)
+	provider, err := inference.CreateProviderFromSpec(spec.ID, options)
+	if err != nil {
+		return nil, err
+	}
+	executor, err := inference.AsLegacyProvider(provider, "")
 	if err != nil {
 		return nil, err
 	}
