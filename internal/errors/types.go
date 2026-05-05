@@ -20,6 +20,8 @@ const (
 	ErrCodeInvalidConfig  ErrorCode = "INVALID_CONFIG"
 	ErrCodeNotFound       ErrorCode = "NOT_FOUND"
 	ErrCodeNotImplemented ErrorCode = "NOT_IMPLEMENTED"
+	ErrCodeValidation     ErrorCode = "VALIDATION"
+	ErrCodeAuthentication ErrorCode = "AUTHENTICATION"
 
 	// Provider-related errors
 	ErrCodeProviderUnavailable ErrorCode = "PROVIDER_UNAVAILABLE"
@@ -62,10 +64,10 @@ const (
 	ErrCodeSecurityPolicy     ErrorCode = "SECURITY_POLICY"
 
 	// Module-related errors
-	ErrCodeModuleNotFound    ErrorCode = "MODULE_NOT_FOUND"
-	ErrCodeModuleInvalid     ErrorCode = "MODULE_INVALID"
-	ErrCodeModuleDependency  ErrorCode = "MODULE_DEPENDENCY"
-	ErrCodeModuleRegistry    ErrorCode = "MODULE_REGISTRY"
+	ErrCodeModuleNotFound   ErrorCode = "MODULE_NOT_FOUND"
+	ErrCodeModuleInvalid    ErrorCode = "MODULE_INVALID"
+	ErrCodeModuleDependency ErrorCode = "MODULE_DEPENDENCY"
+	ErrCodeModuleRegistry   ErrorCode = "MODULE_REGISTRY"
 
 	// Template and parsing errors
 	ErrCodeTemplateInvalid ErrorCode = "TEMPLATE_INVALID"

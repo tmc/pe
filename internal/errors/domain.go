@@ -5,12 +5,12 @@ import "fmt"
 // ProviderError represents errors related to LLM providers.
 type ProviderError struct {
 	*PEError
-	Provider    string `json:"provider"`
-	Model       string `json:"model,omitempty"`
-	Endpoint    string `json:"endpoint,omitempty"`
-	StatusCode  int    `json:"status_code,omitempty"`
-	RequestID   string `json:"request_id,omitempty"`
-	RetryAfter  int    `json:"retry_after,omitempty"`
+	Provider   string `json:"provider"`
+	Model      string `json:"model,omitempty"`
+	Endpoint   string `json:"endpoint,omitempty"`
+	StatusCode int    `json:"status_code,omitempty"`
+	RequestID  string `json:"request_id,omitempty"`
+	RetryAfter int    `json:"retry_after,omitempty"`
 }
 
 // NewProviderError creates a new provider error.
@@ -151,11 +151,11 @@ func (e *InferenceError) WithTokensUsed(tokens int) *InferenceError {
 // OptimizationError represents errors during prompt optimization.
 type OptimizationError struct {
 	*PEError
-	Algorithm   string  `json:"algorithm,omitempty"`
-	Iteration   int     `json:"iteration,omitempty"`
-	Score       float64 `json:"score,omitempty"`
-	Target      float64 `json:"target,omitempty"`
-	MaxRetries  int     `json:"max_retries,omitempty"`
+	Algorithm  string  `json:"algorithm,omitempty"`
+	Iteration  int     `json:"iteration,omitempty"`
+	Score      float64 `json:"score,omitempty"`
+	Target     float64 `json:"target,omitempty"`
+	MaxRetries int     `json:"max_retries,omitempty"`
 }
 
 // NewOptimizationError creates a new optimization error.
@@ -211,12 +211,12 @@ func (e *OptimizationError) WithIteration(iteration int) *OptimizationError {
 // EvaluationError represents errors during evaluation operations.
 type EvaluationError struct {
 	*PEError
-	TestCase   string  `json:"test_case,omitempty"`
-	Assertion  string  `json:"assertion,omitempty"`
-	Expected   string  `json:"expected,omitempty"`
-	Actual     string  `json:"actual,omitempty"`
-	Score      float64 `json:"score,omitempty"`
-	Threshold  float64 `json:"threshold,omitempty"`
+	TestCase  string  `json:"test_case,omitempty"`
+	Assertion string  `json:"assertion,omitempty"`
+	Expected  string  `json:"expected,omitempty"`
+	Actual    string  `json:"actual,omitempty"`
+	Score     float64 `json:"score,omitempty"`
+	Threshold float64 `json:"threshold,omitempty"`
 }
 
 // NewEvaluationError creates a new evaluation error.
@@ -409,6 +409,114 @@ func (e *ModuleError) WithVersion(version string) *ModuleError {
 // WithRepositoryURL adds repository URL to the module error.
 func (e *ModuleError) WithRepositoryURL(url string) *ModuleError {
 	e.RepositoryURL = url
+	return e
+}
+
+// ConfigurationError represents configuration-related errors.
+type ConfigurationError struct {
+	*PEError
+	Key    string `json:"key,omitempty"`
+	Source string `json:"source,omitempty"`
+}
+
+// NewConfigurationError creates a configuration error.
+func NewConfigurationError(key, message string) *ConfigurationError {
+	return &ConfigurationError{
+		PEError: &PEError{
+			Code:      ErrCodeInvalidConfig,
+			Message:   message,
+			Severity:  SeverityMedium,
+			Retryable: false,
+			Component: "config",
+		},
+		Key: key,
+	}
+}
+
+// WithSource adds the configuration source.
+func (e *ConfigurationError) WithSource(source string) *ConfigurationError {
+	e.Source = source
+	return e
+}
+
+// ValidationError represents validation failures.
+type ValidationError struct {
+	*PEError
+	Field string `json:"field,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+// NewValidationError creates a validation error.
+func NewValidationError(field, message string) *ValidationError {
+	return &ValidationError{
+		PEError: &PEError{
+			Code:      ErrCodeValidation,
+			Message:   message,
+			Severity:  SeverityMedium,
+			Retryable: false,
+			Component: "validation",
+		},
+		Field: field,
+	}
+}
+
+// WithValue adds the invalid value.
+func (e *ValidationError) WithValue(value string) *ValidationError {
+	e.Value = value
+	return e
+}
+
+// NetworkError represents network-related errors.
+type NetworkError struct {
+	*PEError
+	Operation string `json:"operation,omitempty"`
+	Endpoint  string `json:"endpoint,omitempty"`
+}
+
+// NewNetworkError creates a network error.
+func NewNetworkError(operation, message string) *NetworkError {
+	return &NetworkError{
+		PEError: &PEError{
+			Code:      ErrCodeNetworkUnavailable,
+			Message:   message,
+			Severity:  SeverityMedium,
+			Retryable: true,
+			Component: "network",
+		},
+		Operation: operation,
+	}
+}
+
+// WithEndpoint adds endpoint information.
+func (e *NetworkError) WithEndpoint(endpoint string) *NetworkError {
+	e.Endpoint = endpoint
+	return e
+}
+
+// AuthenticationError represents authentication failures.
+type AuthenticationError struct {
+	*PEError
+	Principal string `json:"principal,omitempty"`
+	Method    string `json:"method,omitempty"`
+}
+
+// NewAuthenticationError creates an authentication error.
+func NewAuthenticationError(principal, message string) *AuthenticationError {
+	return &AuthenticationError{
+		PEError: &PEError{
+			Code:      ErrCodeAuthentication,
+			Message:   message,
+			Severity:  SeverityHigh,
+			Retryable: false,
+			Component: "auth",
+		},
+		Principal: principal,
+	}
+}
+
+// WithMethod adds the authentication method.
+func (e *AuthenticationError) WithMethod(method string) *AuthenticationError {
+	e.Method = method
 	return e
 }
 

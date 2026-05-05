@@ -182,6 +182,52 @@ func TestModuleInvalidError(t *testing.T) {
 	}
 }
 
+func TestConfigurationError(t *testing.T) {
+	err := NewConfigurationError("providers.default", "invalid provider").WithSource("pe.yaml")
+	if err.Code != ErrCodeInvalidConfig {
+		t.Errorf("expected code %s, got %s", ErrCodeInvalidConfig, err.Code)
+	}
+	if err.Key != "providers.default" {
+		t.Errorf("expected key providers.default, got %s", err.Key)
+	}
+	if err.Source != "pe.yaml" {
+		t.Errorf("expected source pe.yaml, got %s", err.Source)
+	}
+}
+
+func TestValidationError(t *testing.T) {
+	err := NewValidationError("eval.max_concurrency", "must be positive").WithValue("0")
+	if err.Code != ErrCodeValidation {
+		t.Errorf("expected code %s, got %s", ErrCodeValidation, err.Code)
+	}
+	if err.Field != "eval.max_concurrency" {
+		t.Errorf("expected field eval.max_concurrency, got %s", err.Field)
+	}
+}
+
+func TestNetworkError(t *testing.T) {
+	err := NewNetworkError("dial", "network unavailable").WithEndpoint("https://example.com")
+	if err.Code != ErrCodeNetworkUnavailable {
+		t.Errorf("expected code %s, got %s", ErrCodeNetworkUnavailable, err.Code)
+	}
+	if !err.Retryable {
+		t.Error("expected network error to be retryable")
+	}
+	if err.Endpoint != "https://example.com" {
+		t.Errorf("expected endpoint, got %s", err.Endpoint)
+	}
+}
+
+func TestAuthenticationError(t *testing.T) {
+	err := NewAuthenticationError("user", "missing token").WithMethod("bearer")
+	if err.Code != ErrCodeAuthentication {
+		t.Errorf("expected code %s, got %s", ErrCodeAuthentication, err.Code)
+	}
+	if err.Method != "bearer" {
+		t.Errorf("expected method bearer, got %s", err.Method)
+	}
+}
+
 func TestModuleDependencyError(t *testing.T) {
 	err := NewModuleDependencyError("test-module", "dep-module")
 	if err.Code != ErrCodeModuleDependency {
