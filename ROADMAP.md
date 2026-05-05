@@ -1677,12 +1677,12 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add log correlation IDs
 
 ##### Monitoring Integration
-- [ ] Add Prometheus exporter
+- [x] Add Prometheus exporter
 - [ ] Create Grafana dashboards
-- [ ] Add alert definitions
+- [x] Add alert definitions
 - [ ] Create runbooks
-- [ ] Add SLO definitions
-- [ ] Implement health checks
+- [x] Add SLO definitions
+- [x] Implement health checks
 
 ##### Performance Profiling
 - [x] Add CPU profiling
