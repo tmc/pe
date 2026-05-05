@@ -234,24 +234,30 @@ func TestTemplateApplyCreateValidateExportImport(t *testing.T) {
 }
 
 func TestTemplateInteractiveAndVariableCollection(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		v     templates.Variable
+		input string
+		want  interface{}
+	}{
+		{"string", templates.Variable{Name: "name", Type: "string", Required: true}, "Alice\n", "Alice"},
+		{"number", templates.Variable{Name: "n", Type: "number", Required: true}, "2.5\n", 2.5},
+		{"boolean", templates.Variable{Name: "ok", Type: "boolean", Required: true}, "yes\n", true},
+		{"default", templates.Variable{Name: "def", Type: "string", Default: "default"}, "\n", "default"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := templateTestCmd()
+			cmd.SetIn(strings.NewReader(tt.input))
+			vars, err := collectVariablesInteractively(cmd, &templates.Template{Variables: map[string]templates.Variable{tt.name: tt.v}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if vars[tt.name] != tt.want {
+				t.Fatalf("vars = %#v", vars)
+			}
+		})
+	}
 	cmd := templateTestCmd()
-	tmpl := &templates.Template{
-		Variables: map[string]templates.Variable{
-			"name": {Name: "name", Type: "string", Required: true},
-			"n":    {Name: "n", Type: "number", Required: true},
-			"ok":   {Name: "ok", Type: "boolean", Required: true},
-			"def":  {Name: "def", Type: "string", Default: "default"},
-		},
-	}
-	cmd.SetIn(strings.NewReader("Alice\n2.5\nyes\n\n"))
-	vars, err := collectVariablesInteractively(cmd, tmpl)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if vars["name"] != "Alice" || vars["n"] != 2.5 || vars["ok"] != true || vars["def"] != "default" {
-		t.Fatalf("vars = %#v", vars)
-	}
-	cmd = templateTestCmd()
 	cmd.SetIn(strings.NewReader("\n"))
 	if _, err := collectVariablesInteractively(cmd, &templates.Template{Variables: map[string]templates.Variable{"required": {Name: "required", Type: "string", Required: true}}}); err == nil {
 		t.Fatal("missing required var succeeded")
