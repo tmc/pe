@@ -1678,9 +1678,9 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 
 ##### Monitoring Integration
 - [x] Add Prometheus exporter
-- [ ] Create Grafana dashboards
+- [x] Create Grafana dashboards
 - [x] Add alert definitions
-- [ ] Create runbooks
+- [x] Create runbooks
 - [x] Add SLO definitions
 - [x] Implement health checks
 

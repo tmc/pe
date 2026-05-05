@@ -35,6 +35,10 @@ source of truth for coverage numbers.
   evaluation configuration.
 - [SECURITY_REVIEW.md](SECURITY_REVIEW.md) - release security review notes.
 - [../SECURITY.md](../SECURITY.md) - vulnerability disclosure policy.
+- [observability/GRAFANA_DASHBOARDS.md](observability/GRAFANA_DASHBOARDS.md) -
+  dashboard definitions for release metrics.
+- [observability/RUNBOOKS.md](observability/RUNBOOKS.md) - operational runbooks
+  for provider, evaluation, optimization, memory, and release-gate incidents.
 - [MIGRATION.md](MIGRATION.md) - v0.5.0 migration decision.
 - [NOTICE_DECISION.md](NOTICE_DECISION.md) - v0.5.0 NOTICE decision.
 - [ATTESTATION.md](ATTESTATION.md) - attestation design and prototype status.
