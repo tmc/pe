@@ -1150,7 +1150,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Write adapter unit tests
 - [x] Create migration helpers for common patterns
 - [ ] Add temporary compatibility layer
-- [ ] Document migration patterns for contributors
+- [x] Document migration patterns for contributors
 
 ##### Command Migration
 - [ ] Update `cmd/pe/run.go` to use `inference.Provider`
