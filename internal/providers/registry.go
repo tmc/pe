@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/tmc/pe/internal/inference"
 	"github.com/tmc/pe/internal/llm"
 )
 
@@ -150,7 +151,11 @@ var defaultRegistry = NewRegistry()
 
 // CreateProvider creates a provider using the default registry
 func CreateProvider(providerSpec string, options map[string]interface{}) (llm.Provider, error) {
-	return defaultRegistry.Create(providerSpec, options)
+	provider, err := inference.CreateProviderFromSpec(providerSpec, options)
+	if err != nil {
+		return nil, err
+	}
+	return inference.AsLegacyProvider(provider, "")
 }
 
 // RegisterProvider registers a provider in the default registry

@@ -1172,8 +1172,8 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Update cgpt provider wrapper
 - [x] Update mock provider for testing
 - [ ] Remove duplicate provider implementations
-- [ ] Consolidate provider registration logic
-- [ ] Update provider factory methods
+- [x] Consolidate provider registration logic
+- [x] Update provider factory methods
 
 ##### Cleanup & Validation
 - [ ] Delete `internal/llm/provider.go`
