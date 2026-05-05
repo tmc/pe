@@ -11,8 +11,8 @@ import (
 
 func TestUnsignedManifestDeterministic(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, filepath.Join(dir, "b.txt"), "bravo")
-	writeFile(t, filepath.Join(dir, "a.txt"), "alpha")
+	writeAttestFile(t, filepath.Join(dir, "b.txt"), "bravo")
+	writeAttestFile(t, filepath.Join(dir, "a.txt"), "alpha")
 
 	first, err := buildUnsignedManifest(dir, []string{"b.txt", "a.txt"})
 	if err != nil {
@@ -38,7 +38,7 @@ func TestUnsignedManifestDeterministic(t *testing.T) {
 
 func TestUnsignedManifestRejectsEscapesAndSymlinks(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, filepath.Join(dir, "ok.txt"), "ok")
+	writeAttestFile(t, filepath.Join(dir, "ok.txt"), "ok")
 	if _, err := buildUnsignedManifest(dir, []string{"../outside.txt"}); err == nil {
 		t.Fatal("buildUnsignedManifest accepted escaping path")
 	}
@@ -55,7 +55,7 @@ func TestUnsignedManifestRejectsEscapesAndSymlinks(t *testing.T) {
 func TestUnsignedManifestVerifyDetectsTamper(t *testing.T) {
 	dir := t.TempDir()
 	target := filepath.Join(dir, "prompt.txt")
-	writeFile(t, target, "original")
+	writeAttestFile(t, target, "original")
 
 	manifest, err := buildUnsignedManifest(dir, []string{"prompt.txt"})
 	if err != nil {
@@ -63,12 +63,12 @@ func TestUnsignedManifestVerifyDetectsTamper(t *testing.T) {
 	}
 	manifestPath := filepath.Join(dir, "manifest.json")
 	data, _ := json.Marshal(manifest)
-	writeFile(t, manifestPath, string(data))
+	writeAttestFile(t, manifestPath, string(data))
 
 	if err := verifyUnsignedManifestFile(dir, manifestPath); err != nil {
 		t.Fatalf("verify before tamper failed: %v", err)
 	}
-	writeFile(t, target, "changed")
+	writeAttestFile(t, target, "changed")
 	if err := verifyUnsignedManifestFile(dir, manifestPath); err == nil {
 		t.Fatal("verify after tamper succeeded")
 	}
@@ -76,7 +76,7 @@ func TestUnsignedManifestVerifyDetectsTamper(t *testing.T) {
 
 func TestExpAttestManifestCommand(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, filepath.Join(dir, "prompt.txt"), "hello")
+	writeAttestFile(t, filepath.Join(dir, "prompt.txt"), "hello")
 
 	cmd := newExpAttestCmd()
 	var out bytes.Buffer
@@ -94,7 +94,7 @@ func TestExpAttestManifestCommand(t *testing.T) {
 	}
 }
 
-func writeFile(t *testing.T, path, content string) {
+func writeAttestFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatal(err)

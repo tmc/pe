@@ -15,7 +15,7 @@ import (
 func TestContentKeyDeterministic(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "input.txt")
-	writeFile(t, path, "cache me")
+	writeAttestFile(t, path, "cache me")
 
 	first, err := contentKeyFile(path)
 	if err != nil {
@@ -38,7 +38,7 @@ func TestCachePutGetVerifyAndTamper(t *testing.T) {
 	dir := t.TempDir()
 	cacheDir := filepath.Join(dir, "cache")
 	input := filepath.Join(dir, "input.txt")
-	writeFile(t, input, "cache me")
+	writeAttestFile(t, input, "cache me")
 
 	key, err := putCacheFile(cacheDir, input)
 	if err != nil {
@@ -59,7 +59,7 @@ func TestCachePutGetVerifyAndTamper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, objectPath, "changed")
+	writeAttestFile(t, objectPath, "changed")
 	if err := verifyCacheKey(cacheDir, key); err == nil {
 		t.Fatal("verify after tamper succeeded")
 	}
@@ -75,7 +75,7 @@ func TestCacheRejectsUnsafeKeysAndSymlinks(t *testing.T) {
 	}
 
 	target := filepath.Join(dir, "target.txt")
-	writeFile(t, target, "ok")
+	writeAttestFile(t, target, "ok")
 	link := filepath.Join(dir, "link.txt")
 	if err := os.Symlink(target, link); err != nil {
 		t.Skipf("symlink unavailable: %v", err)
@@ -104,8 +104,8 @@ func TestManifestDigestCanonical(t *testing.T) {
 	}
 	prettyPath := filepath.Join(dir, "pretty.json")
 	compactPath := filepath.Join(dir, "compact.json")
-	writeFile(t, prettyPath, string(pretty))
-	writeFile(t, compactPath, string(compact))
+	writeAttestFile(t, prettyPath, string(pretty))
+	writeAttestFile(t, compactPath, string(compact))
 
 	prettyKey, err := unsignedManifestDigestFile(prettyPath)
 	if err != nil {
@@ -124,7 +124,7 @@ func TestExpCacheCommands(t *testing.T) {
 	dir := t.TempDir()
 	cacheDir := filepath.Join(dir, "cache")
 	input := filepath.Join(dir, "input.txt")
-	writeFile(t, input, "cache me")
+	writeAttestFile(t, input, "cache me")
 
 	putCmd := newExpCacheCmd()
 	var putOut bytes.Buffer
@@ -156,7 +156,7 @@ func TestCacheManifestWorkflowDetectsTamper(t *testing.T) {
 	if err := os.Mkdir(root, 0755); err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, filepath.Join(root, "prompt.txt"), "hello")
+	writeAttestFile(t, filepath.Join(root, "prompt.txt"), "hello")
 
 	manifest, err := buildUnsignedManifest(root, []string{"prompt.txt"})
 	if err != nil {
@@ -167,7 +167,7 @@ func TestCacheManifestWorkflowDetectsTamper(t *testing.T) {
 		t.Fatal(err)
 	}
 	manifestPath := filepath.Join(dir, "manifest.json")
-	writeFile(t, manifestPath, string(manifestData))
+	writeAttestFile(t, manifestPath, string(manifestData))
 
 	key, err := putManifestCacheFile(cacheDir, manifestPath)
 	if err != nil {
@@ -177,17 +177,17 @@ func TestCacheManifestWorkflowDetectsTamper(t *testing.T) {
 		t.Fatalf("verify cached manifest before tamper failed: %v", err)
 	}
 
-	writeFile(t, filepath.Join(root, "prompt.txt"), "changed")
+	writeAttestFile(t, filepath.Join(root, "prompt.txt"), "changed")
 	if err := verifyCachedManifest(cacheDir, root, key); err == nil {
 		t.Fatal("verify cached manifest accepted changed content")
 	}
-	writeFile(t, filepath.Join(root, "prompt.txt"), "hello")
+	writeAttestFile(t, filepath.Join(root, "prompt.txt"), "hello")
 
 	objectPath, err := cacheObjectPath(cacheDir, key)
 	if err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, objectPath, strings.Replace(string(manifestData), "prompt.txt", "other.txt", 1))
+	writeAttestFile(t, objectPath, strings.Replace(string(manifestData), "prompt.txt", "other.txt", 1))
 	if err := verifyCachedManifest(cacheDir, root, key); err == nil {
 		t.Fatal("verify cached manifest accepted tampered manifest object")
 	}
@@ -200,7 +200,7 @@ func TestCacheManifestRejectsUnsafePaths(t *testing.T) {
 	if err := os.Mkdir(root, 0755); err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, filepath.Join(root, "prompt.txt"), "hello")
+	writeAttestFile(t, filepath.Join(root, "prompt.txt"), "hello")
 
 	manifest := unsignedFileManifest{
 		Type:      unsignedManifestType,
@@ -214,7 +214,7 @@ func TestCacheManifestRejectsUnsafePaths(t *testing.T) {
 		t.Fatal(err)
 	}
 	manifestPath := filepath.Join(dir, "manifest.json")
-	writeFile(t, manifestPath, string(manifestData))
+	writeAttestFile(t, manifestPath, string(manifestData))
 	key, err := putManifestCacheFile(cacheDir, manifestPath)
 	if err != nil {
 		t.Fatal(err)
@@ -237,7 +237,7 @@ func TestCacheManifestRejectsUnsafePaths(t *testing.T) {
 		t.Fatal(err)
 	}
 	linkManifestPath := filepath.Join(dir, "link-manifest.json")
-	writeFile(t, linkManifestPath, string(linkData))
+	writeAttestFile(t, linkManifestPath, string(linkData))
 	linkKey, err := putManifestCacheFile(cacheDir, linkManifestPath)
 	if err != nil {
 		t.Fatal(err)
@@ -254,7 +254,7 @@ func TestExpCacheManifestCommands(t *testing.T) {
 	if err := os.Mkdir(root, 0755); err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, filepath.Join(root, "prompt.txt"), "hello")
+	writeAttestFile(t, filepath.Join(root, "prompt.txt"), "hello")
 
 	attestCmd := newExpAttestCmd()
 	var manifestOut bytes.Buffer
@@ -265,7 +265,7 @@ func TestExpCacheManifestCommands(t *testing.T) {
 		t.Fatal(err)
 	}
 	manifestPath := filepath.Join(dir, "manifest.json")
-	writeFile(t, manifestPath, manifestOut.String())
+	writeAttestFile(t, manifestPath, manifestOut.String())
 
 	putCmd := newExpCacheCmd()
 	var putOut bytes.Buffer
@@ -303,11 +303,11 @@ func TestExpCacheManifestCLIWorkflow(t *testing.T) {
 	if err := os.Mkdir(root, 0755); err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, filepath.Join(root, "prompt.txt"), "hello")
+	writeAttestFile(t, filepath.Join(root, "prompt.txt"), "hello")
 
 	manifest := runPE(t, pe, "exp", "attest", "manifest", "--root", root, "prompt.txt")
 	manifestPath := filepath.Join(dir, "manifest.json")
-	writeFile(t, manifestPath, manifest)
+	writeAttestFile(t, manifestPath, manifest)
 
 	key := strings.TrimSpace(runPE(t, pe, "exp", "cache", "manifest", "put", "--cache-dir", cacheDir, manifestPath))
 	verify := runPE(t, pe, "exp", "cache", "manifest", "verify", "--cache-dir", cacheDir, "--root", root, key)
@@ -315,7 +315,7 @@ func TestExpCacheManifestCLIWorkflow(t *testing.T) {
 		t.Fatalf("verify output = %q", verify)
 	}
 
-	writeFile(t, filepath.Join(root, "prompt.txt"), "changed")
+	writeAttestFile(t, filepath.Join(root, "prompt.txt"), "changed")
 	cmd := exec.Command(pe, "exp", "cache", "manifest", "verify", "--cache-dir", cacheDir, "--root", root, key)
 	out, err := cmd.CombinedOutput()
 	if err == nil {
