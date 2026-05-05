@@ -1,9 +1,10 @@
 # PE: Safe Prompting Toolchain
 
+[![CI](https://github.com/tmc/pe/actions/workflows/ci.yml/badge.svg)](https://github.com/tmc/pe/actions/workflows/ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/tmc/pe)](https://goreportcard.com/report/github.com/tmc/pe)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Documentation](https://img.shields.io/badge/docs-comprehensive-blue)](docs/)
-[![Research](https://img.shields.io/badge/research-2024--2025-green)](docs/OVERVIEW.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Documentation](https://img.shields.io/badge/docs-current-blue)](docs/README.md)
+[![Roadmap](https://img.shields.io/badge/roadmap-ROADMAP.md-lightgrey)](ROADMAP.md)
 
 **PE is a Go-like toolchain for safe prompting.** Its primary artifact is
 executable, templated, composable text: plain text by default, with optional

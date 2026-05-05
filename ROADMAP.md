@@ -159,7 +159,7 @@ Current state:
 
 Remaining tasks:
 1. DONE: Reconcile docs/README.md with README.md
-2. Update badges and links
+2. DONE: Update badges and links
 3. DONE: Link to release notes and changelog from the documentation index
 4. DONE: Update contribution guidelines reference
 
