@@ -2,6 +2,7 @@ package metaprompt
 
 import (
 	"context"
+	"strings"
 	"testing"
 )
 
@@ -397,5 +398,148 @@ func TestConversationalHandler(t *testing.T) {
 
 	if result == nil {
 		t.Error("ConversationalHandler.Compose() returned nil result")
+	}
+}
+
+func TestPromptComposerEnhancedPaths(t *testing.T) {
+	composer := NewPromptComposerWithLLM(&mockProvider{})
+	components := []interface{}{
+		PromptComponent{Type: "context", Content: "Use repo context."},
+		PromptComponent{Type: "instruction", Content: "Explain the change.", Dependencies: []string{"context"}},
+		PromptComponent{Type: "example", Content: "Input: x Output: y"},
+		PromptComponent{Type: "constraint", Content: "Be concise."},
+	}
+
+	result, err := composer.Compose(context.Background(), components, map[string]interface{}{
+		"Style":                 "cot",
+		"QualityGates":          true,
+		"ParameterOptimization": true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Style != "cot" || !strings.Contains(result.ComposedPrompt, "Let's think step by step") {
+		t.Fatalf("compose result = %#v", result)
+	}
+	if _, ok := result.Metadata["quality_evaluation"]; !ok {
+		t.Fatalf("metadata missing quality evaluation: %#v", result.Metadata)
+	}
+	if _, ok := result.Metadata["optimized_parameters"]; !ok {
+		t.Fatalf("metadata missing optimized parameters: %#v", result.Metadata)
+	}
+
+	synthesized, err := composer.Compose(context.Background(), components, &EnhancedComposeConfig{
+		ComposeConfig:    ComposeConfig{Style: "structured"},
+		ProgramSynthesis: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if synthesized.Style != "synthesized" || !strings.Contains(synthesized.ComposedPrompt, "Explain the change.") {
+		t.Fatalf("synthesized = %#v", synthesized)
+	}
+	if synthesized.ValidationPass {
+		t.Fatalf("template synthesis should not pass quality gate: %#v", synthesized)
+	}
+}
+
+func TestPromptComposerValidationAndConfigEdges(t *testing.T) {
+	composer := NewPromptComposer()
+	if _, err := composer.Compose(context.Background(), nil, map[string]interface{}{"Style": "missing"}); err == nil {
+		t.Fatal("unsupported style succeeded")
+	}
+	components := []interface{}{PromptComponent{
+		Type:      "instruction",
+		Content:   "",
+		Signature: &ComponentSignature{Name: "instruction", InputSchema: Schema{Type: "string"}},
+	}}
+	if _, err := composer.Compose(context.Background(), components, nil); err == nil {
+		t.Fatal("invalid signed component succeeded")
+	}
+	cfg := composer.extractConfig(&ComposeConfig{Style: "dspy", ValidationGate: true})
+	if cfg.Style != "dspy" || !cfg.QualityGates {
+		t.Fatalf("config = %#v", cfg)
+	}
+	spec := composer.createProgramSpec([]interface{}{
+		PromptComponent{Type: "instruction", Content: "Do the task", Dependencies: []string{"a", "b"}},
+	}, &EnhancedComposeConfig{ComposeConfig: ComposeConfig{Style: "cot"}, ParameterOptimization: true})
+	if spec.Task != "Do the task" || spec.Style != "cot" || !spec.Quality.RequireOptimization || len(spec.Constraints) != 1 {
+		t.Fatalf("spec = %#v", spec)
+	}
+}
+
+func TestComposerStyleHandlersUseTypedComponents(t *testing.T) {
+	components := []interface{}{
+		PromptComponent{Type: "context", Content: "Context text."},
+		PromptComponent{Type: "instruction", Content: "Analyze data"},
+		PromptComponent{Type: "example", Content: "Example text."},
+		PromptComponent{Type: "constraint", Content: "No fluff."},
+		"ignored",
+	}
+	tests := []struct {
+		name    string
+		handler StyleHandler
+		want    string
+	}{
+		{"default", &DefaultStyleHandler{}, "Instructions:"},
+		{"cot", &ChainOfThoughtHandler{}, "Constraints:"},
+		{"few-shot", &FewShotHandler{}, "Here are some examples:"},
+		{"structured", &StructuredHandler{}, "## Output Format"},
+		{"conversational", &ConversationalHandler{}, "Thanks for your help!"},
+		{"dspy", &DSPyHandler{}, "## Reasoning"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := tt.handler.Compose(context.Background(), components, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(result.ComposedPrompt, tt.want) {
+				t.Fatalf("prompt = %q", result.ComposedPrompt)
+			}
+		})
+	}
+}
+
+func TestComposerSynthesisQualityAndOptimization(t *testing.T) {
+	ps := NewProgramSynthesizer()
+	spec := ProgramSpec{Task: "task"}
+	if got := ps.selectStrategy(spec).GetName(); got != "template" {
+		t.Fatalf("template strategy = %q", got)
+	}
+	spec.Quality.RequireOptimization = true
+	if got := ps.selectStrategy(spec).GetName(); got != "evolutionary" {
+		t.Fatalf("evolutionary strategy = %q", got)
+	}
+	spec.Examples = make([]SignatureExample, 6)
+	if got := ps.selectStrategy(spec).GetName(); got != "neural" {
+		t.Fatalf("neural strategy = %q", got)
+	}
+	result, err := ps.SynthesizePrompt(context.Background(), spec)
+	if err != nil || result.Strategy != "neural" || len(ps.optimizationHistory) != 1 {
+		t.Fatalf("synthesis = %#v err=%v", result, err)
+	}
+
+	qgm := NewQualityGateManager()
+	for _, gate := range []QualityGate{
+		{Metric: "coherence", Threshold: 0.1},
+		{Metric: "clarity", Threshold: 0.1},
+		{Metric: "completeness", Threshold: 0.5},
+		{Metric: "unknown", Threshold: 2},
+	} {
+		passed, score := qgm.evaluateGate(gate, &ComposeResult{
+			ComposedPrompt: "Please analyze this. Therefore explain it.",
+			Components: []interface{}{
+				PromptComponent{Type: "context"},
+				PromptComponent{Type: "instruction"},
+				PromptComponent{Type: "example"},
+			},
+		})
+		if !passed || score <= 0 {
+			t.Fatalf("gate %#v passed=%v score=%v", gate, passed, score)
+		}
+	}
+	if got := calculateVariance(nil); got != 0 {
+		t.Fatalf("empty variance = %v", got)
 	}
 }
