@@ -20,20 +20,21 @@ var (
 
 // MockProvider is a configurable mock implementation of inference.Provider for testing.
 type MockProvider struct {
-	mu                 sync.RWMutex
-	name               string
-	models             []string
-	responses          map[string]*inference.Response // keyed by prompt
-	streamResponses    map[string][]inference.StreamChunk
-	errors             map[string]error // keyed by operation type
-	latency            time.Duration
-	callCounts         map[string]int
-	lastRequest        *inference.Request
-	shouldPanic        map[string]bool
-	responseGenerator  func(req inference.Request) *inference.Response
-	streamGenerator    func(req inference.Request) []inference.StreamChunk
-	rateLimitBehavior  *RateLimitBehavior
-	contextBehavior    *ContextBehavior
+	mu                sync.RWMutex
+	name              string
+	models            []string
+	responses         map[string]*inference.Response // keyed by prompt
+	streamResponses   map[string][]inference.StreamChunk
+	errors            map[string]error // keyed by operation type
+	latency           time.Duration
+	callCounts        map[string]int
+	lastRequest       *inference.Request
+	shouldPanic       map[string]bool
+	deterministic     bool
+	responseGenerator func(req inference.Request) *inference.Response
+	streamGenerator   func(req inference.Request) []inference.StreamChunk
+	rateLimitBehavior *RateLimitBehavior
+	contextBehavior   *ContextBehavior
 }
 
 // RateLimitBehavior configures rate limiting simulation.
@@ -51,11 +52,12 @@ type ContextBehavior struct {
 
 // MockProviderConfig configures the mock provider behavior.
 type MockProviderConfig struct {
-	Name              string
-	Models            []string
-	DefaultLatency    time.Duration
-	RespectContext    bool
-	MaxRPS            int // Max requests per second for rate limiting
+	Name           string
+	Models         []string
+	DefaultLatency time.Duration
+	RespectContext bool
+	MaxRPS         int // Max requests per second for rate limiting
+	Deterministic  bool
 }
 
 // NewMockProvider creates a new configurable mock provider.
@@ -76,6 +78,7 @@ func NewMockProvider(config MockProviderConfig) *MockProvider {
 		latency:         config.DefaultLatency,
 		callCounts:      make(map[string]int),
 		shouldPanic:     make(map[string]bool),
+		deterministic:   config.Deterministic,
 		contextBehavior: &ContextBehavior{RespectCancellation: config.RespectContext},
 	}
 
@@ -366,7 +369,7 @@ func (mp *MockProvider) checkRateLimit() error {
 
 	mp.rateLimitBehavior.requestCount++
 	if mp.rateLimitBehavior.requestCount > mp.rateLimitBehavior.MaxRequestsPerSecond {
-		return fmt.Errorf("rate limit exceeded: max %d requests per second", 
+		return fmt.Errorf("rate limit exceeded: max %d requests per second",
 			mp.rateLimitBehavior.MaxRequestsPerSecond)
 	}
 
@@ -375,6 +378,10 @@ func (mp *MockProvider) checkRateLimit() error {
 
 // generateDefaultResponse creates a default response for testing.
 func (mp *MockProvider) generateDefaultResponse(req inference.Request) *inference.Response {
+	requestID := fmt.Sprintf("mock_%d", time.Now().UnixNano())
+	if mp.deterministic {
+		requestID = fmt.Sprintf("mock_%s_%s", mp.name, req.Model)
+	}
 	return &inference.Response{
 		Content: fmt.Sprintf("Mock response to: %s", req.Prompt),
 		Model:   req.Model,
@@ -384,9 +391,9 @@ func (mp *MockProvider) generateDefaultResponse(req inference.Request) *inferenc
 			TotalTokens:      (len(req.Prompt) / 4) + 50,
 		},
 		Metadata: map[string]interface{}{
-			"provider":    mp.name,
-			"mock":        true,
-			"request_id":  fmt.Sprintf("mock_%d", time.Now().UnixNano()),
+			"provider":   mp.name,
+			"mock":       true,
+			"request_id": requestID,
 		},
 	}
 }
@@ -394,14 +401,14 @@ func (mp *MockProvider) generateDefaultResponse(req inference.Request) *inferenc
 // generateDefaultStreamChunks creates default stream chunks for testing.
 func (mp *MockProvider) generateDefaultStreamChunks(req inference.Request) []inference.StreamChunk {
 	words := []string{"Mock", "streaming", "response", "to:", req.Prompt}
-	
+
 	chunks := make([]inference.StreamChunk, len(words))
 	for i, word := range words {
 		chunks[i] = inference.StreamChunk{
 			Delta: word + " ",
 		}
 	}
-	
+
 	return chunks
 }
 
@@ -441,8 +448,8 @@ type ProviderMetricsSnapshot struct {
 func NewAdvancedMockProvider(config MockProviderConfig) *AdvancedMockProvider {
 	return &AdvancedMockProvider{
 		MockProvider: NewMockProvider(config),
-		rand:        rand.New(rand.NewSource(time.Now().UnixNano())),
-		metrics:     &ProviderMetrics{},
+		rand:         rand.New(rand.NewSource(time.Now().UnixNano())),
+		metrics:      &ProviderMetrics{},
 	}
 }
 
@@ -459,12 +466,12 @@ func (amp *AdvancedMockProvider) SetRandomResponses(enabled bool) {
 // Complete overrides the base Complete method with advanced behaviors.
 func (amp *AdvancedMockProvider) Complete(ctx context.Context, req inference.Request) (*inference.Response, error) {
 	start := time.Now()
-	
+
 	// Record metrics
 	amp.metrics.mu.Lock()
 	amp.metrics.TotalRequests++
 	amp.metrics.mu.Unlock()
-	
+
 	// Simulate random failures
 	if amp.rand.Float64() < amp.failureRate {
 		amp.metrics.mu.Lock()
@@ -472,10 +479,10 @@ func (amp *AdvancedMockProvider) Complete(ctx context.Context, req inference.Req
 		amp.metrics.mu.Unlock()
 		return nil, fmt.Errorf("simulated random failure")
 	}
-	
+
 	// Call base implementation
 	resp, err := amp.MockProvider.Complete(ctx, req)
-	
+
 	// Update metrics
 	latency := time.Since(start)
 	amp.metrics.mu.Lock()
@@ -493,14 +500,14 @@ func (amp *AdvancedMockProvider) Complete(ctx context.Context, req inference.Req
 		amp.metrics.MaxLatency = latency
 	}
 	amp.metrics.mu.Unlock()
-	
+
 	// Modify response if random responses enabled
 	if resp != nil && amp.randomResponses {
 		resp.Content = amp.generateRandomContent()
 		resp.TokensUsed.CompletionTokens = amp.rand.Intn(1000) + 50
 		resp.TokensUsed.TotalTokens = resp.TokensUsed.PromptTokens + resp.TokensUsed.CompletionTokens
 	}
-	
+
 	return resp, err
 }
 
@@ -539,18 +546,18 @@ type ChaosProvider struct {
 
 // ChaosConfig configures chaos engineering behaviors.
 type ChaosConfig struct {
-	TimeoutProbability    float64
-	PanicProbability     float64
-	CorruptionProbability float64
+	TimeoutProbability      float64
+	PanicProbability        float64
+	CorruptionProbability   float64
 	SlowResponseProbability float64
-	SlowResponseDelay     time.Duration
+	SlowResponseDelay       time.Duration
 }
 
 // NewChaosProvider creates a chaos engineering mock provider.
 func NewChaosProvider(config MockProviderConfig, chaosConfig ChaosConfig) *ChaosProvider {
 	return &ChaosProvider{
 		AdvancedMockProvider: NewAdvancedMockProvider(config),
-		chaosConfig:         chaosConfig,
+		chaosConfig:          chaosConfig,
 	}
 }
 
@@ -561,28 +568,28 @@ func (cp *ChaosProvider) Complete(ctx context.Context, req inference.Request) (*
 		<-time.After(5 * time.Second) // Force timeout
 		return nil, fmt.Errorf("chaos timeout")
 	}
-	
+
 	// Simulate panic
 	if cp.rand.Float64() < cp.chaosConfig.PanicProbability {
 		panic("chaos panic")
 	}
-	
+
 	// Simulate slow response
 	if cp.rand.Float64() < cp.chaosConfig.SlowResponseProbability {
 		time.Sleep(cp.chaosConfig.SlowResponseDelay)
 	}
-	
+
 	// Get normal response
 	resp, err := cp.AdvancedMockProvider.Complete(ctx, req)
 	if err != nil {
 		return resp, err
 	}
-	
+
 	// Simulate corruption
 	if resp != nil && cp.rand.Float64() < cp.chaosConfig.CorruptionProbability {
 		resp.Content = "CORRUPTED_RESPONSE_" + resp.Content
 		resp.TokensUsed.TotalTokens = -1 // Invalid token count
 	}
-	
+
 	return resp, err
 }

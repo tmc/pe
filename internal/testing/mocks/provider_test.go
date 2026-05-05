@@ -15,7 +15,7 @@ func TestMockProviderBasicFunctionality(t *testing.T) {
 		Models:         []string{"test-model-1", "test-model-2"},
 		DefaultLatency: 10 * time.Millisecond,
 	}
-	
+
 	provider := NewMockProvider(config)
 	defer provider.Close()
 
@@ -39,7 +39,7 @@ func TestMockProviderBasicFunctionality(t *testing.T) {
 		Prompt: "Test prompt",
 		Model:  "test-model-1",
 	}
-	
+
 	resp, err := provider.Complete(ctx, req)
 	if err != nil {
 		t.Fatalf("Complete() failed: %v", err)
@@ -56,7 +56,7 @@ func TestMockProviderBasicFunctionality(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Stream() failed: %v", err)
 	}
-	
+
 	// Collect all chunks
 	var allChunks []inference.StreamChunk
 	for chunk := range chunks {
@@ -65,7 +65,7 @@ func TestMockProviderBasicFunctionality(t *testing.T) {
 			break
 		}
 	}
-	
+
 	if len(allChunks) < 2 { // Should have content chunks + done chunk
 		t.Errorf("Expected at least 2 chunks, got %d", len(allChunks))
 	}
@@ -91,25 +91,47 @@ func TestMockProviderCustomResponses(t *testing.T) {
 			TotalTokens:      30,
 		},
 	}
-	
+
 	prompt := "Custom prompt"
 	provider.SetResponse(prompt, customResponse)
 
 	// Test the custom response
 	ctx := context.Background()
 	req := inference.Request{Prompt: prompt}
-	
+
 	resp, err := provider.Complete(ctx, req)
 	if err != nil {
 		t.Fatalf("Complete() failed: %v", err)
 	}
-	
+
 	if resp.Content != customResponse.Content {
 		t.Errorf("Expected content '%s', got '%s'", customResponse.Content, resp.Content)
 	}
 	if resp.TokensUsed.TotalTokens != customResponse.TokensUsed.TotalTokens {
-		t.Errorf("Expected total tokens %d, got %d", 
+		t.Errorf("Expected total tokens %d, got %d",
 			customResponse.TokensUsed.TotalTokens, resp.TokensUsed.TotalTokens)
+	}
+}
+
+func TestMockProviderDeterministicResponse(t *testing.T) {
+	provider := NewMockProvider(MockProviderConfig{Name: "det", Deterministic: true})
+	defer provider.Close()
+
+	ctx := context.Background()
+	req := inference.Request{Prompt: "same", Model: "m"}
+	first, err := provider.Complete(ctx, req)
+	if err != nil {
+		t.Fatalf("first Complete: %v", err)
+	}
+	second, err := provider.Complete(ctx, req)
+	if err != nil {
+		t.Fatalf("second Complete: %v", err)
+	}
+	if first.Metadata["request_id"] != second.Metadata["request_id"] {
+		t.Fatalf("request IDs differ: %v vs %v", first.Metadata["request_id"], second.Metadata["request_id"])
+	}
+	if first.Content != second.Content {
+		t.Fatalf("content differs: %q vs %q", first.Content, second.Content)
 	}
 }
 
@@ -123,7 +145,7 @@ func TestMockProviderErrorHandling(t *testing.T) {
 
 	ctx := context.Background()
 	req := inference.Request{Prompt: "test"}
-	
+
 	_, err := provider.Complete(ctx, req)
 	if err == nil {
 		t.Fatal("Expected error, got nil")
@@ -150,7 +172,7 @@ func TestMockProviderCallCounting(t *testing.T) {
 	if completeCount != 2 {
 		t.Errorf("Expected 2 Complete calls, got %d", completeCount)
 	}
-	
+
 	modelsCount := provider.GetCallCount("Models")
 	if modelsCount != 1 {
 		t.Errorf("Expected 1 Models call, got %d", modelsCount)
@@ -162,7 +184,7 @@ func TestAdvancedMockProvider(t *testing.T) {
 		Name:   "advanced-test",
 		Models: []string{"advanced-model"},
 	}
-	
+
 	provider := NewAdvancedMockProvider(config)
 	defer provider.Close()
 
@@ -176,7 +198,7 @@ func TestAdvancedMockProvider(t *testing.T) {
 	// Make multiple requests to test random behavior
 	successCount := 0
 	errorCount := 0
-	
+
 	for i := 0; i < 20; i++ {
 		_, err := provider.Complete(ctx, req)
 		if err != nil {
@@ -211,7 +233,7 @@ func TestChaosProvider(t *testing.T) {
 		SlowResponseProbability: 0.1, // Low slow response rate
 		SlowResponseDelay:       10 * time.Millisecond,
 	}
-	
+
 	provider := NewChaosProvider(config, chaosConfig)
 	defer provider.Close()
 
@@ -220,7 +242,7 @@ func TestChaosProvider(t *testing.T) {
 
 	// Make a request - should work most of the time
 	resp, err := provider.Complete(ctx, req)
-	
+
 	// Either we get a valid response or a chaos-induced error
 	if err == nil && resp == nil {
 		t.Error("Expected either response or error")
@@ -230,7 +252,7 @@ func TestChaosProvider(t *testing.T) {
 func TestProviderInterfaceCompliance(t *testing.T) {
 	// Test that all mock providers implement the interface correctly
 	var providers []inference.Provider
-	
+
 	providers = append(providers, NewMockProvider(MockProviderConfig{Name: "basic"}))
 	providers = append(providers, NewAdvancedMockProvider(MockProviderConfig{Name: "advanced"}))
 	providers = append(providers, NewChaosProvider(MockProviderConfig{Name: "chaos"}, ChaosConfig{}))

@@ -1357,7 +1357,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 ##### Mock Infrastructure
 - [x] Create `internal/testing/mocks/` directory
 - [x] Implement MockProvider with behavior config
-- [ ] Add deterministic response generation
+- [x] Add deterministic response generation
 - [x] Implement latency simulation
 - [x] Add error injection capabilities
 - [x] Create mock provider factory
