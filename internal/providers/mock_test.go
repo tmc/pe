@@ -122,7 +122,7 @@ func TestMockProvider_GenerateStream(t *testing.T) {
 	ctx := context.Background()
 	options := llm.GenerateOptions{}
 
-	respChan, err := provider.GenerateStream(ctx, "test prompt", options)
+	respChan, err := provider.GenerateStream(ctx, strings.Repeat("test prompt ", 100), options)
 	require.NoError(t, err)
 	require.NotNil(t, respChan)
 

@@ -223,6 +223,12 @@ func (p *MockProvider) GenerateStream(ctx context.Context, prompt string, option
 			case <-ctx.Done():
 				respChan <- &llm.StreamResponse{Error: ctx.Err()}
 				return
+			default:
+			}
+			select {
+			case <-ctx.Done():
+				respChan <- &llm.StreamResponse{Error: ctx.Err()}
+				return
 			case respChan <- &llm.StreamResponse{
 				Text:    word + " ",
 				Latency: 10 * time.Millisecond,
