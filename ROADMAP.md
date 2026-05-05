@@ -1381,8 +1381,8 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add semantic optimizer tests
 - [x] Add evolutionary optimizer tests
 - [x] Test optimization convergence
-- [ ] Add property-based tests for optimization
-- [ ] Test optimization cancellation
+- [x] Add property-based tests for optimization
+- [x] Test optimization cancellation
 
 ##### Evaluation Tests
 - [x] Add evaluation engine tests
@@ -1423,7 +1423,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Add stress tests
 
 ##### Property-Based Tests
-- [ ] Add quickcheck for optimization
+- [x] Add quickcheck for optimization
 - [x] Test template substitution properties
 - [x] Test evaluation scoring properties
 - [x] Test module resolution properties
@@ -1468,9 +1468,9 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add adapter metrics
 
 ##### Optimizer Refactoring
-- [ ] Refactor textual gradient optimizer to use interfaces
+- [x] Refactor textual gradient optimizer to use interfaces
 - [ ] Refactor PE2 to use interfaces
-- [ ] Refactor GASO to use interfaces
+- [x] Refactor GASO to use interfaces
 - [ ] Refactor semantic optimizer
 - [ ] Refactor evolutionary optimizer
 - [ ] Update hybrid optimizer
@@ -1485,9 +1485,9 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Create evaluation pipeline
 
 ##### Testing Updates
-- [ ] Update optimization tests
-- [ ] Add adapter tests
-- [ ] Test strategy patterns
+- [x] Update optimization tests
+- [x] Add adapter tests
+- [x] Test strategy patterns
 - [ ] Add integration tests
 - [ ] Test with multiple providers
 - [ ] Verify no regressions
