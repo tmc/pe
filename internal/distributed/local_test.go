@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -203,5 +204,33 @@ func TestMajorityIgnoresEmptyVotesAndCountsTotalWeight(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got.Providers, []string{"weighted", "zero"}) {
 		t.Fatalf("providers = %v, want [weighted zero]", got.Providers)
+	}
+}
+
+func BenchmarkRunLocal(b *testing.B) {
+	for _, workers := range []int{1, 4} {
+		b.Run("workers="+strconv.Itoa(workers), func(b *testing.B) {
+			tasks := make([]Task[int], 32)
+			for i := range tasks {
+				i := i
+				tasks[i] = Task[int]{
+					ID: string(rune('a' + i%26)),
+					Run: func(context.Context) (int, error) {
+						return i, nil
+					},
+				}
+			}
+
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				results, err := RunLocal(context.Background(), workers, tasks)
+				if err != nil {
+					b.Fatal(err)
+				}
+				if len(results) != len(tasks) || results[len(results)-1].Value != len(tasks)-1 {
+					b.Fatalf("RunLocal returned %d results, last=%d", len(results), results[len(results)-1].Value)
+				}
+			}
+		})
 	}
 }
