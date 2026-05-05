@@ -18,6 +18,10 @@ may still include behavior changes while the CLI and provider interfaces settle.
 - Interactive REPL command wiring for `pe interactive`.
 - mdBook/GitBook documentation scaffold.
 - Script-test documentation for the custom `rsc.io/script/scripttest` runner.
+- `pe run-text` for safe executable text rendering.
+- `pe mod vet` for static `pe.mod` capability and executable text policy
+  validation.
+- MIT `LICENSE`, v0.5.0 migration decision, and NOTICE decision documents.
 
 ### Changed
 

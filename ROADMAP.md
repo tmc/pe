@@ -236,21 +236,26 @@ Close release-blocking legal, contributor, and migration decisions before
 tagging v0.5.0.
 
 Current status:
-- `README.md` links to `LICENSE`, but no `LICENSE` file is present.
+- `README.md` links to the tracked MIT `LICENSE` file.
 - `SECURITY.md` now provides the vulnerability disclosure policy.
-- `CONTRIBUTING.md` exists but still needs a release-readiness pass.
-- No migration guide exists yet; the release still needs an explicit decision
-  about whether v0.5.0 has user-visible breaking changes.
+- `CONTRIBUTING.md` has been refreshed for current build, test, roadmap, and
+  release process guidance.
+- v0.5.0 has no required migration steps; `docs/MIGRATION.md` records the
+  decision.
+- `LICENSE` now contains the MIT license claimed by README.md.
+- `docs/MIGRATION.md` records that v0.5.0 has no required migration steps.
+- `docs/NOTICE_DECISION.md` records that no separate NOTICE file is required
+  for the current v0.5.0 release artifacts.
 
 Release blockers:
-1. Add the missing MIT `LICENSE` file or change the release/license claim.
-2. Decide whether a `NOTICE` file is required for current dependencies and
+1. DONE: Add the missing MIT `LICENSE` file or change the release/license claim.
+2. DONE: Decide whether a `NOTICE` file is required for current dependencies and
    embedded/reference material.
-3. Review `CONTRIBUTING.md` for current build, test, roadmap, and release
+3. DONE: Review `CONTRIBUTING.md` for current build, test, roadmap, and release
    process guidance.
-4. Review v0.5.0 changes for breaking API, CLI, provider, config, and module
-   behavior.
-5. Add `docs/MIGRATION.md` or `docs/UPGRADING.md` if migration steps are
+4. DONE: Review v0.5.0 changes for breaking API, CLI, provider, config, and
+   module behavior; no required migration steps are known for v0.5.0.
+5. DONE: Add `docs/MIGRATION.md` or `docs/UPGRADING.md` if migration steps are
    required; otherwise record the no-migration decision in release notes.
 
 Follow-ups after release:
@@ -651,7 +656,12 @@ Potential breaking changes to document:
 - Configuration file format changes
 - Module system changes
 
-Create docs/MIGRATION.md or docs/UPGRADING.md
+Current artifact:
+- `docs/MIGRATION.md` records the v0.5.0 no-required-migration decision.
+
+Follow-up:
+- Expand `docs/MIGRATION.md` if the breaking-change review finds user-visible
+  API, CLI, provider, config, or module migration steps.
 
 
 #### Release prep: Performance benchmarks

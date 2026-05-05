@@ -42,11 +42,16 @@ release candidate state of PE.
 
 - `pe interactive` now starts the REPL session and accepts provider, config, and
   temperature flags.
+- `pe run-text` validates and renders executable text without invoking
+  providers, tools, shell commands, or network access.
+- `pe mod vet` validates `pe.mod` capability policy and executable text
+  metadata.
 - Script-based CLI tests use `rsc.io/script/scripttest` and document the runner's
   limitations: no `exec`, shell pipes, redirection, heredocs, or shell job
   control.
 - The roadmap in `ROADMAP.md` is the tracked source of truth for planned work;
   Beads is deprecated for this repository.
+- v0.5.0 has no required migration steps; see `docs/MIGRATION.md`.
 
 ## Notable Changes Since `next`
 
@@ -69,6 +74,8 @@ release candidate state of PE.
 ### Documentation and Tests
 
 - Added mdBook/GitBook documentation scaffolding.
+- Added the MIT `LICENSE` file claimed by the README.
+- Recorded the v0.5.0 migration and NOTICE decisions.
 - Corrected command docs for experimental command paths and current CLI surface.
 - Documented local runtime provider design and scripttest runner limits.
 - Added hermetic tests for provider registration, exp command registration,

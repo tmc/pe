@@ -1,6 +1,7 @@
 # Contributing to PE
 
-Thank you for your interest in contributing to PE! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to PE. This document describes the
+current development and release workflow.
 
 ## Table of Contents
 
@@ -23,9 +24,11 @@ This project adheres to a code of conduct that we expect all contributors to fol
 
 ### Prerequisites
 
-- Go 1.24 or later
+- Go 1.24 or later. Release validation currently uses `GOTOOLCHAIN=go1.25.9`
+  for dependency security checks.
 - Git
-- API keys for LLM providers (for testing)
+- API keys for live-provider testing. Most unit and script tests are hermetic
+  and do not require provider credentials.
 - Basic familiarity with prompt engineering concepts
 
 ### Development Setup
@@ -38,15 +41,12 @@ This project adheres to a code of conduct that we expect all contributors to fol
 
 2. **Install Dependencies**
    ```bash
-   go mod tidy
+   go mod download
    ```
 
 3. **Set Up Environment**
    ```bash
-   # Copy example environment file
-   cp .env.example .env
-
-   # Add your API keys
+   # Optional: add provider keys for live-provider testing.
    export OPENAI_API_KEY="your-key"
    export ANTHROPIC_API_KEY="your-key"
    ```
@@ -54,7 +54,7 @@ This project adheres to a code of conduct that we expect all contributors to fol
 4. **Build and Test**
    ```bash
    # Build the project
-   go build -o pe cmd/pe/main.go
+   go build -o pe ./cmd/pe
 
    # Run tests
    go test ./...
@@ -89,7 +89,7 @@ We welcome various types of contributions:
 
 1. **Check Existing Issues**: Look for existing issues related to your contribution
 2. **Create an Issue**: For significant changes, create an issue first to discuss the approach
-3. **Review Roadmap**: Check [ROADMAP.md](ROADMAP.md) to see planned features and active work
+3. **Review Roadmap**: Check [ROADMAP.md](ROADMAP.md) to see planned features and active work. Do not create or update Beads issues for this repository.
 4. **Read Documentation**: Familiarize yourself with the project structure and architecture
 
 ## Pull Request Process
@@ -120,8 +120,8 @@ We welcome various types of contributions:
    # Test CLI functionality
    ./pe eval example/config.yaml
 
-   # Run integration tests
-   ./scripts/test-integration.sh
+   # Run script-based CLI tests
+   go test ./tests
    ```
 
 ### 2. Commit Your Changes
@@ -423,7 +423,9 @@ func runNewCommand(cmd *cobra.Command, args []string) error {
 
 #### 2. New Providers
 
-1. Implement `llm.Provider` interface
+1. Check the current provider interfaces before editing; the repository still
+   contains more than one provider abstraction while migration work is tracked
+   in [ROADMAP.md](ROADMAP.md).
 2. Add to provider registry
 3. Add configuration support
 4. Add tests
@@ -471,8 +473,8 @@ func (p *NewProvider) EvaluatePrompt(ctx context.Context, prompt string, vars ma
 ### Running Tests
 
 ```bash
-# Run all tests
-go test ./...
+# Run all tests with the release-validation toolchain
+GOTOOLCHAIN=go1.25.9 go test ./...
 
 # Run tests with coverage
 go test -cover ./...
@@ -483,8 +485,8 @@ go test ./internal/promptfoo/evaluation/evaluator
 # Run tests with race detection
 go test -race ./...
 
-# Run integration tests
-./scripts/test-integration.sh
+# Run script-based CLI tests
+GOTOOLCHAIN=go1.25.9 go test ./tests
 
 # Run benchmarks
 go test -bench=. ./...
@@ -506,7 +508,8 @@ go test -bench=. ./...
 
 ### Test Coverage
 
-- Aim for >80% test coverage
+- Use [docs/TEST_COVERAGE_REPORT.md](docs/TEST_COVERAGE_REPORT.md) as the
+  current coverage baseline.
 - Focus on critical paths
 - Test error handling
 - Include edge cases
@@ -551,8 +554,9 @@ We follow [Semantic Versioning](https://semver.org/):
 3. **Run Full Test Suite**
 4. **Update Documentation**
 5. **Create Release Notes**
-6. **Tag Release**
-7. **Publish Binaries**
+6. **Verify LICENSE, migration, and security docs**
+7. **Tag Release**
+8. **Publish Binaries**
 
 ## Getting Help
 

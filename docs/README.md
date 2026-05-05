@@ -19,6 +19,8 @@ source of truth for coverage numbers.
   workflow snippets.
 - [INSTALLATION.md](INSTALLATION.md) - installation and build notes.
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - common errors and fixes.
+- [../RELEASE_NOTES.md](../RELEASE_NOTES.md) - v0.5.0 release-candidate notes.
+- [../CHANGELOG.md](../CHANGELOG.md) - concise release deltas.
 
 ## Core Topics
 
@@ -29,6 +31,9 @@ source of truth for coverage numbers.
 - [PROMPTFOO_INTEGRATION.md](PROMPTFOO_INTEGRATION.md) - promptfoo-compatible
   evaluation configuration.
 - [SECURITY_REVIEW.md](SECURITY_REVIEW.md) - release security review notes.
+- [../SECURITY.md](../SECURITY.md) - vulnerability disclosure policy.
+- [MIGRATION.md](MIGRATION.md) - v0.5.0 migration decision.
+- [NOTICE_DECISION.md](NOTICE_DECISION.md) - v0.5.0 NOTICE decision.
 - [ATTESTATION.md](ATTESTATION.md) - attestation design and prototype status.
 
 ## Architecture And APIs
