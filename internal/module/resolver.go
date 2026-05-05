@@ -127,7 +127,7 @@ func (c *Cache) Get(name, version string) (*Module, error) {
 		return nil, err
 	}
 
-	data, err := os.ReadFile(modulePath)
+	data, err := os.ReadFile(modulePath) // #nosec G304 -- modulePath is contained under the cache root.
 	if err != nil {
 		return nil, fmt.Errorf("module not in cache: %w", err)
 	}
@@ -156,7 +156,7 @@ func (c *Cache) Put(module *Module) error {
 		return fmt.Errorf("failed to marshal module: %w", err)
 	}
 
-	if err := os.WriteFile(modulePath, data, 0644); err != nil {
+	if err := os.WriteFile(modulePath, data, 0644); err != nil { // #nosec G304 -- modulePath is contained under the cache root.
 		return fmt.Errorf("failed to write to cache: %w", err)
 	}
 
@@ -214,7 +214,7 @@ func (l *LockFile) Load(path string) error {
 		path = "pe.lock"
 	}
 
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- lock files are explicit caller-selected paths.
 	if err != nil {
 		if os.IsNotExist(err) {
 			// Initialize empty lock file
