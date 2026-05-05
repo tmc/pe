@@ -1,6 +1,9 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -239,6 +242,110 @@ func TestMetricsResultStruct(t *testing.T) {
 	}
 	if result.METEOR.Score != 0.72 {
 		t.Error("MetricsResult.METEOR.Score mismatch")
+	}
+}
+
+func TestMetricsCalculationOutputAndSimpleMode(t *testing.T) {
+	old := os.Getenv("PE_TEST_MODE")
+	os.Setenv("PE_TEST_MODE", "true")
+	defer os.Setenv("PE_TEST_MODE", old)
+
+	generated := "the cat sat on the mat"
+	reference := "the cat is on the mat"
+	result, err := calculateMetrics(generated, reference, []string{"bleu", "rouge", "meteor"}, nil, "mock", "test-model", 1, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.BLEU == nil || result.ROUGE == nil || result.METEOR == nil {
+		t.Fatalf("result = %#v", result)
+	}
+	samplesFile := filepath.Join(t.TempDir(), "samples.txt")
+	if err := os.WriteFile(samplesFile, []byte("working code sample\nerror sample\nanother working code sample\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	pass, err := calculateMetrics("working code sample", "", []string{"pass-at-n"}, nil, "mock", "test-model", 2, "", samplesFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pass.PassAtN == nil || pass.PassAtN.NumSamples != 3 {
+		t.Fatalf("pass@n = %#v", pass.PassAtN)
+	}
+	testCasesFile := filepath.Join(t.TempDir(), "cases.json")
+	if err := os.WriteFile(testCasesFile, []byte(`[{"input":"x","expected":"working"}]`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	pass, err = calculateMetrics("working code sample", "", []string{"pass_at_n"}, nil, "mock", "test-model", 1, testCasesFile, "")
+	if err != nil || pass.PassAtN == nil {
+		t.Fatalf("pass@n tests = %#v err=%v", pass, err)
+	}
+	for _, tt := range []struct {
+		metrics []string
+		want    string
+	}{
+		{[]string{"bleu"}, "BLEU requires reference"},
+		{[]string{"rouge"}, "ROUGE requires reference"},
+		{[]string{"meteor"}, "METEOR requires reference"},
+		{[]string{"unknown"}, "unknown metric"},
+	} {
+		if _, err := calculateMetrics("generated", "", tt.metrics, nil, "mock", "test-model", 1, "", ""); err == nil || !strings.Contains(err.Error(), tt.want) {
+			t.Fatalf("%v error = %v, want %q", tt.metrics, err, tt.want)
+		}
+	}
+	if _, err := calculateMetrics("generated", "", []string{"pass-at-n"}, nil, "mock", "test-model", 1, filepath.Join(t.TempDir(), "missing.json"), ""); err == nil {
+		t.Fatal("missing test cases succeeded")
+	}
+	badCases := filepath.Join(t.TempDir(), "bad.json")
+	if err := os.WriteFile(badCases, []byte("{"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := calculateMetrics("generated", "", []string{"pass-at-n"}, nil, "mock", "test-model", 1, badCases, ""); err == nil {
+		t.Fatal("bad test cases succeeded")
+	}
+	if _, err := calculateMetrics("generated", "", []string{"pass-at-n"}, nil, "mock", "test-model", 1, "", filepath.Join(t.TempDir(), "missing.txt")); err == nil {
+		t.Fatal("missing samples succeeded")
+	}
+
+	stats, err := performStatisticalAnalysis("abc", "de", 0.95, 10)
+	if err != nil || stats.Group1Summary.Mean != 3 || stats.Group2Summary.Mean != 2 {
+		t.Fatalf("stats = %#v err=%v", stats, err)
+	}
+	full := &MetricsResult{
+		BLEU:       &BLEUScore{Score: 0.5, BP: 1},
+		ROUGE:      &ROUGEScore{ROUGE1: 0.5, ROUGE2: 0.4, ROUGEL: 0.6, ROUGEW: 0.3},
+		METEOR:     &METEORScore{Score: 0.7},
+		BERTScore:  &BERTScoreResult{Precision: 0.8, Recall: 0.7, F1: 0.75, ConfidenceInterval: [2]float64{0.7, 0.8}},
+		GEval:      &GEvalResult{Scores: map[string]float64{"accuracy": 0.8}, OverallScore: 0.8, Reasoning: "ok"},
+		UniEval:    &UniEvalResult{Dimensions: map[string]float64{"coherence": 0.9}, OverallScore: 0.9},
+		PassAtN:    &PassAtNScore{N: 2, PassRate: 0.5, NumSamples: 2, NumPassed: 1, PassedRates: map[int]float64{1: 0.5}},
+		Statistics: stats,
+	}
+	for _, format := range []string{"table", "json", "yaml", "csv"} {
+		outFile := filepath.Join(t.TempDir(), "metrics."+format)
+		if err := outputMetricsResult(full, outFile, format); err != nil {
+			t.Fatalf("output %s: %v", format, err)
+		}
+		if data, err := os.ReadFile(outFile); err != nil || len(data) == 0 {
+			t.Fatalf("output file %s len=%d err=%v", format, len(data), err)
+		}
+	}
+	if table := formatMetricsTable(full); !strings.Contains(table, "BLEU Score") || !strings.Contains(table, "Pass@N") {
+		t.Fatalf("table = %s", table)
+	}
+	if csv := formatMetricsCSV(full); !strings.Contains(csv, "Metric,Score") || !strings.Contains(csv, "Pass@2") {
+		t.Fatalf("csv = %s", csv)
+	}
+	promptFile := filepath.Join(t.TempDir(), "prompt.txt")
+	if err := os.WriteFile(promptFile, []byte("Hello {{name}}\n-- system-prompt --\nSystem"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := runSimpleMetrics(metricsCmd(), []string{promptFile}); err != nil {
+		t.Fatal(err)
+	}
+	if err := runSimpleMetrics(metricsCmd(), nil); err == nil {
+		t.Fatal("simple without file succeeded")
+	}
+	if err := runSimpleMetrics(metricsCmd(), []string{filepath.Join(t.TempDir(), "missing.txt")}); err == nil {
+		t.Fatal("simple missing file succeeded")
 	}
 }
 
