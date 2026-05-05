@@ -1297,9 +1297,9 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Move `optimize` command to optimization group
 - [x] Move `semantic` command to optimization group
 - [x] Move `evolve` command to optimization group
-- [ ] Move `textgrad` command to optimization group
-- [ ] Move `pe2` command to optimization group
-- [ ] Move `gaso` command to optimization group
+- [x] Move `textgrad` command to optimization group
+- [x] Move `pe2` command to optimization group
+- [x] Move `gaso` command to optimization group
 - [ ] Move `fusion` command to optimization group
 
 ##### Module Commands Group
