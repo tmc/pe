@@ -128,12 +128,15 @@ Prepare version number and comprehensive changelog for release.
 
 Current status:
 - `pe version` reports v0.5.0.
+- `pe version` and `pe --version` both report `pe version v0.5.0 darwin/arm64`
+  in the local release-prep workspace.
 - RELEASE_NOTES.md and CHANGELOG.md are refreshed for the current release
   candidate.
+- `docs/MIGRATION.md` records that v0.5.0 has no required migration steps.
 
 Remaining tasks:
-1. Verify v0.5.0 consistency across all current user-facing docs.
-2. Document the migration decision: either add `docs/MIGRATION.md` /
+1. DONE: Verify v0.5.0 consistency across all current user-facing docs.
+2. DONE: Document the migration decision: either add `docs/MIGRATION.md` /
    `docs/UPGRADING.md` for breaking changes, or record that v0.5.0 has no
    required migration steps.
 3. Tag version in git when all P1 release blockers below are closed.

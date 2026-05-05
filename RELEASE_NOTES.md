@@ -96,10 +96,10 @@ release candidate state of PE.
 
 Current release validation should include:
 
-- `go test ./...`
-- `go test -cover ./...`
-- `go vet ./...`
-- `govulncheck ./...`
+- `GOTOOLCHAIN=go1.25.9 go test ./...`
+- `GOTOOLCHAIN=go1.25.9 go test -cover ./...`
+- `GOTOOLCHAIN=go1.25.9 go vet ./...`
+- `GOTOOLCHAIN=go1.25.9 govulncheck ./...`
 - `go install .`
 - Example validation for `example/` and `examples/`
 
