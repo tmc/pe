@@ -4,9 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -31,7 +35,7 @@ var (
 func init() {
 	modCmd.AddCommand(modInitCmd)
 	modCmd.AddCommand(modListCmd)
-	modCmd.AddCommand(modGetCmd) 
+	modCmd.AddCommand(modGetCmd)
 	modCmd.AddCommand(modDownloadCmd)
 	modCmd.AddCommand(modTidyCmd)
 	modCmd.AddCommand(modVendorCmd)
@@ -125,12 +129,12 @@ func runModList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to list modules: %w", err)
 	}
-	
+
 	if len(modules) == 0 {
 		fmt.Println("No modules found in registry")
 		return nil
 	}
-	
+
 	fmt.Printf("Available modules:\n\n")
 	for _, mod := range modules {
 		fmt.Printf("  %s@%s - %s\n", mod.Name, mod.Version, mod.Description)
@@ -141,19 +145,19 @@ func runModList(cmd *cobra.Command, args []string) error {
 			fmt.Printf("    Tags: %s\n", strings.Join(mod.Tags, ", "))
 		}
 	}
-	
+
 	return nil
 }
 
 func runModGet(cmd *cobra.Command, args []string) error {
 	moduleName := args[0]
-	
+
 	registry := module.DefaultRegistry()
 	mod, err := registry.Get(moduleName)
 	if err != nil {
 		return fmt.Errorf("failed to get module %s: %w", moduleName, err)
 	}
-	
+
 	fmt.Printf("Module: %s@%s\n", mod.Name, mod.Version)
 	fmt.Printf("Description: %s\n", mod.Description)
 	if mod.Author != "" {
@@ -174,29 +178,29 @@ func runModGet(cmd *cobra.Command, args []string) error {
 			fmt.Printf("  - %s\n", file)
 		}
 	}
-	
+
 	return nil
 }
 
 func runModSearch(cmd *cobra.Command, args []string) error {
 	query := args[0]
-	
+
 	registry := module.DefaultRegistry()
 	modules, err := registry.Search(query)
 	if err != nil {
 		return fmt.Errorf("failed to search modules: %w", err)
 	}
-	
+
 	if len(modules) == 0 {
 		fmt.Printf("No modules found matching '%s'\n", query)
 		return nil
 	}
-	
+
 	fmt.Printf("Modules matching '%s':\n\n", query)
 	for _, mod := range modules {
 		fmt.Printf("  %s@%s - %s\n", mod.Name, mod.Version, mod.Description)
 	}
-	
+
 	return nil
 }
 
@@ -206,12 +210,12 @@ func runModPublish(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read module.json: %w", err)
 	}
-	
+
 	var mod module.Module
 	if err := json.Unmarshal(data, &mod); err != nil {
 		return fmt.Errorf("failed to parse module.json: %w", err)
 	}
-	
+
 	// Validate module
 	if mod.Name == "" {
 		return fmt.Errorf("module name is required")
@@ -219,7 +223,7 @@ func runModPublish(cmd *cobra.Command, args []string) error {
 	if mod.Version == "" {
 		return fmt.Errorf("module version is required")
 	}
-	
+
 	// Get list of files to publish
 	if len(mod.Files) == 0 {
 		// Default to all .prompt files
@@ -228,17 +232,17 @@ func runModPublish(cmd *cobra.Command, args []string) error {
 			mod.Files = files
 		}
 	}
-	
+
 	// Set metadata
 	mod.PublishedAt = time.Now()
 	mod.UpdatedAt = time.Now()
-	
+
 	// Publish to registry
 	registry := module.DefaultRegistry()
 	if err := registry.Publish(&mod, "."); err != nil {
 		return fmt.Errorf("failed to publish module: %w", err)
 	}
-	
+
 	fmt.Printf("Successfully published %s@%s\n", mod.Name, mod.Version)
 	return nil
 }
@@ -434,7 +438,7 @@ func runModDownload(cmd *cobra.Command, args []string) error {
 			}
 			continue
 		}
-		
+
 		// Download the module files
 		if err := registry.Download(mod, filepath.Join(".pe", "cache")); err != nil {
 			return fmt.Errorf("downloading module %s: %w", req.Mod, err)
@@ -462,36 +466,153 @@ func runModTidy(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("parsing pe.mod: %w", err)
 	}
 
-	fmt.Println("Analyzing prompt dependencies...")
+	out := cmd.OutOrStdout()
+	fmt.Fprintln(out, "Analyzing prompt dependencies...")
 
-	// TODO: Scan prompt files for pe://module/prompt references
-	// For now, validate existing dependencies
-	var updated bool
+	refs, err := scanPEModuleReferences(".")
+	if err != nil {
+		return err
+	}
 
-	// Remove unused dependencies (placeholder logic)
-	var filteredRequires []pemod.Require
+	required := make(map[string]bool)
 	for _, req := range file.Require {
-		// TODO: Check if requirement is actually used
-		filteredRequires = append(filteredRequires, req)
+		required[string(req.Mod)] = true
 	}
 
-	if len(filteredRequires) != len(file.Require) {
-		file.Require = filteredRequires
-		updated = true
-	}
-
-	// Write updated pe.mod if changes were made
-	if updated {
-		content := file.Format()
-		if err := os.WriteFile("pe.mod", []byte(content), 0644); err != nil {
-			return fmt.Errorf("writing pe.mod: %w", err)
+	var missing []string
+	for mod := range refs {
+		if !required[mod] {
+			missing = append(missing, mod)
 		}
-		fmt.Println("pe.mod updated")
-	} else {
-		fmt.Println("pe.mod is already tidy")
+	}
+	sort.Strings(missing)
+
+	var unused []string
+	for _, req := range file.Require {
+		mod := string(req.Mod)
+		if _, ok := refs[mod]; !ok {
+			unused = append(unused, mod)
+		}
+	}
+	sort.Strings(unused)
+
+	fmt.Fprintf(out, "found %d module references in %d files\n", countPEModuleReferences(refs), countPEModuleReferenceFiles(refs))
+	for _, mod := range missing {
+		fmt.Fprintf(out, "missing dependency: %s (referenced by %s)\n", mod, strings.Join(refs[mod], ", "))
+	}
+	for _, mod := range unused {
+		fmt.Fprintf(out, "unused dependency: %s\n", mod)
+	}
+	if len(missing) == 0 && len(unused) == 0 {
+		fmt.Fprintln(out, "pe.mod is tidy")
 	}
 
 	return nil
+}
+
+var peRefRE = regexp.MustCompile(`pe://[^\s"'<>]+`)
+
+func scanPEModuleReferences(root string) (map[string][]string, error) {
+	refs := make(map[string][]string)
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		name := d.Name()
+		if d.IsDir() {
+			switch name {
+			case ".git", ".pe", ".beads", "vendor", "node_modules":
+				return filepath.SkipDir
+			}
+			if name != "." && strings.HasPrefix(name, ".") {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !d.Type().IsRegular() || !isPEReferenceFile(path) {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("reading %s: %w", path, err)
+		}
+		for _, raw := range peRefRE.FindAllString(string(data), -1) {
+			mod, ok := moduleFromPERef(raw)
+			if !ok {
+				continue
+			}
+			file := filepath.ToSlash(path)
+			if file == "." {
+				file = name
+			}
+			if !containsPEReferenceFile(refs[mod], file) {
+				refs[mod] = append(refs[mod], file)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("scanning module references: %w", err)
+	}
+	for mod := range refs {
+		sort.Strings(refs[mod])
+	}
+	return refs, nil
+}
+
+func isPEReferenceFile(path string) bool {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".prompt", ".txt", ".md", ".yaml", ".yml", ".json", ".toml", ".star", ".tmpl", ".tpl":
+		return true
+	default:
+		return false
+	}
+}
+
+func moduleFromPERef(ref string) (string, bool) {
+	ref = strings.TrimRight(ref, ".,;:)]}")
+	u, err := url.Parse(ref)
+	if err != nil || u.Scheme != "pe" || u.Host == "" {
+		return "", false
+	}
+	parts := strings.FieldsFunc(strings.Trim(u.Path, "/"), func(r rune) bool { return r == '/' })
+	if strings.Contains(u.Host, ".") {
+		if len(parts) >= 2 {
+			return u.Host + "/" + parts[0] + "/" + parts[1], true
+		}
+		if len(parts) == 1 {
+			return u.Host + "/" + parts[0], true
+		}
+		return u.Host, true
+	}
+	return u.Host, true
+}
+
+func countPEModuleReferences(refs map[string][]string) int {
+	var n int
+	for _, files := range refs {
+		n += len(files)
+	}
+	return n
+}
+
+func countPEModuleReferenceFiles(refs map[string][]string) int {
+	files := make(map[string]bool)
+	for _, refs := range refs {
+		for _, file := range refs {
+			files[file] = true
+		}
+	}
+	return len(files)
+}
+
+func containsPEReferenceFile(list []string, s string) bool {
+	for _, item := range list {
+		if item == s {
+			return true
+		}
+	}
+	return false
 }
 
 func runModVendor(cmd *cobra.Command, args []string) error {

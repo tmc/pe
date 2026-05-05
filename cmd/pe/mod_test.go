@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -108,6 +110,91 @@ func TestModTidyCmd_NoPeMod(t *testing.T) {
 	err := runModTidy(modTidyCmd, nil)
 	if err == nil {
 		t.Error("Expected error when pe.mod doesn't exist")
+	}
+}
+
+func TestModTidyCmd_ReportsMissingAndUnusedDeps(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	err := os.WriteFile("pe.mod", []byte(`module example.com/app
+
+pe 1
+
+require (
+	github.com/example/used v1.0.0
+	github.com/example/unused v1.0.0
+)
+`), 0644)
+	if err != nil {
+		t.Fatalf("writing pe.mod: %v", err)
+	}
+	if err := os.WriteFile("review.prompt", []byte("use pe://github.com/example/used/review\n"), 0644); err != nil {
+		t.Fatalf("writing review.prompt: %v", err)
+	}
+	if err := os.WriteFile("summarize.yaml", []byte("prompt: pe://github.com/example/missing/summarize\n"), 0644); err != nil {
+		t.Fatalf("writing summarize.yaml: %v", err)
+	}
+	if err := os.Mkdir(".pe", 0755); err != nil {
+		t.Fatalf("creating .pe: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(".pe", "ignored.prompt"), []byte("pe://github.com/example/ignored/prompt\n"), 0644); err != nil {
+		t.Fatalf("writing ignored prompt: %v", err)
+	}
+
+	var out bytes.Buffer
+	cmd := *modTidyCmd
+	cmd.SetOut(&out)
+	if err := runModTidy(&cmd, nil); err != nil {
+		t.Fatalf("runModTidy: %v", err)
+	}
+
+	got := out.String()
+	for _, want := range []string{
+		"found 2 module references in 2 files",
+		"missing dependency: github.com/example/missing (referenced by summarize.yaml)",
+		"unused dependency: github.com/example/unused",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("tidy output missing %q\noutput:\n%s", want, got)
+		}
+	}
+}
+
+func TestModuleFromPERef(t *testing.T) {
+	tests := []struct {
+		name string
+		ref  string
+		want string
+		ok   bool
+	}{
+		{
+			name: "simple module",
+			ref:  "pe://basic/speak-like-a-pirate",
+			want: "basic",
+			ok:   true,
+		},
+		{
+			name: "github module",
+			ref:  "pe://github.com/example/prompts/review)",
+			want: "github.com/example/prompts",
+			ok:   true,
+		},
+		{
+			name: "bad scheme",
+			ref:  "http://github.com/example/prompts/review",
+			ok:   false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := moduleFromPERef(tt.ref)
+			if ok != tt.ok || got != tt.want {
+				t.Fatalf("moduleFromPERef(%q) = %q, %v; want %q, %v", tt.ref, got, ok, tt.want, tt.ok)
+			}
+		})
 	}
 }
 
