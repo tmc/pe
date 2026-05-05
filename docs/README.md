@@ -45,6 +45,8 @@ source of truth for coverage numbers.
 - [API_REFERENCE.md](API_REFERENCE.md) - package and provider API notes.
 - [LOCAL_RUNTIME_PROVIDER_DESIGN.md](LOCAL_RUNTIME_PROVIDER_DESIGN.md) -
   local-runtime provider design.
+- [PROVIDER_INTERFACE_AUDIT.md](PROVIDER_INTERFACE_AUDIT.md) - current
+  `llm.Provider` and `inference.Provider` migration map.
 - [LLM_CLI_STANDARDS.md](LLM_CLI_STANDARDS.md) - CLI provider conventions.
 - [STARLARK_EXTENSION.md](STARLARK_EXTENSION.md) - Starlark extension support.
 

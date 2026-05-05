@@ -435,11 +435,11 @@ specific release need and a reviewed safety model.
 The old TODO file is superseded. Keep this roadmap current as the tracked source of truth.
 
 Need to:
-1. Review completed items and mark appropriately
-2. Add new work items to this roadmap
-3. Update project status
-4. Update references to point at ROADMAP.md
-5. Remove obsolete TODO and Beads references as they are found
+1. DONE current pass: Review completed items and mark appropriately
+2. DONE current pass: Add new work items to this roadmap
+3. DONE current pass: Update project status
+4. DONE current pass: Update references to point at ROADMAP.md
+5. DONE current pass: Remove obsolete TODO and Beads references as they are found
 
 
 #### Document and harden Ollama provider
@@ -1135,14 +1135,14 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 #### Phase 1: Provider Interface Consolidation (Weeks 1-2)
 
 ##### Audit & Analysis
-- [ ] Map all usages of `llm.Provider` in the codebase
-- [ ] Map all usages of `inference.Provider` in the codebase
-- [ ] Document which commands use which interface
-- [ ] Identify all provider implementations (OpenAI, Anthropic, cgpt, etc.)
-- [ ] Analyze migration complexity for each usage
-- [ ] Create compatibility matrix for provider features
-- [ ] Document breaking changes that will occur
-- [ ] Review test coverage for provider-dependent code
+- [x] Map all usages of `llm.Provider` in the codebase
+- [x] Map all usages of `inference.Provider` in the codebase
+- [x] Document which commands use which interface
+- [x] Identify all provider implementations (OpenAI, Anthropic, cgpt, etc.)
+- [x] Analyze migration complexity for each usage
+- [x] Create compatibility matrix for provider features
+- [x] Document breaking changes that will occur
+- [x] Review test coverage for provider-dependent code
 
 ##### Migration Preparation
 - [x] Create `internal/inference/migration.go` with LegacyAdapter
