@@ -28,6 +28,10 @@ Use the adapters in `internal/inference/migration.go` at package boundaries:
   `inference.Provider`.
 - `inference.GetLegacyProvider(p, model)` adapts an `inference.Provider` to
   `llm.Provider`.
+- `inference.AsProvider(p)` accepts either provider interface and returns an
+  `inference.Provider`.
+- `inference.AsLegacyProvider(p, model)` accepts either provider interface and
+  returns an `llm.Provider`.
 - `inference.RegisterProviderSpec(client, spec, config)` creates and registers
   a provider from a provider spec.
 

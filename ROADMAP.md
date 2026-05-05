@@ -1149,7 +1149,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Implement adapter for `llm.Provider` → `inference.Provider`
 - [x] Write adapter unit tests
 - [x] Create migration helpers for common patterns
-- [ ] Add temporary compatibility layer
+- [x] Add temporary compatibility layer
 - [x] Document migration patterns for contributors
 
 ##### Command Migration

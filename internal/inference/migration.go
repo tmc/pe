@@ -355,6 +355,30 @@ func GetLegacyProvider(modern Provider, model string) llm.Provider {
 	return NewModernAdapter(modern, model)
 }
 
+// AsProvider returns provider as an inference Provider.
+func AsProvider(provider interface{}) (Provider, error) {
+	switch p := provider.(type) {
+	case Provider:
+		return p, nil
+	case llm.Provider:
+		return MigrateProvider(p), nil
+	default:
+		return nil, fmt.Errorf("unsupported provider type %T", provider)
+	}
+}
+
+// AsLegacyProvider returns provider as an llm Provider.
+func AsLegacyProvider(provider interface{}, model string) (llm.Provider, error) {
+	switch p := provider.(type) {
+	case llm.Provider:
+		return p, nil
+	case Provider:
+		return GetLegacyProvider(p, model), nil
+	default:
+		return nil, fmt.Errorf("unsupported provider type %T", provider)
+	}
+}
+
 // RegisterProviderSpec creates the provider named by spec and registers it
 // with client under the same key.
 func RegisterProviderSpec(client *Client, spec string, config map[string]interface{}) (Provider, error) {

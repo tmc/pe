@@ -295,3 +295,37 @@ func TestRegisterProviderSpecRejectsNilClient(t *testing.T) {
 		t.Fatalf("RegisterProviderSpec accepted nil client")
 	}
 }
+
+func TestCompatibilityLayer(t *testing.T) {
+	legacy := &legacyProvider{name: "legacy", model: "legacy-model"}
+	modern, err := inference.AsProvider(legacy)
+	if err != nil {
+		t.Fatalf("AsProvider legacy: %v", err)
+	}
+	if modern.Name() != "legacy" {
+		t.Fatalf("modern name = %q", modern.Name())
+	}
+	if got, err := inference.AsProvider(modern); err != nil || got != modern {
+		t.Fatalf("AsProvider modern = %v, %v", got, err)
+	}
+
+	legacyAgain, err := inference.AsLegacyProvider(modern, "legacy-model")
+	if err != nil {
+		t.Fatalf("AsLegacyProvider modern: %v", err)
+	}
+	if legacyAgain != legacy {
+		t.Fatalf("AsLegacyProvider did not unwrap legacy provider")
+	}
+	if got, err := inference.AsLegacyProvider(legacy, "ignored"); err != nil || got != legacy {
+		t.Fatalf("AsLegacyProvider legacy = %v, %v", got, err)
+	}
+}
+
+func TestCompatibilityLayerRejectsUnknownTypes(t *testing.T) {
+	if _, err := inference.AsProvider("not a provider"); err == nil {
+		t.Fatalf("AsProvider accepted string")
+	}
+	if _, err := inference.AsLegacyProvider("not a provider", ""); err == nil {
+		t.Fatalf("AsLegacyProvider accepted string")
+	}
+}
