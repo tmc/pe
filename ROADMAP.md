@@ -1704,12 +1704,12 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Create contributor guides
 
 ##### CI/CD Updates
-- [ ] Update GitHub Actions workflows
-- [ ] Add test coverage checks
-- [ ] Add performance regression tests
-- [ ] Add security scanning
+- [x] Update GitHub Actions workflows
+- [x] Add test coverage checks
+- [x] Add performance regression tests
+- [x] Add security scanning
 - [ ] Update release process
-- [ ] Add automated benchmarks
+- [x] Add automated benchmarks
 
 ##### Performance Optimization
 - [ ] Profile critical paths
