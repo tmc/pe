@@ -1,0 +1,34 @@
+# Representative untrusted-input checks for release security review.
+
+! pe expand config-traversal.yaml
+stderr 'config file reference escapes config directory'
+
+! pe exp attest manifest --root root ../secret.txt
+stderr 'path escapes manifest root'
+
+! pe exp cache verify ../aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+stderr 'invalid sha256 key'
+
+pe run-text shell-looking.prompt --var payload='$(touch marker)'
+stdout 'Payload: \$\(touch marker\)'
+! exists marker
+
+-- config-traversal.yaml --
+prompts: ../secret.txt
+providers: [mock]
+tests: []
+
+-- secret.txt --
+secret
+
+-- root/ok.txt --
+ok
+
+-- shell-looking.prompt --
+---
+kind: pe.text.v1
+inputs:
+  payload:
+    type: string
+---
+Payload: {{ .payload }}

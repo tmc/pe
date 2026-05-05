@@ -185,12 +185,12 @@ Current status:
 - `GOTOOLCHAIN=go1.25.9 govulncheck ./...` reports no vulnerabilities.
 
 Remaining tasks:
-1. Triage gosec G204 and G304 findings
+1. Triage remaining gosec G204 command-execution findings
 2. DONE: Add or update a concise SECURITY.md disclosure policy
-3. Review file path traversal protections in config expansion, Starlark loading,
-   modules, and metadata paths
+3. DONE: Review file path traversal protections in config expansion, Starlark
+   loading, modules, and metadata paths
 4. DONE: Review provider stderr/body error propagation for secret redaction
-5. Test representative commands with untrusted input
+5. DONE: Test representative commands with untrusted input
 
 Tools to use:
 - gosec (static analysis)
@@ -201,6 +201,10 @@ Recent closure:
 - GitHub API calls in `cmd/pe` use an explicit 30-second timeout client instead
   of `http.DefaultClient`.
 - `TestGitHubHTTPClientHasTimeout` verifies the timeout client.
+- Path traversal checks cover config expansion, module registry/cache paths,
+  module publish paths, unsigned manifests, and local cache objects.
+- `tests/testdata/script/security_untrusted.txt` covers representative CLI
+  rejection of untrusted path inputs and shell-looking executable-text data.
 
 Critical areas:
 - Command execution (scripttest, providers)

@@ -26,6 +26,7 @@ gosec ./...
 gosec -fmt=json -no-fail ./... >/tmp/pe-gosec.json 2>/tmp/pe-gosec.err
 jq -r '.Stats | to_entries[] | "\(.key)=\(.value)"' /tmp/pe-gosec.json
 jq -r '.Issues | group_by(.rule_id)[] | "\(.[0].rule_id)\t\(length)\t\(.[0].details)"' /tmp/pe-gosec.json | sort
+GOTOOLCHAIN=go1.25.9 go test ./cmd/pe ./internal/module ./tests -run 'TestSafeConfigPathRejectsTraversal|TestModuleFilePathRejectsTraversal|TestLocalRegistryRejectsTraversal|TestGitHubRegistryDownloadRejectsTraversal|TestCache_RejectsTraversal|TestUnsignedManifestRejectsEscapesAndSymlinks|TestCacheRejectsUnsafeKeysAndSymlinks|TestCacheManifestRejectsUnsafePaths|TestScripts/security_untrusted' -count=1
 ```
 
 ## Findings
@@ -56,10 +57,10 @@ jq -r '.Issues | group_by(.rule_id)[] | "\(.[0].rule_id)\t\(length)\t\(.[0].deta
   shell, which limits shell injection. Risk remains where user config controls
   executable names, command templates, plugin discovery paths, or cgpt options.
 - File/path use: many commands intentionally read and write user-supplied paths.
-  Higher-risk areas are config expansion and Starlark loading, where file
-  references are joined relative to a base path without an obvious containment
-  check, and module paths where module names or metadata-provided prompt paths
-  can influence files read from `.pe/modules`.
+  Config expansion, module registry/cache paths, module publish paths,
+  unsigned manifests, and local cache objects have containment checks and
+  focused traversal tests. Broad CLI file reads remain intended behavior when
+  users explicitly pass local paths.
 - Network/providers: OpenAI and Anthropic providers use HTTPS defaults and
   client timeouts, but `baseURL` is configurable. GitHub gist calls in `cmd/pe`
   use an explicit 30-second timeout client. The `pe serve` local HTTP server
@@ -80,8 +81,11 @@ jq -r '.Issues | group_by(.rule_id)[] | "\(.[0].rule_id)\t\(length)\t\(.[0].deta
   cgpt, custom metric, and scripttest subprocesses remain intended behavior for
   trusted local configuration or test fixtures.
 - G304 triage: config expansion, Starlark `load_tests`, module cache paths, and
-  module publish prompt paths now have containment checks. Broad CLI file reads
-  remain intended behavior when users pass local paths.
+  module publish prompt paths now have containment checks. Unsigned manifests
+  and cache objects reject path escapes, unsafe keys, and symlinks. Broad CLI
+  file reads remain intended behavior when users pass local paths.
+- Representative untrusted-input CLI checks live in
+  `tests/testdata/script/security_untrusted.txt`.
 - GitHub API calls now use an explicit 30-second timeout client instead of
   `http.DefaultClient`; `TestGitHubHTTPClientHasTimeout` covers the setting.
   Keep `pe serve` timeout coverage covered by command-level tests or review
