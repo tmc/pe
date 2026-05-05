@@ -93,6 +93,27 @@ func TestGenericCLIProvider_Generate_Mock(t *testing.T) {
 	}
 }
 
+func TestGenericCLIProvider_CommandTemplateQuotesPrompt(t *testing.T) {
+	p, err := NewGenericCLIProvider("echo-model", map[string]interface{}{
+		"command": "echo {{.Prompt}}",
+	})
+	if err != nil {
+		t.Fatalf("NewGenericCLIProvider() failed: %v", err)
+	}
+
+	prompt := `hello --flag "$(touch marker)"`
+	cmd, err := p.buildCommand(context.Background(), makeTemplateData("echo-model", prompt, p.options, llm.GenerateOptions{}))
+	if err != nil {
+		t.Fatalf("buildCommand() failed: %v", err)
+	}
+	if len(cmd.Args) != 2 {
+		t.Fatalf("cmd.Args = %#v, want executable plus one prompt arg", cmd.Args)
+	}
+	if cmd.Args[1] != prompt {
+		t.Fatalf("prompt arg = %q, want %q", cmd.Args[1], prompt)
+	}
+}
+
 func TestGenericCLIProvider_Generate_StructuredJSON(t *testing.T) {
 	options := map[string]interface{}{
 		"command":             `sh -c 'printf '\''{"output":"hi","prompt_tokens":3,"completion_tokens":5,"total_tokens":8,"latency_ms":21,"metrics":{"tokens_per_second":99.5}}'\'''`,

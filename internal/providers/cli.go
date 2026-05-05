@@ -212,7 +212,11 @@ func (p *GenericCLIProvider) buildCommand(ctx context.Context, data templateData
 	}
 
 	var cmdStr bytes.Buffer
-	if err := tmpl.Execute(&cmdStr, data); err != nil {
+	commandData := data
+	if data.HasPrompt {
+		commandData.Prompt = shellquote.Join(data.Prompt)
+	}
+	if err := tmpl.Execute(&cmdStr, commandData); err != nil {
 		return nil, fmt.Errorf("failed to execute command template: %w", err)
 	}
 

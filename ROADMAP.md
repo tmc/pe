@@ -185,7 +185,7 @@ Current status:
 - `GOTOOLCHAIN=go1.25.9 govulncheck ./...` reports no vulnerabilities.
 
 Remaining tasks:
-1. Triage remaining gosec G204 command-execution findings
+1. DONE: Triage remaining gosec G204 command-execution findings
 2. DONE: Add or update a concise SECURITY.md disclosure policy
 3. DONE: Review file path traversal protections in config expansion, Starlark
    loading, modules, and metadata paths
@@ -205,6 +205,8 @@ Recent closure:
   module publish paths, unsigned manifests, and local cache objects.
 - `tests/testdata/script/security_untrusted.txt` covers representative CLI
   rejection of untrusted path inputs and shell-looking executable-text data.
+- Generic CLI command templates now quote prompt data before shell-style
+  splitting so prompt text cannot add argv entries.
 
 Critical areas:
 - Command execution (scripttest, providers)

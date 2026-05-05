@@ -27,6 +27,7 @@ gosec -fmt=json -no-fail ./... >/tmp/pe-gosec.json 2>/tmp/pe-gosec.err
 jq -r '.Stats | to_entries[] | "\(.key)=\(.value)"' /tmp/pe-gosec.json
 jq -r '.Issues | group_by(.rule_id)[] | "\(.[0].rule_id)\t\(length)\t\(.[0].details)"' /tmp/pe-gosec.json | sort
 GOTOOLCHAIN=go1.25.9 go test ./cmd/pe ./internal/module ./tests -run 'TestSafeConfigPathRejectsTraversal|TestModuleFilePathRejectsTraversal|TestLocalRegistryRejectsTraversal|TestGitHubRegistryDownloadRejectsTraversal|TestCache_RejectsTraversal|TestUnsignedManifestRejectsEscapesAndSymlinks|TestCacheRejectsUnsafeKeysAndSymlinks|TestCacheManifestRejectsUnsafePaths|TestScripts/security_untrusted' -count=1
+GOTOOLCHAIN=go1.25.9 go test ./internal/providers -run 'TestGenericCLIProvider' -count=1
 ```
 
 ## Findings
@@ -54,8 +55,10 @@ GOTOOLCHAIN=go1.25.9 go test ./cmd/pe ./internal/module ./tests -run 'TestSafeCo
 - Command execution: command execution is concentrated in CLI providers, cgpt
   adapters, plugin execution, metrics helpers, and scripttests. Most calls use
   `exec.Command` or `exec.CommandContext` with argv rather than an explicit
-  shell, which limits shell injection. Risk remains where user config controls
-  executable names, command templates, plugin discovery paths, or cgpt options.
+  shell, which limits shell injection. Generic CLI command templates now quote
+  prompt data before shell-style splitting, so prompt text cannot add argv
+  entries. Risk remains where trusted local config controls executable names,
+  command templates, plugin discovery paths, or cgpt options.
 - File/path use: many commands intentionally read and write user-supplied paths.
   Config expansion, module registry/cache paths, module publish paths,
   unsigned manifests, and local cache objects have containment checks and
@@ -79,7 +82,9 @@ GOTOOLCHAIN=go1.25.9 go test ./cmd/pe ./internal/module ./tests -run 'TestSafeCo
 - G204 triage: plugin execution is now limited to `PE_PLUGIN_PATH` discovery and
   explicit plugin runs instead of PATH-wide startup execution. Generic CLI,
   cgpt, custom metric, and scripttest subprocesses remain intended behavior for
-  trusted local configuration or test fixtures.
+  trusted local configuration or test fixtures. Generic CLI prompt interpolation
+  is quoted before argv splitting and covered by
+  `TestGenericCLIProvider_CommandTemplateQuotesPrompt`.
 - G304 triage: config expansion, Starlark `load_tests`, module cache paths, and
   module publish prompt paths now have containment checks. Unsigned manifests
   and cache objects reject path escapes, unsafe keys, and symlinks. Broad CLI
