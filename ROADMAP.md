@@ -1441,31 +1441,31 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 #### Phase 5: Optimization Decoupling (Week 7)
 
 ##### Interface Design
-- [ ] Create `internal/optimization/interfaces.go`
-- [ ] Define Optimizer interface
-- [ ] Define Evaluator interface
-- [ ] Define GradientProvider interface
-- [ ] Define ObjectiveFunction interface
-- [ ] Add optimization context types
-- [ ] Document interface contracts
+- [x] Create `internal/optimization/interfaces.go`
+- [x] Define Optimizer interface
+- [x] Define Evaluator interface
+- [x] Define GradientProvider interface
+- [x] Define ObjectiveFunction interface
+- [x] Add optimization context types
+- [x] Document interface contracts
 
 ##### Strategy Pattern Implementation
-- [ ] Create `internal/optimization/strategy.go`
-- [ ] Implement OptimizationStrategy type
-- [ ] Add strategy selection logic
-- [ ] Implement composite strategies
-- [ ] Add strategy chaining
-- [ ] Create strategy factory
-- [ ] Add strategy configuration
+- [x] Create `internal/optimization/strategy.go`
+- [x] Implement OptimizationStrategy type
+- [x] Add strategy selection logic
+- [x] Implement composite strategies
+- [x] Add strategy chaining
+- [x] Create strategy factory
+- [x] Add strategy configuration
 
 ##### Provider Adapters
-- [ ] Create `internal/optimization/adapters/` directory
-- [ ] Implement ProviderAdapter base type
-- [ ] Add OpenAI adapter
-- [ ] Add Anthropic adapter
-- [ ] Add generic inference adapter
-- [ ] Implement adapter caching
-- [ ] Add adapter metrics
+- [x] Create `internal/optimization/adapters/` directory
+- [x] Implement ProviderAdapter base type
+- [x] Add OpenAI adapter
+- [x] Add Anthropic adapter
+- [x] Add generic inference adapter
+- [x] Implement adapter caching
+- [x] Add adapter metrics
 
 ##### Optimizer Refactoring
 - [ ] Refactor textual gradient optimizer to use interfaces

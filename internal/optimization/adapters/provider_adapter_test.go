@@ -50,6 +50,7 @@ func (m *MockInferenceProvider) Close() error {
 type MockLLMProvider struct {
 	name  string
 	model string
+	calls int
 }
 
 func (m *MockLLMProvider) Name() string {
@@ -61,6 +62,7 @@ func (m *MockLLMProvider) Model() string {
 }
 
 func (m *MockLLMProvider) Generate(ctx context.Context, prompt string, options llm.GenerateOptions) (*llm.GenerateResponse, error) {
+	m.calls++
 	return &llm.GenerateResponse{
 		Text:             "mock response",
 		PromptTokens:     10,
@@ -299,5 +301,74 @@ func TestProviderAdapterFactory_CreateAdapterFromSpec_Invalid(t *testing.T) {
 	_, err := factory.CreateAdapterFromSpec("nonexistent:model", nil)
 	if err == nil {
 		t.Error("expected error for invalid provider spec")
+	}
+}
+
+func TestNativeProviderAdapters(t *testing.T) {
+	tests := []struct {
+		name string
+		got  optimization.LanguageModelProvider
+		want string
+	}{
+		{"openai", NewOpenAIAdapter("test-key", ""), "openai"},
+		{"anthropic", NewAnthropicAdapter("test-key", ""), "anthropic"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.got.Name() != tt.want {
+				t.Fatalf("Name = %q, want %q", tt.got.Name(), tt.want)
+			}
+		})
+	}
+}
+
+func TestCachedProviderAdapterCachesResponses(t *testing.T) {
+	mock := &MockLLMProvider{name: "test-llm", model: "gpt-4"}
+	base := NewLLMProviderAdapter(mock)
+	adapter := NewCachedProviderAdapter(base)
+
+	first, err := adapter.Generate(context.Background(), "test prompt", optimization.GenerationOptions{})
+	if err != nil {
+		t.Fatalf("Generate first: %v", err)
+	}
+	second, err := adapter.Generate(context.Background(), "test prompt", optimization.GenerationOptions{})
+	if err != nil {
+		t.Fatalf("Generate second: %v", err)
+	}
+	if mock.calls != 1 {
+		t.Fatalf("provider calls = %d, want 1", mock.calls)
+	}
+	if first == second {
+		t.Fatal("cached adapter returned shared response pointer")
+	}
+	if second.Text != first.Text {
+		t.Fatalf("cached response text = %q, want %q", second.Text, first.Text)
+	}
+}
+
+func TestMetricsProviderAdapterRecordsMetrics(t *testing.T) {
+	mock := &MockLLMProvider{name: "test-llm", model: "gpt-4"}
+	base := NewLLMProviderAdapter(mock)
+	adapter := NewMetricsProviderAdapter(base)
+
+	if _, err := adapter.Generate(context.Background(), "test prompt", optimization.GenerationOptions{}); err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+
+	metrics := adapter.Metrics()
+	if metrics.Requests != 1 {
+		t.Fatalf("Requests = %d, want 1", metrics.Requests)
+	}
+	if metrics.Errors != 0 {
+		t.Fatalf("Errors = %d, want 0", metrics.Errors)
+	}
+	if metrics.TotalTokens != 15 {
+		t.Fatalf("TotalTokens = %d, want 15", metrics.TotalTokens)
+	}
+	if metrics.TotalCost != 0.001 {
+		t.Fatalf("TotalCost = %v, want 0.001", metrics.TotalCost)
+	}
+	if metrics.LastFinishCode != "stop" {
+		t.Fatalf("LastFinishCode = %q, want stop", metrics.LastFinishCode)
 	}
 }
