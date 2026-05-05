@@ -8,7 +8,10 @@ directory for generated files and does not require provider credentials.
 
 - `build.yaml` - Minimal input for `pe build`.
 - `convert.yaml` - Minimal input for `pe convert`.
+- `eval-regression-gate/` - Regression gate fixture for `pe diff --fail-on-regression`.
 - `prompt.txt` - Plain prompt file used by prompt-oriented commands.
+- `release-local-workflows/` - Release-facing local workflow smokes for `diff`,
+  `mod tidy`, `exp attest`, and `exp cache`.
 - `smoke.sh` - Runs the commands below with `PE_TEST_MODE=true`.
 
 ## Run
@@ -39,6 +42,8 @@ pe convert convert.yaml converted.json
 pe collect --jobs 3
 pe reduce --sum sum
 pe watch --help
+PE_BIN=/tmp/pe ./eval-regression-gate/smoke.sh
+PE_BIN=/tmp/pe ./release-local-workflows/smoke.sh
 ```
 
 `pe watch` is represented by `--help` because the normal command is a

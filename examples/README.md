@@ -40,6 +40,11 @@ legacy development material unless a demo has been refreshed here; see
 - [Current Commands](current-commands/) - Offline smoke examples for `ask`,
   `template`, `prompt`, `plugin`, `profile`, `build`, `convert`, `collect`,
   `reduce`, and `watch`.
+- [Eval Regression Gate](current-commands/eval-regression-gate/) - Offline
+  `pe diff --fail-on-regression` gate fixture.
+- [Release Local Workflows](current-commands/release-local-workflows/) -
+  Provider-free smokes for `pe diff`, `pe mod tidy`, `pe exp attest`, and
+  `pe exp cache`.
 
 ## Validated Commands
 

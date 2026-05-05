@@ -1,0 +1,2 @@
+{"id":"current-1","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":120,"response":{"tokenUsage":{"total":10}}}
+{"id":"current-2","provider":{"id":"mock"},"success":false,"score":0,"latencyMs":180,"response":{"tokenUsage":{"total":10}}}
