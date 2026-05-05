@@ -18,6 +18,10 @@ var commandGroups = map[string]string{
 	"ask":          "core",
 	"doc":          "core",
 	"init":         "core",
+	"prompt":       "core",
+	"edit":         "core",
+	"work":         "core",
+	"serve":        "core",
 	"eval":         "evaluation",
 	"eval-prompt":  "evaluation",
 	"benchmark":    "evaluation",
@@ -32,7 +36,11 @@ var commandGroups = map[string]string{
 	"get":          "module",
 	"stream":       "pipeline",
 	"filter":       "pipeline",
+	"analyze":      "pipeline",
+	"collect":      "pipeline",
+	"reduce":       "pipeline",
 	"extract":      "pipeline",
+	"expand":       "pipeline",
 	"compose":      "pipeline",
 	"cat":          "pipeline",
 	"fmt":          "utility",
@@ -47,6 +55,7 @@ var commandGroups = map[string]string{
 	"profile":      "experimental",
 	"experimental": "experimental",
 	"exp":          "experimental",
+	"plugin":       "plugin",
 }
 
 var commandAliases = map[string][]string{
@@ -76,8 +85,14 @@ func applyRootMetadata(root *cobra.Command) {
 		}
 	}
 	root.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		if cmd != root && cmd.Long != "" {
+			fmt.Fprintln(cmd.OutOrStdout(), cmd.Long)
+			fmt.Fprintln(cmd.OutOrStdout())
+		}
 		_ = cmd.Usage()
-		writeCommandGroups(cmd.OutOrStdout(), cmd)
+		if cmd == root {
+			writeCommandGroups(cmd.OutOrStdout(), cmd)
+		}
 	})
 }
 

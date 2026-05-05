@@ -69,58 +69,7 @@ rules when they need stronger contracts.`,
 	}
 	root.SetVersionTemplate("{{.Version}}\n")
 
-	// Core commands (like go toolchain)
-	root.AddCommand(runCmd())      // go run for prompts
-	root.AddCommand(runTextCmd())  // executable text renderer
-	root.AddCommand(buildCmd)      // go build for prompts
-	root.AddCommand(testCmd())     // go test for prompts
-	root.AddCommand(docCmd())      // go doc for prompts
-	root.AddCommand(peInitCmd())   // pe init for repository
-	root.AddCommand(modCmd)        // go mod for prompt modules
-	root.AddCommand(promptCmd)     // prompt file management (init, edit, fmt, info, tidy)
-	root.AddCommand(pushCmd)       // push modules to registry
-	root.AddCommand(editCmd)       // go mod edit for prompts
-	root.AddCommand(getCmd)        // pe get for extracting prompt info
-	root.AddCommand(evalPromptCmd) // pe eval-prompt for running evals from prompt files
-	root.AddCommand(workCmd)       // go work for prompts
-	root.AddCommand(serveCmd())    // pe serve for localhost API
-	// root.AddCommand(attestCmd)  // Moved to advanced-features branch
-	root.AddCommand(catCmd())     // pe cat for inspecting prompt files
-	root.AddCommand(versionCmd()) // pe version
-	root.AddCommand(configCmd())  // pe config for configuration inspection
-
-	// Existing commands
-	root.AddCommand(evalCmd())
-	root.AddCommand(viewCmd())
-	root.AddCommand(vetCmd())
-	root.AddCommand(promptFmtCmd()) // Use the prompt formatting command
-	root.AddCommand(convertCmd())
-	root.AddCommand(benchmarkCmd())
-	root.AddCommand(watchCmd())
-	root.AddCommand(templateCmd())
-	root.AddCommand(profileCmd())
-
-	// Pipeline-friendly commands for Unix composability
-	addPipelineCommands(root)
-	root.AddCommand(statsCmd())
-	root.AddCommand(diffCmd())
-	root.AddCommand(interactiveCmd())
-	root.AddCommand(extractCmd())
-	root.AddCommand(expandCmd())
-
-	// Experimental and research commands grouped together
-	root.AddCommand(experimentalCmd())
-	root.AddCommand(expCmd) // New experimental command root using "exp"
-	root.AddCommand(securityCmd())
-
-	// Plugin command
-	root.AddCommand(pluginCmd())
-
-	// Distributed system commands moved to advanced-features branch
-	// root.AddCommand(cacheCmd)         // Moved to advanced-features branch
-	// root.AddCommand(distributedCmd()) // Moved to advanced-features branch
-
-	// Discover and add plugin commands dynamically
+	registerRootCommands(root)
 	dynamicPluginCommands(root)
 	applyRootMetadata(root)
 

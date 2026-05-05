@@ -1276,27 +1276,27 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 
 ##### Core Commands Group
 - [x] Create `cmd/pe/commands/core/` directory
-- [ ] Move `run` command to core group
-- [ ] Move `build` command to core group
-- [ ] Move `test` command to core group
-- [ ] Move `ask` command to core group
-- [ ] Update command registrations
+- [x] Move `run` command to core group
+- [x] Move `build` command to core group
+- [x] Move `test` command to core group
+- [x] Move `ask` command to core group
+- [x] Update command registrations
 - [x] Add group-level help
 
 ##### Evaluation Commands Group
 - [x] Create `cmd/pe/commands/evaluation/` directory
-- [ ] Move `eval` command to evaluation group
-- [ ] Move `benchmark` command to evaluation group
-- [ ] Move `diff` command to evaluation group
-- [ ] Move `stats` command to evaluation group
-- [ ] Move `view` command to evaluation group
-- [ ] Update command registrations
+- [x] Move `eval` command to evaluation group
+- [x] Move `benchmark` command to evaluation group
+- [x] Move `diff` command to evaluation group
+- [x] Move `stats` command to evaluation group
+- [x] Move `view` command to evaluation group
+- [x] Update command registrations
 
 ##### Optimization Commands Group
 - [x] Create `cmd/pe/commands/optimization/` directory
-- [ ] Move `optimize` command to optimization group
-- [ ] Move `semantic` command to optimization group
-- [ ] Move `evolve` command to optimization group
+- [x] Move `optimize` command to optimization group
+- [x] Move `semantic` command to optimization group
+- [x] Move `evolve` command to optimization group
 - [ ] Move `textgrad` command to optimization group
 - [ ] Move `pe2` command to optimization group
 - [ ] Move `gaso` command to optimization group
@@ -1305,36 +1305,36 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 ##### Module Commands Group
 - [x] Create `cmd/pe/commands/module/` directory
 - [ ] Move all `mod` subcommands to module group
-- [ ] Move `push` command to module group
-- [ ] Move `get` command to module group
+- [x] Move `push` command to module group
+- [x] Move `get` command to module group
 - [ ] Update module command structure
 
 ##### Pipeline Commands Group
 - [x] Create `cmd/pe/commands/pipeline/` directory
-- [ ] Move `stream` command to pipeline group
-- [ ] Move `filter` command to pipeline group
-- [ ] Move `extract` command to pipeline group
-- [ ] Move `compose` command to pipeline group
-- [ ] Move `cat` command to pipeline group
+- [x] Move `stream` command to pipeline group
+- [x] Move `filter` command to pipeline group
+- [x] Move `extract` command to pipeline group
+- [x] Move `compose` command to pipeline group
+- [x] Move `cat` command to pipeline group
 
 ##### Utility Commands Group
 - [x] Create `cmd/pe/commands/utility/` directory
-- [ ] Move `fmt` command to utility group
-- [ ] Move `vet` command to utility group
-- [ ] Move `convert` command to utility group
-- [ ] Move `template` command to utility group
-- [ ] Move `interactive` command to utility group
-- [ ] Move `watch` command to utility group
+- [x] Move `fmt` command to utility group
+- [x] Move `vet` command to utility group
+- [x] Move `convert` command to utility group
+- [x] Move `template` command to utility group
+- [x] Move `interactive` command to utility group
+- [x] Move `watch` command to utility group
 
 ##### Experimental Commands Group
 - [x] Create `cmd/pe/commands/experimental/` directory
 - [ ] Move `attest` command to experimental group
-- [ ] Move `security` command to experimental group
-- [ ] Move `profile` command to experimental group
+- [x] Move `security` command to experimental group
+- [x] Move `profile` command to experimental group
 - [x] Add experimental warning to commands
 
 ##### Command Integration
-- [ ] Update main.go to use command registry
+- [x] Update main.go to use command registry
 - [x] Implement backward compatibility shims
 - [x] Add command aliases for compatibility
 - [x] Update command help system
