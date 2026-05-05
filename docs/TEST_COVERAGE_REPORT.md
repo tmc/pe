@@ -1,41 +1,51 @@
 # PE Test Coverage Report
 
-Generated: 2026-04-30
+Generated: 2026-05-05
 
 ## Baseline
 
-Command used for the measured baseline:
+Integrated baseline branch:
 
-```sh
-go test -coverprofile=/tmp/pe-coverage.out ./...
-go tool cover -func=/tmp/pe-coverage.out
+```text
+agent/pe-coverage-integrated
 ```
 
-Verification command:
+Integrated base:
+
+```text
+agent/pe-phase12-integrated at 38ad70adbd9c7326170eac0d4feee92f9d8158d1
+```
+
+Commands used for the measured baseline:
 
 ```sh
-go test -cover ./...
+GOTOOLCHAIN=go1.25.9 go test -coverprofile=/tmp/pe-coverage.out ./...
+go tool cover -func=/tmp/pe-coverage.out
 ```
 
 Results:
 
 | Metric | Value |
 | --- | ---: |
-| Overall statement coverage | 40.8% |
+| Overall statement coverage | 44.1% |
 | Package paths reported by `go test -cover` | 41 |
-| Packages with statements | 37 |
-| Packages with no statements | 4 |
-| Test status | Baseline pass; see note below |
+| Packages with statements | 39 |
+| Packages with no statements | 2 |
+| Test status | Passing integrated baseline |
 
 This supersedes older documentation claims that described overall coverage as
-either about 25% or about 40%.
+either about 25%, 40%, or 40.8%.
 
-Note: the 40.8% baseline records the most recent passing measured run. During
-the release documentation audit, an uncached
-`go test -coverprofile=/tmp/pe-coverage.out ./...` run failed in the script
-tests because `tests/testdata/script/extract.txt` expected a `"tag":` JSON
-field that the current command output did not include. Re-run the baseline
-commands after that script expectation is reconciled.
+## Script Test Coverage
+
+The script-test suite is connected to the release gate through
+`GOTOOLCHAIN=go1.25.9 go test -coverprofile=/tmp/pe-coverage.out ./...`, and
+the integrated run passed `github.com/tmc/pe/tests`.
+
+Script tests validate CLI behavior by building and executing a separate `pe`
+binary from `tests/scripttest_test.go`. That child process is not instrumented by
+the parent `go test` coverage profile, so script tests contribute release
+confidence but do not increase `cmd/pe` statement coverage percentages.
 
 ## Low-Coverage Packages
 
@@ -44,7 +54,6 @@ expansion.
 
 | Package | Coverage |
 | --- | ---: |
-| `github.com/tmc/pe/example/structured/with-go-structs` | 0.0% |
 | `github.com/tmc/pe/examples/inference` | 0.0% |
 | `github.com/tmc/pe/ext/starlark/cmd/starlark-demo` | 0.0% |
 | `github.com/tmc/pe/internal/cli` | 0.0% |
@@ -61,12 +70,12 @@ expansion.
 
 | Package | Coverage |
 | --- | ---: |
-| `github.com/tmc/pe/cmd/pe` | 30.0% |
 | `github.com/tmc/pe/internal/llm` | 31.0% |
 | `github.com/tmc/pe/ext/starlark` | 38.0% |
-| `github.com/tmc/pe/internal/module` | 39.7% |
+| `github.com/tmc/pe/cmd/pe` | 38.5% |
 | `github.com/tmc/pe/internal/metaprompt` | 40.8% |
-| `github.com/tmc/pe/internal/promptfoo/evaluation/evaluator` | 41.0% |
+| `github.com/tmc/pe/internal/promptfoo/evaluation/evaluator` | 43.0% |
+| `github.com/tmc/pe/internal/module` | 44.7% |
 | `github.com/tmc/pe/internal/errors` | 46.0% |
 | `github.com/tmc/pe/plugins/promptfoo` | 46.4% |
 | `github.com/tmc/pe/internal/pemod` | 48.7% |
@@ -78,20 +87,21 @@ expansion.
 | `github.com/tmc/pe/internal/observability` | 62.0% |
 | `github.com/tmc/pe/internal/config` | 66.8% |
 | `github.com/tmc/pe/internal/inference/providers/ollama` | 68.0% |
+| `github.com/tmc/pe/internal/plugin` | 68.3% |
 | `github.com/tmc/pe/internal/cgpt` | 69.3% |
 | `github.com/tmc/pe/internal/inference/providers/anthropic` | 73.3% |
 | `github.com/tmc/pe/internal/inference/providers/openai` | 74.0% |
 | `github.com/tmc/pe/internal/starlark` | 81.5% |
-| `github.com/tmc/pe/internal/plugin` | 83.6% |
+| `github.com/tmc/pe/internal/security` | 81.8% |
 | `github.com/tmc/pe/internal/promptfoo/security/redteam` | 86.4% |
 | `github.com/tmc/pe/internal/structured` | 89.3% |
+| `github.com/tmc/pe/internal/optimization/localopt` | 91.2% |
 | `github.com/tmc/pe/internal/templates` | 93.5% |
+| `github.com/tmc/pe/internal/distributed` | 94.3% |
 
 ## Packages With No Statements
 
 | Package |
 | --- |
-| `github.com/tmc/pe/example/getting-started` |
 | `github.com/tmc/pe/internal/inference/providers` |
-| `github.com/tmc/pe/internal/security` |
 | `github.com/tmc/pe/tests` |
