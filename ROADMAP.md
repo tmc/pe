@@ -1218,13 +1218,13 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Implement module download functionality
 
 ##### Dependency Management
-- [ ] Create `internal/module/deps.go`
+- [x] Create `internal/module/deps.go`
 - [x] Implement dependency graph structure
 - [x] Add topological sort for dependencies
 - [x] Implement conflict detection
 - [x] Add version resolution algorithm
 - [x] Implement circular dependency detection
-- [ ] Add dependency pruning
+- [x] Add dependency pruning
 - [x] Create lock file format
 
 ##### Module Commands
