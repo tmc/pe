@@ -46,17 +46,36 @@ type expOptimizeOutputStep struct {
 	Accepted    bool               `json:"accepted,omitempty"`
 }
 
+type expOptimizeScoresFile struct {
+	Results struct {
+		Prompts []struct {
+			Raw     string `json:"raw"`
+			Label   string `json:"label"`
+			ID      string `json:"id"`
+			Metrics struct {
+				Score *float64 `json:"score"`
+			} `json:"metrics"`
+		} `json:"prompts"`
+	} `json:"results"`
+}
+
 func expOptimizeCmd() *cobra.Command {
 	var inputPath string
 	var outputPath string
+	var scoresPath string
 	var maxRounds int
 	var minImprovement float64
 
 	cmd := &cobra.Command{
-		Use:   "optimize",
+		Use:   "optimize [--input input.json | --scores eval-results.json]",
 		Short: "Select prompt variants with local deterministic scores",
+		Long: `Select prompt variants with local deterministic scores.
+
+Input JSON uses seed plus variants or rounds. Each variant must include prompt,
+source, and score. With --scores, promptfoo evaluation JSON is accepted from
+results.prompts[].metrics.score and converted without provider execution.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			in, err := readExpOptimizeInput(cmd.InOrStdin(), inputPath)
+			in, err := readExpOptimizeCommandInput(cmd.InOrStdin(), inputPath, scoresPath)
 			if err != nil {
 				return err
 			}
@@ -74,11 +93,33 @@ func expOptimizeCmd() *cobra.Command {
 			return writeExpOptimizeOutput(cmd.OutOrStdout(), outputPath, out)
 		},
 	}
-	cmd.Flags().StringVarP(&inputPath, "input", "i", "-", "input JSON file, or - for stdin")
+	cmd.Flags().StringVarP(&inputPath, "input", "i", "", "input JSON file, or - for stdin")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "-", "output JSON file, or - for stdout")
+	cmd.Flags().StringVar(&scoresPath, "scores", "", "promptfoo evaluation JSON with results.prompts[].metrics.score")
 	cmd.Flags().IntVar(&maxRounds, "max-rounds", 0, "override input max_rounds")
 	cmd.Flags().Float64Var(&minImprovement, "min-improvement", 0, "override input min_improvement")
 	return cmd
+}
+
+func readExpOptimizeCommandInput(stdin io.Reader, inputPath, scoresPath string) (*expOptimizeInput, error) {
+	if scoresPath == "" {
+		return readExpOptimizeInput(stdin, inputPath)
+	}
+	scores, err := readExpOptimizeScores(scoresPath)
+	if err != nil {
+		return nil, err
+	}
+	if inputPath == "" {
+		return expOptimizeInputFromScores(scores)
+	}
+	in, err := readExpOptimizeInput(stdin, inputPath)
+	if err != nil {
+		return nil, err
+	}
+	if err := applyExpOptimizeScores(in, scores); err != nil {
+		return nil, err
+	}
+	return in, nil
 }
 
 func readExpOptimizeInput(stdin io.Reader, path string) (*expOptimizeInput, error) {
@@ -99,6 +140,97 @@ func readExpOptimizeInput(stdin io.Reader, path string) (*expOptimizeInput, erro
 		return nil, fmt.Errorf("decode optimize input: %w", err)
 	}
 	return &in, nil
+}
+
+func readExpOptimizeScores(path string) ([]expOptimizeVariant, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("open optimize scores: %w", err)
+	}
+	defer f.Close()
+
+	var eval expOptimizeScoresFile
+	dec := json.NewDecoder(f)
+	if err := dec.Decode(&eval); err != nil {
+		return nil, fmt.Errorf("decode optimize scores: %w", err)
+	}
+	if len(eval.Results.Prompts) == 0 {
+		return nil, fmt.Errorf("optimize scores require results.prompts")
+	}
+	var variants []expOptimizeVariant
+	for i, prompt := range eval.Results.Prompts {
+		source := prompt.Label
+		if source == "" {
+			source = prompt.ID
+		}
+		if source == "" {
+			source = "prompt-" + strconv.Itoa(i+1)
+		}
+		if prompt.Raw == "" {
+			return nil, fmt.Errorf("prompt text missing for %q", source)
+		}
+		if prompt.Metrics.Score == nil {
+			return nil, fmt.Errorf("score missing for %q", source)
+		}
+		variants = append(variants, expOptimizeVariant{
+			Prompt: prompt.Raw,
+			Source: source,
+			Score:  prompt.Metrics.Score,
+		})
+	}
+	return variants, nil
+}
+
+func expOptimizeInputFromScores(scores []expOptimizeVariant) (*expOptimizeInput, error) {
+	if len(scores) < 2 {
+		return nil, fmt.Errorf("optimize scores require at least two prompts")
+	}
+	return &expOptimizeInput{
+		Seed:     scores[0],
+		Variants: append([]expOptimizeVariant(nil), scores[1:]...),
+	}, nil
+}
+
+func applyExpOptimizeScores(in *expOptimizeInput, scores []expOptimizeVariant) error {
+	scoreBySource := make(map[string]*float64)
+	scoreByPrompt := make(map[string]*float64)
+	for i := range scores {
+		scoreBySource[scores[i].Source] = scores[i].Score
+		scoreByPrompt[scores[i].Prompt] = scores[i].Score
+	}
+	if err := applyExpOptimizeVariantScore(&in.Seed, scoreBySource, scoreByPrompt); err != nil {
+		return err
+	}
+	for i := range in.Variants {
+		if err := applyExpOptimizeVariantScore(&in.Variants[i], scoreBySource, scoreByPrompt); err != nil {
+			return err
+		}
+	}
+	for i := range in.Rounds {
+		for j := range in.Rounds[i] {
+			if err := applyExpOptimizeVariantScore(&in.Rounds[i][j], scoreBySource, scoreByPrompt); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func applyExpOptimizeVariantScore(variant *expOptimizeVariant, scoreBySource, scoreByPrompt map[string]*float64) error {
+	if variant.Score != nil {
+		return nil
+	}
+	if variant.Source != "" {
+		if score, ok := scoreBySource[variant.Source]; ok {
+			variant.Score = score
+			return nil
+		}
+	}
+	if score, ok := scoreByPrompt[variant.Prompt]; ok {
+		variant.Score = score
+		return nil
+	}
+	return fmt.Errorf("score missing for %q", variant.Source)
 }
 
 func writeExpOptimizeOutput(stdout io.Writer, path string, out *expOptimizeOutput) error {
