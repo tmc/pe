@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/tmc/pe/internal/inference"
 	"github.com/tmc/pe/internal/metaprompt"
-	"github.com/tmc/pe/internal/providers"
 )
 
 // semanticCmd implements semantic backpropagation and gradient descent for GASO
@@ -69,17 +69,22 @@ optimization for language-based agentic systems.`,
 				return fmt.Errorf("failed to load prompt: %v", err)
 			}
 
-			// Create LLM provider with proper format
-			providerSpec := fmt.Sprintf("%s:%s", provider, model)
+			// Create provider through the inference migration path, adapting
+			// only at the semantic optimizer boundary.
+			providerSpec := commandProviderSpec(provider, model)
 
 			// Use mock provider in test mode
 			if os.Getenv("PE_TEST_MODE") == "true" {
 				providerSpec = "mock:test-model"
 			}
 
-			llmProvider, err := providers.CreateProvider(providerSpec, map[string]interface{}{})
+			inferenceProvider, err := inference.CreateProviderFromSpec(providerSpec, nil)
 			if err != nil {
 				return fmt.Errorf("failed to create provider: %v", err)
+			}
+			llmProvider, err := inference.AsLegacyProvider(inferenceProvider, model)
+			if err != nil {
+				return fmt.Errorf("failed to adapt provider: %v", err)
 			}
 
 			// Initialize semantic optimizer
@@ -191,17 +196,22 @@ allowing for effective optimization of complex AI system parameters.`,
 				return fmt.Errorf("failed to load prompt: %v", err)
 			}
 
-			// Create LLM provider with proper format
-			providerSpec := fmt.Sprintf("%s:%s", provider, model)
+			// Create provider through the inference migration path, adapting
+			// only at the semantic optimizer boundary.
+			providerSpec := commandProviderSpec(provider, model)
 
 			// Use mock provider in test mode
 			if os.Getenv("PE_TEST_MODE") == "true" {
 				providerSpec = "mock:test-model"
 			}
 
-			llmProvider, err := providers.CreateProvider(providerSpec, map[string]interface{}{})
+			inferenceProvider, err := inference.CreateProviderFromSpec(providerSpec, nil)
 			if err != nil {
 				return fmt.Errorf("failed to create provider: %v", err)
+			}
+			llmProvider, err := inference.AsLegacyProvider(inferenceProvider, model)
+			if err != nil {
+				return fmt.Errorf("failed to adapt provider: %v", err)
 			}
 
 			// Initialize semantic optimizer
@@ -310,17 +320,22 @@ dependency relationships.`,
 				return fmt.Errorf("failed to load system definition: %v", err)
 			}
 
-			// Create LLM provider with proper format
-			providerSpec := fmt.Sprintf("%s:%s", provider, model)
+			// Create provider through the inference migration path, adapting
+			// only at the GASO optimizer boundary.
+			providerSpec := commandProviderSpec(provider, model)
 
 			// Use mock provider in test mode
 			if os.Getenv("PE_TEST_MODE") == "true" {
 				providerSpec = "mock:test-model"
 			}
 
-			llmProvider, err := providers.CreateProvider(providerSpec, map[string]interface{}{})
+			inferenceProvider, err := inference.CreateProviderFromSpec(providerSpec, nil)
 			if err != nil {
 				return fmt.Errorf("failed to create provider: %v", err)
+			}
+			llmProvider, err := inference.AsLegacyProvider(inferenceProvider, model)
+			if err != nil {
+				return fmt.Errorf("failed to adapt provider: %v", err)
 			}
 
 			// Initialize GASO optimizer
