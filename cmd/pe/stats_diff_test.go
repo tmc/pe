@@ -85,6 +85,71 @@ func TestStatsCmdReadsJSONLFromStdin(t *testing.T) {
 	}
 }
 
+func TestStatsCmdGroupsByVarsField(t *testing.T) {
+	file := writeTempFile(t, `[
+  {"id":"r1","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":10,"vars":{"suite":"math"},"response":{"tokenUsage":{"total":5}}},
+  {"id":"r2","provider":{"id":"mock"},"success":false,"score":0.25,"latencyMs":30,"vars":{"suite":"math"},"response":{"tokenUsage":{"total":7}}},
+  {"id":"r3","provider":{"id":"mock"},"success":true,"score":0.5,"latencyMs":20,"vars":{"suite":"writing"},"response":{"tokenUsage":{"total":11}}}
+]`)
+
+	cmd := statsCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--group", "vars.suite", file})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("stats Execute() error = %v", err)
+	}
+	output := out.String()
+	first := strings.Index(output, "  math:")
+	second := strings.Index(output, "  writing:")
+	if first < 0 || second < 0 || first > second {
+		t.Fatalf("group output not sorted or missing groups:\n%s", output)
+	}
+	for _, want := range []string{
+		"Groups by vars.suite:",
+		"math: tests=2 successes=1 failures=1 errors=0 pass_rate=50.00% avg_score=0.6250 avg_latency=20.00ms tokens=12",
+		"writing: tests=1 successes=1 failures=0 errors=0 pass_rate=100.00% avg_score=0.5000 avg_latency=20.00ms tokens=11",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("stats group output missing %q:\n%s", want, output)
+		}
+	}
+}
+
+func TestStatsCmdGroupsJSONByProvider(t *testing.T) {
+	cmd := statsCmd()
+	var out bytes.Buffer
+	cmd.SetIn(strings.NewReader(strings.Join([]string{
+		`{"id":"r1","provider":{"id":"a"},"success":true,"score":1,"latencyMs":10}`,
+		`{"id":"r2","provider":{"id":"b"},"success":false,"score":0,"latencyMs":30}`,
+		`{"id":"r3","provider":{"id":"a"},"success":true,"score":0.5,"latencyMs":20}`,
+	}, "\n")))
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--format", "json", "--group", "provider"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("stats Execute() error = %v", err)
+	}
+
+	var got groupedResultSummary
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("stats grouped JSON output did not decode: %v\n%s", err, out.String())
+	}
+	if got.GroupBy != "provider" {
+		t.Fatalf("GroupBy = %q, want provider", got.GroupBy)
+	}
+	if got.TotalTests != 3 {
+		t.Fatalf("TotalTests = %d, want 3", got.TotalTests)
+	}
+	if got.Groups["a"].TotalTests != 2 || got.Groups["a"].Failures != 0 {
+		t.Fatalf("group a = %+v, want 2 passing tests", got.Groups["a"])
+	}
+	if got.Groups["b"].TotalTests != 1 || got.Groups["b"].Failures != 1 {
+		t.Fatalf("group b = %+v, want 1 failing test", got.Groups["b"])
+	}
+}
+
 func TestDiffCmdWritesJSONDelta(t *testing.T) {
 	base := writeTempFile(t, `{"results":[
   {"id":"r1","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":100,"response":{"tokenUsage":{"total":10}}},

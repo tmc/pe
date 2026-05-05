@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -17,6 +18,7 @@ import (
 // statsCmd shows quick statistics from evaluation results
 func statsCmd() *cobra.Command {
 	var format string
+	var group string
 
 	cmd := &cobra.Command{
 		Use:   "stats [file]",
@@ -42,14 +44,26 @@ or JSONL test results. With no file argument, stats reads stdin.`,
 				name = args[0]
 			}
 
-			summary, err := readResultSummary(in)
+			results, stats, err := readResultSet(in)
 			if err != nil {
 				return fmt.Errorf("read %s: %w", name, err)
 			}
-			return writeStats(cmd.OutOrStdout(), summary, format)
+			summary := summarizeResultSet(results, stats)
+			if group == "" {
+				return writeStats(cmd.OutOrStdout(), summary, format)
+			}
+			if len(results) == 0 {
+				return fmt.Errorf("group %q: input has stats but no per-test results", group)
+			}
+			grouped, err := summarizeGroupedResultSet(results, group, summary)
+			if err != nil {
+				return err
+			}
+			return writeGroupedStats(cmd.OutOrStdout(), grouped, format)
 		},
 	}
 	cmd.Flags().StringVarP(&format, "format", "f", "text", "Output format: text or json")
+	cmd.Flags().StringVar(&group, "group", "", "Group result statistics by field, such as provider, success, promptId, or vars.language")
 
 	return cmd
 }
@@ -136,6 +150,12 @@ type resultSummary struct {
 	Providers        map[string]providerSummary `json:"providers,omitempty"`
 }
 
+type groupedResultSummary struct {
+	resultSummary
+	GroupBy string                   `json:"groupBy"`
+	Groups  map[string]resultSummary `json:"groups"`
+}
+
 type providerSummary struct {
 	TotalTests       int     `json:"totalTests"`
 	Successes        int     `json:"successes"`
@@ -214,39 +234,47 @@ func readResultSummaryFile(name string, stdin io.Reader) (resultSummary, error) 
 }
 
 func readResultSummary(r io.Reader) (resultSummary, error) {
-	data, err := io.ReadAll(r)
+	results, stats, err := readResultSet(r)
 	if err != nil {
 		return resultSummary{}, err
 	}
+	return summarizeResultSet(results, stats), nil
+}
+
+func readResultSet(r io.Reader) ([]promptfoo.TestResult, promptfoo.Stats, error) {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return nil, promptfoo.Stats{}, err
+	}
 	data = bytes.TrimSpace(data)
 	if len(data) == 0 {
-		return resultSummary{}, fmt.Errorf("empty input")
+		return nil, promptfoo.Stats{}, fmt.Errorf("empty input")
 	}
 
 	var eval promptfoo.EvaluationResult
 	if err := json.Unmarshal(data, &eval); err == nil {
 		if len(eval.Results.Results) > 0 || eval.Results.Stats.Successes+eval.Results.Stats.Failures+eval.Results.Stats.Errors > 0 {
-			return summarizeEvaluation(eval), nil
+			return eval.Results.Results, eval.Results.Stats, nil
 		}
 	}
 
 	var evalResults promptfoo.EvalResults
 	if err := json.Unmarshal(data, &evalResults); err == nil {
 		if len(evalResults.Results) > 0 || evalResults.Stats.Successes+evalResults.Stats.Failures+evalResults.Stats.Errors > 0 {
-			return summarizeResultSet(evalResults.Results, evalResults.Stats), nil
+			return evalResults.Results, evalResults.Stats, nil
 		}
 	}
 
 	var results []promptfoo.TestResult
 	if err := json.Unmarshal(data, &results); err == nil {
-		return summarizeResultSet(results, promptfoo.Stats{}), nil
+		return results, promptfoo.Stats{}, nil
 	}
 
 	results, err = readJSONLResults(bytes.NewReader(data))
 	if err != nil {
-		return resultSummary{}, fmt.Errorf("parse JSON or JSONL results: %w", err)
+		return nil, promptfoo.Stats{}, fmt.Errorf("parse JSON or JSONL results: %w", err)
 	}
-	return summarizeResultSet(results, promptfoo.Stats{}), nil
+	return results, promptfoo.Stats{}, nil
 }
 
 func readJSONLResults(r io.Reader) ([]promptfoo.TestResult, error) {
@@ -280,6 +308,37 @@ func readJSONLResults(r io.Reader) ([]promptfoo.TestResult, error) {
 
 func summarizeEvaluation(eval promptfoo.EvaluationResult) resultSummary {
 	return summarizeResultSet(eval.Results.Results, eval.Results.Stats)
+}
+
+func summarizeGroupedResultSet(results []promptfoo.TestResult, group string, total resultSummary) (groupedResultSummary, error) {
+	builders := make(map[string]*summaryBuilder)
+	for _, result := range results {
+		value, err := resultGroupValue(result, group)
+		if err != nil {
+			return groupedResultSummary{}, err
+		}
+		b := builders[value]
+		if b == nil {
+			b = &summaryBuilder{
+				resultSummary: resultSummary{
+					Providers: make(map[string]providerSummary),
+				},
+				providerBuild: make(map[string]*providerBuilder),
+			}
+			builders[value] = b
+		}
+		b.addResult(result)
+	}
+
+	groups := make(map[string]resultSummary, len(builders))
+	for name, b := range builders {
+		groups[name] = b.finish()
+	}
+	return groupedResultSummary{
+		resultSummary: total,
+		GroupBy:       group,
+		Groups:        groups,
+	}, nil
 }
 
 func summarizeResultSet(results []promptfoo.TestResult, stats promptfoo.Stats) resultSummary {
@@ -425,6 +484,72 @@ func resultProvider(result promptfoo.TestResult) string {
 	return ""
 }
 
+func resultGroupValue(result promptfoo.TestResult, field string) (string, error) {
+	switch field {
+	case "id":
+		return missingIfEmpty(result.ID), nil
+	case "promptId":
+		return missingIfEmpty(result.PromptID), nil
+	case "provider":
+		return missingIfEmpty(resultProvider(result)), nil
+	case "success":
+		return strconv.FormatBool(result.Success || result.GradingResult.Pass), nil
+	case "score":
+		score := result.Score
+		if score == 0 && result.GradingResult.Score != 0 {
+			score = result.GradingResult.Score
+		}
+		return strconv.FormatFloat(score, 'f', -1, 64), nil
+	}
+
+	parts := strings.Split(field, ".")
+	if len(parts) == 2 {
+		switch parts[0] {
+		case "vars":
+			return groupScalar(result.Vars[parts[1]]), nil
+		case "provider":
+			return missingIfEmpty(result.Provider[parts[1]]), nil
+		case "prompt":
+			return missingIfEmpty(result.Prompt[parts[1]]), nil
+		}
+	}
+	if len(parts) == 3 && parts[0] == "response" && parts[1] == "metadata" {
+		return groupScalar(result.Response.Metadata[parts[2]]), nil
+	}
+	if v, ok := result.Vars[field]; ok {
+		return groupScalar(v), nil
+	}
+	return "", fmt.Errorf("unsupported group field %q", field)
+}
+
+func missingIfEmpty(s string) string {
+	if s == "" {
+		return "(missing)"
+	}
+	return s
+}
+
+func groupScalar(v interface{}) string {
+	switch x := v.(type) {
+	case nil:
+		return "(missing)"
+	case string:
+		return missingIfEmpty(x)
+	case bool:
+		return strconv.FormatBool(x)
+	case float64:
+		return strconv.FormatFloat(x, 'f', -1, 64)
+	case json.Number:
+		return x.String()
+	default:
+		data, err := json.Marshal(x)
+		if err != nil {
+			return fmt.Sprint(x)
+		}
+		return string(data)
+	}
+}
+
 func writeStats(w io.Writer, summary resultSummary, format string) error {
 	switch format {
 	case "", "text":
@@ -449,6 +574,33 @@ func writeStats(w io.Writer, summary resultSummary, format string) error {
 				fmt.Fprintf(w, "  %s: tests=%d pass_rate=%.2f%% avg_score=%.4f avg_latency=%.2fms tokens=%d cost=%.6f\n",
 					name, p.TotalTests, p.PassRate*100, p.AverageScore, p.AverageLatencyMs, p.TokenTotal, p.Cost)
 			}
+		}
+		return nil
+	case "json":
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		return enc.Encode(summary)
+	default:
+		return fmt.Errorf("unsupported format %q", format)
+	}
+}
+
+func writeGroupedStats(w io.Writer, summary groupedResultSummary, format string) error {
+	switch format {
+	case "", "text":
+		if err := writeStats(w, summary.resultSummary, "text"); err != nil {
+			return err
+		}
+		fmt.Fprintf(w, "\nGroups by %s:\n", summary.GroupBy)
+		names := make([]string, 0, len(summary.Groups))
+		for name := range summary.Groups {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		for _, name := range names {
+			g := summary.Groups[name]
+			fmt.Fprintf(w, "  %s: tests=%d successes=%d failures=%d errors=%d pass_rate=%.2f%% avg_score=%.4f avg_latency=%.2fms tokens=%d cost=%.6f\n",
+				name, g.TotalTests, g.Successes, g.Failures, g.Errors, g.PassRate*100, g.AverageScore, g.AverageLatencyMs, g.TokenUsage.Total, g.Cost)
 		}
 		return nil
 	case "json":

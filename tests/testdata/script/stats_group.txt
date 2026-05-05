@@ -1,0 +1,16 @@
+# Test pe stats grouped summaries for CI-friendly per-suite regression checks.
+
+pe stats --group vars.suite results.jsonl
+stdout 'Groups by vars.suite:'
+stdout 'math: tests=2 successes=1 failures=1 errors=0 pass_rate=50.00% avg_score=0.6250 avg_latency=20.00ms tokens=12'
+stdout 'writing: tests=1 successes=1 failures=0 errors=0 pass_rate=100.00% avg_score=0.5000 avg_latency=20.00ms tokens=11'
+
+pe stats --format json --group provider results.jsonl
+stdout '"groupBy": "provider"'
+stdout '"mock"'
+stdout '"totalTests": 3'
+
+-- results.jsonl --
+{"id":"r1","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":10,"vars":{"suite":"math"},"response":{"tokenUsage":{"total":5}}}
+{"id":"r2","provider":{"id":"mock"},"success":false,"score":0.25,"latencyMs":30,"vars":{"suite":"math"},"response":{"tokenUsage":{"total":7}}}
+{"id":"r3","provider":{"id":"mock"},"success":true,"score":0.5,"latencyMs":20,"vars":{"suite":"writing"},"response":{"tokenUsage":{"total":11}}}
