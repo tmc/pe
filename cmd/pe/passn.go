@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -398,8 +400,8 @@ func containsError(output string) bool {
 }
 
 func generatePromptID(prompt string) string {
-	// Simple ID generation - in production, use proper hashing
-	return fmt.Sprintf("prompt-%d", time.Now().Unix())
+	hash := sha256.Sum256([]byte(prompt))
+	return "prompt-" + hex.EncodeToString(hash[:])
 }
 
 func expandPath(path string) string {
@@ -409,4 +411,3 @@ func expandPath(path string) string {
 	}
 	return path
 }
-

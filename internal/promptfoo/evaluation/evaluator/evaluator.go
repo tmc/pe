@@ -409,14 +409,24 @@ func checkAssertion(output string, assertType string, assertValue interface{}) b
 }
 
 func generatePromptID(prompt, provider string) string {
-	hash := sha256.Sum256([]byte(prompt + provider))
-	return hex.EncodeToString(hash[:])
+	return hashID(prompt, provider)
 }
 
 func generateResultID(prompt, provider string, vars map[string]interface{}) string {
-	varStr := fmt.Sprintf("%v", vars)
-	hash := sha256.Sum256([]byte(prompt + provider + varStr))
-	return hex.EncodeToString(hash[:])[:8]
+	varJSON, err := json.Marshal(vars)
+	if err != nil {
+		varJSON = []byte(fmt.Sprintf("%#v", vars))
+	}
+	return hashID(prompt, provider, string(varJSON))
+}
+
+func hashID(parts ...string) string {
+	h := sha256.New()
+	for _, part := range parts {
+		h.Write([]byte(part))
+		h.Write([]byte{0})
+	}
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func ifThenElse(condition bool, trueVal, falseVal interface{}) float64 {
