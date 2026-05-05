@@ -1,209 +1,64 @@
 # PE Documentation
 
-PE is a prompt engineering toolkit inspired by the Go toolchain. This
-documentation reflects the current implementation status as of May 2026.
+PE is a prompt engineering toolkit inspired by the Go toolchain. This index
+points to the current documentation set as of May 2026.
 
-## Current Implementation Status
+[../ROADMAP.md](../ROADMAP.md) is the source of truth for planned work and
+release blockers. [TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md) is the
+source of truth for coverage numbers.
 
-PE is **under active development**. [../ROADMAP.md](../ROADMAP.md) is the
-source of truth for planned work, and
-[TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md) is the source of truth for
-coverage numbers.
+## Start Here
 
-## Quick Start
+- [GETTING_STARTED.md](GETTING_STARTED.md) - first install, first prompt, and
+  core workflow.
+- [TUTORIAL.md](TUTORIAL.md) - longer hands-on walkthrough. Advanced chapters
+  include experimental command groups and should be checked against `pe --help`
+  before automation.
+- [CLI_REFERENCE.md](CLI_REFERENCE.md) - current command reference.
+- [COMMAND_EXAMPLES_GUIDE.md](COMMAND_EXAMPLES_GUIDE.md) - command examples and
+  workflow snippets.
+- [INSTALLATION.md](INSTALLATION.md) - installation and build notes.
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - common errors and fixes.
 
-### Installation
-```bash
-go install github.com/tmc/pe/cmd/pe@latest
-```
+## Core Topics
 
-### Basic Usage
-```bash
-# Run a simple prompt
-pe run "What is 2+2?" --provider openai
+- [TEMPLATE_SYNTAX.md](TEMPLATE_SYNTAX.md) - prompt template syntax.
+- [MODULES.md](MODULES.md) and [MODULE_REGISTRY.md](MODULE_REGISTRY.md) -
+  module workflows.
+- [PLUGINS.md](PLUGINS.md) - plugin system.
+- [PROMPTFOO_INTEGRATION.md](PROMPTFOO_INTEGRATION.md) - promptfoo-compatible
+  evaluation configuration.
+- [SECURITY_REVIEW.md](SECURITY_REVIEW.md) - release security review notes.
+- [ATTESTATION.md](ATTESTATION.md) - attestation design and prototype status.
 
-# Run with template variables
-pe run translate.prompt --var text="Hello" --var to="Spanish" --provider anthropic
+## Architecture And APIs
 
-# Initialize an evaluation config
-pe init config.yaml
+- [ARCHITECTURE.md](ARCHITECTURE.md) - system architecture.
+- [API_REFERENCE.md](API_REFERENCE.md) - package and provider API notes.
+- [LOCAL_RUNTIME_PROVIDER_DESIGN.md](LOCAL_RUNTIME_PROVIDER_DESIGN.md) -
+  local-runtime provider design.
+- [LLM_CLI_STANDARDS.md](LLM_CLI_STANDARDS.md) - CLI provider conventions.
+- [STARLARK_EXTENSION.md](STARLARK_EXTENSION.md) - Starlark extension support.
 
-# Run evaluation
-pe eval config.yaml
+## Status And Planning
 
-# Validate configuration
-pe vet config.yaml
-```
-
-### Important: Template Syntax
-PE uses Go template syntax with dots: `{{.variable}}` not `{{variable}}`
-See [TEMPLATE_SYNTAX.md](TEMPLATE_SYNTAX.md) for details.
-
-## Implemented Commands
-
-### Core Evaluation
-- **`pe eval`** - Evaluate prompts against LLM providers ✅ **IMPLEMENTED**
-- **`pe view`** - View evaluation results in browser UI ✅ **IMPLEMENTED**
-- **`pe vet`** - Validate promptfoo configuration files ✅ **IMPLEMENTED**
-- **`pe fmt`** - Format promptfoo configuration files ✅ **IMPLEMENTED**
-
-### Testing & Analysis
-- **`pe test`** - Run advanced testing (property-based, regression) ✅ **IMPLEMENTED**
-- **`pe benchmark`** - Compare performance metrics ✅ **IMPLEMENTED**
-  - NEW: `--go-bench` flag outputs in Go benchmark format for compatibility with `benchstat` and other tools
-- **`pe stats`** - Show quick statistics ✅ **IMPLEMENTED**
-- **`pe diff`** - Compare evaluation results ✅ **IMPLEMENTED**
-
-### Pipeline Commands (Unix-style)
-- **`pe ask`** - Ask single question to LLM provider ✅ **IMPLEMENTED**
-- **`pe stream`** - Process evaluation results as stream ✅ **IMPLEMENTED**
-- **`pe filter`** - Filter evaluation results ✅ **IMPLEMENTED**
-- **`pe analyze`** - Analyze results with statistics ✅ **IMPLEMENTED**
-
-### Optimization & Composition
-- **`pe experimental optimize`** - Optimize prompts using metaprompting ⚠️ **EXPERIMENTAL**
-- **`pe experimental semantic`** - Semantic gradient descent optimization ⚠️ **EXPERIMENTAL**
-- **`pe experimental evolve`** - Evolutionary prompt optimization ⚠️ **EXPERIMENTAL**
-- **`pe experimental compose`** - Component-based prompt composition ✅ **IMPLEMENTED**
-
-### Module System
-- **`pe mod init/tidy/download/vendor`** - Go-style module management ✅ **IMPLEMENTED**
-- **`pe push`** - Push modules to registry ✅ **IMPLEMENTED**
-
-### Security & Attestation
-- **`pe exp attest`** - Cryptographic attestation ⚠️ **PROTOTYPE**
-- **`pe exp distributed`** - Distributed execution ⚠️ **PROTOTYPE**
-- **`pe exp cache`** - Content-addressed caching ⚠️ **PROTOTYPE**
-- **`pe security`** - Security testing (OWASP LLM Top 10) ✅ **IMPLEMENTED**
-
-### Utilities
-- **`pe extract`** - Extract structured data from prompts ✅ **IMPLEMENTED**
-- **`pe experimental metrics`** - Calculate advanced evaluation metrics ⚠️ **EXPERIMENTAL**
-- **`pe template`** - Manage prompt templates ✅ **IMPLEMENTED**
-- **`pe profile`** - Profiling and observability ✅ **IMPLEMENTED**
-- **`pe interactive`** - Interactive REPL mode ✅ **IMPLEMENTED**
-- **`pe watch`** - Watch files for changes ✅ **IMPLEMENTED**
-- **`pe convert`** - Convert between formats ✅ **IMPLEMENTED**
-
-## Documentation by Implementation Status
-
-### ✅ Current Implementation (Accurate)
-- [GETTING_STARTED.md](GETTING_STARTED.md) - Getting started guide
-- [INSTALLATION.md](INSTALLATION.md) - Installation instructions
-- [CLI_REFERENCE.md](CLI_REFERENCE.md) - Command reference
-- [CLI_REFERENCE.md](CLI_REFERENCE.md) - CLI reference
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
-- [MODULES.md](MODULES.md) - Module system
-- [MODULE_REGISTRY.md](MODULE_REGISTRY.md) - Module registry
-- [PLUGINS.md](PLUGINS.md) - Plugin system
-- [ATTESTATION.md](ATTESTATION.md) - Cryptographic attestation
-
-### ⚠️ Partially Implemented
-- [OVERVIEW.md](OVERVIEW.md) - Contains both implemented and aspirational features
-- [TUTORIAL.md](TUTORIAL.md) - Basic tutorial (some advanced features not implemented)
-- [GETTING_STARTED.md](GETTING_STARTED.md) - Quick start guide
-- [ADVANCED_FEATURES.md](ADVANCED_FEATURES.md) - Mix of implemented and planned features
-- [API_REFERENCE.md](API_REFERENCE.md) - API reference (provider interfaces exist, some incomplete)
-- [OPTIMIZATION_EXAMPLES.md](OPTIMIZATION_EXAMPLES.md) - Optimization examples (methods vary in completeness)
-- [STARLARK_EXTENSION.md](STARLARK_EXTENSION.md) - Starlark integration (partial)
-- [PROMPTFOO_INTEGRATION.md](PROMPTFOO_INTEGRATION.md) - Integration guide (basic compatibility)
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Troubleshooting guide
-
-### 🔮 Future/Planned Features
-The tracked source of truth for planned work is [../ROADMAP.md](../ROADMAP.md).
-
-All documents in [future/](future/) directory describe planned features that are not yet implemented:
-- Comprehensive features
-- World-class tooling
-- Advanced optimization guides
-- Complete API references
-- Competitive analysis
-- Research foundations
-- And more...
-
-## Key Implementation Notes
-
-### What Actually Works
-1. **Core Evaluation**: Full promptfoo-compatible evaluation system
-2. **Pipeline Commands**: Unix-style commands for composability
-3. **Module System**: Go mod-style dependency management with gist registry
-4. **Attestation**: Prototype command group under `pe exp attest`
-5. **Plugin System**: Runtime plugin discovery and execution
-6. **Optimization**: Basic metaprompting techniques (PE2, TextGrad, etc.)
-
-### Major Limitations
-1. **Provider Integration**: Native providers implemented but cgpt still default for compatibility
-2. **Test Coverage**: Measured at 40.8% overall; see [TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md)
-3. **Documentation Accuracy**: Documentation reorganized to separate current vs future features
-4. **Distributed System**: Core implementation complete, CLI integration in progress
-5. **Advanced Features**: Many "world-class" features are designs, not implementations
-
-### Provider Support
-Currently supported providers:
-- **Native OpenAI**: Direct API integration (GPT-3.5, GPT-4, etc.)
-- **Native Anthropic**: Direct API integration (Claude 3 family)
-- **cgpt wrapper**: Fallback for compatibility (supports all cgpt providers)
-- Google AI (Gemini) - via cgpt
-- Local models - via cgpt
-
-Native providers are fully implemented and can be used with `--provider openai` or `--provider anthropic`.
-
-## Configuration Format
-
-PE uses YAML configuration files compatible with promptfoo:
-
-```yaml
-prompts:
-  - "What is the capital of {{country}}?"
-
-providers:
-  - "openai:gpt-4"
-  - "anthropic:claude-3-haiku"
-
-tests:
-  - vars:
-      country: "France"
-    assert:
-      - type: "contains"
-        value: "Paris"
-```
+- [CURRENT_STATUS.md](CURRENT_STATUS.md) - current implementation status.
+- [TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md) - measured coverage
+  baseline and low-coverage packages.
+- [IMPLEMENTATION_TODOS.md](IMPLEMENTATION_TODOS.md) - tombstone pointing to
+  [../ROADMAP.md](../ROADMAP.md).
+- [PLANNED_COMMANDS.md](PLANNED_COMMANDS.md) - aspirational command ideas, not
+  current command status.
 
 ## Examples
 
-Basic examples are available in:
-- [../examples/](../examples/) - Working examples
-- [../example/](../example/) - Legacy example package
-- [future/EXAMPLES_LIBRARY.md](future/EXAMPLES_LIBRARY.md) - Comprehensive examples (planned)
+- [../examples/](../examples/) - current runnable examples.
+- [../example/](../example/) - legacy example package.
 
-## Getting Help
+## Future And Archive
 
-- **Built-in help**: `pe help [command]`
-- **Issues**: [GitHub Issues](https://github.com/tmc/pe/issues)
-- **Source**: [GitHub Repository](https://github.com/tmc/pe)
-
-## Contributing
-
-PE is under active development. The most helpful contributions:
-
-1. **Test Coverage**: Improve coverage from the current measured 40.8% baseline
-2. **Provider Integration**: Complete native provider implementations
-3. **Documentation Accuracy**: Fix gaps between docs and implementation
-4. **Core Features**: Complete partially implemented features
-
-## Recent Improvements
-
-- **Native Provider Support**: Added direct API integrations for OpenAI and Anthropic
-- **Go Benchmark Format**: Added `--go-bench` flag for compatibility with Go perf tools
-- **Test Coverage**: Captured a measured 40.8% baseline in [TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md)
-- **Distributed Systems**: Implemented consensus and distributed execution frameworks
-- **Documentation**: Reorganized to clearly separate implemented vs planned features
-- **Security**: Added comprehensive security architecture documentation
-
-## Development Status
-
-PE follows semantic versioning. Current status:
-- **Version**: Pre-1.0 (under development)
-- **Stability**: Core evaluation features are stable
-- **API**: Subject to change during development
-
-This documentation will be updated as features are implemented and stabilized.
+- [future/](future/) contains aspirational designs and future-facing guides.
+  These documents are not current implementation references unless promoted
+  into the main docs.
+- [archive/](archive/) contains historical reports, older roadmaps, and
+  superseded documentation.

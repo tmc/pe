@@ -1,6 +1,8 @@
-# Getting Started with PE: A Practical Guide
+# Getting Started with PE
 
-Welcome to PE (Prompt Engineering), the comprehensive toolkit for building, testing, and optimizing AI prompts. This guide will walk you through everything you need to know to get productive quickly.
+This is the shortest path from installation to a working prompt. For a longer
+walkthrough, see [TUTORIAL.md](TUTORIAL.md). For command flags, use
+[CLI_REFERENCE.md](CLI_REFERENCE.md) or `pe help [command]`.
 
 ## 🚀 Quick Start (5 minutes)
 
@@ -35,13 +37,13 @@ PE works with multiple AI providers. Choose one:
 #### Option A: OpenAI (Recommended for beginners)
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
-pe eval eval-config.yaml --max-concurrency 4
+pe run summarize.prompt --provider openai:gpt-4 --var text="Your text here"
 ```
 
 #### Option B: Anthropic Claude
 ```bash
 export ANTHROPIC_API_KEY="your-api-key-here"
-pe eval eval-config.yaml --timeout 60s
+pe run summarize.prompt --provider anthropic:claude-3-haiku-20240307 --var text="Your text here"
 ```
 
 #### Option C: Local Models with Ollama
@@ -49,7 +51,7 @@ pe eval eval-config.yaml --timeout 60s
 # First install and start Ollama
 ollama pull llama2
 export OLLAMA_HOST="http://localhost:11434"
-pe eval eval-config.yaml --dry-run
+pe run summarize.prompt --provider ollama:llama2 --var text="Your text here"
 ```
 
 You have now run a prompt with PE.
@@ -540,7 +542,7 @@ Now that you've mastered the basics:
 
 ### Learning Resources
 
-- [API Reference](API_REFERENCE.md) - Complete command documentation
+- [CLI Reference](CLI_REFERENCE.md) - Complete command documentation
 - [Advanced Features](ADVANCED_FEATURES.md) - Deep dive into power features  
 - [Examples Library](../examples/) - Real-world prompt examples
 - [Architecture Guide](ARCHITECTURE.md) - Understanding PE internals

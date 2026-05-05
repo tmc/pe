@@ -2,6 +2,12 @@
 
 Learn PE through hands-on exercises and real-world projects. This tutorial takes you from beginner to advanced user with practical, step-by-step walkthroughs.
 
+For a shorter first-run path, use [GETTING_STARTED.md](GETTING_STARTED.md).
+For flags and exact command shapes, use [CLI_REFERENCE.md](CLI_REFERENCE.md)
+and `pe help [command]`. This tutorial is intentionally broader than the quick
+start; later chapters include experimental command groups and production
+workflow sketches.
+
 ## 🎯 Tutorial Overview
 
 **What you'll build:**
@@ -1594,7 +1600,7 @@ You've completed the comprehensive PE hands-on tutorial! You now have:
 
 ## 📚 Additional Resources
 
-- [API Reference](API_REFERENCE.md) - Complete command documentation
+- [CLI Reference](CLI_REFERENCE.md) - Complete command documentation
 - [Advanced Features](ADVANCED_FEATURES.md) - Deep dive into power features
 - [Architecture Guide](ARCHITECTURE.md) - Understanding PE internals
 - [Community Examples](../examples/) - Real-world prompt libraries
