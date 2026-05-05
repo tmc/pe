@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"runtime"
+	"sort"
 	"sync"
 	"time"
 )
@@ -49,6 +50,44 @@ type LogEntry struct {
 	Caller    *CallerInfo            `json:"caller,omitempty"`
 	TraceID   string                 `json:"trace_id,omitempty"`
 	SpanID    string                 `json:"span_id,omitempty"`
+}
+
+// LogFormatter formats log entries for output.
+type LogFormatter interface {
+	Format(entry LogEntry) ([]byte, error)
+}
+
+// JSONLogFormatter formats entries as newline-delimited JSON.
+type JSONLogFormatter struct{}
+
+// Format formats entry as JSON.
+func (JSONLogFormatter) Format(entry LogEntry) ([]byte, error) {
+	return json.Marshal(entry)
+}
+
+// TextLogFormatter formats entries for human-readable logs.
+type TextLogFormatter struct{}
+
+// Format formats entry as text.
+func (TextLogFormatter) Format(entry LogEntry) ([]byte, error) {
+	line := fmt.Sprintf("%s [%s] %s", entry.Timestamp.Format(time.RFC3339), entry.Level, entry.Message)
+	if entry.TraceID != "" {
+		line += " trace_id=" + entry.TraceID
+	}
+	if entry.SpanID != "" {
+		line += " span_id=" + entry.SpanID
+	}
+	if len(entry.Fields) > 0 {
+		keys := make([]string, 0, len(entry.Fields))
+		for k := range entry.Fields {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			line += fmt.Sprintf(" %s=%v", k, entry.Fields[k])
+		}
+	}
+	return []byte(line), nil
 }
 
 // CallerInfo contains information about the code location that generated the log
@@ -120,22 +159,25 @@ func Any(key string, value interface{}) Field {
 
 // StructuredLogger is the main implementation of the Logger interface
 type StructuredLogger struct {
-	mu           sync.RWMutex
-	level        LogLevel
-	output       io.Writer
-	fields       map[string]interface{}
+	mu            sync.RWMutex
+	level         LogLevel
+	output        io.Writer
+	formatter     LogFormatter
+	fields        map[string]interface{}
 	includeCaller bool
-	traceEnabled bool
+	traceEnabled  bool
+	aggregator    *LogAggregator
 }
 
 // NewStructuredLogger creates a new structured logger
 func NewStructuredLogger() *StructuredLogger {
 	return &StructuredLogger{
-		level:        InfoLevel,
-		output:       os.Stdout,
-		fields:       make(map[string]interface{}),
+		level:         InfoLevel,
+		output:        os.Stdout,
+		formatter:     JSONLogFormatter{},
+		fields:        make(map[string]interface{}),
 		includeCaller: true,
-		traceEnabled: true,
+		traceEnabled:  true,
 	}
 }
 
@@ -153,6 +195,16 @@ func (l *StructuredLogger) SetOutput(w io.Writer) {
 	l.output = w
 }
 
+// SetFormatter sets the formatter used for future log entries.
+func (l *StructuredLogger) SetFormatter(formatter LogFormatter) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if formatter == nil {
+		formatter = JSONLogFormatter{}
+	}
+	l.formatter = formatter
+}
+
 // SetIncludeCaller enables or disables caller information in logs
 func (l *StructuredLogger) SetIncludeCaller(include bool) {
 	l.mu.Lock()
@@ -165,6 +217,13 @@ func (l *StructuredLogger) SetTraceEnabled(enabled bool) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.traceEnabled = enabled
+}
+
+// SetAggregator records future log entries in aggregator.
+func (l *StructuredLogger) SetAggregator(aggregator *LogAggregator) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.aggregator = aggregator
 }
 
 // Debug logs a debug message
@@ -197,22 +256,24 @@ func (l *StructuredLogger) Fatal(message string, fields ...Field) {
 func (l *StructuredLogger) With(fields ...Field) Logger {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	
+
 	newFields := make(map[string]interface{})
 	for k, v := range l.fields {
 		newFields[k] = v
 	}
-	
+
 	for _, field := range fields {
 		newFields[field.Key] = field.Value
 	}
-	
+
 	return &StructuredLogger{
-		level:        l.level,
-		output:       l.output,
-		fields:       newFields,
+		level:         l.level,
+		output:        l.output,
+		formatter:     l.formatter,
+		fields:        newFields,
 		includeCaller: l.includeCaller,
-		traceEnabled: l.traceEnabled,
+		traceEnabled:  l.traceEnabled,
+		aggregator:    l.aggregator,
 	}
 }
 
@@ -220,12 +281,12 @@ func (l *StructuredLogger) With(fields ...Field) Logger {
 func (l *StructuredLogger) WithContext(ctx context.Context) Logger {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	
+
 	newFields := make(map[string]interface{})
 	for k, v := range l.fields {
 		newFields[k] = v
 	}
-	
+
 	// Extract trace information if available
 	if l.traceEnabled {
 		if span := SpanFromContext(ctx); span != nil {
@@ -234,14 +295,19 @@ func (l *StructuredLogger) WithContext(ctx context.Context) Logger {
 				newFields["parent_span_id"] = span.ParentID
 			}
 		}
+		if correlationID := CorrelationIDFromContext(ctx); correlationID != "" {
+			newFields["correlation_id"] = correlationID
+		}
 	}
-	
+
 	return &StructuredLogger{
-		level:        l.level,
-		output:       l.output,
-		fields:       newFields,
+		level:         l.level,
+		output:        l.output,
+		formatter:     l.formatter,
+		fields:        newFields,
 		includeCaller: l.includeCaller,
-		traceEnabled: l.traceEnabled,
+		traceEnabled:  l.traceEnabled,
+		aggregator:    l.aggregator,
 	}
 }
 
@@ -249,38 +315,42 @@ func (l *StructuredLogger) WithContext(ctx context.Context) Logger {
 func (l *StructuredLogger) log(level LogLevel, message string, fields ...Field) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	
+
 	if level < l.level {
 		return
 	}
-	
+
 	entry := LogEntry{
 		Timestamp: time.Now(),
 		Level:     level.String(),
 		Message:   message,
 		Fields:    make(map[string]interface{}),
 	}
-	
+
 	// Add base fields
 	for k, v := range l.fields {
 		entry.Fields[k] = v
 	}
-	
+
 	// Add provided fields
 	for _, field := range fields {
 		entry.Fields[field.Key] = field.Value
 	}
-	
+
 	// Extract trace IDs if present in fields
 	if traceID, ok := entry.Fields["trace_id"].(string); ok && traceID != "" {
 		entry.TraceID = traceID
 		delete(entry.Fields, "trace_id")
 	}
+	if correlationID, ok := entry.Fields["correlation_id"].(string); ok && correlationID != "" {
+		entry.TraceID = correlationID
+		delete(entry.Fields, "correlation_id")
+	}
 	if spanID, ok := entry.Fields["span_id"].(string); ok && spanID != "" {
 		entry.SpanID = spanID
 		delete(entry.Fields, "span_id")
 	}
-	
+
 	// Add caller information if enabled
 	if l.includeCaller {
 		if pc, file, line, ok := runtime.Caller(2); ok {
@@ -293,24 +363,27 @@ func (l *StructuredLogger) log(level LogLevel, message string, fields ...Field) 
 			}
 		}
 	}
-	
+
 	// Remove empty fields map if no additional fields
 	if len(entry.Fields) == 0 {
 		entry.Fields = nil
 	}
-	
-	// Marshal and write
-	data, err := json.Marshal(entry)
+
+	if l.aggregator != nil {
+		l.aggregator.Add(entry)
+	}
+
+	data, err := l.formatter.Format(entry)
 	if err != nil {
 		// Fallback to simple text format
-		fmt.Fprintf(l.output, "[%s] %s %s: %s\n", 
-			entry.Timestamp.Format(time.RFC3339), 
-			entry.Level, 
-			entry.TraceID, 
+		fmt.Fprintf(l.output, "[%s] %s %s: %s\n",
+			entry.Timestamp.Format(time.RFC3339),
+			entry.Level,
+			entry.TraceID,
 			entry.Message)
 		return
 	}
-	
+
 	l.output.Write(data)
 	l.output.Write([]byte("\n"))
 }
@@ -332,6 +405,7 @@ type ConsoleLogger struct {
 // NewConsoleLogger creates a logger optimized for console output
 func NewConsoleLogger() *ConsoleLogger {
 	logger := NewStructuredLogger()
+	logger.SetFormatter(TextLogFormatter{})
 	return &ConsoleLogger{StructuredLogger: logger}
 }
 
@@ -339,18 +413,18 @@ func NewConsoleLogger() *ConsoleLogger {
 func (l *ConsoleLogger) log(level LogLevel, message string, fields ...Field) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	
+
 	if level < l.level {
 		return
 	}
-	
+
 	timestamp := time.Now().Format("15:04:05")
 	levelColor := l.levelColor(level)
 	resetColor := "\033[0m"
-	
+
 	// Build the log line
 	logLine := fmt.Sprintf("%s %s[%s]%s %s", timestamp, levelColor, level.String(), resetColor, message)
-	
+
 	// Add fields if any
 	allFields := make(map[string]interface{})
 	for k, v := range l.fields {
@@ -359,7 +433,7 @@ func (l *ConsoleLogger) log(level LogLevel, message string, fields ...Field) {
 	for _, field := range fields {
 		allFields[field.Key] = field.Value
 	}
-	
+
 	if len(allFields) > 0 {
 		logLine += " "
 		first := true
@@ -371,7 +445,7 @@ func (l *ConsoleLogger) log(level LogLevel, message string, fields ...Field) {
 			first = false
 		}
 	}
-	
+
 	logLine += "\n"
 	l.output.Write([]byte(logLine))
 }
@@ -472,11 +546,11 @@ func LogProviderResponse(ctx context.Context, provider, model string, response s
 		Int("response_length", len(response)),
 		Duration("duration", duration),
 	}
-	
+
 	for key, value := range tokenUsage {
 		fields = append(fields, Int("tokens_"+key, value))
 	}
-	
+
 	WithContext(ctx).Info("Provider request completed", fields...)
 }
 
@@ -504,14 +578,14 @@ func LogCommandEnd(ctx context.Context, command string, duration time.Duration, 
 	if exitCode != 0 {
 		level = ErrorLevel
 	}
-	
+
 	logger := WithContext(ctx)
 	fields := []Field{
 		String("command", command),
 		Duration("duration", duration),
 		Int("exit_code", exitCode),
 	}
-	
+
 	if level == ErrorLevel {
 		logger.Error("Command failed", fields...)
 	} else {
@@ -530,7 +604,7 @@ func LogEvaluationStart(ctx context.Context, configName string, testCount int) {
 // LogEvaluationEnd logs the end of an evaluation
 func LogEvaluationEnd(ctx context.Context, configName string, passed, failed int, duration time.Duration) {
 	successRate := float64(passed) / float64(passed+failed) * 100
-	
+
 	WithContext(ctx).Info("Evaluation completed",
 		String("config", configName),
 		Int("passed", passed),
