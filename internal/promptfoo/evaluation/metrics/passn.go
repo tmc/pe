@@ -496,6 +496,18 @@ func calculateTrend(evaluations []PassNEvaluation) string {
 		return ""
 	}
 
+	if len(evaluations) == 2 {
+		first := evaluations[0].PassRate
+		last := evaluations[1].PassRate
+		if last > first*1.1 {
+			return "improving"
+		}
+		if last < first*0.9 {
+			return "declining"
+		}
+		return "stable"
+	}
+
 	// Simple trend calculation based on recent evaluations
 	recent := evaluations[len(evaluations)-3:]
 	if len(recent) < 2 {
