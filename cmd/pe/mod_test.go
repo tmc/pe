@@ -383,6 +383,63 @@ func TestModVendorCmd_NoPeMod(t *testing.T) {
 	}
 }
 
+func TestModVendorCmd_CopiesCachedModule(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	writeVerifyPeMod(t)
+	srcDir := filepath.Join(".pe", "cache", "modules", "example.com", "mod@v1.0.0")
+	nestedDir := filepath.Join(srcDir, "nested")
+	if err := os.MkdirAll(nestedDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcDir, "prompt.pe"), []byte("hello\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(nestedDir, "extra.pe"), []byte("extra\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := runModVendor(modVendorCmd, nil); err != nil {
+		t.Fatalf("runModVendor: %v", err)
+	}
+	got, err := os.ReadFile(filepath.Join("vendor", "example.com", "mod@v1.0.0", "nested", "extra.pe"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "extra\n" {
+		t.Fatalf("vendored content = %q", got)
+	}
+	modules, err := os.ReadFile(filepath.Join("vendor", "modules.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(string(modules)) != "example.com/mod@v1.0.0" {
+		t.Fatalf("modules.txt = %q", modules)
+	}
+}
+
+func TestCopyModuleDirRejectsSymlink(t *testing.T) {
+	tmpDir := t.TempDir()
+	src := filepath.Join(tmpDir, "src")
+	dst := filepath.Join(tmpDir, "dst")
+	if err := os.MkdirAll(src, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(src, "target"), []byte("x"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("target", filepath.Join(src, "link")); err != nil {
+		t.Skipf("symlink not available: %v", err)
+	}
+	err := copyModuleDir(src, dst)
+	if err == nil || !strings.Contains(err.Error(), "refusing symlink") {
+		t.Fatalf("copyModuleDir error = %v, want symlink error", err)
+	}
+}
+
 func TestModDownloadCmd_NoPeMod(t *testing.T) {
 	tmpDir := t.TempDir()
 	oldWd, _ := os.Getwd()

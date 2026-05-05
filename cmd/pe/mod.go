@@ -839,27 +839,21 @@ func runModVendor(cmd *cobra.Command, args []string) error {
 	// Create modules.txt file listing vendored modules
 	var modulesList []string
 
-	// Copy each required module from cache to vendor
-	cacheDir := filepath.Join(".pe", "cache", "modules")
 	for _, req := range file.Require {
-		srcDir := filepath.Join(cacheDir, string(req.Mod)+"@"+req.Version)
-		destDir := filepath.Join(vendorDir, string(req.Mod)+"@"+req.Version)
-
-		// Check if module exists in cache
-		if _, err := os.Stat(srcDir); os.IsNotExist(err) {
+		srcDir, err := downloadedModuleDir(string(req.Mod), req.Version)
+		if err != nil {
 			fmt.Printf("Warning: Module %s@%s not found in cache, run 'pe mod download' first\n", req.Mod, req.Version)
 			continue
 		}
-
-		// Create destination directory
-		if err := os.MkdirAll(destDir, 0755); err != nil {
-			return fmt.Errorf("creating vendor module directory: %w", err)
+		destDir, err := containedFilePath(vendorDir, filepath.FromSlash(string(req.Mod)+"@"+req.Version))
+		if err != nil {
+			return fmt.Errorf("resolving vendor module directory: %w", err)
 		}
-
-		// Copy module files (placeholder - would copy actual files)
-		moduleInfo := fmt.Sprintf("# %s@%s\n# Vendored on %s\n", req.Mod, req.Version, time.Now().Format(time.RFC3339))
-		if err := os.WriteFile(filepath.Join(destDir, "module.info"), []byte(moduleInfo), 0644); err != nil {
-			return fmt.Errorf("writing vendored module info: %w", err)
+		if err := os.RemoveAll(destDir); err != nil {
+			return fmt.Errorf("clearing vendor module directory: %w", err)
+		}
+		if err := copyModuleDir(srcDir, destDir); err != nil {
+			return fmt.Errorf("copying module %s@%s: %w", req.Mod, req.Version, err)
 		}
 
 		modulesList = append(modulesList, fmt.Sprintf("%s@%s", req.Mod, req.Version))
@@ -874,6 +868,43 @@ func runModVendor(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Vendored %d modules\n", len(modulesList))
 	return nil
+}
+
+func copyModuleDir(src, dst string) error {
+	return filepath.WalkDir(src, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		target, err := containedFilePath(dst, rel)
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			return os.MkdirAll(target, 0755)
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("refusing symlink %s", path)
+		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("refusing non-regular file %s", path)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, info.Mode().Perm())
+	})
 }
 
 func runModVerify(cmd *cobra.Command, args []string) error {

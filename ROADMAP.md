@@ -1231,7 +1231,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Fix `pe mod init` with proper initialization
 - [x] Implement `pe mod download` with real registry
 - [ ] Complete `pe mod tidy` functionality
-- [ ] Implement `pe mod vendor` properly
+- [x] Implement `pe mod vendor` properly
 - [x] Add `pe mod verify` for integrity checking
 - [x] Implement `pe mod list` for installed modules
 - [x] Add `pe mod search` for registry search
