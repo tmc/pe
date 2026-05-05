@@ -1338,7 +1338,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Implement backward compatibility shims
 - [ ] Add command aliases for compatibility
 - [ ] Update command help system
-- [ ] Add command search functionality
+- [x] Add command search functionality
 - [ ] Update shell completion scripts
 - [ ] Test all command paths
 

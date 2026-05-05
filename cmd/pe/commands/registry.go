@@ -94,6 +94,21 @@ func (r *CommandRegistry) Discover() []Metadata {
 	return out
 }
 
+// Search returns commands whose name, group, or summary contains query.
+func (r *CommandRegistry) Search(query string) []Metadata {
+	query = strings.ToLower(query)
+	var out []Metadata
+	for _, meta := range r.Discover() {
+		if query == "" ||
+			strings.Contains(strings.ToLower(meta.Name), query) ||
+			strings.Contains(strings.ToLower(meta.Group), query) ||
+			strings.Contains(strings.ToLower(meta.Summary), query) {
+			out = append(out, meta)
+		}
+	}
+	return out
+}
+
 // Groups returns groups sorted by name.
 func (r *CommandRegistry) Groups() []CommandGroup {
 	names := make([]string, 0, len(r.groups))

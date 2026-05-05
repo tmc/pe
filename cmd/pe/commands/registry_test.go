@@ -38,6 +38,24 @@ func TestCommandRegistryRejectsDuplicates(t *testing.T) {
 	}
 }
 
+func TestCommandRegistrySearch(t *testing.T) {
+	registry := NewRegistry()
+	if err := registry.Register("pipeline", &cobra.Command{Use: "stream", Short: "stream text"}, Metadata{}); err != nil {
+		t.Fatalf("Register stream: %v", err)
+	}
+	if err := registry.Register("module", &cobra.Command{Use: "mod", Short: "manage packages"}, Metadata{}); err != nil {
+		t.Fatalf("Register mod: %v", err)
+	}
+	got := registry.Search("pack")
+	if len(got) != 1 || got[0].Name != "mod" {
+		t.Fatalf("Search(pack) = %+v", got)
+	}
+	got = registry.Search("pipe")
+	if len(got) != 1 || got[0].Name != "stream" {
+		t.Fatalf("Search(pipe) = %+v", got)
+	}
+}
+
 func TestCommandRegistryAddTo(t *testing.T) {
 	registry := NewRegistry()
 	if err := registry.Register("core", &cobra.Command{Use: "run"}, Metadata{}); err != nil {
