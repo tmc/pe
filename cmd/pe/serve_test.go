@@ -2,11 +2,14 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestServeCmdDefaultsToLocalhost(t *testing.T) {
@@ -43,6 +46,45 @@ func TestValidateServeAddr(t *testing.T) {
 	}
 }
 
+func TestServeCmdShutdownOnContextCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	cmd := serveCmd()
+	var stdout, stderr bytes.Buffer
+	cmd.SetContext(ctx)
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"--addr", "127.0.0.1:0"})
+
+	done := make(chan error, 1)
+	go func() {
+		done <- cmd.Execute()
+	}()
+
+	deadline := time.After(5 * time.Second)
+	for !strings.Contains(stdout.String(), "serving PE API on http://127.0.0.1:0") {
+		select {
+		case err := <-done:
+			t.Fatalf("Execute returned before serving: %v, stderr=%q", err, stderr.String())
+		case <-deadline:
+			t.Fatalf("server did not start, stdout=%q stderr=%q", stdout.String(), stderr.String())
+		default:
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+
+	cancel()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Execute() error = %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("server did not shut down after context cancel")
+	}
+}
+
 func TestServeHealthz(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	rec := httptest.NewRecorder()
@@ -54,6 +96,54 @@ func TestServeHealthz(t *testing.T) {
 	}
 	if got := rec.Body.String(); !strings.Contains(got, `"status":"ok"`) {
 		t.Fatalf("body = %q, want status ok", got)
+	}
+}
+
+func TestServeMethodRejection(t *testing.T) {
+	tests := []struct {
+		name   string
+		method string
+		path   string
+		allow  string
+	}{
+		{name: "healthz post", method: http.MethodPost, path: "/healthz", allow: http.MethodGet},
+		{name: "format get", method: http.MethodGet, path: "/api/v1/format", allow: http.MethodPost},
+		{name: "render get", method: http.MethodGet, path: "/api/v1/render", allow: http.MethodPost},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(tt.method, tt.path, nil)
+			rec := httptest.NewRecorder()
+
+			newServeServer().ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusMethodNotAllowed {
+				t.Fatalf("status = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+			}
+			if got := rec.Header().Get("Allow"); got != tt.allow {
+				t.Fatalf("Allow = %q, want %q", got, tt.allow)
+			}
+			if got := rec.Body.String(); !strings.Contains(got, `"error":"method not allowed"`) {
+				t.Fatalf("body = %q, want structured method error", got)
+			}
+		})
+	}
+}
+
+func TestServeNotFoundIsJSON(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/missing", nil)
+	rec := httptest.NewRecorder()
+
+	newServeServer().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+	if got := rec.Header().Get("Content-Type"); got != "application/json" {
+		t.Fatalf("content-type = %q, want application/json", got)
+	}
+	if got := rec.Body.String(); !strings.Contains(got, `"error":"not found"`) {
+		t.Fatalf("body = %q, want structured not found", got)
 	}
 }
 
@@ -76,6 +166,25 @@ func TestServeFormat(t *testing.T) {
 	}
 }
 
+func TestServeFormatOversizedBody(t *testing.T) {
+	body := io.MultiReader(
+		strings.NewReader(`{"prompt":"`),
+		strings.NewReader(strings.Repeat("x", maxServeBodyBytes)),
+		strings.NewReader(`"}`),
+	)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/format", body)
+	rec := httptest.NewRecorder()
+
+	newServeServer().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("status = %d, want %d: %s", rec.Code, http.StatusRequestEntityTooLarge, rec.Body.String())
+	}
+	if got := rec.Body.String(); !strings.Contains(got, `"error":"request body too large"`) {
+		t.Fatalf("body = %q, want size error", got)
+	}
+}
+
 func TestServeFormatBadRequests(t *testing.T) {
 	tests := []struct {
 		name string
@@ -88,6 +197,51 @@ func TestServeFormatBadRequests(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/format", strings.NewReader(tt.body))
+			rec := httptest.NewRecorder()
+
+			newServeServer().ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusBadRequest {
+				t.Fatalf("status = %d, want %d: %s", rec.Code, http.StatusBadRequest, rec.Body.String())
+			}
+			if got := rec.Body.String(); !strings.Contains(got, `"error"`) {
+				t.Fatalf("body = %q, want error response", got)
+			}
+		})
+	}
+}
+
+func TestServeRender(t *testing.T) {
+	body := bytes.NewBufferString(`{"prompt":"Hello {{.name}}","variables":{"name":"PE"}}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/render", body)
+	rec := httptest.NewRecorder()
+
+	newServeServer().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var got renderResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+	if got.Prompt != "Hello PE" {
+		t.Fatalf("prompt = %q, want rendered prompt", got.Prompt)
+	}
+}
+
+func TestServeRenderBadRequests(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+	}{
+		{name: "malformed json", body: `{`},
+		{name: "empty prompt", body: `{"prompt":"   "}`},
+		{name: "unknown field", body: `{"prompt":"hello","extra":true}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/render", strings.NewReader(tt.body))
 			rec := httptest.NewRecorder()
 
 			newServeServer().ServeHTTP(rec, req)

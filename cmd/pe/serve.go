@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -14,6 +15,7 @@ import (
 )
 
 const defaultServeAddr = "127.0.0.1:8080"
+const maxServeBodyBytes = 1 << 20
 
 type serveServer struct {
 	mux *http.ServeMux
@@ -26,6 +28,15 @@ type formatRequest struct {
 }
 
 type formatResponse struct {
+	Prompt string `json:"prompt"`
+}
+
+type renderRequest struct {
+	Prompt    string            `json:"prompt"`
+	Variables map[string]string `json:"variables,omitempty"`
+}
+
+type renderResponse struct {
 	Prompt string `json:"prompt"`
 }
 
@@ -53,6 +64,9 @@ somewhere else.`,
 				Addr:              addr,
 				Handler:           srv,
 				ReadHeaderTimeout: 5 * time.Second,
+				ReadTimeout:       10 * time.Second,
+				WriteTimeout:      10 * time.Second,
+				IdleTimeout:       30 * time.Second,
 			}
 			errc := make(chan error, 1)
 			go func() {
@@ -94,27 +108,35 @@ func validateServeAddr(addr string) error {
 
 func newServeServer() *serveServer {
 	s := &serveServer{mux: http.NewServeMux()}
-	s.mux.HandleFunc("GET /healthz", s.handleHealthz)
-	s.mux.HandleFunc("POST /api/v1/format", s.handleFormat)
+	s.mux.HandleFunc("/healthz", s.handleHealthz)
+	s.mux.HandleFunc("/api/v1/format", s.handleFormat)
+	s.mux.HandleFunc("/api/v1/render", s.handleRender)
 	return s
 }
 
 func (s *serveServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/healthz" && r.URL.Path != "/api/v1/format" && r.URL.Path != "/api/v1/render" {
+		writeJSON(w, http.StatusNotFound, errorResponse{Error: "not found"})
+		return
+	}
 	s.mux.ServeHTTP(w, r)
 }
 
 func (s *serveServer) handleHealthz(w http.ResponseWriter, r *http.Request) {
+	if !requireMethod(w, r, http.MethodGet) {
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (s *serveServer) handleFormat(w http.ResponseWriter, r *http.Request) {
+	if !requireMethod(w, r, http.MethodPost) {
+		return
+	}
 	defer r.Body.Close()
-	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
-	dec.DisallowUnknownFields()
 
 	var req formatRequest
-	if err := dec.Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "invalid json"})
+	if !decodeJSON(w, r, &req) {
 		return
 	}
 	if strings.TrimSpace(req.Prompt) == "" {
@@ -135,6 +157,54 @@ func (s *serveServer) handleFormat(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, formatResponse{
 		Prompt: formatPromptContent(req.Prompt, style, req.Fix),
 	})
+}
+
+func (s *serveServer) handleRender(w http.ResponseWriter, r *http.Request) {
+	if !requireMethod(w, r, http.MethodPost) {
+		return
+	}
+	defer r.Body.Close()
+
+	var req renderRequest
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if strings.TrimSpace(req.Prompt) == "" {
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "prompt is required"})
+		return
+	}
+	writeJSON(w, http.StatusOK, renderResponse{
+		Prompt: substituteVariables(req.Prompt, req.Variables),
+	})
+}
+
+func requireMethod(w http.ResponseWriter, r *http.Request, method string) bool {
+	if r.Method == method {
+		return true
+	}
+	w.Header().Set("Allow", method)
+	writeJSON(w, http.StatusMethodNotAllowed, errorResponse{Error: "method not allowed"})
+	return false
+}
+
+func decodeJSON(w http.ResponseWriter, r *http.Request, v any) bool {
+	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxServeBodyBytes))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(v); err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			writeJSON(w, http.StatusRequestEntityTooLarge, errorResponse{Error: "request body too large"})
+		} else {
+			writeJSON(w, http.StatusBadRequest, errorResponse{Error: "invalid json"})
+		}
+		return false
+	}
+	var extra any
+	if err := dec.Decode(&extra); err != io.EOF {
+		writeJSON(w, http.StatusBadRequest, errorResponse{Error: "invalid json"})
+		return false
+	}
+	return true
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
