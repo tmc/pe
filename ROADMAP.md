@@ -1153,8 +1153,8 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Document migration patterns for contributors
 
 ##### Command Migration
-- [ ] Update `cmd/pe/run.go` to use `inference.Provider`
-- [ ] Update `cmd/pe/ask.go` to use new interface
+- [x] Update `cmd/pe/run.go` to use `inference.Provider`
+- [x] Update `cmd/pe/ask.go` to use new interface
 - [ ] Update `cmd/pe/eval.go` for evaluation commands
 - [ ] Update `cmd/pe/optimize.go` and optimization commands
 - [ ] Update `cmd/pe/semantic.go` for semantic optimization
