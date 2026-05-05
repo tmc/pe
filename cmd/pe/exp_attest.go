@@ -37,8 +37,9 @@ func newExpAttestCmd() *cobra.Command {
 		Short: "Create and verify unsigned local hash manifests",
 		Long: `Create and verify deterministic SHA-256 manifests for local files.
 
-These manifests are unsigned. They detect file content changes, missing files,
-and manifest tampering, but they do not prove identity or origin.`,
+These manifests are unsigned and local-only. They detect file content changes,
+missing files, and manifest tampering, but they do not prove identity, origin,
+or freshness.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Println("Command 'attest' is an experimental prototype.")
 			cmd.Println("Use 'manifest' to create an unsigned hash manifest or 'verify' to check one.")
