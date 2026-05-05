@@ -1345,24 +1345,24 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 #### Phase 4: Testing Infrastructure (Week 6)
 
 ##### Testing Framework
-- [ ] Create `internal/testing/framework.go`
-- [ ] Implement TestFramework type
-- [ ] Add fixture management
-- [ ] Create assertion engine
-- [ ] Add test data generators
-- [ ] Implement test runners
-- [ ] Add parallel test support
-- [ ] Create test reporting
+- [x] Create `internal/testing/framework.go`
+- [x] Implement TestFramework type
+- [x] Add fixture management
+- [x] Create assertion engine
+- [x] Add test data generators
+- [x] Implement test runners
+- [x] Add parallel test support
+- [x] Create test reporting
 
 ##### Mock Infrastructure
-- [ ] Create `internal/testing/mocks/` directory
-- [ ] Implement MockProvider with behavior config
+- [x] Create `internal/testing/mocks/` directory
+- [x] Implement MockProvider with behavior config
 - [ ] Add deterministic response generation
-- [ ] Implement latency simulation
-- [ ] Add error injection capabilities
-- [ ] Create mock provider factory
-- [ ] Add call metrics tracking
-- [ ] Implement mock provider scenarios
+- [x] Implement latency simulation
+- [x] Add error injection capabilities
+- [x] Create mock provider factory
+- [x] Add call metrics tracking
+- [x] Implement mock provider scenarios
 
 ##### Provider Tests
 - [ ] Add OpenAI provider unit tests
