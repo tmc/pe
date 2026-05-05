@@ -355,6 +355,20 @@ func GetLegacyProvider(modern Provider, model string) llm.Provider {
 	return NewModernAdapter(modern, model)
 }
 
+// RegisterProviderSpec creates the provider named by spec and registers it
+// with client under the same key.
+func RegisterProviderSpec(client *Client, spec string, config map[string]interface{}) (Provider, error) {
+	if client == nil {
+		return nil, fmt.Errorf("nil inference client")
+	}
+	provider, err := CreateProviderFromSpec(spec, config)
+	if err != nil {
+		return nil, err
+	}
+	client.Register(spec, provider)
+	return provider, nil
+}
+
 func cloneLLMOptions(options map[string]interface{}) map[string]interface{} {
 	if len(options) == 0 {
 		return nil

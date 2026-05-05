@@ -1148,7 +1148,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Create `internal/inference/migration.go` with LegacyAdapter
 - [x] Implement adapter for `llm.Provider` → `inference.Provider`
 - [x] Write adapter unit tests
-- [ ] Create migration helpers for common patterns
+- [x] Create migration helpers for common patterns
 - [ ] Add temporary compatibility layer
 - [ ] Document migration patterns for contributors
 

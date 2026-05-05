@@ -261,3 +261,37 @@ func TestAdapterUnwrapHelpers(t *testing.T) {
 		t.Fatalf("MigrateProvider did not unwrap ModernAdapter")
 	}
 }
+
+func TestRegisterProviderSpec(t *testing.T) {
+	const spec = "migration-test-provider"
+	inference.Register(spec, func(config map[string]interface{}) (inference.Provider, error) {
+		if config["model"] != "test-model" {
+			t.Fatalf("config = %#v", config)
+		}
+		return &modernProvider{name: spec, models: []string{"test-model"}}, nil
+	})
+
+	client := inference.NewClient()
+	provider, err := inference.RegisterProviderSpec(client, spec, map[string]interface{}{
+		"model": "test-model",
+	})
+	if err != nil {
+		t.Fatalf("RegisterProviderSpec: %v", err)
+	}
+	if provider.Name() != spec {
+		t.Fatalf("provider name = %q, want %q", provider.Name(), spec)
+	}
+	models, err := client.Models(context.Background(), spec)
+	if err != nil {
+		t.Fatalf("Models: %v", err)
+	}
+	if !reflect.DeepEqual(models, []string{"test-model"}) {
+		t.Fatalf("models = %#v", models)
+	}
+}
+
+func TestRegisterProviderSpecRejectsNilClient(t *testing.T) {
+	if _, err := inference.RegisterProviderSpec(nil, "unused", nil); err == nil {
+		t.Fatalf("RegisterProviderSpec accepted nil client")
+	}
+}

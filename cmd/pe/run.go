@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/inference"
 	"github.com/tmc/pe/internal/inference/providers/cgpt"
-	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/prompt"
 )
 
@@ -167,13 +166,12 @@ func registerLLMProviderSpec(client *inference.Client, spec string) error {
 	if spec == "" || spec == "cgpt" || spec == "mock" {
 		return nil
 	}
-	provider, err := llm.GetProviderWithOptions(spec, nil)
+	_, err := inference.RegisterProviderSpec(client, spec, nil)
 	if err != nil {
 		if !strings.Contains(spec, ":") {
 			return fmt.Errorf("provider %q not found", spec)
 		}
 		return err
 	}
-	client.Register(spec, inference.NewLegacyAdapter(provider))
 	return nil
 }
