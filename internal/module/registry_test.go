@@ -126,6 +126,65 @@ func TestHTTPRegistryHealth(t *testing.T) {
 	}
 }
 
+func TestHTTPRegistrySendsBearerToken(t *testing.T) {
+	module := Module{Name: "example.com/prompts", Version: "v1.0.0", Files: []string{"prompt.txt"}}
+	var paths []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer test-token" {
+			t.Fatalf("Authorization = %q", r.Header.Get("Authorization"))
+		}
+		paths = append(paths, r.URL.Path)
+		switch r.URL.Path {
+		case "/modules.json":
+			_ = json.NewEncoder(w).Encode([]Module{module})
+		case "/modules/example.com/prompts/v1.0.0/prompt.txt":
+			_, _ = w.Write([]byte("hello"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	registry := NewHTTPRegistry(server.URL)
+	registry.SetToken("test-token")
+	if _, err := registry.List(); err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if err := registry.Health(); err != nil {
+		t.Fatalf("Health: %v", err)
+	}
+	if err := registry.Download(&module, t.TempDir()); err != nil {
+		t.Fatalf("Download: %v", err)
+	}
+	if len(paths) != 3 {
+		t.Fatalf("paths = %v, want 3 requests", paths)
+	}
+}
+
+func TestDefaultHTTPRegistryUsesToken(t *testing.T) {
+	t.Setenv("PE_REGISTRY_TYPE", "http")
+	t.Setenv("PE_REGISTRY_URL", "https://registry.example")
+	t.Setenv("PE_REGISTRY_TOKEN", "test-token")
+	registry, ok := DefaultRegistry().(*HTTPRegistry)
+	if !ok {
+		t.Fatalf("DefaultRegistry returned %T", registry)
+	}
+	if registry.token != "test-token" {
+		t.Fatalf("token = %q", registry.token)
+	}
+}
+
+func TestDefaultGitHubRegistryUsesToken(t *testing.T) {
+	t.Setenv("PE_REGISTRY_TYPE", "github")
+	t.Setenv("PE_REGISTRY_TOKEN", "test-token")
+	registry, ok := DefaultRegistry().(*GitHubRegistry)
+	if !ok {
+		t.Fatalf("DefaultRegistry returned %T", registry)
+	}
+	if registry.token != "test-token" {
+		t.Fatalf("token = %q", registry.token)
+	}
+}
+
 func TestLocalRegistryHealth(t *testing.T) {
 	if err := NewLocalRegistry(t.TempDir()).Health(); err != nil {
 		t.Fatalf("Health: %v", err)

@@ -65,6 +65,7 @@ type GitHubRegistry struct {
 	owner  string
 	repo   string
 	client *http.Client
+	token  string
 }
 
 // NewGitHubRegistry creates a new GitHub-based registry
@@ -80,6 +81,7 @@ func NewGitHubRegistry(owner, repo string) *GitHubRegistry {
 type HTTPRegistry struct {
 	baseURL string
 	client  *http.Client
+	token   string
 }
 
 // NewHTTPRegistry creates a new HTTP registry.
@@ -90,11 +92,21 @@ func NewHTTPRegistry(baseURL string) *HTTPRegistry {
 	}
 }
 
+// SetToken configures bearer-token authentication for GitHub requests.
+func (r *GitHubRegistry) SetToken(token string) {
+	r.token = token
+}
+
+// SetToken configures bearer-token authentication for HTTP registry requests.
+func (r *HTTPRegistry) SetToken(token string) {
+	r.token = token
+}
+
 // List returns all modules from GitHub releases
 func (r *GitHubRegistry) List() ([]*Module, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", r.owner, r.repo)
 
-	resp, err := r.client.Get(url)
+	resp, err := r.do(http.MethodGet, url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch releases: %w", err)
 	}
@@ -143,6 +155,7 @@ func (r *GitHubRegistry) Health() error {
 	if err != nil {
 		return err
 	}
+	r.authorize(req)
 	resp, err := r.client.Do(req)
 	if err != nil {
 		return err
@@ -226,7 +239,7 @@ func (r *GitHubRegistry) Search(query string) ([]*Module, error) {
 }
 
 func (r *GitHubRegistry) fetchModuleMetadata(url string) (*Module, error) {
-	resp, err := r.client.Get(url)
+	resp, err := r.do(http.MethodGet, url)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +254,7 @@ func (r *GitHubRegistry) fetchModuleMetadata(url string) (*Module, error) {
 }
 
 func (r *GitHubRegistry) downloadFile(url, destPath string) error {
-	resp, err := r.client.Get(url)
+	resp, err := r.do(http.MethodGet, url)
 	if err != nil {
 		return err
 	}
@@ -260,6 +273,21 @@ func (r *GitHubRegistry) downloadFile(url, destPath string) error {
 	return err
 }
 
+func (r *GitHubRegistry) do(method, url string) (*http.Response, error) {
+	req, err := http.NewRequest(method, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	r.authorize(req)
+	return r.client.Do(req)
+}
+
+func (r *GitHubRegistry) authorize(req *http.Request) {
+	if r.token != "" {
+		req.Header.Set("Authorization", "Bearer "+r.token)
+	}
+}
+
 // List returns all modules from the HTTP registry index.
 func (r *HTTPRegistry) List() ([]*Module, error) {
 	var modules []*Module
@@ -271,7 +299,7 @@ func (r *HTTPRegistry) List() ([]*Module, error) {
 
 // Health checks whether the HTTP registry index is reachable.
 func (r *HTTPRegistry) Health() error {
-	resp, err := r.client.Get(r.baseURL + "/modules.json")
+	resp, err := r.do(http.MethodGet, "/modules.json")
 	if err != nil {
 		return err
 	}
@@ -337,7 +365,7 @@ func (r *HTTPRegistry) Search(query string) ([]*Module, error) {
 }
 
 func (r *HTTPRegistry) getJSON(urlPath string, v interface{}) error {
-	resp, err := r.client.Get(r.baseURL + urlPath)
+	resp, err := r.do(http.MethodGet, urlPath)
 	if err != nil {
 		return err
 	}
@@ -349,7 +377,7 @@ func (r *HTTPRegistry) getJSON(urlPath string, v interface{}) error {
 }
 
 func (r *HTTPRegistry) downloadFile(urlPath, destPath string) error {
-	resp, err := r.client.Get(r.baseURL + urlPath)
+	resp, err := r.do(http.MethodGet, urlPath)
 	if err != nil {
 		return err
 	}
@@ -367,6 +395,17 @@ func (r *HTTPRegistry) downloadFile(urlPath, destPath string) error {
 	defer out.Close()
 	_, err = io.Copy(out, resp.Body)
 	return err
+}
+
+func (r *HTTPRegistry) do(method, urlPath string) (*http.Response, error) {
+	req, err := http.NewRequest(method, r.baseURL+urlPath, nil)
+	if err != nil {
+		return nil, err
+	}
+	if r.token != "" {
+		req.Header.Set("Authorization", "Bearer "+r.token)
+	}
+	return r.client.Do(req)
 }
 
 func pathForModuleFile(module *Module, file string) string {
@@ -645,7 +684,13 @@ func DefaultRegistry() Registry {
 		if repo == "" {
 			repo = "registry"
 		}
-		return NewGitHubRegistry(owner, repo)
+		registry := NewGitHubRegistry(owner, repo)
+		if token := os.Getenv("PE_REGISTRY_TOKEN"); token != "" {
+			registry.SetToken(token)
+		} else if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+			registry.SetToken(token)
+		}
+		return registry
 
 	case "local":
 		dir := os.Getenv("PE_REGISTRY_DIR")
@@ -660,7 +705,9 @@ func DefaultRegistry() Registry {
 		if url == "" {
 			url = "https://pe.dev/registry"
 		}
-		return NewHTTPRegistry(url)
+		registry := NewHTTPRegistry(url)
+		registry.SetToken(os.Getenv("PE_REGISTRY_TOKEN"))
+		return registry
 
 	default:
 		// Default to local registry

@@ -1202,7 +1202,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Implement registry client interface
 - [x] Add GitHub-based registry option
 - [x] Add HTTP API registry option
-- [ ] Implement registry authentication
+- [x] Implement registry authentication
 - [x] Add module search functionality
 - [x] Implement module metadata fetching
 - [x] Add registry health checks
