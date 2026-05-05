@@ -22,6 +22,7 @@ Use `pe version` to show version information.
 | [`run`](#run) | Execute prompt immediately | `pe run "What is AI?"` |
 | [`eval`](#eval) | Run prompt evaluations | `pe eval config.yaml` |
 | [`view`](#view) | View results in browser | `pe view` |
+| [`serve`](#serve) | Serve localhost API | `pe serve --addr 127.0.0.1:8080` |
 | [`interactive`](#interactive) | Start REPL mode | `pe interactive` |
 | [`watch`](#watch) | Auto-rerun on changes | `pe watch config.yaml` |
 | [`ask`](#ask) | Single prompt query | `pe ask "What is AI?"` |
@@ -33,8 +34,8 @@ Use `pe version` to show version information.
 | [`mod`](#mod) | Manage prompt modules | `pe mod list` |
 | [`template`](#template) | Manage prompt templates | `pe template list` |
 | [`prompt`](#prompt) | Manage prompt files | `pe prompt init analyze.prompt` |
-| [`attest`](#attest) | Cryptographic attestation (prototype) | `pe exp attest --help` |
-| [`cache`](#cache) | Cache management (prototype) | `pe exp cache --help` |
+| [`attest`](#attest) | Unsigned local file manifests | `pe exp attest manifest .` |
+| [`cache`](#cache) | Local content-addressed cache | `pe exp cache key file.txt` |
 | [`profile`](#profile) | Profiling & observability | `pe profile start --type cpu` |
 | [`distributed`](#distributed) | Distributed execution (prototype) | `pe exp distributed --help` |
 | [`doc`](#doc) | Show prompt documentation | `pe doc math-solver` |
@@ -574,6 +575,36 @@ pe eval config.yaml | pe stats
 
 ---
 
+## serve
+
+Serve a small localhost-first HTTP API.
+
+### Synopsis
+
+```bash
+pe serve [flags]
+```
+
+### Description
+
+Starts a local HTTP API. The server binds to `127.0.0.1:8080` by default.
+Use `--addr` explicitly to bind somewhere else.
+
+### Flags
+
+```bash
+--addr string   listen address (default "127.0.0.1:8080")
+```
+
+### Examples
+
+```bash
+pe serve
+pe serve --addr 127.0.0.1:9090
+```
+
+---
+
 ## diff
 
 Compare two evaluation results to detect changes and regressions.
@@ -581,8 +612,7 @@ Compare two evaluation results to detect changes and regressions.
 ### Synopsis
 
 ```bash
-pe diff [baseline_file] [current_file] [flags]
-pe eval config.yaml | pe diff baseline.json [flags]
+pe diff [baseline] [current] [flags]
 ```
 
 ### Description
@@ -591,14 +621,21 @@ Compares evaluation results to identify differences in scores, latency, costs, a
 
 ### Arguments
 
-- `baseline_file`: Baseline results file
-- `current_file`: Current results file (optional if reading from stdin)
+- `baseline`: Baseline results file
+- `current`: Current results file, or `-` to read from stdin
 
 ### Flags
 
 ```bash
--m, --metric string         Primary metric for comparison (default "score")
--t, --threshold float       Regression threshold, e.g., 0.05 = 5% (default 0.05)
+--fail-on-change                  Exit non-zero if any compared metric changes
+--fail-on-regression              Exit non-zero if regression metrics exceed thresholds
+-f, --format string               Output format: text or json (default "text")
+--max-error-increase int          Allowed error count increase with --fail-on-regression
+--max-failure-increase int        Allowed failure count increase with --fail-on-regression
+--max-latency-increase-ms float   Allowed average latency increase in milliseconds with --fail-on-regression
+--max-pass-rate-drop float        Allowed pass-rate drop in percentage points with --fail-on-regression
+--max-score-drop float            Allowed average score drop with --fail-on-regression
+--max-token-increase int32        Allowed token total increase with --fail-on-regression
 ```
 
 ### Examples
@@ -608,13 +645,13 @@ Compares evaluation results to identify differences in scores, latency, costs, a
 pe diff baseline.json current.json
 
 # From pipeline
-pe eval config.yaml | pe diff baseline.json
+pe eval config.yaml -o current.json && pe diff baseline.json current.json
 
-# Custom threshold
-pe diff old.json new.json --threshold 0.10
+# JSON output
+pe diff --format json baseline.json current.json
 
-# Different metric
-pe diff old.json new.json --metric latency
+# CI regression gate with explicit thresholds
+pe diff --fail-on-regression --max-pass-rate-drop 5 --max-latency-increase-ms 100 baseline.json current.json
 ```
 
 ---
@@ -1108,7 +1145,14 @@ pe mod download
 Add missing and remove unused modules.
 
 ```bash
-pe mod tidy
+pe mod tidy [flags]
+```
+
+Flags:
+
+```bash
+--json        Write dependency audit report as JSON
+-w, --write   Update pe.mod; add only refs with one explicit version
 ```
 
 #### mod vendor
@@ -1490,48 +1534,68 @@ pe security test --target config.yaml --comprehensive
 
 ## attest
 
-Manage cryptographic attestation prototypes.
+Create and verify deterministic SHA-256 manifests for local files.
 
 ### Synopsis
 
 ```bash
-pe exp attest --help
+pe exp attest [command]
 ```
 
 ### Description
 
-`pe exp attest` is currently a prototype entrypoint in the `pe exp` command group.
-At this stage, use `--help` to inspect the currently exposed interface.
+`pe exp attest` writes and verifies unsigned local manifests. These manifests
+detect file content changes, missing files, and manifest tampering, but they do
+not prove identity, origin, or freshness.
+
+### Commands
+
+```bash
+pe exp attest manifest [file-or-dir...] [--root .]
+pe exp attest verify <manifest.json> [--root .]
+```
 
 ### Examples
 
 ```bash
-pe exp --help
-pe exp attest --help
+pe exp attest manifest prompts/ > manifest.json
+pe exp attest verify manifest.json
 ```
 
 ---
 
 ## cache
 
-Manage content-addressed cache prototypes.
+Inspect a local content-addressed cache for files and unsigned manifests.
 
 ### Synopsis
 
 ```bash
-pe exp cache --help
+pe exp cache [command]
 ```
 
 ### Description
 
-`pe exp cache` is currently a prototype entrypoint in the `pe exp` command group.
-At this stage, use `--help` to inspect the currently exposed interface.
+`pe exp cache` stores and verifies content by SHA-256 digest. The cache is
+local only and unsigned; it does not prove identity, origin, or freshness.
+
+### Commands
+
+```bash
+pe exp cache key <file> [--manifest]
+pe exp cache put <file> [--cache-dir .pe/cache]
+pe exp cache get <sha256> [--cache-dir .pe/cache]
+pe exp cache verify <sha256> [--cache-dir .pe/cache]
+pe exp cache manifest put <manifest.json> [--cache-dir .pe/cache]
+pe exp cache manifest verify <sha256> [--cache-dir .pe/cache] [--root .]
+```
 
 ### Examples
 
 ```bash
-pe exp --help
-pe exp cache --help
+pe exp cache key prompt.txt
+pe exp cache put prompt.txt
+pe exp cache verify <sha256>
 ```
 
 ---
@@ -2114,14 +2178,26 @@ pe exp [command]
 ### Description
 
 `pe exp` groups prototype commands. Current entries include `attest`, `cache`,
-`compose`, and `distributed`.
+`compose`, `distributed`, and `optimize`.
 
 ### Examples
 
 ```bash
 pe exp --help
+pe exp optimize --help
 pe exp compose --help
-pe exp attest --help
+pe exp attest manifest prompts/ > manifest.json
+```
+
+### Local Optimization
+
+`pe exp optimize` selects prompt variants with local deterministic scores. It
+accepts input JSON with a seed plus variants or rounds, or promptfoo evaluation
+JSON from `results.prompts[].metrics.score`.
+
+```bash
+pe exp optimize --input input.json --output result.json
+pe exp optimize --scores eval-results.json --max-rounds 3
 ```
 
 ---
@@ -2386,7 +2462,7 @@ pe eval config.yaml | \
 # A/B testing
 pe eval variant-a.yaml -o a.json
 pe eval variant-b.yaml -o b.json
-pe diff a.json b.json --threshold 0.05
+pe diff --fail-on-regression --max-score-drop 0.05 a.json b.json
 ```
 
 For more examples and advanced usage, see the [main documentation](README.md).

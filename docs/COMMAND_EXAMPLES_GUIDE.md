@@ -347,8 +347,14 @@ pe eval results.yaml | pe stats
 # Compare two result sets
 pe diff baseline-results.json new-results.json
 
-# Compare a saved baseline and new run
-pe diff old.json new.json
+# JSON output for automation
+pe diff --format json baseline-results.json new-results.json
+
+# Fail CI on regressions outside explicit thresholds
+pe diff --fail-on-regression \
+  --max-pass-rate-drop 5 \
+  --max-latency-increase-ms 100 \
+  baseline-results.json new-results.json
 ```
 
 ### `pe view` - Interactive Visualization
@@ -363,14 +369,28 @@ pe view --file results.json --port 8081
 
 ## 🔐 Security and Attestation
 
-### `pe exp attest` - Cryptographic Attestation
+### `pe exp attest` - Unsigned Local Manifests
 
 ```bash
-# Inspect attestation prototype command surface
-pe exp attest --help
+# Create a deterministic unsigned manifest
+pe exp attest manifest prompts/ > manifest.json
 
-# Re-check prototype interface
-pe exp attest --help
+# Verify files against the manifest
+pe exp attest verify manifest.json
+```
+
+### `pe exp cache` - Local Content Cache
+
+```bash
+# Print a file cache key
+pe exp cache key prompt.txt
+
+# Store and verify a file by SHA-256
+pe exp cache put prompt.txt
+pe exp cache verify <sha256>
+
+# Store a canonical unsigned manifest
+pe exp cache manifest put manifest.json
 ```
 
 ### `pe security` - Security Testing
@@ -485,7 +505,7 @@ pe benchmark performance-tests.yaml --output perf-results.json
 pe security scan prompts/ --output security-results.json
 
 # 5. Compare with baseline
-pe diff baseline-results.json unit-results.json --output comparison.html
+pe diff --format json baseline-results.json unit-results.json
 
 # 6. Generate final report
 pe analyze \
@@ -503,18 +523,16 @@ echo "📊 View results: open final-report.html"
 #!/bin/bash
 # deploy-prompts.sh
 
-# 1. Optimize prompts for production
-pe experimental optimize --prompt production-prompts/ \
-  --target "latency,cost" \
-  --output optimized/
+# 1. Select a prompt variant from local deterministic scores
+pe exp optimize --input variants.json --output selected.json
 
 # 2. Validate optimized prompts
 pe eval production-validation.yaml \
   --config production-validation.yaml \
   --output validation-results.json
 
-# 3. Create attestation
-pe exp attest --help
+# 3. Create an unsigned local manifest
+pe exp attest manifest prompts/ > manifest.json
 
 # 4. Deploy with monitoring
 pe exp distributed --help
@@ -583,8 +601,8 @@ pe interactive --help
 
 ### Production Best Practices
 ```bash
-# Always use attestation in production
-pe exp attest --help
+# Create unsigned local manifests before deployment
+pe exp attest manifest prompts/ > manifest.json
 
 # Monitor benchmark output
 pe benchmark production-eval.yaml --format json --output production-benchmark.json

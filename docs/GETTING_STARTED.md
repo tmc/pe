@@ -235,16 +235,20 @@ pe eval large-eval.yaml --max-concurrency 20
 pe exp distributed --help
 ```
 
-### 4. Cryptographic Attestation
+### 4. Local Manifests and Cache
 
-Attestation is currently a prototype command group:
+The `pe exp attest` and `pe exp cache` groups are local-only prototypes. They
+use SHA-256 manifests and cache keys to detect local file changes; they do not
+prove identity, origin, or freshness.
 
 ```bash
-# Inspect attestation prototype interface
-pe exp attest --help
+# Create and verify an unsigned local manifest
+pe exp attest manifest prompts/ > manifest.json
+pe exp attest verify manifest.json
 
-# Re-check prototype surface
-pe exp attest --help
+# Store and verify a local cache entry
+pe exp cache put prompt.txt
+pe exp cache verify <sha256>
 ```
 
 ## 📊 Working with Metrics
@@ -438,6 +442,9 @@ pe mod download
 
 # Keep dependencies clean
 pe mod tidy
+
+# Audit dependency changes as JSON
+pe mod tidy --json
 
 # Create local copy for offline work
 pe mod vendor
