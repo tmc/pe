@@ -59,6 +59,10 @@ type expOptimizeScoresFile struct {
 	} `json:"results"`
 }
 
+func init() {
+	expCmd.AddCommand(expOptimizeCmd())
+}
+
 func expOptimizeCmd() *cobra.Command {
 	var inputPath string
 	var outputPath string
