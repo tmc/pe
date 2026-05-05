@@ -107,7 +107,8 @@ Evidence:
   passed.
 
 Remaining sub-tasks:
-1. Decide whether to archive or rewrite legacy `example/` demos before release
+1. DONE: Keep legacy `example/` demos as non-release-facing compatibility and
+   design-history material; release-facing examples live under `examples/`
 2. Rewrite or archive long-form docs/TUTORIAL.md sections that use future config
    shapes and unsupported assertion types
 3. Test representative live-provider examples with valid credentials

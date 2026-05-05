@@ -65,7 +65,9 @@ source of truth for coverage numbers.
 ## Examples
 
 - [../examples/](../examples/) - current runnable examples.
-- [../example/](../example/) - legacy example package.
+- [../example/](../example/) - legacy exploratory examples kept for
+  compatibility, regression tests, and design history. Do not treat this tree
+  as release-facing command documentation.
 
 ## Future And Archive
 
