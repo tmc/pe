@@ -55,10 +55,13 @@ type ComposeResult struct {
 	Metadata       map[string]interface{} `json:"metadata"`
 }
 
-var composeCmd = &cobra.Command{
-	Use:   "compose [component files...]",
-	Short: "Compose prompts from verified components with type-safe composition",
-	Long: `
+var composeCmd = newComposeCmd()
+
+func newComposeCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "compose [component files...]",
+		Short: "Compose prompts from verified components with type-safe composition",
+		Long: `
 Compose prompts from modular components using advanced composition techniques:
 
 • Component-based architecture with type-safe validation
@@ -72,37 +75,40 @@ Examples:
   pe compose components/ --style few-shot --coherence --validation-gate
   pe compose --library-init  # Initialize component library
 `,
-	RunE: runCompose,
+		RunE: runCompose,
+	}
+	addComposeFlags(cmd)
+	return cmd
 }
 
-func init() {
-	composeCmd.Flags().StringSlice("components", []string{}, "Component files or directories")
-	composeCmd.Flags().String("style", "default", "Composition style (default, cot, few-shot, structured, conversational, dspy)")
-	composeCmd.Flags().String("target", "gpt-4", "Target model for optimization")
-	composeCmd.Flags().Bool("coherence", false, "Enable semantic coherence validation")
-	composeCmd.Flags().Bool("validation-gate", false, "Enable validation gates for quality assurance")
-	composeCmd.Flags().Bool("optimize", false, "Apply TextGrad optimization after composition")
-	composeCmd.Flags().Bool("library-init", false, "Initialize component library")
-	composeCmd.Flags().String("output", "", "Output file for composed prompt")
-	composeCmd.Flags().String("config", "", "Configuration file for composition settings")
-	composeCmd.Flags().String("add-component", "", "Add component to library")
-	composeCmd.Flags().String("category", "", "Category for component")
-	composeCmd.Flags().Bool("list", false, "List available components")
-	composeCmd.Flags().String("import", "", "Import components from URL")
-	composeCmd.Flags().Bool("coherence-check", false, "Check coherence between components")
-	composeCmd.Flags().Bool("validate", false, "Validate component compatibility")
-	composeCmd.Flags().String("examples", "", "Examples file for few-shot composition")
+func addComposeFlags(cmd *cobra.Command) {
+	cmd.Flags().StringSlice("components", []string{}, "Component files or directories")
+	cmd.Flags().String("style", "default", "Composition style (default, cot, few-shot, structured, conversational, dspy)")
+	cmd.Flags().String("target", "gpt-4", "Target model for optimization")
+	cmd.Flags().Bool("coherence", false, "Enable semantic coherence validation")
+	cmd.Flags().Bool("validation-gate", false, "Enable validation gates for quality assurance")
+	cmd.Flags().Bool("optimize", false, "Apply TextGrad optimization after composition")
+	cmd.Flags().Bool("library-init", false, "Initialize component library")
+	cmd.Flags().String("output", "", "Output file for composed prompt")
+	cmd.Flags().String("config", "", "Configuration file for composition settings")
+	cmd.Flags().String("add-component", "", "Add component to library")
+	cmd.Flags().String("category", "", "Category for component")
+	cmd.Flags().Bool("list", false, "List available components")
+	cmd.Flags().String("import", "", "Import components from URL")
+	cmd.Flags().Bool("coherence-check", false, "Check coherence between components")
+	cmd.Flags().Bool("validate", false, "Validate component compatibility")
+	cmd.Flags().String("examples", "", "Examples file for few-shot composition")
 
 	// DSPy-style enhanced features
-	composeCmd.Flags().Bool("quality-gates", false, "Enable statistical quality gates")
-	composeCmd.Flags().Bool("program-synthesis", false, "Use automated program synthesis")
-	composeCmd.Flags().Bool("parameter-optimization", false, "Enable algorithmic parameter tuning")
-	composeCmd.Flags().Bool("signature-validation", false, "Enable type-safe component validation")
-	composeCmd.Flags().Bool("multi-stage", false, "Use multi-stage optimization with checkpoints")
-	composeCmd.Flags().Bool("statistical-validation", false, "Enable statistical significance testing")
-	composeCmd.Flags().String("synthesis-strategy", "template", "Program synthesis strategy (template, evolutionary, neural)")
-	composeCmd.Flags().String("optimization-method", "bayesian", "Parameter optimization method (bayesian, grid, genetic)")
-	composeCmd.Flags().Float64("quality-threshold", 0.7, "Minimum quality threshold for validation gates")
+	cmd.Flags().Bool("quality-gates", false, "Enable statistical quality gates")
+	cmd.Flags().Bool("program-synthesis", false, "Use automated program synthesis")
+	cmd.Flags().Bool("parameter-optimization", false, "Enable algorithmic parameter tuning")
+	cmd.Flags().Bool("signature-validation", false, "Enable type-safe component validation")
+	cmd.Flags().Bool("multi-stage", false, "Use multi-stage optimization with checkpoints")
+	cmd.Flags().Bool("statistical-validation", false, "Enable statistical significance testing")
+	cmd.Flags().String("synthesis-strategy", "template", "Program synthesis strategy (template, evolutionary, neural)")
+	cmd.Flags().String("optimization-method", "bayesian", "Parameter optimization method (bayesian, grid, genetic)")
+	cmd.Flags().Float64("quality-threshold", 0.7, "Minimum quality threshold for validation gates")
 }
 
 func runCompose(cmd *cobra.Command, args []string) error {

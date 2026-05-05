@@ -26,6 +26,7 @@ Examples:
 	cmd.AddCommand(optimizeCmd())
 	cmd.AddCommand(evolveCmd())
 	cmd.AddCommand(semanticCmd())
+	cmd.AddCommand(newComposeCmd())
 	// fusionCmd moved to advanced-features branch
 	cmd.AddCommand(synthesizeCmd)
 	cmd.AddCommand(metricsCmd())
