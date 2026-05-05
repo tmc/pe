@@ -38,7 +38,44 @@ type Tracer struct {
 	spans     map[string]*Span
 	writer    TraceWriter
 	enabled   bool
+	sampler   Sampler
 	idCounter int64
+}
+
+// Sampler decides whether an operation should be traced.
+type Sampler interface {
+	Sample(operation string) bool
+}
+
+// AlwaysSampler samples every operation.
+type AlwaysSampler struct{}
+
+// Sample implements Sampler.
+func (AlwaysSampler) Sample(string) bool { return true }
+
+// RatioSampler samples one out of N spans.
+type RatioSampler struct {
+	N int
+
+	mu    sync.Mutex
+	count int
+}
+
+// Sample implements Sampler.
+func (s *RatioSampler) Sample(string) bool {
+	if s.N <= 1 {
+		return true
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.count++
+	return s.count%s.N == 0
+}
+
+// TraceProvider configures trace creation and output.
+type TraceProvider struct {
+	Writer  TraceWriter
+	Sampler Sampler
 }
 
 // TraceWriter interface for outputting traces
@@ -90,12 +127,35 @@ func NewTracer(writer TraceWriter) *Tracer {
 		spans:   make(map[string]*Span),
 		writer:  writer,
 		enabled: true,
+		sampler: AlwaysSampler{},
 	}
+}
+
+// NewTracerProvider creates a tracer from provider configuration.
+func NewTracerProvider(provider TraceProvider) *Tracer {
+	tracer := NewTracer(provider.Writer)
+	if provider.Sampler != nil {
+		tracer.SetSampler(provider.Sampler)
+	}
+	return tracer
+}
+
+// SetSampler sets the sampler used for future spans.
+func (t *Tracer) SetSampler(sampler Sampler) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if sampler == nil {
+		sampler = AlwaysSampler{}
+	}
+	t.sampler = sampler
 }
 
 // StartSpan starts a new span
 func (t *Tracer) StartSpan(ctx context.Context, operation string) (context.Context, *Span) {
 	if !t.enabled {
+		return ctx, nil
+	}
+	if t.sampler != nil && !t.sampler.Sample(operation) {
 		return ctx, nil
 	}
 

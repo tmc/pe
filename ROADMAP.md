@@ -1654,11 +1654,11 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 ##### Distributed Tracing
 - [x] Add tracing infrastructure under `internal/observability`
 - [ ] Integrate OpenTelemetry
-- [ ] Add trace provider setup
+- [x] Add trace provider setup
 - [x] Implement span creation
 - [x] Add context propagation
 - [x] Create file trace writer
-- [ ] Add trace sampling
+- [x] Add trace sampling
 
 ##### Command Tracing
 - [ ] Add tracing to run command
