@@ -7,23 +7,22 @@ stdout 'The capital of France is Paris'
 ! stdout '</answer>'
 
 # Extract multiple tags
-# TODO: Requires pipe support
-# exec sh -c 'pe run multi-output.txt --provider mock | pe experimental extract --tags result,explanation'
-# stdout 'Result: 42'
-# stdout 'Explanation: the answer to life, the universe, and everything'
+pipe cat multi-output.txt | pe experimental extract --tags result,explanation
+stdout 'Result: 42'
+stdout 'Explanation: The answer to life, the universe, and everything'
 
 # Extract with specific tag
 pipe echo '<output><name>John</name><age>30</age></output>' | pe experimental extract --tag name
 stdout 'John'
 ! stdout '<name>'
 
-# Extract nested tags (disabled - mock provider formatting issue)
-# exec sh -c 'pe run nested.txt --provider mock | pe experimental extract --tag data --nested'
-# stdout '<item>First</item>'
+# Extract nested tags
+pipe cat nested.txt | pe experimental extract --tag data --nested
+stdout '<item>First</item>'
 
-# Extract with attribute filtering (disabled - mock provider formatting issue)
-# exec sh -c 'pe run attributed.txt --provider mock | pe experimental extract --tag response --attr type=final'
-# stdout 'This is the final answer'
+# Extract with attribute filtering
+pipe cat attributed.txt | pe experimental extract --tag response --attr type=final
+stdout 'This is the final answer'
 
 # Extract to JSON format
 pipe cat structured.txt | pe experimental extract --tag data -f json
@@ -32,9 +31,8 @@ stdout '"content":'
 stdout '"metadata":'
 
 # Extract with XPath-like selectors
-# TODO: Requires pipe support
-# exec sh -c 'pe run complex.txt --provider mock | pe experimental extract --xpath "//answer[@confidence=\"high\"]"'
-# stdout 'Definitely Paris'
+pipe cat complex.txt | pe experimental extract --xpath '//answer[@confidence="high"]'
+stdout 'Definitely Paris'
 
 # Extract multiple occurrences
 pipe cat listing.txt | pe experimental extract --tag item --all
@@ -43,27 +41,23 @@ stdout 'Banana'
 stdout 'Cherry'
 
 # Extract with transformation
-# TODO: Requires pipe support
-# exec sh -c 'pe run formatted.txt --provider mock | pe experimental extract --tag code --transform "pe fmt -"'
-# stdout 'func main()'
-# stdout 'Println'
+pipe cat formatted.txt | pe experimental extract --tag code --transform 'pe fmt -'
+stdout 'func main()'
+stdout 'Println'
 
 # Extract and validate
-# TODO: Requires pipe support
-# exec sh -c 'pe run validated.txt --provider mock | pe experimental extract --tag solution --validate schema.json'
-# stdout 'Valid solution extracted'
+pipe cat validated.txt | pe experimental extract --tag solution --validate schema.json
+stdout 'Valid solution extracted'
 
 # Extract with custom delimiters
-# TODO: Requires pipe support
-# exec sh -c 'pe run custom.txt --provider mock | pe experimental extract --start "[[RESULT]]" --end "[[/RESULT]]"'
-# stdout 'Custom delimited content'
+pipe cat custom.txt | pe experimental extract --start '[[RESULT]]' --end '[[/RESULT]]'
+stdout 'Custom delimited content'
 
-# Pipeline with extraction (test --inline not yet implemented)
+# Pipeline with extraction (test --inline is not implemented)
 # exec sh -c 'pe run prompt.txt --provider mock | pe experimental extract --tag answer | pe test --inline assertions.yaml'
 # stdout 'Test passed'
 
 # Extract with error handling
-# TODO: Requires pipe support
 ! pipe cat invalid.txt | pe experimental extract --tag missing
 stderr 'tag <missing> not found'
 
@@ -72,7 +66,7 @@ pipe pe run prompt.txt --provider mock | pe experimental extract --tag answer --
 exists response.txt
 grep 'capital of France' response.txt
 
-# Extract with streaming (streaming not yet fully implemented)
+# Extract with streaming (streaming mode is not distinct from batch extraction yet)
 # exec sh -c 'pe run stream-prompt.txt --provider mock --stream | pe experimental extract --tag chunk --stream'
 # stdout 'Chunk 1'
 # stdout 'Chunk 2'

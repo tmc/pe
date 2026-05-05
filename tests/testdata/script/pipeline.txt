@@ -1,46 +1,39 @@
 # Test pe pipeline commands - Unix-style composability
-# Note: Pipeline tests require shell pipes which are not supported in scripttest.
-# These tests are commented out until pipe support is added.
+# The restricted script pipe command supports pe, cat, and echo stages only.
 
 # Basic pipeline
-# TODO: Requires pipe support
-# exec sh -c 'echo "What is the capital of France?" | pe ask | pe experimental filter --pattern "Paris"'
-# stdout 'Paris'
+pipe echo 'What is the capital of France?' | pe ask --provider mock | pe experimental filter --pattern Paris
+stdout 'Paris'
 
 # Multi-stage pipeline
-# TODO: Requires pipe support
-# exec sh -c 'pe run "List 5 random numbers" --provider mock | pe experimental stream | pe experimental analyze --type statistical'
-# stdout 'Mean:'
-# stdout 'Median:'
-# stdout 'Std Dev:'
+pipe pe run 'List 5 random numbers' --provider mock | pe experimental stream | pe experimental analyze --type statistical
+stdout 'Mean:'
+stdout 'Median:'
+stdout 'Std Dev:'
 
 # Pipeline with file processing
-# TODO: Requires pipe support
-# exec sh -c 'cat data.jsonl | pe ask --template "Summarize: {{.}}" --provider mock | pe experimental filter --json .summary'
-# stdout '"Quick summary'
-# stdout '"Brief overview'
+pipe cat data.jsonl | pe ask --template 'Summarize: {{.}}' --provider mock | pe experimental filter --json .summary
+stdout '"Quick summary'
+stdout '"Brief overview'
 
 # Streaming pipeline
-# TODO: Requires pipe support
-# exec sh -c 'pe run "Count from 1 to 10" --stream --provider mock | pe experimental filter --match "^[5-9]"'
-# stdout '5'
-# stdout '6'
-# stdout '7'
-# stdout '8'
-# stdout '9'
-# ! stdout '10'
+pipe pe run 'Count from 1 to 10' --stream --provider mock | pe experimental filter --match '^[5-9]'
+stdout '5'
+stdout '6'
+stdout '7'
+stdout '8'
+stdout '9'
+! stdout '10'
 
 # Analysis pipeline
-# TODO: Requires pipe support
-# exec sh -c 'pe run "Generate a paragraph about AI" --provider mock | pe experimental analyze --metrics readability,sentiment'
-# stdout 'Readability score:'
-# stdout 'Flesch-Kincaid:'
-# stdout 'Sentiment: positive'
+pipe pe run 'Generate a paragraph about AI' --provider mock | pe experimental analyze --metrics readability,sentiment
+stdout 'Readability score:'
+stdout 'Flesch-Kincaid:'
+stdout 'Sentiment: positive'
 
 # Transform pipeline
-# TODO: Requires pipe support
-# exec sh -c 'echo "HELLO WORLD" | pe ask "Convert to lowercase" --provider mock | pe experimental filter --transform lowercase'
-# stdout 'hello world'
+pipe echo 'HELLO WORLD' | pe ask 'Convert to lowercase' --provider mock | pe experimental filter --transform lowercase
+stdout 'hello world'
 
 # Parallel pipeline processing
 # TODO: Implement async support
@@ -52,34 +45,31 @@
 # stdout 'Collected 3 results'
 
 # Pipeline with error handling
-# TODO: Requires pipe support
-# ! exec sh -c 'echo "Invalid JSON" | pe experimental filter --json .field'
-# stderr 'JSON parse error:'
+! pipe echo 'Invalid JSON' | pe experimental filter --json .field
+stderr 'JSON parse error:'
 
 # Complex pipeline with multiple stages
-# TODO: Requires pipe support
-# exec sh -c 'pe run prompt.txt --provider mock | pe analyze --format json'
-# stdout '"optimization_score"'
-# stdout '"test_results"'
-# stdout '"analysis"'
+pipe pe run prompt.txt --provider mock | pe analyze --format json
+stdout '"optimization_score"'
+stdout '"test_results"'
+stdout '"analysis"'
 
 # Pipeline with caching
-# TODO: Requires pipe support
-# exec sh -c 'pe run "Expensive computation" --provider mock | pe experimental filter --pattern "Result"'
-# stdout 'Result: 42'
+pipe pe ask 'Expensive computation' --provider mock | pe experimental filter --pattern Result
+stdout 'Result: 42'
 # Second run should use cache - simplified test
-# exec sh -c 'pe run "Expensive computation" --provider mock | pe experimental filter --pattern "Result"'
-# stdout 'Result: 42'
+pipe pe ask 'Expensive computation' --provider mock | pe experimental filter --pattern Result
+stdout 'Result: 42'
 
-# Aggregation pipeline  
-# TODO: Implement parallel and reduce sum
+# Aggregation pipeline
+# TODO: the restricted script pipe command does not provide a seq stage.
+# TODO: pe ask --parallel currently behaves sequentially and pe reduce --sum is simulated.
 # exec sh -c 'seq 1 5 | pe ask --template "Double {{.}}" --parallel --provider mock | pe reduce --sum'
 # stdout '30'  # 2+4+6+8+10
 
 # Pipeline with conditions
-# TODO: Requires pipe support
-# exec sh -c 'pe run "Check status" --provider mock | pe experimental filter --if-contains "OK"'
-# stdout 'System status: OK'
+pipe pe ask 'Check status' --provider mock | pe experimental filter --if-contains OK
+stdout 'System status: OK'
 
 -- data.jsonl --
 {"text": "First item needing summary"}
