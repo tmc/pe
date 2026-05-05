@@ -323,7 +323,7 @@ Release blockers:
 1. DONE: Refresh `docs/TEST_COVERAGE_REPORT.md` after the integrated branch:
    `go test -coverprofile=/tmp/pe-coverage.out ./...` then
    `go tool cover -func=/tmp/pe-coverage.out`.
-2. Update command documentation from generated help for `pe diff`, `pe serve`,
+2. DONE: Update command documentation from generated help for `pe diff`, `pe serve`,
    `pe mod tidy`, `pe exp optimize`, `pe exp attest`, and `pe exp cache`.
    Verification: `go run ./cmd/pe <command> --help`.
 3. DONE: Reconcile `docs/SECURITY_REVIEW.md` with current `cmd/pe/serve.go`
@@ -331,9 +331,10 @@ Release blockers:
    Verification: `rg 'ReadTimeout|WriteTimeout|IdleTimeout' cmd/pe/serve.go`,
    `go run ./cmd/pe exp attest --help`, and
    `go run ./cmd/pe exp cache --help`.
-4. Add release-facing examples for the new local workflows:
+4. DONE: Add release-facing examples for the new local workflows:
    `pe diff --fail-on-regression`, `pe mod tidy --json --write`,
    `pe exp attest manifest/verify`, and `pe exp cache manifest put/verify`.
+   Verification: `PE_BIN=/tmp/pe ./examples/current-commands/release-local-workflows/smoke.sh`.
 5. Record the final branch policy for v0.5.0: `exp` is the integrated
    launchpad unless the maintainer explicitly promotes it to `master` or
    creates `main`.
