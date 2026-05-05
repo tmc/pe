@@ -2,7 +2,7 @@
 
 ## Branch: `exp`
 
-Release prep is in progress on April 30, 2026. These notes describe the current
+Release prep is in progress as of May 5, 2026. These notes describe the current
 release candidate state of PE.
 
 ## Release-Candidate Surface

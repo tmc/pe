@@ -1,9 +1,11 @@
 # Security Review
 
-Date: 2026-04-30 PDT
+Date: 2026-05-05 PDT
 
 Scope: release-prep security review for secrets, command execution, file/path use,
 network/provider boundaries, dependency vulnerabilities, and security documentation.
+This document was refreshed on 2026-05-05 after the GitHub HTTP timeout fix and
+Go 1.25.9 vulnerability gate.
 
 ## Commands
 

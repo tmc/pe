@@ -37,7 +37,9 @@ Comprehensive documentation accuracy audit and update for release.
 Current Issues:
 - Test coverage baseline is now measured at 44.1%; remaining stale coverage
   claims should point to docs/TEST_COVERAGE_REPORT.md
-- Documentation dates are inconsistent across older 2025 snapshots and current 2026 status docs
+- Documentation dates in release-facing status docs have been normalized; older
+  research dates, model IDs, examples, future docs, and archive docs are not
+  release status dates
 - Multiple overlapping getting started docs
 - Future docs mixed with current implementation docs
 - Legacy TODO material now points at this roadmap, but current documentation still needs an accuracy pass
@@ -49,7 +51,7 @@ Current Issues:
 
 Remaining sub-tasks:
 1. DONE: Replace stale coverage claims with references to docs/TEST_COVERAGE_REPORT.md
-2. Update all documentation dates
+2. DONE: Update all documentation dates
 3. DONE: Consolidate getting started documentation
 4. DONE: Update docs/CURRENT_STATUS.md with latest
 5. DONE: Review all command documentation against generated CLI help
