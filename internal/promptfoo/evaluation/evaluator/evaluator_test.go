@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tmc/pe/internal/distributed"
 	"github.com/tmc/pe/internal/promptfoo"
 )
 
@@ -353,4 +354,82 @@ func TestEvaluate_ObjectProviderLabelAndPromptFilter(t *testing.T) {
 	assert.Equal(t, "mock labeled", result.Results.Results[0].Provider["label"])
 	assert.Equal(t, "mock labeled", result.Results.Prompts[0].Provider)
 	assert.Equal(t, "keep", result.Results.Results[0].Prompt["label"])
+}
+
+func TestEvaluate_UsesDistributedRunLocalOrder(t *testing.T) {
+	t.Setenv("PE_TEST_MODE", "true")
+
+	config := promptfoo.Config{
+		Prompts: []string{"What is 2+2?"},
+		Providers: []promptfoo.ProviderConfig{
+			{ID: "mock", Label: "slow", Delay: "25ms"},
+			{ID: "mock", Label: "fast"},
+		},
+		Tests: []promptfoo.TestCase{
+			{
+				Vars: map[string]interface{}{},
+				Assert: []promptfoo.Assertion{
+					{Type: "equals", Value: "4"},
+				},
+			},
+		},
+	}
+
+	result, err := Evaluate(config, time.Second, false, 2, false)
+	require.NoError(t, err)
+	require.Len(t, result.Results.Results, 2)
+	assert.Equal(t, "slow", result.Results.Results[0].Provider["label"])
+	assert.Equal(t, "fast", result.Results.Results[1].Provider["label"])
+	assert.Equal(t, 2, result.Results.Stats.Successes)
+}
+
+func TestEvaluate_DistributedRunLocalCancellation(t *testing.T) {
+	t.Setenv("PE_TEST_MODE", "true")
+
+	config := promptfoo.Config{
+		Prompts: []string{"What is 2+2?"},
+		Providers: []promptfoo.ProviderConfig{
+			{ID: "mock", Label: "slow", Delay: "50ms"},
+		},
+		Tests: []promptfoo.TestCase{
+			{Vars: map[string]interface{}{}},
+		},
+	}
+
+	_, err := Evaluate(config, time.Nanosecond, false, 1, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "context deadline exceeded")
+}
+
+func TestEvaluate_DistributedConsensusFromWorkflowResults(t *testing.T) {
+	t.Setenv("PE_TEST_MODE", "true")
+
+	config := promptfoo.Config{
+		Prompts: []string{"What is 2+2?"},
+		Providers: []promptfoo.ProviderConfig{
+			{ID: "mock", Label: "b"},
+			{ID: "mock", Label: "a"},
+			{ID: "mock", Label: "c"},
+		},
+		Tests: []promptfoo.TestCase{
+			{Vars: map[string]interface{}{}},
+		},
+	}
+
+	result, err := Evaluate(config, time.Second, false, 3, false)
+	require.NoError(t, err)
+	require.Len(t, result.Results.Results, 3)
+
+	votes := make([]distributed.Vote, 0, len(result.Results.Results))
+	for _, r := range result.Results.Results {
+		votes = append(votes, distributed.Vote{
+			Provider: r.Provider["label"],
+			Output:   r.Response.Output,
+		})
+	}
+	consensus, err := distributed.Majority(votes)
+	require.NoError(t, err)
+	assert.Equal(t, "4", consensus.Output)
+	assert.Equal(t, 3, consensus.Weight)
+	assert.Equal(t, []string{"a", "b", "c"}, consensus.Providers)
 }

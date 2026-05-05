@@ -9,14 +9,19 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
+	"github.com/tmc/pe/internal/distributed"
 	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/promptfoo"
 	"github.com/tmc/pe/internal/providers"
 	"sigs.k8s.io/yaml"
 )
+
+type evalOutcome struct {
+	result promptfoo.TestResult
+	err    error
+}
 
 func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxConcurrency int, showProgressBar bool) (promptfoo.EvaluationResult, error) {
 	if showProgressBar {
@@ -62,120 +67,51 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resultsChan := make(chan promptfoo.TestResult, len(config.Prompts)*len(materializedProviders)*len(config.Tests))
-	errorsChan := make(chan error, len(config.Prompts)*len(materializedProviders)*len(config.Tests))
-	sem := make(chan struct{}, maxConcurrency)
-	var wg sync.WaitGroup
-
+	var tasks []distributed.Task[evalOutcome]
 	for _, prompt := range config.Prompts {
 		for _, provider := range materializedProviders {
 			if !provider.AppliesToPrompt(prompt) {
 				continue
 			}
 			for k, test := range config.Tests {
-				wg.Add(1)
-				go func(prompt string, provider *providers.MaterializedProvider, test promptfoo.TestCase, testIdx int) {
-					defer wg.Done()
-					sem <- struct{}{}
-					defer func() { <-sem }()
-					select {
-					case <-ctx.Done():
-						errorsChan <- ctx.Err()
-						return
-					default:
-					}
-
-					if provider.Delay > 0 && !dryRun {
-						timer := time.NewTimer(provider.Delay)
-						defer timer.Stop()
-						select {
-						case <-ctx.Done():
-							errorsChan <- ctx.Err()
-							return
-						case <-timer.C:
+				prompt := prompt
+				provider := provider
+				test := test
+				tasks = append(tasks, distributed.Task[evalOutcome]{
+					ID: fmt.Sprintf("%s/%s/%d", prompt, provider.Spec.ID, k),
+					Run: func(ctx context.Context) (evalOutcome, error) {
+						outcome, err := evaluateOne(ctx, prompt, provider, test, dryRun)
+						if err != nil && ctx.Err() != nil {
+							return evalOutcome{}, err
 						}
-					}
-
-					processedPrompt := promptfoo.ApplyVars(prompt, test.Vars)
-					promptID := generatePromptID(prompt, provider.Spec.ID)
-
-					evalVars := make(map[string]interface{})
-					for k, v := range provider.Spec.Config {
-						evalVars[k] = v
-					}
-					for k, v := range test.Vars {
-						evalVars[k] = v
-					}
-					evalVars["provider"] = provider.Spec.ID
-
-					startTime := time.Now()
-					var response *promptfoo.ProviderResponse
-					if !dryRun {
-						response, err = provider.Executor.EvaluatePrompt(ctx, processedPrompt, evalVars)
-					} else {
-						response = &promptfoo.ProviderResponse{
-							Output: "Dry run response",
-							TokenUsage: &promptfoo.TokenUsage{
-								Total:       10,
-								Prompt:      5,
-								Completion:  5,
-								NumRequests: 1,
-								Details: &promptfoo.CompletionDetails{
-									Reasoning:          0,
-									AcceptedPrediction: 0,
-									RejectedPrediction: 0,
-								},
-							},
-							Cost:      0.001,
-							Cached:    false,
-							LatencyMs: 1,
-						}
-					}
-					latency := time.Since(startTime)
-					if err != nil {
-						errorsChan <- fmt.Errorf("provider %s: %v", provider.Spec.ID, err)
-						return
-					}
-
-					var judgeProvider llm.Provider
-					if !dryRun {
-						judgeProvider = provider.Executor
-					}
-					success, grading := evaluateAssertionsWithProvider(ctx, response.Output, test.Assert, judgeProvider)
-					resultID := generateResultID(prompt, provider.Spec.ID, test.Vars)
-					latencyMs := latency.Milliseconds()
-					if response.LatencyMs > 0 {
-						latencyMs = response.LatencyMs
-					}
-
-					resultsChan <- promptfoo.TestResult{
-						ID:            resultID,
-						PromptID:      promptID,
-						Prompt:        map[string]string{"raw": processedPrompt, "label": prompt},
-						Provider:      map[string]string{"id": provider.Spec.ID, "label": provider.DisplayName()},
-						Response:      *response,
-						Success:       success,
-						Score:         ifThenElse(success, 1.0, 0.0),
-						Vars:          test.Vars,
-						GradingResult: grading,
-						LatencyMs:     latencyMs,
-					}
-				}(prompt, provider, test, k)
+						outcome.err = err
+						return outcome, nil
+					},
+				})
 			}
 		}
 	}
 
-	go func() {
-		wg.Wait()
-		close(resultsChan)
-	}()
+	executionResults, executionErr := distributed.RunLocal(ctx, maxConcurrency, tasks)
 
 	var detailedResults []promptfoo.TestResult
+	var evalErrors []error
 	var totalTokens, promptTokens, completionTokens, totalNumRequests int32
 	passedTests, failedTests, errorTests := 0, 0, 0
 
-	for result := range resultsChan {
-		detailedResults = append(detailedResults, result)
+	for _, executionResult := range executionResults {
+		if executionResult.Err != nil {
+			evalErrors = append(evalErrors, executionResult.Err)
+			continue
+		}
+		if executionResult.ID == "" {
+			continue
+		}
+		if executionResult.Value.err != nil {
+			evalErrors = append(evalErrors, executionResult.Value.err)
+			continue
+		}
+		result := executionResult.Value.result
 		if result.Success {
 			passedTests++
 		} else {
@@ -191,14 +127,18 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 				totalNumRequests++
 			}
 		}
+		detailedResults = append(detailedResults, result)
+	}
+	if executionErr != nil {
+		evalErrors = append(evalErrors, executionErr)
 	}
 
-	if len(errorsChan) > 0 {
+	if len(evalErrors) > 0 {
 		var errs []string
-		for i := 0; i < min(5, len(errorsChan)); i++ {
-			errs = append(errs, (<-errorsChan).Error())
+		for i := 0; i < min(5, len(evalErrors)); i++ {
+			errs = append(errs, evalErrors[i].Error())
 		}
-		errorTests = len(errorsChan)
+		errorTests = len(evalErrors)
 		if len(detailedResults) == 0 {
 			return promptfoo.EvaluationResult{}, fmt.Errorf("evaluation errors: %s", strings.Join(errs, "; "))
 		}
@@ -300,6 +240,89 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 			},
 		},
 		Config: config,
+	}, nil
+}
+
+func evaluateOne(ctx context.Context, prompt string, provider *providers.MaterializedProvider, test promptfoo.TestCase, dryRun bool) (evalOutcome, error) {
+	if err := ctx.Err(); err != nil {
+		return evalOutcome{}, err
+	}
+
+	if provider.Delay > 0 && !dryRun {
+		timer := time.NewTimer(provider.Delay)
+		defer timer.Stop()
+		select {
+		case <-ctx.Done():
+			return evalOutcome{}, ctx.Err()
+		case <-timer.C:
+		}
+	}
+
+	processedPrompt := promptfoo.ApplyVars(prompt, test.Vars)
+	promptID := generatePromptID(prompt, provider.Spec.ID)
+
+	evalVars := make(map[string]interface{})
+	for k, v := range provider.Spec.Config {
+		evalVars[k] = v
+	}
+	for k, v := range test.Vars {
+		evalVars[k] = v
+	}
+	evalVars["provider"] = provider.Spec.ID
+
+	startTime := time.Now()
+	var response *promptfoo.ProviderResponse
+	var err error
+	if !dryRun {
+		response, err = provider.Executor.EvaluatePrompt(ctx, processedPrompt, evalVars)
+	} else {
+		response = &promptfoo.ProviderResponse{
+			Output: "Dry run response",
+			TokenUsage: &promptfoo.TokenUsage{
+				Total:       10,
+				Prompt:      5,
+				Completion:  5,
+				NumRequests: 1,
+				Details: &promptfoo.CompletionDetails{
+					Reasoning:          0,
+					AcceptedPrediction: 0,
+					RejectedPrediction: 0,
+				},
+			},
+			Cost:      0.001,
+			Cached:    false,
+			LatencyMs: 1,
+		}
+	}
+	latency := time.Since(startTime)
+	if err != nil {
+		return evalOutcome{}, fmt.Errorf("provider %s: %v", provider.Spec.ID, err)
+	}
+
+	var judgeProvider llm.Provider
+	if !dryRun {
+		judgeProvider = provider.Executor
+	}
+	success, grading := evaluateAssertionsWithProvider(ctx, response.Output, test.Assert, judgeProvider)
+	resultID := generateResultID(prompt, provider.Spec.ID, test.Vars)
+	latencyMs := latency.Milliseconds()
+	if response.LatencyMs > 0 {
+		latencyMs = response.LatencyMs
+	}
+
+	return evalOutcome{
+		result: promptfoo.TestResult{
+			ID:            resultID,
+			PromptID:      promptID,
+			Prompt:        map[string]string{"raw": processedPrompt, "label": prompt},
+			Provider:      map[string]string{"id": provider.Spec.ID, "label": provider.DisplayName()},
+			Response:      *response,
+			Success:       success,
+			Score:         ifThenElse(success, 1.0, 0.0),
+			Vars:          test.Vars,
+			GradingResult: grading,
+			LatencyMs:     latencyMs,
+		},
 	}, nil
 }
 
