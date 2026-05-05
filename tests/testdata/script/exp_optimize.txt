@@ -1,0 +1,103 @@
+# pe exp optimize ranks local promptfoo-shaped evaluation scores without providers.
+pe exp optimize --scores eval-results.json --output ranked.json
+cmp ranked.json want-ranked.json
+
+# Tied scores keep input order, so the first tied candidate wins.
+pe exp optimize --scores tied-results.json --output tied-ranked.json
+grep '"source": "first"' tied-ranked.json
+grep '"accepted": true' tied-ranked.json
+
+# Missing metrics.score is invalid instead of silently becoming zero.
+! pe exp optimize --scores missing-score.json
+stderr 'score missing for "candidate"'
+
+-- eval-results.json --
+{
+  "results": {
+    "prompts": [
+      {"id":"p0", "label":"seed", "raw":"base prompt", "metrics":{"score":0.25}},
+      {"id":"p1", "label":"clear", "raw":"clear prompt", "metrics":{"score":0.75}}
+    ]
+  }
+}
+-- want-ranked.json --
+{
+  "selected": {
+    "round": 1,
+    "source": "clear",
+    "prompt": "clear prompt",
+    "score": 0.75,
+    "reason": "provided local score",
+    "metrics": {
+      "provided": 0.75
+    },
+    "improvement": 0.5,
+    "accepted": true
+  },
+  "initial": {
+    "round": 0,
+    "source": "seed",
+    "prompt": "base prompt",
+    "score": 0.25,
+    "reason": "provided local score",
+    "metrics": {
+      "provided": 0.25
+    }
+  },
+  "trajectory": [
+    {
+      "round": 0,
+      "source": "seed",
+      "prompt": "base prompt",
+      "score": 0.25,
+      "reason": "provided local score",
+      "metrics": {
+        "provided": 0.25
+      }
+    },
+    {
+      "round": 1,
+      "source": "clear",
+      "prompt": "clear prompt",
+      "score": 0.75,
+      "reason": "provided local score",
+      "metrics": {
+        "provided": 0.75
+      },
+      "improvement": 0.5
+    },
+    {
+      "round": 1,
+      "source": "clear",
+      "prompt": "clear prompt",
+      "score": 0.75,
+      "reason": "provided local score",
+      "metrics": {
+        "provided": 0.75
+      },
+      "improvement": 0.5,
+      "accepted": true
+    }
+  ],
+  "converged": false,
+  "iterations": 1
+}
+-- tied-results.json --
+{
+  "results": {
+    "prompts": [
+      {"id":"p0", "label":"seed", "raw":"base", "metrics":{"score":0.1}},
+      {"id":"p1", "label":"first", "raw":"first tied", "metrics":{"score":0.9}},
+      {"id":"p2", "label":"second", "raw":"second tied", "metrics":{"score":0.9}}
+    ]
+  }
+}
+-- missing-score.json --
+{
+  "results": {
+    "prompts": [
+      {"id":"p0", "label":"seed", "raw":"base", "metrics":{"score":0.2}},
+      {"id":"p1", "label":"candidate", "raw":"better", "metrics":{}}
+    ]
+  }
+}
