@@ -43,13 +43,16 @@ Current Issues:
 - Legacy TODO material now points at this roadmap, but current documentation still needs an accuracy pass
 - Recent scripttest, provider, and release-note work is documented; remaining
   command and getting-started docs still need a pass
+- `docs/CLI_HELP_AUDIT.md` records the generated root command inventory from
+  `go run ./cmd/pe --help`; `docs/CLI_REFERENCE.md` now includes every root
+  command from that inventory.
 
 Remaining sub-tasks:
 1. Replace stale coverage claims with references to docs/TEST_COVERAGE_REPORT.md
 2. Update all documentation dates
 3. Consolidate getting started documentation
 4. DONE: Update docs/CURRENT_STATUS.md with latest
-5. Review all command documentation against generated CLI help
+5. DONE: Review all command documentation against generated CLI help
 6. Reconcile docs/README.md with README.md and current release notes
 
 Priority: P1 - Blocking release

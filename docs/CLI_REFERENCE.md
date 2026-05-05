@@ -29,6 +29,7 @@ Use `pe version` to show version information.
 | [`ask`](#ask) | Single prompt query | `pe ask "What is AI?"` |
 | [`benchmark`](#benchmark) | Performance testing | `pe benchmark config.yaml` |
 | [`test`](#test) | Advanced testing framework | `pe test config.yaml --type property` |
+| [`version`](#version) | Print version information | `pe version` |
 | [`security`](#security) | Security testing (OWASP) | `pe security test prompt.txt` |
 | [`build`](#build) | Build optimized prompts | `pe build config.yaml --target anthropic` |
 | [`cat`](#cat) | Display prompt files | `pe cat prompts/analyze.prompt` |
@@ -41,6 +42,7 @@ Use `pe version` to show version information.
 | [`distributed`](#distributed) | Local bounded task scheduler | `pe exp distributed tasks.json --workers 2` |
 | [`consensus`](#consensus) | Local weighted vote aggregation | `pe exp consensus --input votes.json` |
 | [`doc`](#doc) | Show prompt documentation | `pe doc math-solver` |
+| [`expand`](#expand) | Resolve config file references and globs | `pe expand config.yaml` |
 | [`extract`](#extract) | Extract XML-like tags | `pe run prompt.txt \| pe extract --tag answer` |
 | [`get`](#get) | Get prompt file fields | `pe get summarize.txt variables` |
 | [`collect`](#collect) | Gather parallel results | `pe collect --jobs 10` |
@@ -736,6 +738,25 @@ pe fmt prompt.txt --check
 
 # Format multiple files
 pe fmt *.prompt --write --style standard
+```
+
+---
+
+## version
+
+Print PE version information.
+
+### Synopsis
+
+```bash
+pe version
+```
+
+### Examples
+
+```bash
+pe version
+pe --version
 ```
 
 ---
@@ -1928,6 +1949,31 @@ pe doc --all
 
 # Show brief descriptions only
 pe doc --short
+```
+
+---
+
+## expand
+
+Expand a configuration file by resolving file references and globs.
+
+### Synopsis
+
+```bash
+pe expand [config_file] [flags]
+```
+
+### Flags
+
+```bash
+-o, --output string   Output file (JSON)
+```
+
+### Examples
+
+```bash
+pe expand config.yaml
+pe expand config.yaml --output expanded.json
 ```
 
 ---

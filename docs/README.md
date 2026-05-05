@@ -15,6 +15,8 @@ source of truth for coverage numbers.
   include experimental command groups and should be checked against `pe --help`
   before automation.
 - [CLI_REFERENCE.md](CLI_REFERENCE.md) - current command reference.
+- [CLI_HELP_AUDIT.md](CLI_HELP_AUDIT.md) - generated root-help inventory
+  reconciliation for the CLI reference.
 - [COMMAND_EXAMPLES_GUIDE.md](COMMAND_EXAMPLES_GUIDE.md) - command examples and
   workflow snippets.
 - [INSTALLATION.md](INSTALLATION.md) - installation and build notes.
