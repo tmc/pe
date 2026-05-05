@@ -217,14 +217,18 @@ Current status:
   `docs/RELEASE_BUILD_MATRIX.md`.
 - `.github/workflows/release.yml` now builds tag-triggered archives for
   darwin/arm64, darwin/amd64, linux/amd64, linux/arm64, and windows/amd64.
+- `.github/workflows/release.yml` also supports manual dry-run builds with
+  `workflow_dispatch` and `dry_run=true`.
 - Binary dependency sanity check: `go list -deps ./cmd/pe` reports 216 packages;
   `go list -m all` reports 39 modules.
 
 Tasks:
 1. DONE: Rerun and record complete cross-compilation results for every release
    target
-2. Dry-run the GitHub release workflow from a test tag before publishing v0.5.0
-3. Verify release archive names and install commands against uploaded assets
+2. Workflow-ready: Dry-run the GitHub release workflow from a test tag or
+   manual `workflow_dispatch` before publishing v0.5.0
+3. DONE locally: Verify release archive names and install commands against the
+   workflow asset names in `docs/RELEASE_BUILD_MATRIX.md`
 4. Decide whether an install script is worth adding; current docs favor direct
    `go install` and release archives
 5. DONE locally: Verify final binary sizes after release builds complete; see
