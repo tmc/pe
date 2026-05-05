@@ -336,6 +336,8 @@ func TestGenerateRandomString(t *testing.T) {
 
 // Test for edge cases in concurrent evaluation
 func TestEvaluateConcurrency(t *testing.T) {
+	t.Setenv("PE_TEST_MODE", "true")
+
 	// Create a config with many tests to ensure concurrency is exercised
 	tests := make([]promptfoo.TestCase, 20)
 	for i := range tests {
@@ -367,6 +369,8 @@ func TestEvaluateConcurrency(t *testing.T) {
 }
 
 func TestEvaluate_ObjectProviderLabelAndPromptFilter(t *testing.T) {
+	t.Setenv("PE_TEST_MODE", "true")
+
 	config := promptfoo.Config{
 		Prompts: []string{"keep", "skip"},
 		Providers: []promptfoo.ProviderConfig{
