@@ -9,9 +9,26 @@ permissions:
   contents: write
 
 jobs:
+  check:
+    name: Check release source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Verify modules
+        run: go mod verify
+
+      - name: Test command package
+        run: go test ./cmd/pe
+
   build:
     name: Build release binaries
     runs-on: ubuntu-latest
+    needs: check
     strategy:
       matrix:
         include:
@@ -50,8 +67,10 @@ jobs:
             -o "$name" ./cmd/pe
           if [ "${{ matrix.goos }}" = windows ]; then
             zip "pe-${GOOS}-${GOARCH}.zip" "$name"
+            shasum -a 256 "pe-${GOOS}-${GOARCH}.zip" > "pe-${GOOS}-${GOARCH}.zip.sha256"
           else
             tar -czf "pe-${GOOS}-${GOARCH}.tar.gz" "$name"
+            shasum -a 256 "pe-${GOOS}-${GOARCH}.tar.gz" > "pe-${GOOS}-${GOARCH}.tar.gz.sha256"
           fi
 
       - name: Upload artifact
@@ -60,7 +79,9 @@ jobs:
           name: pe-${{ matrix.goos }}-${{ matrix.goarch }}
           path: |
             pe-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+            pe-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.sha256
             pe-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+            pe-${{ matrix.goos }}-${{ matrix.goarch }}.zip.sha256
           if-no-files-found: ignore
 
   publish:

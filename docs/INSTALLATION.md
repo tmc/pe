@@ -35,7 +35,9 @@ Install the latest tagged version with:
 go install github.com/tmc/pe/cmd/pe@latest
 ```
 
-For local development, prefer `go install ./cmd/pe` from a checked-out tree.
+This requires a published module version that contains `cmd/pe`. Until the
+first such tag is available, install from a checked-out tree with
+`go install ./cmd/pe`.
 
 ### 3. Download Binary
 
@@ -60,6 +62,10 @@ curl -L https://github.com/tmc/pe/releases/latest/download/pe-linux-amd64.tar.gz
 tar -xzf pe.tar.gz
 chmod +x pe
 sudo mv pe /usr/local/bin/
+
+# Windows (PowerShell)
+Invoke-WebRequest https://github.com/tmc/pe/releases/latest/download/pe-windows-amd64.zip -OutFile pe.zip
+Expand-Archive pe.zip
 ```
 
 ## Initial Setup
