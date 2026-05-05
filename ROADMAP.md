@@ -229,8 +229,9 @@ Current status:
   darwin/arm64, darwin/amd64, linux/amd64, linux/arm64, and windows/amd64.
 - `.github/workflows/release.yml` also supports manual dry-run builds with
   `workflow_dispatch` and `dry_run=true`.
-- Binary dependency sanity check: `go list -deps ./cmd/pe` reports 216 packages;
-  `go list -m all` reports 39 modules.
+- Binary dependency sanity check: `go list -deps ./cmd/pe` reports 228 packages;
+  `go list -m all` reports 39 modules. See
+  `docs/RELEASE_DEPENDENCY_REVIEW.md`.
 
 Tasks:
 1. DONE: Rerun and record complete cross-compilation results for every release
@@ -239,11 +240,14 @@ Tasks:
    manual `workflow_dispatch` before publishing v0.5.0
 3. DONE locally: Verify release archive names and install commands against the
    workflow asset names in `docs/RELEASE_BUILD_MATRIX.md`
-4. Decide whether an install script is worth adding; current docs favor direct
-   `go install` and release archives
+4. DONE: Do not add an install script for v0.5.0; current docs favor direct
+   `go install` and release archives. See
+   `docs/RELEASE_DEPENDENCY_REVIEW.md`
 5. DONE locally: Verify final binary sizes after release builds complete; see
    `docs/RELEASE_BUILD_MATRIX.md`
-6. Review imported package/module counts for avoidable dependencies
+6. DONE: Review imported package/module counts for avoidable dependencies; no
+   dependency was removed in this pass. See
+   `docs/RELEASE_DEPENDENCY_REVIEW.md`
 
 Platforms to test:
 - macOS (arm64 passes locally; amd64 passes with `CGO_ENABLED=0`)

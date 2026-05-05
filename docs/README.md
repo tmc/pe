@@ -55,6 +55,8 @@ source of truth for coverage numbers.
   baseline and low-coverage packages.
 - [RELEASE_BUILD_MATRIX.md](RELEASE_BUILD_MATRIX.md) - latest local
   cross-compilation matrix and binary sizes.
+- [RELEASE_DEPENDENCY_REVIEW.md](RELEASE_DEPENDENCY_REVIEW.md) - release
+  dependency counts and install-script decision.
 - [IMPLEMENTATION_TODOS.md](IMPLEMENTATION_TODOS.md) - tombstone pointing to
   [../ROADMAP.md](../ROADMAP.md).
 - [PLANNED_COMMANDS.md](PLANNED_COMMANDS.md) - aspirational command ideas, not
