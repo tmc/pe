@@ -1244,8 +1244,8 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add signature verification
 - [x] Create trust store for keys
 - [x] Add checksum validation
-- [ ] Implement security audit command
-- [ ] Add vulnerability scanning
+- [x] Implement security audit command
+- [x] Add vulnerability scanning
 
 ##### Initial Registry Setup
 - [ ] Set up registry infrastructure (GitHub/HTTP)

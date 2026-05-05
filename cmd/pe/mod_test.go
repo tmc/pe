@@ -23,7 +23,7 @@ func TestModCmd_CommandStructure(t *testing.T) {
 	}
 
 	// Verify subcommands exist
-	subcommands := []string{"init", "list", "get", "download", "tidy", "vendor", "verify", "graph", "upgrade", "search", "publish", "vet"}
+	subcommands := []string{"init", "list", "get", "download", "tidy", "vendor", "verify", "graph", "upgrade", "audit", "search", "publish", "vet"}
 	for _, name := range subcommands {
 		found := false
 		for _, cmd := range modCmd.Commands() {
@@ -624,6 +624,76 @@ func TestModUpgradeCmd_RejectsUnrequiredModule(t *testing.T) {
 	err := runModUpgrade(&cobra.Command{}, []string{"example.com/other"})
 	if err == nil || !strings.Contains(err.Error(), "is not required") {
 		t.Fatalf("runModUpgrade error = %v, want not required", err)
+	}
+}
+
+func TestModAuditCmd_OK(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte("module example.com/app\n\npe 1\n\nrequire example.com/mod v1.0.0\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+	if err := runModAudit(cmd, nil); err != nil {
+		t.Fatalf("runModAudit: %v", err)
+	}
+	if strings.TrimSpace(out.String()) != "module audit ok" {
+		t.Fatalf("output = %q", out.String())
+	}
+}
+
+func TestModAuditCmd_RequiresTrustedSignatures(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte(`module example.com/app
+
+pe 1
+
+require example.com/mod v1.0.0
+
+security {
+	require-signatures true
+}
+`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	err := runModAudit(&cobra.Command{}, nil)
+	if err == nil || !strings.Contains(err.Error(), "module audit found 1 issue") {
+		t.Fatalf("runModAudit error = %v, want signature finding", err)
+	}
+}
+
+func TestModAuditCmd_FindsVulnerabilities(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte("module example.com/app\n\npe 1\n\nrequire example.com/mod v1.0.0\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	db := filepath.Join(tmpDir, "vulns.json")
+	if err := os.WriteFile(db, []byte(`[{"module":"example.com/mod","version":"v1.0.0","id":"PE-1","severity":"high","summary":"bad prompt"}]`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PE_VULN_DB", db)
+	var out bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+	err := runModAudit(cmd, nil)
+	if err == nil || !strings.Contains(err.Error(), "module audit found 1 issue") {
+		t.Fatalf("runModAudit error = %v, want vulnerability finding", err)
+	}
+	if !strings.Contains(out.String(), "vulnerability PE-1 (high): bad prompt") {
+		t.Fatalf("output = %q", out.String())
 	}
 }
 

@@ -47,6 +47,7 @@ func init() {
 	modCmd.AddCommand(modVerifyCmd)
 	modCmd.AddCommand(modGraphCmd)
 	modCmd.AddCommand(modUpgradeCmd)
+	modCmd.AddCommand(modAuditCmd)
 	modCmd.AddCommand(modSearchCmd)
 	modCmd.AddCommand(modPublishCmd)
 	modCmd.AddCommand(modVetCmd)
@@ -126,6 +127,12 @@ var modUpgradeCmd = &cobra.Command{
 	Use:   "upgrade [module...]",
 	Short: "Upgrade module requirements",
 	RunE:  runModUpgrade,
+}
+
+var modAuditCmd = &cobra.Command{
+	Use:   "audit",
+	Short: "Audit module security policy",
+	RunE:  runModAudit,
 }
 
 var modVetCmd = &cobra.Command{
@@ -1163,6 +1170,72 @@ func runModUpgrade(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("writing pe.mod: %w", err)
 	}
 	return nil
+}
+
+func runModAudit(cmd *cobra.Command, args []string) error {
+	data, err := os.ReadFile("pe.mod")
+	if err != nil {
+		return fmt.Errorf("reading pe.mod: %w (run 'pe mod init' first)", err)
+	}
+	file, err := pemod.Parse(strings.NewReader(string(data)))
+	if err != nil {
+		return fmt.Errorf("parsing pe.mod: %w", err)
+	}
+	out := cmd.OutOrStdout()
+	var findings []string
+	if file.Security != nil && file.Security.RequireSignatures {
+		trusted := make(map[string]bool)
+		for _, trust := range file.Trust {
+			trusted[string(trust.Mod)] = true
+		}
+		for _, req := range file.Require {
+			if !trusted[string(req.Mod)] {
+				findings = append(findings, fmt.Sprintf("%s@%s: signature required but no trusted key declared", req.Mod, req.Version))
+			}
+		}
+	}
+	vulns, err := loadModuleVulnerabilities(os.Getenv("PE_VULN_DB"))
+	if err != nil {
+		return err
+	}
+	for _, req := range file.Require {
+		for _, vuln := range vulns {
+			if vuln.Module == string(req.Mod) && (vuln.Version == "" || vuln.Version == req.Version) {
+				findings = append(findings, fmt.Sprintf("%s@%s: vulnerability %s (%s): %s", req.Mod, req.Version, vuln.ID, vuln.Severity, vuln.Summary))
+			}
+		}
+	}
+	if len(findings) == 0 {
+		fmt.Fprintln(out, "module audit ok")
+		return nil
+	}
+	for _, finding := range findings {
+		fmt.Fprintln(out, finding)
+	}
+	return fmt.Errorf("module audit found %d issue(s)", len(findings))
+}
+
+type moduleVulnerability struct {
+	Module   string `json:"module"`
+	Version  string `json:"version,omitempty"`
+	ID       string `json:"id"`
+	Severity string `json:"severity"`
+	Summary  string `json:"summary"`
+}
+
+func loadModuleVulnerabilities(path string) ([]moduleVulnerability, error) {
+	if path == "" {
+		return nil, nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading vulnerability database: %w", err)
+	}
+	var vulns []moduleVulnerability
+	if err := json.Unmarshal(data, &vulns); err != nil {
+		return nil, fmt.Errorf("parsing vulnerability database: %w", err)
+	}
+	return vulns, nil
 }
 
 func runModVet(cmd *cobra.Command, args []string) error {
