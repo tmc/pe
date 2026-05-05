@@ -72,6 +72,7 @@ rules when they need stronger contracts.`,
 	registerRootCommands(root)
 	dynamicPluginCommands(root)
 	applyRootMetadata(root)
+	instrumentCommandTracing(root)
 
 	if err := root.Execute(); err != nil {
 		fmt.Println(err)

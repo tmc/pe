@@ -1661,11 +1661,11 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Add trace sampling
 
 ##### Command Tracing
-- [ ] Add tracing to run command
-- [ ] Add tracing to eval command
-- [ ] Add tracing to optimize commands
-- [ ] Add tracing to module commands
-- [ ] Add tracing to pipeline commands
+- [x] Add tracing to run command
+- [x] Add tracing to eval command
+- [x] Add tracing to optimize commands
+- [x] Add tracing to module commands
+- [x] Add tracing to pipeline commands
 - [x] Create trace visualization
 
 ##### Logging Enhancement
