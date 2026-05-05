@@ -124,7 +124,7 @@ EOF
 pe eval structured-eval.yaml --output results.json
 ```
 
-**Multi-Provider Comparison:**
+**Multi-Provider Evaluation:**
 ```bash
 # Compare providers by listing providers in the config file
 pe eval comparison.yaml --output comparison-results.json
@@ -231,7 +231,7 @@ pe experimental compose \
 ### `pe experimental optimize` - Metaprompting Optimization
 
 ```bash
-# TextGrad optimization
+# Textual gradient optimization
 pe experimental optimize --prompt "Summarize this text: {{.text}}" \
   --method textgrad \
   --iterations 5

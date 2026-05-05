@@ -2273,7 +2273,7 @@ playground  Launch interactive web playground for prompt engineering
 plugin      Manage PE plugins
 semantic    Semantic backpropagation and Graph-based Agentic System Optimization (GASO)
 stream      Stream process LLM outputs
-synthesize  Generate prompts using DSPy-style program synthesis
+synthesize  Generate prompts using structured program synthesis
 ```
 
 ### Examples

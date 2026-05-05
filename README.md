@@ -9,10 +9,10 @@
 
 ## 🚀 Key Features (Implemented)
 
-### Research-Based Optimization
-PE implements breakthrough research from 2024-2025:
+### Optimization
+PE includes local prompt optimization experiments:
 - **Semantic Backpropagation & GASO** (KAUST/IDSIA 2025): Natural language gradients for prompt optimization
-- **TextGrad Implementation**: Gradient-based optimization through textual feedback
+- **Textual Gradient Optimization**: Gradient-style optimization through textual feedback
 - **Multiple Optimization Methods**: PE2, APEX, multistage, reflection, and evolutionary approaches
 
 ### Core Capabilities (Stable Core + Prototype Extensions)
@@ -254,7 +254,7 @@ assert:
 PE implements multiple optimization techniques under `pe experimental`:
 
 ```bash
-# TextGrad - Natural language gradients
+# Textual gradients
 pe experimental optimize --prompt "task" --method textgrad --iterations 5
 
 # Semantic Backpropagation (2025 research)

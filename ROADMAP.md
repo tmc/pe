@@ -1122,7 +1122,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Update `cmd/pe/optimize.go` and optimization commands
 - [ ] Update `cmd/pe/semantic.go` for semantic optimization
 - [ ] Update `cmd/pe/evolve.go` for evolutionary optimization
-- [ ] Update `cmd/pe/textgrad.go` for TextGrad optimization
+- [ ] Update `cmd/pe/textgrad.go` for textual gradient optimization
 - [ ] Update `cmd/pe/pe2.go` for PE2 optimization
 - [ ] Update `cmd/pe/benchmark.go` for benchmarking
 - [ ] Update `cmd/pe/test.go` for testing commands
@@ -1338,7 +1338,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Add timeout tests
 
 ##### Optimization Tests
-- [ ] Add TextGrad optimizer tests
+- [ ] Add textual gradient optimizer tests
 - [ ] Add PE2 optimizer tests
 - [ ] Add GASO optimizer tests
 - [ ] Add semantic optimizer tests
@@ -1431,7 +1431,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Add adapter metrics
 
 ##### Optimizer Refactoring
-- [ ] Refactor TextGrad to use interfaces
+- [ ] Refactor textual gradient optimizer to use interfaces
 - [ ] Refactor PE2 to use interfaces
 - [ ] Refactor GASO to use interfaces
 - [ ] Refactor semantic optimizer

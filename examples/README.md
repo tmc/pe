@@ -19,7 +19,7 @@ legacy development material unless a demo has been refreshed here; see
   OpenAI and Anthropic provider specs.
 - [Assertions](evaluation/assertions/) - Assertion examples for content, regex,
   length, JSON, latency, cost, similarity, and LLM judging.
-- [Local Runtime Benchmarks](benchmarks/) - Local provider comparison config for
+- [Local Runtime Benchmarks](benchmarks/) - Local provider benchmark config for
   MLX, Ollama, and llama.cpp.
 - [Local Ollama](local-ollama/) - Local Ollama smoke test. Requires an Ollama
   daemon and the configured model.
