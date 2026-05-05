@@ -1736,30 +1736,34 @@ Verification:
 - No stable docs claim multimodal, IDE, visual, or neurosymbolic support until
   the implementation and tests land.
 
-## v0.6+ Design Tracks: External Concepts
+## v0.6+ Design Track: PE-Native RLM and Workflow Contracts
 
-These tracks are post-v0.5 design inputs, not release blockers. They borrow
-from external systems as constraints and vocabulary; they do not imply adopting
-new DSLs, broad provider rewrites, or arbitrary model-generated code execution.
+This is a post-v0.5 design track, not a release blocker. PE should not copy
+OpenProse's session VM or introduce a new DSL before the core release settles.
+PE can outdo that model with Unix/Go-style bounded combinators, attestable
+artifacts, deterministic JSON traces, and release-gated verification.
 
-- **BAML-inspired typed modules (P2)**: add typed prompt module schemas and
-  structured-output Go generation on top of existing PE module and structured
-  output support. Start with schemas/contracts in PE files before considering
-  any separate prompt DSL.
-- **DSPy-inspired optimizer artifacts (P2)**: make optimizer outputs
-  metric-first and reproducible by recording dataset, metric, model/provider,
-  candidate prompts, selected variants, scores, and budgets. Keep the localopt
-  provider adapter deferred to v0.6 so v0.5 stays focused on local,
-  provider-free optimization behavior.
-- **OpenProse-inspired workflow contracts (P3)**: define durable workflow
-  contracts and standardized trace records for agentic/release/audit loops,
-  including roles, handoffs, approval gates, artifacts, costs, and termination
-  reasons.
-- **RLM-inspired bounded recursive context runner (P3)**: explore a typed
-  runner that stores large inputs through cache/attest, executes bounded
-  distributed chunk workers, and aggregates with deterministic consensus. This
-  must use fixed combinators such as chunk, map, reduce, search, recurse, and
-  aggregate; it must not execute arbitrary model-generated code.
+Thesis: a future `pe exp recurse` should process large context through typed
+operations rather than arbitrary model-generated code. The runner should store
+inputs out-of-prompt with cache/attest pointers, execute bounded chunk workers
+through distributed local scheduling, aggregate child results with deterministic
+consensus, and emit a replayable JSON trace.
+
+Future slices:
+1. Define the RLM trace schema in `docs/future/RLM_DESIGN.md`.
+2. Add `internal/rlm` combinator interfaces for chunk, map, reduce, search,
+   recurse, aggregate, and consensus.
+3. Implement a bounded runner over `internal/distributed.RunLocal`.
+4. Convert child outputs into deterministic `distributed.Majority` aggregation.
+5. Store large inputs and chunk manifests through cache/attest pointers.
+6. Add `pe exp recurse <target-file> --prompt <instruction> --max-depth N
+   --max-tokens N` after the v0.5 integration path is stable.
+
+Guardrails:
+- v0.6+ only; do not block v0.5.
+- No new workflow DSL yet.
+- No broad provider rewrite.
+- No arbitrary model-generated code execution.
 
 
 ## Architecture Implementation Backlog
