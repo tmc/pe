@@ -16,7 +16,7 @@ import (
 // 2. Context specification
 // 3. Step-by-step reasoning template
 type PE2Optimizer struct {
-	llm llm.Provider
+	llm Generator
 }
 
 // PE2Config contains configuration for PE2 optimization
@@ -30,7 +30,7 @@ type PE2Config struct {
 }
 
 // NewPE2Optimizer creates a new PE2 optimizer
-func NewPE2Optimizer(llmProvider llm.Provider) *PE2Optimizer {
+func NewPE2Optimizer(llmProvider Generator) *PE2Optimizer {
 	return &PE2Optimizer{
 		llm: llmProvider,
 	}
