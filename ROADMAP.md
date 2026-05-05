@@ -1434,7 +1434,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Set up coverage reporting
 - [x] Identify coverage gaps
 - [x] Add tests for uncovered code
-- [ ] Achieve 70% coverage target
+- [x] Achieve 70% coverage target
 - [x] Set up coverage CI checks
 - [x] Create coverage badges
 
