@@ -50,6 +50,8 @@ source of truth for coverage numbers.
 - [CURRENT_STATUS.md](CURRENT_STATUS.md) - current implementation status.
 - [TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md) - measured coverage
   baseline and low-coverage packages.
+- [RELEASE_BUILD_MATRIX.md](RELEASE_BUILD_MATRIX.md) - latest local
+  cross-compilation matrix and binary sizes.
 - [IMPLEMENTATION_TODOS.md](IMPLEMENTATION_TODOS.md) - tombstone pointing to
   [../ROADMAP.md](../ROADMAP.md).
 - [PLANNED_COMMANDS.md](PLANNED_COMMANDS.md) - aspirational command ideas, not

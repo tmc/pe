@@ -197,21 +197,23 @@ Current status:
 - `pe version` and `pe --version` report `pe version v0.5.0 darwin/arm64`;
   tagged release builds can set version, commit, and build date with
   `-ldflags`.
-- Cross-compilation passes with `CGO_ENABLED=0` for darwin/amd64. The first
-  full matrix run was interrupted by a transient import/cache error after
-  darwin/arm64 succeeded; rerun the complete matrix before tagging.
+- Cross-compilation passes with `CGO_ENABLED=0` for darwin/arm64, darwin/amd64,
+  linux/amd64, linux/arm64, and windows/amd64. See
+  `docs/RELEASE_BUILD_MATRIX.md`.
 - `.github/workflows/release.yml` now builds tag-triggered archives for
   darwin/arm64, darwin/amd64, linux/amd64, linux/arm64, and windows/amd64.
 - Binary dependency sanity check: `go list -deps ./cmd/pe` reports 216 packages;
   `go list -m all` reports 39 modules.
 
 Tasks:
-1. Rerun and record complete cross-compilation results for every release target
+1. DONE: Rerun and record complete cross-compilation results for every release
+   target
 2. Dry-run the GitHub release workflow from a test tag before publishing v0.5.0
 3. Verify release archive names and install commands against uploaded assets
 4. Decide whether an install script is worth adding; current docs favor direct
    `go install` and release archives
-5. Verify final binary sizes after release builds complete
+5. DONE locally: Verify final binary sizes after release builds complete; see
+   `docs/RELEASE_BUILD_MATRIX.md`
 6. Review imported package/module counts for avoidable dependencies
 
 Platforms to test:
