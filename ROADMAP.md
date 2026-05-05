@@ -1180,7 +1180,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Remove all legacy provider implementations
 - [ ] Update all import statements
 - [ ] Fix compilation errors
-- [ ] Run full test suite
+- [x] Run full test suite
 - [ ] Manual testing of critical paths
 - [ ] Performance regression testing
 - [ ] Update documentation
