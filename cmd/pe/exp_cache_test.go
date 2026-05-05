@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -287,4 +288,57 @@ func TestExpCacheManifestCommands(t *testing.T) {
 	if !strings.Contains(verifyOut.String(), "cached manifest verified") {
 		t.Fatalf("verify output = %q", verifyOut.String())
 	}
+}
+
+func TestExpCacheManifestCLIWorkflow(t *testing.T) {
+	dir := t.TempDir()
+	pe := filepath.Join(dir, "pe")
+	build := exec.Command("go", "build", "-o", pe, ".")
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build pe: %v\n%s", err, out)
+	}
+
+	cacheDir := filepath.Join(dir, "cache")
+	root := filepath.Join(dir, "root")
+	if err := os.Mkdir(root, 0755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(root, "prompt.txt"), "hello")
+
+	manifest := runPE(t, pe, "exp", "attest", "manifest", "--root", root, "prompt.txt")
+	manifestPath := filepath.Join(dir, "manifest.json")
+	writeFile(t, manifestPath, manifest)
+
+	key := strings.TrimSpace(runPE(t, pe, "exp", "cache", "manifest", "put", "--cache-dir", cacheDir, manifestPath))
+	verify := runPE(t, pe, "exp", "cache", "manifest", "verify", "--cache-dir", cacheDir, "--root", root, key)
+	if !strings.Contains(verify, "cached manifest verified") {
+		t.Fatalf("verify output = %q", verify)
+	}
+
+	writeFile(t, filepath.Join(root, "prompt.txt"), "changed")
+	cmd := exec.Command(pe, "exp", "cache", "manifest", "verify", "--cache-dir", cacheDir, "--root", root, key)
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("tampered content verified:\n%s", out)
+	}
+	if !strings.Contains(string(out), "size mismatch for prompt.txt") {
+		t.Fatalf("tamper output = %q", out)
+	}
+
+	help := runPE(t, pe, "exp", "cache", "manifest", "--help")
+	for _, want := range []string{"unsigned", "local-only", "detects tamper", "does not prove identity", "origin", "freshness"} {
+		if !strings.Contains(help, want) {
+			t.Fatalf("help missing %q:\n%s", want, help)
+		}
+	}
+}
+
+func runPE(t *testing.T, pe string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command(pe, args...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("pe %s: %v\n%s", strings.Join(args, " "), err, out)
+	}
+	return string(out)
 }

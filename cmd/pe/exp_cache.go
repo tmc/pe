@@ -105,10 +105,11 @@ func newExpCacheManifestCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "manifest",
 		Short: "Store and verify unsigned manifests in the local cache",
-		Long: `Store and verify unsigned manifests in the local content-addressed cache.
+		Long: `Store and verify unsigned manifests in the local-only content-addressed cache.
 
 The manifest digest is the SHA-256 of canonical unsigned manifest JSON. This
-detects local tampering but does not prove identity, origin, or freshness.`,
+unsigned, local-only workflow detects tamper but does not prove identity,
+origin, or freshness.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Println("Use 'put' to store a manifest or 'verify' to check a cached manifest.")
 		},
