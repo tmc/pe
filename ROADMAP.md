@@ -1477,12 +1477,12 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Remove provider coupling
 
 ##### Evaluation Abstraction
-- [ ] Create evaluation adapter interface
-- [ ] Implement metric-based evaluator
-- [ ] Add LLM-based evaluator
-- [ ] Implement human-in-loop evaluator
-- [ ] Add composite evaluator
-- [ ] Create evaluation pipeline
+- [x] Create evaluation adapter interface
+- [x] Implement metric-based evaluator
+- [x] Add LLM-based evaluator
+- [x] Implement human-in-loop evaluator
+- [x] Add composite evaluator
+- [x] Create evaluation pipeline
 
 ##### Testing Updates
 - [x] Update optimization tests
