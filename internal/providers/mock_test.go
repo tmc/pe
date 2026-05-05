@@ -164,7 +164,11 @@ func TestMockProvider_GenerateStream_Cancellation(t *testing.T) {
 	respChan, err := provider.GenerateStream(ctx, "test prompt", options)
 	require.NoError(t, err)
 
-	// Cancel immediately
+	// Wait until the stream goroutine has started before canceling. With a
+	// buffered channel, immediate cancellation can race with normal completion.
+	resp := <-respChan
+	require.Nil(t, resp.Error)
+
 	cancel()
 
 	// Should receive an error response
