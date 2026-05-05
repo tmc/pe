@@ -83,6 +83,11 @@ func Parse(r io.Reader) (*File, error) {
 
 // Render validates declared inputs and renders the text body.
 func (f *File) Render(vars map[string]string) (string, error) {
+	return f.RenderWithImports(vars, nil)
+}
+
+// RenderWithImports renders the text body with named imported text components.
+func (f *File) RenderWithImports(vars map[string]string, imports map[string]string) (string, error) {
 	vals := make(map[string]interface{})
 	for k, v := range vars {
 		vals[k] = v
@@ -100,7 +105,24 @@ func (f *File) Render(vars map[string]string) (string, error) {
 		}
 	}
 
-	tmpl, err := template.New(nameOrDefault(f.Meta.Name)).Option("missingkey=error").Parse(f.Body)
+	funcs := template.FuncMap{
+		"import": func(name string) (string, error) {
+			body, ok := imports[name]
+			if !ok {
+				return "", fmt.Errorf("unknown import %s", name)
+			}
+			child, err := Parse(strings.NewReader(body))
+			if err != nil {
+				return "", err
+			}
+			if err := child.Validate(); err != nil {
+				return "", err
+			}
+			return child.RenderWithImports(vars, nil)
+		},
+	}
+
+	tmpl, err := template.New(nameOrDefault(f.Meta.Name)).Funcs(funcs).Option("missingkey=error").Parse(f.Body)
 	if err != nil {
 		return "", fmt.Errorf("parsing template: %w", err)
 	}

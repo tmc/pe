@@ -82,7 +82,9 @@ pe run-text [file|-] [flags]
 Plain text is valid by default. A file may add `pe.text.v1` or `pe.workflow.v1`
 front matter to declare inputs, metadata, safety policy, and placement.
 `run-text` validates that contract and renders Go template variables from
-explicit `--var` bindings.
+explicit `--var` bindings. Front matter `imports` can name local text
+components, which are rendered through the safe template function
+`{{ import "name" }}`.
 
 ### Flags
 

@@ -58,3 +58,28 @@ inputs:
 		t.Fatalf("Render error = %v", err)
 	}
 }
+
+func TestRenderWithImports(t *testing.T) {
+	f, err := Parse(strings.NewReader(`---
+kind: pe.text.v1
+inputs:
+  topic:
+    type: string
+imports:
+  reviewer: reviewer.prompt
+---
+{{ import "reviewer" }}
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := f.RenderWithImports(map[string]string{"topic": "release"}, map[string]string{
+		"reviewer": "Review {{ .topic }}.\n",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "Review release.\n\n" {
+		t.Fatalf("RenderWithImports = %q", got)
+	}
+}

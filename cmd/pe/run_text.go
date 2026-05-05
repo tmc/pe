@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/exectext"
@@ -36,7 +37,11 @@ providers, tools, shell commands, or network requests.`,
 				fmt.Fprintln(cmd.OutOrStdout(), "ok")
 				return nil
 			}
-			out, err := f.Render(vars)
+			imports, err := readExecTextImports(args[0], f)
+			if err != nil {
+				return err
+			}
+			out, err := f.RenderWithImports(vars, imports)
 			if err != nil {
 				return err
 			}
@@ -66,4 +71,24 @@ func readExecText(name string) (*exectext.File, error) {
 		return nil, err
 	}
 	return file, nil
+}
+
+func readExecTextImports(name string, file *exectext.File) (map[string]string, error) {
+	if name == "-" || len(file.Meta.Imports) == 0 {
+		return nil, nil
+	}
+	base := filepath.Dir(name)
+	imports := make(map[string]string)
+	for alias, rel := range file.Meta.Imports {
+		path := rel
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(base, rel)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("reading import %s: %w", alias, err)
+		}
+		imports[alias] = string(data)
+	}
+	return imports, nil
 }

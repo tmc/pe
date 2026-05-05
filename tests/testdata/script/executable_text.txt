@@ -12,6 +12,9 @@ stdout 'ok'
 ! pe run-text templated.prompt
 stderr 'missing input topic'
 
+pe run-text composed.prompt --var topic=release
+stdout 'Check release first.'
+
 pe mod vet templated.prompt
 stdout 'ok'
 
@@ -34,6 +37,20 @@ safety:
     allow: [local]
 ---
 Review {{ .topic }} safely.
+
+-- composed.prompt --
+---
+kind: pe.text.v1
+inputs:
+  topic:
+    type: string
+imports:
+  checker: checker.prompt
+---
+{{ import "checker" }}
+
+-- checker.prompt --
+Check {{ .topic }} first.
 
 -- denied.prompt --
 ---

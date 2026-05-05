@@ -46,6 +46,28 @@ EOF
 pe run-text review.prompt --var topic=release
 ```
 
+Executable text can compose local components with front matter imports:
+
+```bash
+cat > checklist.prompt <<'EOF'
+Check {{ .topic }} first.
+EOF
+
+cat > composed.prompt <<'EOF'
+---
+kind: pe.text.v1
+inputs:
+  topic:
+    type: string
+imports:
+  checklist: checklist.prompt
+---
+{{ import "checklist" }}
+EOF
+
+pe run-text composed.prompt --var topic=release
+```
+
 ### 3. Set Up Your Provider
 
 PE works with multiple AI providers. Choose one:
