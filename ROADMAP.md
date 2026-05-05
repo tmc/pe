@@ -1258,12 +1258,12 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 #### Phase 3: Command Architecture Reorganization (Week 5)
 
 ##### Command Taxonomy Design
-- [ ] Generate current command inventory from CLI help
-- [ ] Define command categories
-- [ ] Create command grouping proposal
+- [x] Generate current command inventory from CLI help
+- [x] Define command categories
+- [x] Create command grouping proposal
 - [ ] Review with stakeholders
-- [ ] Finalize command hierarchy
-- [ ] Document command relationships
+- [x] Finalize command hierarchy
+- [x] Document command relationships
 
 ##### Command Registry Implementation
 - [x] Create `cmd/pe/commands/registry.go`
