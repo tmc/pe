@@ -1266,13 +1266,13 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Document command relationships
 
 ##### Command Registry Implementation
-- [ ] Create `cmd/pe/commands/registry.go`
-- [ ] Implement CommandRegistry type
-- [ ] Implement CommandGroup type
-- [ ] Add command registration methods
-- [ ] Implement command discovery
-- [ ] Add command metadata support
-- [ ] Create command help generator
+- [x] Create `cmd/pe/commands/registry.go`
+- [x] Implement CommandRegistry type
+- [x] Implement CommandGroup type
+- [x] Add command registration methods
+- [x] Implement command discovery
+- [x] Add command metadata support
+- [x] Create command help generator
 
 ##### Core Commands Group
 - [ ] Create `cmd/pe/commands/core/` directory
