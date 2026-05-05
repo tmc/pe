@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 func TestModCmd_CommandStructure(t *testing.T) {
@@ -20,7 +22,7 @@ func TestModCmd_CommandStructure(t *testing.T) {
 	}
 
 	// Verify subcommands exist
-	subcommands := []string{"init", "list", "get", "download", "tidy", "vendor", "search", "publish"}
+	subcommands := []string{"init", "list", "get", "download", "tidy", "vendor", "search", "publish", "vet"}
 	for _, name := range subcommands {
 		found := false
 		for _, cmd := range modCmd.Commands() {
@@ -414,5 +416,81 @@ func TestModSearchCmd_Structure(t *testing.T) {
 func TestModPublishCmd_Structure(t *testing.T) {
 	if modPublishCmd.Use != "publish" {
 		t.Errorf("Unexpected Use: %s", modPublishCmd.Use)
+	}
+}
+
+func TestRunModVetCapabilities(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	mod := `module example.com/prompts
+
+pe 1
+
+capability {
+    providers deny remote
+    tools deny shell network
+}
+
+policy {
+    composition strict
+    require-typed-io true
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(mod), 0644); err != nil {
+		t.Fatal(err)
+	}
+	prompt := `---
+kind: pe.text.v1
+inputs:
+  topic:
+    type: string
+safety:
+  providers:
+    allow: [local]
+---
+Review {{ .topic }}.
+`
+	if err := os.WriteFile("review.prompt", []byte(prompt), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := &cobra.Command{}
+	if err := runModVet(cmd, []string{"review.prompt"}); err != nil {
+		t.Fatalf("mod vet failed: %v", err)
+	}
+}
+
+func TestRunModVetDeniedProvider(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	mod := `pe 1
+
+capability {
+    providers deny remote
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(mod), 0644); err != nil {
+		t.Fatal(err)
+	}
+	prompt := `---
+kind: pe.text.v1
+safety:
+  providers:
+    allow: [remote]
+---
+Review.
+`
+	if err := os.WriteFile("review.prompt", []byte(prompt), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := &cobra.Command{}
+	err := runModVet(cmd, []string{"review.prompt"})
+	if err == nil || !strings.Contains(err.Error(), "provider remote is denied") {
+		t.Fatalf("mod vet error = %v", err)
 	}
 }

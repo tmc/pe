@@ -59,19 +59,19 @@ func main() {
 
 	root := &cobra.Command{
 		Use:     "pe",
-		Short:   "PE - Go for Prompts",
+		Short:   "PE - safe prompting toolchain",
 		Version: versionLine(),
-		Long: `PE is the unified toolchain for prompt engineering, bringing Go's 
-philosophy of simplicity, composability, and performance to LLM development.
+		Long: `PE is a safe prompting toolchain.
 
-Just as Go revolutionized systems programming with its elegant toolchain, 
-PE revolutionizes prompt engineering with a comprehensive set of tools that 
-work together seamlessly.`,
+Its primary artifact is executable, templated, composable text. Plain text is
+valid by default; files can add inputs, metadata, safety policy, and placement
+rules when they need stronger contracts.`,
 	}
 	root.SetVersionTemplate("{{.Version}}\n")
 
 	// Core commands (like go toolchain)
 	root.AddCommand(runCmd())      // go run for prompts
+	root.AddCommand(runTextCmd())  // executable text renderer
 	root.AddCommand(buildCmd)      // go build for prompts
 	root.AddCommand(testCmd())     // go test for prompts
 	root.AddCommand(docCmd())      // go doc for prompts

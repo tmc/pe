@@ -20,6 +20,7 @@ Use `pe version` to show version information.
 | Command | Purpose | Example |
 |---------|---------|---------|
 | [`run`](#run) | Execute prompt immediately | `pe run "What is AI?"` |
+| [`run-text`](#run-text) | Render executable text safely | `pe run-text review.prompt --var topic=release` |
 | [`eval`](#eval) | Run prompt evaluations | `pe eval config.yaml` |
 | [`view`](#view) | View results in browser | `pe view` |
 | [`serve`](#serve) | Serve localhost API | `pe serve --addr 127.0.0.1:8080` |
@@ -62,6 +63,41 @@ Use `pe version` to show version information.
 | [`convert`](#convert) | Convert formats | `pe convert config.yaml config.json` |
 | [`init`](#init) | Initialize `.pe/` project files | `pe init` |
 | [`plugin`](#plugin) | Manage plugins | `pe plugin list` |
+
+---
+
+## run-text
+
+Validate and render executable text without invoking providers, tools, shell
+commands, or network requests.
+
+### Synopsis
+
+```bash
+pe run-text [file|-] [flags]
+```
+
+### Description
+
+Plain text is valid by default. A file may add `pe.text.v1` or `pe.workflow.v1`
+front matter to declare inputs, metadata, safety policy, and placement.
+`run-text` validates that contract and renders Go template variables from
+explicit `--var` bindings.
+
+### Flags
+
+```bash
+    --check                 Validate without rendering
+    --var stringToString    Template variables
+```
+
+### Examples
+
+```bash
+pe run-text review.prompt --var topic=release
+pe run-text review.prompt --check
+cat review.prompt | pe run-text - --var topic=release
+```
 
 ---
 
@@ -1172,11 +1208,23 @@ Search for modules in the registry.
 pe mod search [query]
 ```
 
+#### mod vet
+
+Validate `pe.mod` capability, placement, and policy blocks. With file
+arguments, also validate executable text metadata against the module policy.
+
+```bash
+pe mod vet [file...]
+```
+
 ### Examples
 
 ```bash
 # Initialize a new module
 pe mod init github.com/user/my-prompts
+
+# Validate module policy and an executable text file
+pe mod vet review.prompt
 
 # List available modules
 pe mod list

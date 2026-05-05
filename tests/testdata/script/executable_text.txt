@@ -1,0 +1,63 @@
+# Test executable text rendering and pe.mod capability vetting.
+
+pe run-text plain.prompt
+stdout 'plain text is valid'
+
+pe run-text templated.prompt --var topic=release
+stdout 'Review release safely.'
+
+pe run-text templated.prompt --check
+stdout 'ok'
+
+! pe run-text templated.prompt
+stderr 'missing input topic'
+
+pe mod vet templated.prompt
+stdout 'ok'
+
+! pe mod vet denied.prompt
+stderr 'provider remote is denied by pe.mod'
+
+-- plain.prompt --
+plain text is valid
+
+-- templated.prompt --
+#!/usr/bin/env pe run-text
+---
+kind: pe.text.v1
+run: pe run-text
+inputs:
+  topic:
+    type: string
+safety:
+  providers:
+    allow: [local]
+---
+Review {{ .topic }} safely.
+
+-- denied.prompt --
+---
+kind: pe.text.v1
+inputs:
+  topic:
+    type: string
+safety:
+  providers:
+    allow: [remote]
+---
+This wants a denied provider.
+
+-- pe.mod --
+module example.com/prompts
+
+pe 1
+
+capability {
+    providers deny remote
+    tools deny shell network
+}
+
+policy {
+    composition strict
+    require-typed-io true
+}

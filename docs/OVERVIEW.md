@@ -1,6 +1,11 @@
-# PE: Go for Prompts - Overview
+# PE: Safe Prompting Toolchain - Overview
 
-PE is the unified toolchain for prompt engineering, bringing Go's philosophy of simplicity, composability, and performance to LLM development. Just as Go transformed systems programming with its elegant toolchain, PE revolutionizes prompt engineering with a comprehensive set of tools that work together seamlessly.
+PE is a safe prompting toolchain. It uses simple commands and explicit files for
+prompt development, testing, module management, and local workflow prototypes.
+
+The primary artifact is executable, templated, composable text. Plain text is
+valid by default. Files can add typed inputs, metadata, safety policy, and
+placement rules when they need stronger contracts.
 
 ## Philosophy
 

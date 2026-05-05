@@ -30,6 +30,22 @@ pe run summarize.prompt --var text="Artificial intelligence is transforming indu
 
 The exact output depends on the configured provider.
 
+To render text safely without invoking a provider, use executable text:
+
+```bash
+cat > review.prompt <<'EOF'
+---
+kind: pe.text.v1
+inputs:
+  topic:
+    type: string
+---
+Review {{ .topic }} and list the concrete blockers.
+EOF
+
+pe run-text review.prompt --var topic=release
+```
+
 ### 3. Set Up Your Provider
 
 PE works with multiple AI providers. Choose one:
@@ -66,8 +82,11 @@ PE treats prompts like code - versioned, tested, and modular:
 mkdir my-prompts && cd my-prompts
 pe mod init github.com/myorg/prompts
 
-# This creates a go.mod file for dependency management
+# This creates pe.mod for dependency and policy management
 ```
+
+`pe.mod` can also carry capability and placement policy. Use `pe mod vet` to
+check the module contract and executable text metadata before running prompts.
 
 ### Template Variables
 Use `{{.variable}}` syntax for dynamic content:

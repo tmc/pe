@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/tmc/pe/internal/exectext"
 	"github.com/tmc/pe/internal/module"
 	"github.com/tmc/pe/internal/pemod"
 )
@@ -43,6 +44,7 @@ func init() {
 	modCmd.AddCommand(modVendorCmd)
 	modCmd.AddCommand(modSearchCmd)
 	modCmd.AddCommand(modPublishCmd)
+	modCmd.AddCommand(modVetCmd)
 }
 
 var modInitCmd = &cobra.Command{
@@ -101,6 +103,16 @@ var modVendorCmd = &cobra.Command{
 	Use:   "vendor",
 	Short: "Copy dependencies to vendor directory",
 	RunE:  runModVendor,
+}
+
+var modVetCmd = &cobra.Command{
+	Use:   "vet [file...]",
+	Short: "Validate pe.mod capability policy",
+	Long: `Vet parses pe.mod and checks the static capability contract.
+
+With file arguments, vet also checks executable text front matter against
+module policy requirements such as typed inputs and reviewed imports.`,
+	RunE: runModVet,
 }
 
 func init() {
@@ -852,5 +864,93 @@ func runModVendor(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Vendored %d modules\n", len(modulesList))
+	return nil
+}
+
+func runModVet(cmd *cobra.Command, args []string) error {
+	data, err := os.ReadFile("pe.mod")
+	if err != nil {
+		return fmt.Errorf("reading pe.mod: %w", err)
+	}
+	modFile, err := pemod.Parse(strings.NewReader(string(data)))
+	if err != nil {
+		return fmt.Errorf("parsing pe.mod: %w", err)
+	}
+	if err := vetCapabilityPolicy(modFile); err != nil {
+		return err
+	}
+	for _, name := range args {
+		if err := vetExecutableTextFile(modFile, name); err != nil {
+			return err
+		}
+	}
+	fmt.Fprintln(cmd.OutOrStdout(), "ok")
+	return nil
+}
+
+func vetCapabilityPolicy(file *pemod.File) error {
+	if file.Capability == nil && file.Placement == nil && file.Policy == nil {
+		return nil
+	}
+	if file.Policy != nil && file.Policy.Composition != "" && file.Policy.Composition != "strict" {
+		return fmt.Errorf("unsupported policy composition %s", file.Policy.Composition)
+	}
+	return nil
+}
+
+func vetExecutableTextFile(modFile *pemod.File, name string) error {
+	f, err := os.Open(name)
+	if err != nil {
+		return fmt.Errorf("opening executable text %s: %w", name, err)
+	}
+	defer f.Close()
+	text, err := exectext.Parse(f)
+	if err != nil {
+		return fmt.Errorf("parsing executable text %s: %w", name, err)
+	}
+	if err := text.Validate(); err != nil {
+		return fmt.Errorf("validating executable text %s: %w", name, err)
+	}
+	if modFile.Policy != nil && modFile.Policy.RequireTypedIO && text.Meta.Kind != "" && len(text.Meta.Inputs) == 0 {
+		return fmt.Errorf("%s: policy requires typed inputs", name)
+	}
+	for dim, vals := range text.Meta.Safety {
+		if err := deniedByModule(modFile, dim, vals.Allow); err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+	}
+	return nil
+}
+
+func deniedByModule(modFile *pemod.File, dim string, allowed []string) error {
+	if modFile.Capability == nil || len(allowed) == 0 {
+		return nil
+	}
+	var deny []string
+	name := dim
+	if strings.HasSuffix(name, "s") {
+		name = strings.TrimSuffix(name, "s")
+	}
+	switch dim {
+	case "data":
+		deny = modFile.Capability.Data.Deny
+	case "prompts":
+		deny = modFile.Capability.Prompts.Deny
+	case "providers":
+		deny = modFile.Capability.Providers.Deny
+	case "tools":
+		deny = modFile.Capability.Tools.Deny
+	default:
+		return nil
+	}
+	denied := make(map[string]bool)
+	for _, v := range deny {
+		denied[v] = true
+	}
+	for _, v := range allowed {
+		if denied[v] {
+			return fmt.Errorf("%s %s is denied by pe.mod", name, v)
+		}
+	}
 	return nil
 }

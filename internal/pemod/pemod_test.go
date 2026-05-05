@@ -460,3 +460,67 @@ trust github.com/org/math abc123fingerprint`
 		t.Errorf("Trust count mismatch: %d vs %d", len(file.Trust), len(file2.Trust))
 	}
 }
+
+func TestParseCapabilities(t *testing.T) {
+	input := `module github.com/acme/prompts
+
+pe 1
+
+capability {
+    data allow repo docs public
+    data deny secrets credentials
+    prompts allow local reviewed
+    providers allow local test
+    providers deny remote
+    tools allow read search verify write
+    tools deny shell network
+}
+
+placement {
+    run local
+    workspace isolated
+    network false
+    data-class public => providers local test remote
+    data-class repo-internal => providers local test
+}
+
+policy {
+    composition strict
+    require-typed-io true
+    require-reviewed-imports true
+}
+`
+	file, err := Parse(strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+	if file.Capability == nil {
+		t.Fatal("Capability is nil")
+	}
+	if got := strings.Join(file.Capability.Providers.Deny, ","); got != "remote" {
+		t.Fatalf("Providers.Deny = %q", got)
+	}
+	if file.Placement == nil || file.Placement.Network == nil || *file.Placement.Network {
+		t.Fatalf("Placement.Network = %v", file.Placement)
+	}
+	if len(file.Placement.DataClassRules) != 2 {
+		t.Fatalf("DataClassRules = %d", len(file.Placement.DataClassRules))
+	}
+	if file.Policy == nil || file.Policy.Composition != "strict" || !file.Policy.RequireTypedIO {
+		t.Fatalf("Policy = %+v", file.Policy)
+	}
+
+	formatted := file.Format()
+	for _, want := range []string{
+		"capability {",
+		"providers deny remote",
+		"placement {",
+		"network false",
+		"policy {",
+		"require-reviewed-imports true",
+	} {
+		if !strings.Contains(formatted, want) {
+			t.Fatalf("formatted file missing %q:\n%s", want, formatted)
+		}
+	}
+}

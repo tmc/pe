@@ -1,0 +1,133 @@
+// Package exectext parses and renders PE executable text files.
+package exectext
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"strings"
+	"text/template"
+
+	"gopkg.in/yaml.v3"
+)
+
+// File is an executable text artifact.
+type File struct {
+	Shebang string
+	Meta    Metadata
+	Body    string
+}
+
+// Metadata is optional front matter for executable text.
+type Metadata struct {
+	Kind      string                   `yaml:"kind" json:"kind"`
+	Run       string                   `yaml:"run" json:"run"`
+	Name      string                   `yaml:"name" json:"name"`
+	Metadata  map[string]interface{}   `yaml:"metadata" json:"metadata"`
+	Inputs    map[string]Input         `yaml:"inputs" json:"inputs"`
+	Outputs   map[string]Input         `yaml:"outputs" json:"outputs"`
+	Budget    map[string]interface{}   `yaml:"budget" json:"budget"`
+	Imports   map[string]string        `yaml:"imports" json:"imports"`
+	Safety    map[string]AllowDenyList `yaml:"safety" json:"safety"`
+	Placement map[string]interface{}   `yaml:"placement" json:"placement"`
+}
+
+// Input describes a template input or output.
+type Input struct {
+	Type        string      `yaml:"type" json:"type"`
+	Description string      `yaml:"description" json:"description"`
+	Default     interface{} `yaml:"default" json:"default"`
+	Required    *bool       `yaml:"required" json:"required"`
+}
+
+// AllowDenyList is a simple policy dimension.
+type AllowDenyList struct {
+	Allow []string `yaml:"allow" json:"allow"`
+	Deny  []string `yaml:"deny" json:"deny"`
+}
+
+// Parse reads an executable text file.
+func Parse(r io.Reader) (*File, error) {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("reading executable text: %w", err)
+	}
+	text := strings.ReplaceAll(string(data), "\r\n", "\n")
+	f := &File{}
+
+	if strings.HasPrefix(text, "#!") {
+		line, rest, ok := strings.Cut(text, "\n")
+		f.Shebang = strings.TrimSpace(line)
+		if ok {
+			text = rest
+		} else {
+			text = ""
+		}
+	}
+
+	trimmed := strings.TrimPrefix(text, "\ufeff")
+	if strings.HasPrefix(trimmed, "---\n") {
+		meta, rest, ok := strings.Cut(trimmed[len("---\n"):], "\n---\n")
+		if !ok {
+			return nil, fmt.Errorf("front matter missing closing ---")
+		}
+		if err := yaml.Unmarshal([]byte(meta), &f.Meta); err != nil {
+			return nil, fmt.Errorf("parsing front matter: %w", err)
+		}
+		text = rest
+	}
+
+	f.Body = strings.TrimLeft(text, "\n")
+	return f, nil
+}
+
+// Render validates declared inputs and renders the text body.
+func (f *File) Render(vars map[string]string) (string, error) {
+	vals := make(map[string]interface{})
+	for k, v := range vars {
+		vals[k] = v
+	}
+	for name, in := range f.Meta.Inputs {
+		if _, ok := vals[name]; ok {
+			continue
+		}
+		if in.Default != nil {
+			vals[name] = in.Default
+			continue
+		}
+		if in.Required == nil || *in.Required {
+			return "", fmt.Errorf("missing input %s", name)
+		}
+	}
+
+	tmpl, err := template.New(nameOrDefault(f.Meta.Name)).Option("missingkey=error").Parse(f.Body)
+	if err != nil {
+		return "", fmt.Errorf("parsing template: %w", err)
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, vals); err != nil {
+		return "", fmt.Errorf("rendering template: %w", err)
+	}
+	return buf.String(), nil
+}
+
+// Validate checks the static contract without running tools or providers.
+func (f *File) Validate() error {
+	if f.Meta.Kind != "" && f.Meta.Kind != "pe.text.v1" && f.Meta.Kind != "pe.workflow.v1" {
+		return fmt.Errorf("unsupported executable text kind %s", f.Meta.Kind)
+	}
+	if f.Meta.Run != "" && f.Meta.Run != "pe run-text" {
+		return fmt.Errorf("unsupported runner %s", f.Meta.Run)
+	}
+	if f.Shebang != "" && !strings.Contains(f.Shebang, "pe run-text") {
+		return fmt.Errorf("unsupported shebang %s", f.Shebang)
+	}
+	return nil
+}
+
+func nameOrDefault(name string) string {
+	if name == "" {
+		return "text"
+	}
+	return name
+}

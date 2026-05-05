@@ -46,6 +46,15 @@ type File struct {
 	// Security policy
 	Security *Security
 
+	// Capability policy for executable text.
+	Capability *Capability
+
+	// Placement policy for executable text.
+	Placement *Placement
+
+	// Validation policy for executable text.
+	Policy *Policy
+
 	// Comments and formatting (preserved during round-trip)
 	Comments []Comment
 
@@ -149,6 +158,41 @@ type SecurityPolicy struct {
 	Config   map[string]interface{}
 	Severity string // "low", "medium", "high", "critical"
 	Action   string // "warn", "fail", "ignore"
+}
+
+// Capability declares module-wide allowed and denied capability classes.
+type Capability struct {
+	Data      AllowDeny
+	Prompts   AllowDeny
+	Providers AllowDeny
+	Tools     AllowDeny
+}
+
+// AllowDeny is a policy dimension using simple allow and deny lists.
+type AllowDeny struct {
+	Allow []string
+	Deny  []string
+}
+
+// Placement declares where executable text may run.
+type Placement struct {
+	Run            string
+	Workspace      string
+	Network        *bool
+	DataClassRules []DataClassRule
+}
+
+// DataClassRule maps a data class to allowed provider classes.
+type DataClassRule struct {
+	Class     string
+	Providers []string
+}
+
+// Policy declares static validation behavior.
+type Policy struct {
+	Composition            string
+	RequireTypedIO         bool
+	RequireReviewedImports bool
 }
 
 // HSMConfig represents hardware security module configuration
@@ -524,6 +568,12 @@ func parseBlock(file *File, blockType string, lines []string) error {
 		return parseRegistryBlock(file, lines)
 	case "security":
 		return parseSecurityBlock(file, lines)
+	case "capability":
+		return parseCapabilityBlock(file, lines)
+	case "placement":
+		return parsePlacementBlock(file, lines)
+	case "policy":
+		return parsePolicyBlock(file, lines)
 	default:
 		return fmt.Errorf("unknown block type: %s", blockType)
 	}
@@ -726,6 +776,92 @@ func parseSecurityBlock(file *File, lines []string) error {
 	return nil
 }
 
+func parseCapabilityBlock(file *File, lines []string) error {
+	c := &Capability{}
+	for _, line := range lines {
+		parts := strings.Fields(line)
+		if len(parts) < 3 {
+			continue
+		}
+		var dim *AllowDeny
+		switch parts[0] {
+		case "data":
+			dim = &c.Data
+		case "prompts":
+			dim = &c.Prompts
+		case "providers":
+			dim = &c.Providers
+		case "tools":
+			dim = &c.Tools
+		default:
+			return fmt.Errorf("unknown capability dimension: %s", parts[0])
+		}
+		switch parts[1] {
+		case "allow":
+			dim.Allow = append(dim.Allow, parts[2:]...)
+		case "deny":
+			dim.Deny = append(dim.Deny, parts[2:]...)
+		default:
+			return fmt.Errorf("unknown capability operation: %s", parts[1])
+		}
+	}
+	file.Capability = c
+	return nil
+}
+
+func parsePlacementBlock(file *File, lines []string) error {
+	p := &Placement{}
+	for _, line := range lines {
+		parts := strings.Fields(line)
+		if len(parts) < 2 {
+			continue
+		}
+		switch parts[0] {
+		case "run":
+			p.Run = parts[1]
+		case "workspace":
+			p.Workspace = parts[1]
+		case "network":
+			v := parseBool(parts[1])
+			p.Network = &v
+		case "data-class":
+			if len(parts) < 5 || parts[2] != "=>" || parts[3] != "providers" {
+				return fmt.Errorf("data-class rule must be: data-class <class> => providers <provider>...")
+			}
+			p.DataClassRules = append(p.DataClassRules, DataClassRule{
+				Class:     parts[1],
+				Providers: append([]string(nil), parts[4:]...),
+			})
+		default:
+			return fmt.Errorf("unknown placement directive: %s", parts[0])
+		}
+	}
+	file.Placement = p
+	return nil
+}
+
+func parsePolicyBlock(file *File, lines []string) error {
+	p := &Policy{}
+	for _, line := range lines {
+		parts := strings.Fields(line)
+		if len(parts) < 2 {
+			continue
+		}
+		switch parts[0] {
+		case "composition":
+			p.Composition = parts[1]
+		case "require-typed-io":
+			p.RequireTypedIO = parseBool(parts[1])
+		case "require-reviewed-imports":
+			p.RequireReviewedImports = parseBool(parts[1])
+		default:
+			return fmt.Errorf("unknown policy directive: %s", parts[0])
+		}
+	}
+	file.Policy = p
+	return nil
+}
+
 // parseBool parses a boolean value from string
 func parseBool(s string) bool {
 	val, _ := strconv.ParseBool(s)
@@ -907,7 +1043,52 @@ func (f *File) Format() string {
 		buf.WriteString("}\n\n")
 	}
 
+	if f.Capability != nil {
+		buf.WriteString("capability {\n")
+		formatAllowDeny(&buf, "data", f.Capability.Data)
+		formatAllowDeny(&buf, "prompts", f.Capability.Prompts)
+		formatAllowDeny(&buf, "providers", f.Capability.Providers)
+		formatAllowDeny(&buf, "tools", f.Capability.Tools)
+		buf.WriteString("}\n\n")
+	}
+
+	if f.Placement != nil {
+		buf.WriteString("placement {\n")
+		if f.Placement.Run != "" {
+			fmt.Fprintf(&buf, "\trun %s\n", f.Placement.Run)
+		}
+		if f.Placement.Workspace != "" {
+			fmt.Fprintf(&buf, "\tworkspace %s\n", f.Placement.Workspace)
+		}
+		if f.Placement.Network != nil {
+			fmt.Fprintf(&buf, "\tnetwork %t\n", *f.Placement.Network)
+		}
+		for _, rule := range f.Placement.DataClassRules {
+			fmt.Fprintf(&buf, "\tdata-class %s => providers %s\n", rule.Class, strings.Join(rule.Providers, " "))
+		}
+		buf.WriteString("}\n\n")
+	}
+
+	if f.Policy != nil {
+		buf.WriteString("policy {\n")
+		if f.Policy.Composition != "" {
+			fmt.Fprintf(&buf, "\tcomposition %s\n", f.Policy.Composition)
+		}
+		fmt.Fprintf(&buf, "\trequire-typed-io %t\n", f.Policy.RequireTypedIO)
+		fmt.Fprintf(&buf, "\trequire-reviewed-imports %t\n", f.Policy.RequireReviewedImports)
+		buf.WriteString("}\n\n")
+	}
+
 	return strings.TrimSpace(buf.String()) + "\n"
+}
+
+func formatAllowDeny(buf *strings.Builder, name string, v AllowDeny) {
+	if len(v.Allow) > 0 {
+		fmt.Fprintf(buf, "\t%s allow %s\n", name, strings.Join(v.Allow, " "))
+	}
+	if len(v.Deny) > 0 {
+		fmt.Fprintf(buf, "\t%s deny %s\n", name, strings.Join(v.Deny, " "))
+	}
 }
 
 // AddRequire adds a requirement to the file

@@ -1,11 +1,14 @@
-# PE: Go for Prompts
+# PE: Safe Prompting Toolchain
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/tmc/pe)](https://goreportcard.com/report/github.com/tmc/pe)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/docs-comprehensive-blue)](docs/)
 [![Research](https://img.shields.io/badge/research-2024--2025-green)](docs/OVERVIEW.md)
 
-**PE brings the simplicity and power of Go's toolchain to prompt engineering.** Like `go run` for prompts, PE makes it easy to develop, test, and optimize prompts with a familiar, composable command-line interface.
+**PE is a Go-like toolchain for safe prompting.** Its primary artifact is
+executable, templated, composable text: plain text by default, with optional
+inputs, metadata, safety policy, and placement rules when a file needs a
+stronger contract.
 
 ## 🚀 Key Features (Implemented)
 
@@ -38,6 +41,12 @@ go install github.com/tmc/pe/cmd/pe@latest
 ```bash
 # Execute a prompt - simplest form
 pe run "What is 2+2?"
+
+# Render executable text without invoking a provider
+pe run-text review.prompt --var topic=release
+
+# Validate module capability policy and executable text metadata
+pe mod vet review.prompt
 
 # From a file with template variables
 pe run translate.prompt --var text="Hello" --var language="French"
