@@ -35,7 +35,7 @@ This file is the source of truth for planned PE work. Beads is deprecated for th
 Comprehensive documentation accuracy audit and update for release.
 
 Current Issues:
-- Test coverage baseline is now measured at 44.1%; remaining stale coverage
+- Test coverage baseline is now measured at 44.4%; remaining stale coverage
   claims should point to docs/TEST_COVERAGE_REPORT.md
 - Documentation dates in release-facing status docs have been normalized; older
   research dates, model IDs, examples, future docs, and archive docs are not
@@ -55,7 +55,7 @@ Remaining sub-tasks:
 3. DONE: Consolidate getting started documentation
 4. DONE: Update docs/CURRENT_STATUS.md with latest
 5. DONE: Review all command documentation against generated CLI help
-6. Reconcile docs/README.md with README.md and current release notes
+6. DONE: Reconcile docs/README.md with README.md and current release notes
 
 Priority: P1 - Blocking release
 
