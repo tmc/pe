@@ -1,0 +1,24 @@
+# Test pe diff regression gates against JSON and JSONL result fixtures.
+
+! pe diff --fail-on-regression baseline.json current.jsonl
+stdout 'Gate: fail'
+stdout 'pass rate dropped 50.00 percentage points'
+stdout 'average score dropped 0.5000'
+stdout 'average latency increased 50.00 ms'
+stdout 'failures increased \+1'
+
+pe diff --fail-on-regression --max-pass-rate-drop 60 --max-score-drop 0.6 --max-latency-increase-ms 60 --max-failure-increase 1 baseline.json current.jsonl
+stdout 'Gate: pass'
+
+pe diff --format json --fail-on-regression --max-pass-rate-drop 60 --max-score-drop 0.6 --max-latency-increase-ms 60 --max-failure-increase 1 baseline.json current.jsonl
+stdout '"passed": true'
+
+-- baseline.json --
+[
+  {"id":"base-1","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":100,"response":{"tokenUsage":{"total":10}}},
+  {"id":"base-2","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":100,"response":{"tokenUsage":{"total":10}}}
+]
+
+-- current.jsonl --
+{"id":"current-1","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":120,"response":{"tokenUsage":{"total":10}}}
+{"id":"current-2","provider":{"id":"mock"},"success":false,"score":0,"latencyMs":180,"response":{"tokenUsage":{"total":10}}}
