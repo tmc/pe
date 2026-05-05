@@ -1230,7 +1230,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 ##### Module Commands
 - [x] Fix `pe mod init` with proper initialization
 - [x] Implement `pe mod download` with real registry
-- [ ] Complete `pe mod tidy` functionality
+- [x] Complete `pe mod tidy` functionality
 - [x] Implement `pe mod vendor` properly
 - [x] Add `pe mod verify` for integrity checking
 - [x] Implement `pe mod list` for installed modules
