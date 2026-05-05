@@ -289,8 +289,14 @@ func (l *StructuredLogger) WithContext(ctx context.Context) Logger {
 
 	// Extract trace information if available
 	if l.traceEnabled {
+		if tc, ok := TraceContextFromContext(ctx); ok {
+			newFields["trace_id"] = tc.TraceID
+			newFields["span_id"] = tc.SpanID
+		}
 		if span := SpanFromContext(ctx); span != nil {
-			newFields["trace_id"] = span.ID
+			if newFields["trace_id"] == nil {
+				newFields["trace_id"] = span.ID
+			}
 			if span.ParentID != "" {
 				newFields["parent_span_id"] = span.ParentID
 			}

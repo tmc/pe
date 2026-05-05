@@ -1653,7 +1653,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 
 ##### Distributed Tracing
 - [x] Add tracing infrastructure under `internal/observability`
-- [ ] Integrate OpenTelemetry
+- [x] Integrate OpenTelemetry
 - [x] Add trace provider setup
 - [x] Implement span creation
 - [x] Add context propagation

@@ -184,6 +184,16 @@ func (t *Tracer) StartSpan(ctx context.Context, operation string) (context.Conte
 
 	// Add span to context
 	ctx = ContextWithSpan(ctx, span)
+	if tc, ok := TraceContextFromContext(ctx); ok && tc.TraceID != "" {
+		tc.SpanID = randomHex(8)
+		ctx = WithTraceContext(ctx, tc)
+	} else {
+		ctx = WithTraceContext(ctx, TraceContext{
+			TraceID: randomHex(16),
+			SpanID:  randomHex(8),
+			Sampled: true,
+		})
+	}
 
 	return ctx, span
 }
