@@ -1262,6 +1262,8 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Define command categories
 - [x] Create command grouping proposal
 - [ ] Review with stakeholders
+  - Prepared `docs/COMMAND_TAXONOMY_REVIEW.md` with the current generated
+    command groups, evidence, review questions, and sign-off criteria.
 - [x] Finalize command hierarchy
 - [x] Document command relationships
 
