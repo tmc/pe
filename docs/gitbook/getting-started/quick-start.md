@@ -1,67 +1,15 @@
 # Quick Start
 
-In this guide, you will create, run, and evaluate your first prompt with PE.
+Use the canonical quick start: [GETTING_STARTED.md](../../GETTING_STARTED.md).
 
-## 1. Run a Simple Prompt
+That guide covers:
 
-The `pe run` command is the equivalent of `go run`. It executes a prompt immediately.
+- installing PE,
+- running the first prompt,
+- rendering executable text with `pe run-text`,
+- initializing `pe.mod`,
+- validating module policy with `pe mod vet`,
+- and the first evaluation workflow.
 
-```bash
-pe run "What is the capital of France?" --provider openai
-```
-
-## 2. Use Prompt Files & Templates
-
-PE encourages storing prompts in files. It supports Go text templates for dynamic variables.
-
-Create a file named `translate.prompt`:
-
-```text
-Translate the following text to {{.language}}:
-
-Text: {{.text}}
-```
-
-Run it with variables:
-
-```bash
-pe run translate.prompt \
-  --var language="Spanish" \
-  --var text="Hello, world!"
-```
-
-## 3. Initialize a Module
-
-Organize your prompts into a module (project):
-
-```bash
-mkdir my-prompts
-cd my-prompts
-pe mod init github.com/username/my-prompts
-```
-
-This creates a `pe.mod` file, similar to `go.mod`, to track dependencies.
-
-## 4. Run an Evaluation
-
-Create a configuration file `pe-config.yaml` to define test cases:
-
-```yaml
-prompts: [translate.prompt]
-providers: [openai:gpt-4]
-tests:
-  - vars:
-      language: French
-      text: "Good morning"
-    assert:
-      - type: contains
-        value: "Bonjour"
-```
-
-Run the evaluation:
-
-```bash
-pe eval pe-config.yaml
-```
-
-You will see a report of the test results in your terminal.
+For exact flags, use [CLI_REFERENCE.md](../../CLI_REFERENCE.md) or
+`pe help [command]`.

@@ -9,8 +9,9 @@ source of truth for coverage numbers.
 
 ## Start Here
 
-- [GETTING_STARTED.md](GETTING_STARTED.md) - first install, first prompt, and
+- [GETTING_STARTED.md](GETTING_STARTED.md) - canonical first install, first prompt, and
   core workflow.
+- [gitbook/getting-started/](gitbook/getting-started/) - thin GitBook navigation to the canonical getting-started docs.
 - [TUTORIAL.md](TUTORIAL.md) - longer hands-on walkthrough. Advanced chapters
   include experimental command groups and should be checked against `pe --help`
   before automation.

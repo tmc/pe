@@ -50,7 +50,7 @@ Current Issues:
 Remaining sub-tasks:
 1. DONE: Replace stale coverage claims with references to docs/TEST_COVERAGE_REPORT.md
 2. Update all documentation dates
-3. Consolidate getting started documentation
+3. DONE: Consolidate getting started documentation
 4. DONE: Update docs/CURRENT_STATUS.md with latest
 5. DONE: Review all command documentation against generated CLI help
 6. Reconcile docs/README.md with README.md and current release notes

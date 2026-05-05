@@ -1,31 +1,15 @@
 # Core Concepts
 
-PE is built on a few foundational philosophies that differentiate it from other tools.
+The current status and command surface are tracked in:
 
-## Prompts as Code
+- [CURRENT_STATUS.md](../../CURRENT_STATUS.md)
+- [CLI_REFERENCE.md](../../CLI_REFERENCE.md)
+- [CLI_HELP_AUDIT.md](../../CLI_HELP_AUDIT.md)
 
-PE treats prompts as software artifacts. They should be:
-*   **Version Controlled**: Stored in Git.
-*   **Modular**: Composed of reusable parts.
-*   **Tested**: Verified with automated evaluations.
+Stable concepts:
 
-## The Unix Philosophy
-
-PE provides a suite of small, focused tools that compose via standard streams (stdin/stdout).
-
-*   `pe ask`: Simple request/response tool.
-*   `pe filter`: Filter JSON results from a stream.
-*   `pe reduce`: Aggregate results.
-
-Example:
-```bash
-echo "data" | pe ask "Summarize" | pe ask "Extract sentiments"
-```
-
-## Providers
-
-PE abstracts LLM backends into **Providers**.
-*   **Native Providers**: OpenAI, Anthropic (built-in, no external dependencies).
-*   **CLI Providers**: Ollama, MLX-LM (`mlx`/`mlx-lm`), MLX-Go (`mlx-go`), and generic scripts (configured via YAML).
-
-You can switch providers easily using the `--provider` flag or configuration files, allowing you to test your prompts across models without changing the prompt code.
+- Prompts and executable text are version-controlled text artifacts.
+- Templates use Go template syntax such as `{{.name}}`.
+- `pe.mod` describes module dependencies and can carry capability policy.
+- Commands compose through files, stdin/stdout, and explicit local artifacts.
+- Experimental workflows live under `pe exp` and `pe experimental`.

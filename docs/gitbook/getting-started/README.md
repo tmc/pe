@@ -1,7 +1,8 @@
 # Getting Started
 
-This section will guide you through setting up PE and understanding its core philosophy.
+The canonical first-run guide is [GETTING_STARTED.md](../../GETTING_STARTED.md).
+Use this GitBook section as a navigation layer, not a separate source of truth.
 
-*   [**Installation**](installation.md): Install PE binaries or build from source.
-*   [**Quick Start**](quick-start.md): A 5-minute guide to your first prompt execution and evaluation.
-*   [**Core Concepts**](concepts.md): Understand the "Prompts as Code" philosophy, template variables, and the provider model.
+- [Installation](installation.md) points to the current installation guide.
+- [Quick Start](quick-start.md) points to the current first prompt workflow.
+- [Core Concepts](concepts.md) summarizes stable concepts and links to current docs.
