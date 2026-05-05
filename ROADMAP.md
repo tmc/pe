@@ -1201,7 +1201,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [x] Create `internal/module/registry.go`
 - [x] Implement registry client interface
 - [x] Add GitHub-based registry option
-- [ ] Add HTTP API registry option
+- [x] Add HTTP API registry option
 - [ ] Implement registry authentication
 - [x] Add module search functionality
 - [x] Implement module metadata fetching

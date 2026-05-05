@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -70,6 +71,20 @@ func NewGitHubRegistry(owner, repo string) *GitHubRegistry {
 		owner:  owner,
 		repo:   repo,
 		client: &http.Client{Timeout: 30 * time.Second},
+	}
+}
+
+// HTTPRegistry uses a static HTTP endpoint as a module registry.
+type HTTPRegistry struct {
+	baseURL string
+	client  *http.Client
+}
+
+// NewHTTPRegistry creates a new HTTP registry.
+func NewHTTPRegistry(baseURL string) *HTTPRegistry {
+	return &HTTPRegistry{
+		baseURL: strings.TrimRight(baseURL, "/"),
+		client:  &http.Client{Timeout: 30 * time.Second},
 	}
 }
 
@@ -188,26 +203,7 @@ func (r *GitHubRegistry) Search(query string) ([]*Module, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	query = strings.ToLower(query)
-	var results []*Module
-
-	for _, module := range modules {
-		if strings.Contains(strings.ToLower(module.Name), query) ||
-			strings.Contains(strings.ToLower(module.Description), query) {
-			results = append(results, module)
-			continue
-		}
-
-		for _, tag := range module.Tags {
-			if strings.Contains(strings.ToLower(tag), query) {
-				results = append(results, module)
-				break
-			}
-		}
-	}
-
-	return results, nil
+	return searchModules(modules, query), nil
 }
 
 func (r *GitHubRegistry) fetchModuleMetadata(url string) (*Module, error) {
@@ -243,6 +239,106 @@ func (r *GitHubRegistry) downloadFile(url, destPath string) error {
 
 	_, err = io.Copy(out, resp.Body)
 	return err
+}
+
+// List returns all modules from the HTTP registry index.
+func (r *HTTPRegistry) List() ([]*Module, error) {
+	var modules []*Module
+	if err := r.getJSON("/modules.json", &modules); err != nil {
+		return nil, err
+	}
+	return modules, nil
+}
+
+// Get retrieves a module by name from the HTTP registry.
+func (r *HTTPRegistry) Get(name string) (*Module, error) {
+	modules, err := r.List()
+	if err != nil {
+		return nil, err
+	}
+	for _, module := range modules {
+		if module.Name == name {
+			return module, nil
+		}
+	}
+	return nil, fmt.Errorf("module %s not found", name)
+}
+
+// Download downloads a module from the HTTP registry.
+func (r *HTTPRegistry) Download(module *Module, destDir string) error {
+	moduleDir, err := containedPath(destDir, module.Name, module.Version)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(moduleDir, 0755); err != nil {
+		return fmt.Errorf("failed to create module directory: %w", err)
+	}
+	for _, file := range module.Files {
+		destPath, err := containedPath(moduleDir, file)
+		if err != nil {
+			return err
+		}
+		urlPath := "/" + strings.TrimLeft(pathForModuleFile(module, file), "/")
+		if err := r.downloadFile(urlPath, destPath); err != nil {
+			return fmt.Errorf("failed to download %s: %w", file, err)
+		}
+	}
+	data, err := json.MarshalIndent(module, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal module metadata: %w", err)
+	}
+	return os.WriteFile(filepath.Join(moduleDir, "module.json"), data, 0644)
+}
+
+// Publish returns an error because the HTTP registry is read-only.
+func (r *HTTPRegistry) Publish(module *Module, sourceDir string) error {
+	return fmt.Errorf("HTTP registry is read-only")
+}
+
+// Search searches modules in the HTTP registry index.
+func (r *HTTPRegistry) Search(query string) ([]*Module, error) {
+	modules, err := r.List()
+	if err != nil {
+		return nil, err
+	}
+	return searchModules(modules, query), nil
+}
+
+func (r *HTTPRegistry) getJSON(urlPath string, v interface{}) error {
+	resp, err := r.client.Get(r.baseURL + urlPath)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("HTTP registry returned status %d", resp.StatusCode)
+	}
+	return json.NewDecoder(resp.Body).Decode(v)
+}
+
+func (r *HTTPRegistry) downloadFile(urlPath, destPath string) error {
+	resp, err := r.client.Get(r.baseURL + urlPath)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("HTTP registry returned status %d", resp.StatusCode)
+	}
+	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+		return err
+	}
+	out, err := os.Create(destPath) // #nosec G304 -- destPath is contained under the module download directory.
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, resp.Body)
+	return err
+}
+
+func pathForModuleFile(module *Module, file string) string {
+	return path.Join("modules", module.Name, module.Version, file)
 }
 
 // LocalRegistry uses a local directory as a module registry
@@ -465,7 +561,10 @@ func (r *LocalRegistry) Search(query string) ([]*Module, error) {
 	if err != nil {
 		return nil, err
 	}
+	return searchModules(modules, query), nil
+}
 
+func searchModules(modules []*Module, query string) []*Module {
 	query = strings.ToLower(query)
 	var results []*Module
 
@@ -484,7 +583,7 @@ func (r *LocalRegistry) Search(query string) ([]*Module, error) {
 		}
 	}
 
-	return results, nil
+	return results
 }
 
 // DefaultRegistry returns the default registry based on environment configuration
@@ -511,6 +610,13 @@ func DefaultRegistry() Registry {
 			dir = filepath.Join(home, ".pe", "registry")
 		}
 		return NewLocalRegistry(dir)
+
+	case "http":
+		url := os.Getenv("PE_REGISTRY_URL")
+		if url == "" {
+			url = "https://pe.dev/registry"
+		}
+		return NewHTTPRegistry(url)
 
 	default:
 		// Default to local registry

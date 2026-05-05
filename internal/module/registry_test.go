@@ -1,6 +1,9 @@
 package module
 
 import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -41,5 +44,70 @@ func TestGitHubRegistryDownloadRejectsTraversal(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dest, "..", "escape")); !os.IsNotExist(err) {
 		t.Fatal("created path outside download directory")
+	}
+}
+
+func TestHTTPRegistryListGetSearchDownload(t *testing.T) {
+	module := Module{
+		Name:        "example.com/prompts",
+		Version:     "v1.0.0",
+		Description: "useful prompts",
+		Tags:        []string{"chat"},
+		Files:       []string{"prompt.txt"},
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/modules.json":
+			_ = json.NewEncoder(w).Encode([]Module{module})
+		case "/modules/example.com/prompts/v1.0.0/prompt.txt":
+			_, _ = w.Write([]byte("hello"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	registry := NewHTTPRegistry(server.URL + "/")
+	modules, err := registry.List()
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(modules) != 1 || modules[0].Name != module.Name {
+		t.Fatalf("modules = %#v", modules)
+	}
+	got, err := registry.Get(module.Name)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if got.Version != module.Version {
+		t.Fatalf("version = %q", got.Version)
+	}
+	found, err := registry.Search("chat")
+	if err != nil {
+		t.Fatalf("Search: %v", err)
+	}
+	if len(found) != 1 || found[0].Name != module.Name {
+		t.Fatalf("search = %#v", found)
+	}
+	dest := t.TempDir()
+	if err := registry.Download(&module, dest); err != nil {
+		t.Fatalf("Download: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(dest, module.Name, module.Version, "prompt.txt"))
+	if err != nil {
+		t.Fatalf("read downloaded file: %v", err)
+	}
+	if string(data) != "hello" {
+		t.Fatalf("downloaded file = %q", data)
+	}
+}
+
+func TestHTTPRegistryRejectsTraversal(t *testing.T) {
+	server := httptest.NewServer(http.NotFoundHandler())
+	defer server.Close()
+	registry := NewHTTPRegistry(server.URL)
+	module := &Module{Name: "../escape", Version: "v1.0.0", Files: []string{"prompt.txt"}}
+	if err := registry.Download(module, t.TempDir()); err == nil {
+		t.Fatalf("Download traversal module succeeded")
 	}
 }
