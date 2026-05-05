@@ -42,7 +42,10 @@ func TestGetProvider(t *testing.T) {
 		return &TestProvider{name: "anthropic", model: "claude-3"}, nil
 	})
 	RegisterProviderFactory("mock", func(providerSpec string, options map[string]interface{}) (Provider, error) {
-		return &MockProviderProxy{}, nil
+		return &TestProvider{name: "mock", model: "mock-model"}, nil
+	})
+	RegisterProviderFactory("cgpt", func(providerSpec string, options map[string]interface{}) (Provider, error) {
+		return &TestProvider{name: "cgpt", model: providerSpec}, nil
 	})
 	// Save and restore environment
 	origTestMode := os.Getenv("PE_TEST_MODE")

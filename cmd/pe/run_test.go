@@ -330,6 +330,7 @@ func TestRunCmd_FlagParsing(t *testing.T) {
 }
 
 func TestRegisterLLMProviderSpec(t *testing.T) {
+	t.Setenv("PE_TEST_MODE", "true")
 	client := inference.NewClient()
 	if err := registerLLMProviderSpec(client, "mock:test"); err != nil {
 		t.Fatalf("registerLLMProviderSpec() failed: %v", err)
