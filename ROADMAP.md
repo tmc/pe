@@ -1169,7 +1169,7 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 ##### Provider Implementation Updates
 - [x] Update OpenAI provider to single interface
 - [x] Update Anthropic provider to single interface
-- [ ] Update cgpt provider wrapper
+- [x] Update cgpt provider wrapper
 - [ ] Update mock provider for testing
 - [ ] Remove duplicate provider implementations
 - [ ] Consolidate provider registration logic

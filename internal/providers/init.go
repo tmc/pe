@@ -3,6 +3,7 @@ package providers
 import (
 	"github.com/tmc/pe/internal/inference"
 	inferenceanthropic "github.com/tmc/pe/internal/inference/providers/anthropic"
+	inferencecgpt "github.com/tmc/pe/internal/inference/providers/cgpt"
 	inferenceollama "github.com/tmc/pe/internal/inference/providers/ollama"
 	inferenceopenai "github.com/tmc/pe/internal/inference/providers/openai"
 	"github.com/tmc/pe/internal/llm"
@@ -39,12 +40,12 @@ func init() {
 
 	// Register cgpt provider factory
 	llm.RegisterProviderFactory("cgpt", func(providerSpec string, options map[string]interface{}) (llm.Provider, error) {
-		// cgpt doesn't need a model specification
-		provider, err := NewCGPTProvider(options)
-		if err != nil {
-			return nil, err
+		config := cgptProviderConfig(options)
+		provider := inferencecgpt.New()
+		if binary, ok := config["binary"].(string); ok && binary != "" {
+			provider = inferencecgpt.NewWithBinary(binary)
 		}
-		return provider, nil
+		return inference.NewModernAdapter(provider, providerSpec), nil
 	})
 
 	// Register generic CLI provider factory
@@ -115,6 +116,14 @@ func remoteProviderConfig(options map[string]interface{}) map[string]interface{}
 	}
 	if v, ok := config["baseURL"]; ok {
 		config["base_url"] = v
+	}
+	return config
+}
+
+func cgptProviderConfig(options map[string]interface{}) map[string]interface{} {
+	config := cloneOptions(options)
+	if v, ok := config["executable"]; ok {
+		config["binary"] = v
 	}
 	return config
 }
