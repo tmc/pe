@@ -1,0 +1,10 @@
+description: "current command conversion example"
+prompts:
+  - "Say hello"
+providers:
+  - cgpt
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: hello

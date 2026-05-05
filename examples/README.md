@@ -3,7 +3,9 @@
 This directory contains runnable examples for PE. This index lists only example
 directories that exist in the current tree and have files to inspect or run.
 
-For the older, broader demo set, see [`../example/`](../example/).
+For the older, broader demo set, see [`../example/`](../example/). Treat it as
+legacy development material unless a demo has been refreshed here; see
+[Legacy `example/` Directory](legacy-example-directory.md).
 
 ## Basic
 
@@ -33,6 +35,12 @@ For the older, broader demo set, see [`../example/`](../example/).
 - [Unix Pipelines](pipeline/unix/) - Pipeline composition notes for `pe eval`,
   `pe filter`, `pe stats`, and standard Unix tools.
 
+## Current Commands
+
+- [Current Commands](current-commands/) - Offline smoke examples for `ask`,
+  `template`, `prompt`, `plugin`, `profile`, `build`, `convert`, `collect`,
+  `reduce`, and `watch`.
+
 ## Validated Commands
 
 These commands were run from the repository root during the examples validation
@@ -43,6 +51,8 @@ go test ./example/... ./examples/...
 PE_TEST_MODE=true go run ./cmd/pe run examples/basic/simple-prompt/prompt.txt --stream=false
 PE_TEST_MODE=true go run ./cmd/pe run examples/basic/template-vars/translate.prompt --var text=Test --var source_lang=English --var target_lang=Italian --stream=false
 go run ./cmd/pe cat examples/basic/template-vars/translate.prompt --set text=Test --set source_lang=English --set target_lang=Italian
+go build -o /tmp/current-commands-pe ./cmd/pe
+PE_BIN=/tmp/current-commands-pe ./examples/current-commands/smoke.sh
 OPENAI_API_KEY=dummy ANTHROPIC_API_KEY=dummy go run ./cmd/pe eval examples/evaluation/basic/config.yaml --dry-run --no-progress-bar
 OPENAI_API_KEY=dummy ANTHROPIC_API_KEY=dummy go run ./cmd/pe eval examples/evaluation/assertions/config.yaml --dry-run --no-progress-bar
 ```
@@ -74,6 +84,7 @@ examples/
 │   └── basic/
 ├── inference/
 ├── local-ollama/
+├── current-commands/
 ├── modules/
 │   └── create/
 ├── pipeline/

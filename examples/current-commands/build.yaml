@@ -1,0 +1,5 @@
+prompt: "Summarize {{.text}} in one sentence."
+provider: cgpt
+model: default
+variables:
+  text: "PE validates prompt workflows."
