@@ -32,6 +32,9 @@ go build -o /tmp/pe ./cmd/pe
 PE_BIN=/tmp/pe ./examples/current-commands/smoke.sh
 ```
 
+Use a binary named `pe` for local smokes. A basename like `pe-something` is
+reserved for plugin execution and may be treated as a plugin command.
+
 ## Commands Covered
 
 ```bash

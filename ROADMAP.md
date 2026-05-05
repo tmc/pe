@@ -90,13 +90,23 @@ Evidence:
 - Remaining legacy risk is concentrated in `example/` promptfoo/security/
   attestation demos and advanced long-form tutorial configs that describe
   future or incompatible config shapes.
+- `GOCACHE=$(mktemp -d /tmp/pe-examples-gocache.XXXXXX) go build -o /tmp/pe ./cmd/pe` passed.
+- `PE_BIN=/tmp/pe ./examples/current-commands/smoke.sh` passed for `ask`,
+  `template`, `prompt`, `plugin`, `profile`, `build`, `convert`, `collect`,
+  `reduce`, and `watch --help`.
+- `PE_BIN=/tmp/pe ./examples/current-commands/distributed-local/smoke.sh`
+  passed.
+- `PE_BIN=/tmp/pe ./examples/current-commands/consensus-local/smoke.sh`
+  passed.
+- `PE_BIN=/tmp/pe ./examples/current-commands/release-local-workflows/smoke.sh`
+  passed.
 
 Remaining sub-tasks:
 1. Decide whether to archive or rewrite legacy `example/` demos before release
 2. Rewrite or archive long-form docs/TUTORIAL.md sections that use future config
    shapes and unsupported assertion types
 3. Test representative live-provider examples with valid credentials
-4. Add small runnable examples for current commands with weak coverage: `ask`,
+4. DONE: Add small runnable examples for current commands with weak coverage: `ask`,
    `template`, `prompt`, `plugin`, `profile`, `build`, `convert`, `reduce`,
    `collect`, and `watch`
 
