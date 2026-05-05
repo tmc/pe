@@ -31,6 +31,7 @@ Each module is a gist containing prompt files and metadata.`,
 var (
 	modForce     bool
 	modTidyWrite bool
+	modTidyJSON  bool
 )
 
 func init() {
@@ -105,6 +106,7 @@ var modVendorCmd = &cobra.Command{
 func init() {
 	modInitCmd.Flags().BoolVar(&modForce, "force", false, "Overwrite existing module")
 	modTidyCmd.Flags().BoolVarP(&modTidyWrite, "write", "w", false, "Update pe.mod")
+	modTidyCmd.Flags().BoolVar(&modTidyJSON, "json", false, "Write dependency report as JSON")
 }
 
 // Module represents a prompt module
@@ -469,7 +471,9 @@ func runModTidy(cmd *cobra.Command, args []string) error {
 	}
 
 	out := cmd.OutOrStdout()
-	fmt.Fprintln(out, "Analyzing prompt dependencies...")
+	if !modTidyJSON {
+		fmt.Fprintln(out, "Analyzing prompt dependencies...")
+	}
 
 	refs, err := scanPEModuleReferences(".")
 	if err != nil {
@@ -498,48 +502,120 @@ func runModTidy(cmd *cobra.Command, args []string) error {
 	}
 	sort.Strings(unused)
 
-	fmt.Fprintf(out, "found %d module references in %d files\n", countPEModuleReferences(refs), countPEModuleReferenceFiles(refs))
+	report := modTidyReport{
+		References: countPEModuleReferences(refs),
+		Files:      countPEModuleReferenceFiles(refs),
+	}
 	for _, mod := range missing {
-		fmt.Fprintf(out, "missing dependency: %s (referenced by %s)\n", mod, strings.Join(peReferenceFiles(refs[mod]), ", "))
+		report.Missing = append(report.Missing, modTidyDependency{
+			Module:   mod,
+			Files:    peReferenceFiles(refs[mod]),
+			Versions: peReferenceVersions(refs[mod]),
+		})
+	}
+	report.Unused = append(report.Unused, unused...)
+
+	if !modTidyJSON {
+		fmt.Fprintf(out, "found %d module references in %d files\n", report.References, report.Files)
+	}
+	for _, mod := range missing {
+		if !modTidyJSON {
+			fmt.Fprintf(out, "missing dependency: %s (referenced by %s)\n", mod, strings.Join(peReferenceFiles(refs[mod]), ", "))
+		}
 	}
 	for _, mod := range unused {
-		fmt.Fprintf(out, "unused dependency: %s\n", mod)
+		if !modTidyJSON {
+			fmt.Fprintf(out, "unused dependency: %s\n", mod)
+		}
 	}
 	if len(missing) == 0 && len(unused) == 0 {
-		fmt.Fprintln(out, "pe.mod is tidy")
-		return nil
+		if !modTidyJSON {
+			fmt.Fprintln(out, "pe.mod is tidy")
+		}
+		return writeModTidyReport(out, report)
 	}
 	if !modTidyWrite {
-		return nil
+		return writeModTidyReport(out, report)
 	}
 
 	for _, mod := range unused {
 		file.RemoveRequire(mod)
-		fmt.Fprintf(out, "removed dependency: %s\n", mod)
+		report.Removed = append(report.Removed, mod)
+		if !modTidyJSON {
+			fmt.Fprintf(out, "removed dependency: %s\n", mod)
+		}
 	}
 	for _, mod := range missing {
 		version, ok := singlePEReferenceVersion(refs[mod])
 		if !ok {
-			fmt.Fprintf(out, "skipped dependency: %s (no single explicit version in references)\n", mod)
+			report.Skipped = append(report.Skipped, modTidySkipped{
+				Module: mod,
+				Reason: "no single explicit version in references",
+			})
+			if !modTidyJSON {
+				fmt.Fprintf(out, "skipped dependency: %s (no single explicit version in references)\n", mod)
+			}
 			continue
 		}
 		file.AddRequire(mod, version)
-		fmt.Fprintf(out, "added dependency: %s %s\n", mod, version)
+		report.Added = append(report.Added, modTidyRequirement{Module: mod, Version: version})
+		if !modTidyJSON {
+			fmt.Fprintf(out, "added dependency: %s %s\n", mod, version)
+		}
 	}
 	formatted := file.Format()
 	if err := os.WriteFile("pe.mod", []byte(formatted), 0644); err != nil {
 		return fmt.Errorf("writing pe.mod: %w", err)
 	}
-	fmt.Fprintln(out, "pe.mod updated")
+	report.Updated = true
+	if !modTidyJSON {
+		fmt.Fprintln(out, "pe.mod updated")
+	}
 
-	return nil
+	return writeModTidyReport(out, report)
 }
 
 var peRefRE = regexp.MustCompile(`pe://[^\s"'<>]+`)
 
+type modTidyReport struct {
+	References int                  `json:"references"`
+	Files      int                  `json:"files"`
+	Missing    []modTidyDependency  `json:"missing,omitempty"`
+	Unused     []string             `json:"unused,omitempty"`
+	Added      []modTidyRequirement `json:"added,omitempty"`
+	Removed    []string             `json:"removed,omitempty"`
+	Skipped    []modTidySkipped     `json:"skipped,omitempty"`
+	Updated    bool                 `json:"updated"`
+}
+
+type modTidyDependency struct {
+	Module   string   `json:"module"`
+	Files    []string `json:"files"`
+	Versions []string `json:"versions,omitempty"`
+}
+
+type modTidyRequirement struct {
+	Module  string `json:"module"`
+	Version string `json:"version"`
+}
+
+type modTidySkipped struct {
+	Module string `json:"module"`
+	Reason string `json:"reason"`
+}
+
 type peModuleReference struct {
 	File    string
 	Version string
+}
+
+func writeModTidyReport(w io.Writer, report modTidyReport) error {
+	if !modTidyJSON {
+		return nil
+	}
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc.Encode(report)
 }
 
 func scanPEModuleReferences(root string) (map[string][]peModuleReference, error) {
@@ -689,6 +765,20 @@ func peReferenceFiles(refs []peModuleReference) []string {
 		}
 	}
 	return files
+}
+
+func peReferenceVersions(refs []peModuleReference) []string {
+	seen := make(map[string]bool)
+	var versions []string
+	for _, ref := range refs {
+		if ref.Version == "" || seen[ref.Version] {
+			continue
+		}
+		seen[ref.Version] = true
+		versions = append(versions, ref.Version)
+	}
+	sort.Strings(versions)
+	return versions
 }
 
 func containsPEReference(list []peModuleReference, file, version string) bool {

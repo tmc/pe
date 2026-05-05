@@ -1,5 +1,14 @@
 # Test pe mod tidy dry-run and write safety boundaries.
 
+pe mod tidy --json
+stdout '"references": 5'
+stdout '"updated": false'
+stdout '"module": "github.com/example/conflict"'
+stdout '"v1.0.0"'
+stdout '"v1.1.0"'
+! stdout 'Analyzing prompt dependencies'
+grep 'github.com/example/remove v1.0.0' pe.mod
+
 pe mod tidy
 stdout 'missing dependency: github.com/example/add'
 stdout 'referenced by add.prompt'

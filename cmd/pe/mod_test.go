@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -241,6 +242,87 @@ require (
 `
 	if string(content) != want {
 		t.Fatalf("pe.mod mismatch\nwant:\n%s\ngot:\n%s", want, content)
+	}
+}
+
+func TestModTidyCmd_JSONReportsWriteDecisions(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+	oldWrite, oldJSON := modTidyWrite, modTidyJSON
+	modTidyWrite = true
+	modTidyJSON = true
+	defer func() {
+		modTidyWrite = oldWrite
+		modTidyJSON = oldJSON
+	}()
+
+	err := os.WriteFile("pe.mod", []byte(`module example.com/app
+
+pe 1
+
+require (
+	github.com/example/keep v1.0.0
+	github.com/example/remove v1.0.0
+)
+`), 0644)
+	if err != nil {
+		t.Fatalf("writing pe.mod: %v", err)
+	}
+	files := map[string]string{
+		"add.prompt":        "pe://github.com/example/add@v1.2.3/run\n",
+		"conflict-a.prompt": "pe://github.com/example/conflict@v1.0.0/run\n",
+		"conflict-b.prompt": "pe://github.com/example/conflict@v1.1.0/run\n",
+		"keep.prompt":       "pe://github.com/example/keep/run\n",
+		"noversion.yaml":    "prompt: pe://github.com/example/noversion/run\n",
+	}
+	for name, body := range files {
+		if err := os.WriteFile(name, []byte(body), 0644); err != nil {
+			t.Fatalf("writing %s: %v", name, err)
+		}
+	}
+
+	var out bytes.Buffer
+	cmd := *modTidyCmd
+	cmd.SetOut(&out)
+	if err := runModTidy(&cmd, nil); err != nil {
+		t.Fatalf("runModTidy: %v", err)
+	}
+	if strings.Contains(out.String(), "Analyzing prompt dependencies") {
+		t.Fatalf("JSON output contains text report:\n%s", out.String())
+	}
+	var got modTidyReport
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("decoding JSON report: %v\n%s", err, out.String())
+	}
+	if got.References != 5 || got.Files != 5 || !got.Updated {
+		t.Fatalf("report counts/updated = %+v", got)
+	}
+	if len(got.Missing) != 3 ||
+		got.Missing[0].Module != "github.com/example/add" ||
+		got.Missing[1].Module != "github.com/example/conflict" ||
+		got.Missing[2].Module != "github.com/example/noversion" {
+		t.Fatalf("missing order = %+v", got.Missing)
+	}
+	if len(got.Added) != 1 || got.Added[0] != (modTidyRequirement{Module: "github.com/example/add", Version: "v1.2.3"}) {
+		t.Fatalf("added = %+v", got.Added)
+	}
+	if len(got.Removed) != 1 || got.Removed[0] != "github.com/example/remove" {
+		t.Fatalf("removed = %+v", got.Removed)
+	}
+	if len(got.Skipped) != 2 ||
+		got.Skipped[0].Module != "github.com/example/conflict" ||
+		got.Skipped[1].Module != "github.com/example/noversion" {
+		t.Fatalf("skipped = %+v", got.Skipped)
+	}
+	content, err := os.ReadFile("pe.mod")
+	if err != nil {
+		t.Fatalf("reading pe.mod: %v", err)
+	}
+	if strings.Contains(string(content), "github.com/example/conflict") ||
+		strings.Contains(string(content), "github.com/example/noversion") {
+		t.Fatalf("unsafe refs were written:\n%s", content)
 	}
 }
 
