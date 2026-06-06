@@ -1155,7 +1155,7 @@ Variables use Go template syntax:
 
 ## mod
 
-Manage prompt modules using GitHub gists as a registry.
+Manage prompt modules using a local, HTTP, or GitHub registry.
 
 ### Synopsis
 
@@ -1165,7 +1165,9 @@ pe mod [command]
 
 ### Description
 
-The `mod` command manages prompt modules, similar to Go modules. PE uses GitHub gists as a module registry, with a root gist tracking forks containing prompt modules.
+The `mod` command manages prompt modules, similar to Go modules. PE defaults to
+a local registry at `$HOME/.pe/registry`. Set `PE_REGISTRY_TYPE` to `local`,
+`http`, or `github` to select a registry backend.
 
 ### Subcommands
 

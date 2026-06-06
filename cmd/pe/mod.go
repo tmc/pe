@@ -25,10 +25,10 @@ import (
 var modCmd = &cobra.Command{
 	Use:   "mod",
 	Short: "Module management for prompts",
-	Long: `Manage prompt modules using GitHub gists as a registry.
+	Long: `Manage prompt modules using a local, HTTP, or GitHub registry.
 
-PE uses a root gist that tracks forks containing prompt modules.
-Each module is a gist containing prompt files and metadata.`,
+PE defaults to a local registry at $HOME/.pe/registry. Set PE_REGISTRY_TYPE to
+local, http, or github to select a registry backend.`,
 }
 
 var (

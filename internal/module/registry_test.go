@@ -331,4 +331,9 @@ func TestDefaultRegistryVariants(t *testing.T) {
 	if _, ok := DefaultRegistry().(*LocalRegistry); !ok {
 		t.Fatalf("empty registry type did not default to local")
 	}
+
+	t.Setenv("PE_REGISTRY_TYPE", "unsupported")
+	if _, ok := DefaultRegistry().(*LocalRegistry); !ok {
+		t.Fatalf("unsupported registry type did not default to local")
+	}
 }

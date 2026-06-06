@@ -3,6 +3,43 @@
 PE modules are versioned prompt packages. A registry exposes module metadata and
 files over either a local directory, GitHub releases, or a static HTTP endpoint.
 
+## Configuration
+
+PE chooses the registry backend from environment variables:
+
+```text
+PE_REGISTRY_TYPE=local
+PE_REGISTRY_DIR=/path/to/registry
+
+PE_REGISTRY_TYPE=http
+PE_REGISTRY_URL=https://example.com/registry
+PE_REGISTRY_TOKEN=token
+
+PE_REGISTRY_TYPE=github
+PE_REGISTRY_OWNER=owner
+PE_REGISTRY_REPO=repo
+PE_REGISTRY_TOKEN=token
+```
+
+`PE_REGISTRY_TYPE` supports `local`, `http`, and `github`. An empty or
+unrecognized value uses the local registry. The default local root is
+`$HOME/.pe/registry`; the default HTTP URL is `https://pe.dev/registry`; the
+default GitHub repository is `pe-modules/registry`. GitHub also uses
+`GITHUB_TOKEN` when `PE_REGISTRY_TOKEN` is unset.
+
+Common failure modes are reported directly by the selected backend:
+
+- Local registry paths must be directories; missing modules and invalid
+  metadata are reported as module lookup failures.
+- HTTP registries must serve `modules.json` with status `200`; other statuses,
+  invalid JSON, missing modules, and missing files fail list, search, get,
+  health, or download operations.
+- HTTP registries are read-only; publish fails.
+- GitHub registries require reachable repository metadata and release assets.
+  Publishing requires a token.
+- Module names and file paths must stay within the registry or download root;
+  absolute paths and `..` escapes fail before file access.
+
 ## Metadata
 
 Each module version has a `module.json` file:
@@ -76,6 +113,20 @@ removing a leading `v`, prerelease suffix, and build metadata.
 directed dependency graph, checks for cycles, detects conflicts, and returns a
 topological dependency order. Pruning keeps only modules reachable from selected
 roots.
+
+## Tidy and Vendor
+
+`pe mod tidy` scans prompt and configuration files for `pe://` module
+references. Without `--write`, it reports missing and unused requirements
+without changing `pe.mod`. With `--write`, it removes unused requirements and
+adds missing requirements only when every reference to that module has one
+explicit version. References with no version or conflicting versions are
+reported but not added.
+
+`pe mod vendor` copies required modules from `.pe/cache/modules` into
+`vendor/` and writes `vendor/modules.txt`. It does not download missing
+modules; run `pe mod download` first. Missing cached modules are reported as
+warnings and are omitted from `vendor/modules.txt`.
 
 ## Cache
 

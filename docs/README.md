@@ -30,8 +30,9 @@ source of truth for coverage numbers.
 ## Core Topics
 
 - [TEMPLATE_SYNTAX.md](TEMPLATE_SYNTAX.md) - prompt template syntax.
-- [MODULES.md](MODULES.md) and [MODULE_REGISTRY.md](MODULE_REGISTRY.md) -
-  module workflows.
+- [MODULES.md](MODULES.md), [MODULE_REGISTRY.md](MODULE_REGISTRY.md), and
+  [module-registry.md](module-registry.md) - module workflows, current registry
+  configuration, tidy/vendor behavior, and validation blockers.
 - [PLUGINS.md](PLUGINS.md) - plugin system.
 - [PROMPTFOO_INTEGRATION.md](PROMPTFOO_INTEGRATION.md) - promptfoo-compatible
   evaluation configuration.

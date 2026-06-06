@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -418,6 +420,28 @@ func TestModVendorCmd_CopiesCachedModule(t *testing.T) {
 	}
 	if strings.TrimSpace(string(modules)) != "example.com/mod@v1.0.0" {
 		t.Fatalf("modules.txt = %q", modules)
+	}
+}
+
+func TestModVendorCmd_SkipsMissingCachedModule(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	writeVerifyPeMod(t)
+	if err := runModVendor(modVendorCmd, nil); err != nil {
+		t.Fatalf("runModVendor: %v", err)
+	}
+	modules, err := os.ReadFile(filepath.Join("vendor", "modules.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(string(modules)) != "" {
+		t.Fatalf("modules.txt = %q", modules)
+	}
+	if _, err := os.Stat(filepath.Join("vendor", "example.com", "mod@v1.0.0")); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("missing module was vendored: %v", err)
 	}
 }
 
