@@ -14,11 +14,6 @@ import (
 	"github.com/tmc/pe/internal/prompt"
 )
 
-// This is how Russ Cox would write it:
-// 1. Simple, direct, no unnecessary abstractions
-// 2. Focus on the core use case
-// 3. Let Unix handle composition (pipes, redirection)
-
 func runCmd() *cobra.Command {
 	var (
 		provider string
@@ -143,20 +138,10 @@ Examples:
 	return cmd
 }
 
-// That's it. 100 lines instead of 1300.
-// No ExecutionLog, no hashing, no complex abstractions.
-// Just: read prompt, apply variables, send to LLM, print output.
-//
-// As Russ Cox says: "Software engineering is what happens to programming
-// when you add time and other programmers." Keep it simple until you
-// actually need the complexity.
-
-// registerProviders registers all available providers with the client
-// Keep it simple - just cgpt and mock for testing
+// registerProviders registers the built-in providers used by run.
 func registerProviders(client *inference.Client) {
 	client.Register("cgpt", cgpt.New())
 
-	// Mock provider for testing
 	if os.Getenv("PE_TEST_MODE") == "true" || os.Getenv("PE_MOCK_PROVIDER") == "true" {
 		client.Register("mock", &mockProvider{})
 	}

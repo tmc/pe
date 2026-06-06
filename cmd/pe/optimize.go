@@ -27,15 +27,15 @@ func optimizeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "optimize [prompt-file]",
 		Short: "Optimize prompts using metaprompting techniques",
-		Long: `Optimize prompts using advanced metaprompting techniques including:
-- PE2: Prompt Engineering a Prompt Engineer (2024 breakthrough)
+		Long: `Optimize prompts using metaprompting techniques including:
+- PE2: Prompt Engineering a Prompt Engineer
 - APEX: Automated Prompt Engineering Xpert for long prompts
 - TextGrad: Natural language gradients optimization
 - Standard: Enhanced iterative refinement with LLM feedback
-- Hybrid: Combining multiple state-of-the-art methods
+- Hybrid: Combining multiple optimization methods
 
-The optimize command implements cutting-edge 2024-2025 research in
-automated prompt engineering and systematic optimization.`,
+The optimize command runs iterative prompt optimization using the selected
+method and provider.`,
 		Example: `  # PE2: Meta-prompt optimization with reasoning templates
   pe optimize --prompt "Analyze sentiment" --method pe2 --iterations 5
 

@@ -27,12 +27,20 @@ import (
 func viewCmd() *cobra.Command {
 	var fileName string
 	var port int
+	var promptfooView bool
+	var yes bool
 
 	cmd := &cobra.Command{
 		Use:   "view [evalId]",
 		Short: "View evaluation results in browser UI",
-		Long:  `View evaluation results in the promptfoo browser-based UI or a simple local viewer.`,
+		Long: `View local evaluation results in a browser UI.
+
+Use --promptfoo to explicitly delegate to the promptfoo CLI viewer.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if promptfooView {
+				return runPromptfooView(args, yes)
+			}
+
 			// Case 1: File specified with -f flag
 			if fileName != "" {
 				return viewFile(fileName, port)
@@ -53,8 +61,7 @@ func viewCmd() *cobra.Command {
 					return viewFile(evalFile, port)
 				}
 
-				// If the file doesn't exist, try using promptfoo view with the evalId
-				return runPromptfooView(cmd, args)
+				return fmt.Errorf("evaluation %q not found in %s", evalId, filepath.Dir(evalFile))
 			}
 
 			// Case 3: No arguments, list available evaluations
@@ -64,7 +71,8 @@ func viewCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&fileName, "file", "f", "", "Path to evaluation results file")
 	cmd.Flags().IntVarP(&port, "port", "p", 8080, "Port to use for local viewer")
-	cmd.Flags().BoolP("yes", "y", false, "Skip confirmation and auto-open the URL (for promptfoo view)")
+	cmd.Flags().BoolVar(&promptfooView, "promptfoo", false, "Open the promptfoo CLI viewer instead of the local viewer")
+	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "Pass -y to promptfoo when used with --promptfoo")
 
 	return cmd
 }
@@ -161,34 +169,24 @@ func listEvaluations(cmd *cobra.Command) error {
 	return nil
 }
 
-// runPromptfooView runs the promptfoo view command
-func runPromptfooView(cmd *cobra.Command, args []string) error {
-	// Check if promptfoo is installed
+func runPromptfooView(args []string, yes bool) error {
 	if _, err := exec.LookPath("npx"); err != nil {
-		return fmt.Errorf("npx not found. Please install Node.js and npm: https://nodejs.org/")
+		return fmt.Errorf("npx not found for promptfoo viewer")
 	}
 
-	// Build the command to run promptfoo view
-	promptfooCmd := exec.Command("npx", "promptfoo", "view")
-
-	// Add the eval ID if provided
+	promptfooArgs := []string{"promptfoo", "view"}
 	if len(args) > 0 {
-		promptfooCmd.Args = append(promptfooCmd.Args, args[0])
+		promptfooArgs = append(promptfooArgs, args[0])
 	}
-
-	// Add the -y flag if specified
-	yes, _ := cmd.Flags().GetBool("yes")
 	if yes {
-		promptfooCmd.Args = append(promptfooCmd.Args, "-y")
+		promptfooArgs = append(promptfooArgs, "-y")
 	}
 
-	// Connect the command's stdio to our process
-	promptfooCmd.Stdin = os.Stdin
-	promptfooCmd.Stdout = os.Stdout
-	promptfooCmd.Stderr = os.Stderr
-
-	// Run the command
-	return promptfooCmd.Run()
+	cmd := exec.Command("npx", promptfooArgs...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 // openBrowser opens the default browser with the provided URL

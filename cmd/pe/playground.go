@@ -64,18 +64,9 @@ func playgroundCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "playground",
 		Short: "Launch interactive web playground for prompt engineering",
-		Long: `Launch an interactive web playground that surpasses LangSmith with features including:
-
-• Real-time prompt testing with multiple providers
-• Live optimization with PE2, APEX, and TextGrad methods
-• Advanced metrics visualization and analysis
-• Collaborative prompt development
-• Version control integration
-• Cost optimization tracking
-• Security testing integration
-• Component-based prompt building
-• A/B testing capabilities
-• Statistical analysis dashboard`,
+		Long: `Launch a local web playground for prompt testing, optimization,
+metrics, version history, security checks, component composition, and A/B
+experiments.`,
 		Example: `  # Launch playground on default port 8080
   pe playground
 

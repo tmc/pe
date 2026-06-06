@@ -1,6 +1,7 @@
 # Optimization Examples
 
-This document provides comprehensive examples of PE's cutting-edge optimization methods, demonstrating real-world usage patterns and expected outcomes.
+This document gives examples for PE optimization methods, including PE2, APEX,
+TextGrad, hybrid optimization, and standard iterative refinement.
 
 ## Table of Contents
 

@@ -246,7 +246,9 @@ pe view [eval_id] [flags]
 
 ### Description
 
-Opens a web browser interface to explore evaluation results. Can view results from the database or from a specific file.
+Opens a local web browser interface to explore evaluation results. Can view
+results saved by eval ID or from a specific file. Use `--promptfoo` to
+explicitly delegate to the promptfoo CLI viewer.
 
 ### Arguments
 
@@ -255,9 +257,10 @@ Opens a web browser interface to explore evaluation results. Can view results fr
 ### Flags
 
 ```bash
--f, --file string    View results from specific file
--p, --port int       Port for local server (default 8080)
- -y, --yes           Skip confirmation and auto-open the URL for promptfoo view
+-f, --file string     View results from specific file
+-p, --port int        Port for local server (default 8080)
+    --promptfoo       Open the promptfoo CLI viewer instead of the local viewer
+-y, --yes             Pass -y to promptfoo when used with --promptfoo
 ```
 
 ### Examples
@@ -275,8 +278,8 @@ pe view -f results.json
 # Custom port
 pe view --port 9000
 
-# Auto-open promptfoo view without confirmation
-pe view --yes
+# Explicitly open promptfoo's viewer
+pe view --promptfoo --yes
 ```
 
 ---
@@ -2605,7 +2608,9 @@ pe experimental [command]
 
 ### Description
 
-Experimental commands implementing cutting-edge techniques from academic papers and research projects. These may be unstable, slow, or produce inconsistent results. Not recommended for production use.
+Experimental commands for prompt engineering research and prototypes. These
+commands may be unstable, slow, or produce inconsistent results. Do not depend
+on them in production automation without pinning and testing the exact release.
 
 ### Available Commands
 

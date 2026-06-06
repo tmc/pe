@@ -161,51 +161,39 @@ Examples:
   pe optimize --prompt-file complex.txt --method hybrid --trace --genealogy --pareto-analysis
 ```
 
-#### `pe view` - Interactive Results Explorer
+#### `pe view` - Results Viewer
 
-Advanced web-based interface for analyzing evaluation results.
+Local web interface for viewing saved evaluation results.
 
 ```bash
-pe view [options] [result-id]
+pe view [eval-id]
+pe view --file results.json
+pe view --promptfoo [eval-id]
 
 Data Sources:
-  -f, --file string           Load results from specific file
-  --database                  Use database results (default)
-  --remote string             Load from remote PE server
+  -f, --file string           Load results from a specific file
+      --promptfoo             Delegate to the promptfoo CLI viewer
 
 Interface Options:
-  --port int                  Web server port (default 8080)
-  --host string               Bind to specific host (default "localhost")
-  --open                      Automatically open browser (default true)
-  --theme string              UI theme: light, dark, auto (default "auto")
-
-Export Options:
-  --export-report string      Generate comprehensive HTML report
-  --export-csv string         Export raw data as CSV
-  --export-json string        Export results as JSON
-  --export-dashboard string   Export interactive dashboard
+  --port int                  Local web server port (default 8080)
+  -y, --yes                   Pass -y to promptfoo with --promptfoo
 
 Analysis Options:
-  --filter string             Pre-apply result filters
-  --group-by string           Default grouping for results
-  --compare strings           Compare multiple evaluation results
-  --statistical-view          Enable advanced statistical analysis view
+  The current local viewer serves the saved JSON result and renders summary,
+  per-test, and provider data in the browser.
 
 Examples:
-  # View latest results with auto-open browser
+  # View saved local evaluations
   pe view
 
-  # View specific evaluation with comparison
-  pe view eval-123 --compare eval-124,eval-125
+  # View a local file
+  pe view --file results.json
 
-  # Export comprehensive report
-  pe view --file results.json --export-report detailed-report.html
+  # Use a different local port
+  pe view --file results.json --port 9000
 
-  # Advanced statistical analysis
-  pe view eval-123 --statistical-view --group-by provider
-
-  # Remote server viewing
-  pe view --remote https://pe-server.example.com --filter "score>0.8"
+  # Explicitly use promptfoo's viewer
+  pe view --promptfoo eval-123 --yes
 ```
 
 #### `pe interactive` - Advanced REPL Environment

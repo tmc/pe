@@ -100,14 +100,14 @@ pe exp cache --help
 ### 5. **Advanced Optimization** (✅ Implemented)
 
 #### Semantic Backpropagation (2025 Research)
-Implements cutting-edge GASO (Graph-based Agentic System Optimization):
+Implements GASO (Graph-based Agentic System Optimization) commands:
 ```bash
 pe semantic backprop --prompt task.txt --target accuracy
 pe semantic gaso --system definition.json --multi-objective
 ```
 
 #### Multiple Optimization Methods
-State-of-the-art prompt optimization techniques:
+Prompt optimization commands:
 ```bash
 pe optimize --method pe2 --iterations 10
 pe optimize --method textgrad --learning-rate 0.1
@@ -134,7 +134,7 @@ pe run prompt.txt --provider anthropic:claude-3-haiku
 ## Key Features
 
 ### Advanced Optimization (✅ Implemented)
-State-of-the-art optimization methods:
+Optimization methods:
 - **PE2**: Meta-prompt engineering optimization
 - **TextGrad**: Natural language gradient descent
 - **Semantic Backpropagation**: 2025 GASO research implementation
@@ -143,7 +143,7 @@ State-of-the-art optimization methods:
 - **Experimental Composition**: `pe experimental compose` for component composition
 
 ### Comprehensive Evaluation (✅ Implemented)
-Sophisticated testing and validation:
+Testing and validation:
 - **20+ Assertion Types**: includes pass@n, structured output, LLM rubrics
 - **Property-based Testing**: Automated test generation
 - **Regression Testing**: Detect performance degradation
@@ -151,7 +151,7 @@ Sophisticated testing and validation:
 - **Security Testing**: Complete OWASP LLM Top 10 coverage
 
 ### Infrastructure (Mixed Maturity)
-Enterprise-focused capabilities:
+Infrastructure:
 - **Cryptographic Attestation**: Prototype CLI entrypoint (`pe exp attest`)
 - **Content-Addressed Caching**: Prototype CLI entrypoint (`pe exp cache`)
 - **Distributed Execution**: Prototype CLI entrypoint (`pe exp distributed`)

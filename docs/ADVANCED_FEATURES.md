@@ -1,12 +1,15 @@
 # Advanced Features Guide
 
-PE implements cutting-edge prompt engineering techniques that rival and exceed industry-leading tools. This guide covers the advanced features that make PE a best-in-class prompt engineering toolkit.
+This guide describes PE features beyond the basic `pe run` and `pe eval`
+workflows: prompt optimization, richer assertions, pipelines, providers,
+plugins, and observability.
 
-## 🚀 State-of-the-Art Optimization Methods
+## Optimization Methods
 
 ### TextGrad Optimization
 
-PE implements TextGrad-style optimization using natural language feedback as "textual gradients" - a breakthrough approach from 2024 research.
+PE implements TextGrad-style optimization using natural language feedback as
+"textual gradients."
 
 ```bash
 # Use TextGrad optimization
@@ -23,11 +26,11 @@ pe optimize --prompt "Analyze sentiment" --method hybrid --iterations 6
 3. **Gradient Application**: Feedback is systematically applied to improve the prompt
 4. **Iterative Refinement**: Each iteration builds on previous improvements
 
-**Benefits over traditional methods:**
+**Properties:**
 - More nuanced feedback than simple scoring
 - Better handling of complex, multi-step reasoning
 - Natural language gradients are human-interpretable
-- Superior results for complex prompts
+- Iterative changes can be inspected between runs
 
 ### Standard Optimization
 
@@ -40,18 +43,18 @@ pe optimize --prompt "Generate code" --method standard --iterations 3
 
 ### Hybrid Optimization
 
-Combines the best of both approaches:
+Combines two approaches:
 1. Standard optimization for initial improvements
 2. TextGrad for fine-tuning and advanced refinement
 
 ```bash
-# Best of both worlds
 pe optimize --prompt "Complex reasoning task" --method hybrid --iterations 8
 ```
 
-## 🔍 Comprehensive Evaluation Framework
+## Evaluation Framework
 
-PE provides the most advanced assertion system in the prompt engineering space, supporting 20+ assertion types.
+PE supports assertion-based evaluation with string, structure, scoring, and
+LLM-judged checks.
 
 ### Basic Assertions
 
@@ -379,7 +382,8 @@ pe eval pe-config.yaml --save-db
 
 ### From Custom Tools
 
-PE's flexible configuration system adapts to most existing setups:
+PE can convert selected external configuration formats into PE evaluation
+configuration:
 
 ```bash
 # Custom format conversion
@@ -389,4 +393,5 @@ pe eval pe-config.yaml
 
 ---
 
-PE represents the cutting edge of prompt engineering tools, combining academic research with practical engineering to deliver a system that exceeds the capabilities of any existing solution. The combination of TextGrad optimization, comprehensive assertions, Unix composability, and advanced analytics makes PE the definitive choice for serious prompt engineering work.
+Use this guide as a map of implemented advanced surfaces. Check each command's
+help output before scripting experimental commands.

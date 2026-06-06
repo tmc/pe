@@ -16,13 +16,12 @@ import (
 func semanticCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "semantic",
-		Short: "Semantic backpropagation and gradient descent for Graph-based Agentic System Optimization (GASO)",
-		Long: `Implements cutting-edge semantic backpropagation and gradient descent techniques
-based on 2025 research from KAUST and IDSIA for optimizing language-based agentic systems.
+		Short: "Semantic backpropagation and gradient descent for GASO",
+		Long: `Run semantic backpropagation and gradient descent commands for
+Graph-based Agentic System Optimization (GASO).
 
-Semantic gradients generalize mathematical gradients by representing directional 
-information in semantically interoperable forms, enabling optimization of complex
-AI systems through natural language feedback.`,
+Semantic gradients represent directional feedback in natural language, allowing
+prompt and agent definitions to be adjusted over repeated evaluation runs.`,
 	}
 
 	cmd.AddCommand(semanticBackpropCmd())

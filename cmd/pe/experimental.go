@@ -4,17 +4,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// experimentalCmd groups all experimental, academic, and research commands
-// These are not part of the core PE workflow but are available for advanced users
+// experimentalCmd groups commands that are outside the core PE workflow.
 func experimentalCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "experimental",
 		Short: "Experimental and research commands (use with caution)",
-		Long: `Experimental commands for advanced prompt engineering research.
+		Long: `Experimental commands for prompt engineering research and prototypes.
 
-These commands implement cutting-edge techniques from academic papers
-and research projects. They may be unstable, slow, or produce 
-inconsistent results. Not recommended for production use.
+These commands may be unstable, slow, or produce inconsistent results. Do not
+depend on them in production automation without pinning and testing the exact
+release.
 
 Examples:
   pe experimental optimize config.yaml

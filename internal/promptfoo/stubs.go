@@ -1,29 +1,27 @@
 package promptfoo
 
-// Temporary stubs to allow compilation while we migrate to plugin architecture
-
-// Results represents the results structure
+// Results is the table-shaped result format used by promptfoo-compatible output.
 type Results struct {
 	Table Table `json:"table"`
 }
 
-// Table represents a results table
+// Table holds promptfoo-compatible result headers and rows.
 type Table struct {
 	Head Head      `json:"head"`
 	Body []BodyRow `json:"body"`
 }
 
-// Head represents table headers
+// Head holds prompt and variable column metadata.
 type Head struct {
 	Prompts []PromptInfo `json:"prompts"`
 	Vars    []string     `json:"vars"`
 }
 
-// PromptInfo represents prompt information
+// PromptInfo describes a prompt column in promptfoo-compatible output.
 type PromptInfo struct {
 	Raw      string `json:"raw"`
 	Label    string `json:"label"`
 	Provider string `json:"provider"`
 }
 
-// Types PEPrompt, PETestCase, and PETestMetadata are defined in export.go
+// Types PEPrompt, PETestCase, and PETestMetadata are defined in export.go.
