@@ -143,8 +143,8 @@ func (o *PE2Optimizer) generatePE2MetaPrompt(currentPrompt string, config PE2Con
 func (o *PE2Optimizer) generateExpertPersona(style string) string {
 	switch style {
 	case "expert":
-		return `You are a world-class prompt engineering expert with deep expertise in:
-- Advanced prompting techniques (CoT, few-shot, zero-shot)
+		return `You are an experienced prompt engineer with expertise in:
+- Prompting techniques (CoT, few-shot, zero-shot)
 - LLM behavior analysis and optimization
 - Cognitive psychology and instruction design
 - Natural language processing and computational linguistics
@@ -166,7 +166,7 @@ Your approach is methodical, data-driven, and focuses on measurable improvements
 		return `You are an innovative prompt engineering researcher who:
 - Explores novel approaches to prompt design and optimization
 - Combines creative thinking with technical precision
-- Develops breakthrough techniques for challenging tasks
+- Develops techniques for challenging tasks
 - Adapts emerging research findings to practical applications
 - Balances innovation with proven optimization principles
 

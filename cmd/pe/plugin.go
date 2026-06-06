@@ -29,7 +29,6 @@ func pluginCmd() *cobra.Command {
 		pluginInstallCmd(),
 		pluginInfoCmd(),
 		pluginConfigCmd(),
-		pluginCreateCmd(),
 		pluginBuildCmd(),
 		pluginTestCmd(),
 		pluginUpdateCmd(),
@@ -204,66 +203,6 @@ func pluginConfigCmd() *cobra.Command {
 	cmd.Flags().StringVar(&getFlag, "get", "", "Get configuration value")
 
 	return cmd
-}
-
-func pluginCreateCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "create <plugin-name>",
-		Short: "Create a new plugin template",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			pluginName := args[0]
-
-			fmt.Fprintf(cmd.OutOrStdout(), "Creating plugin template: %s\n", pluginName)
-
-			// Create plugin directory structure
-			dirs := []string{
-				pluginName,
-			}
-
-			for _, dir := range dirs {
-				if err := os.MkdirAll(dir, 0755); err != nil {
-					return fmt.Errorf("failed to create directory: %w", err)
-				}
-			}
-
-			// Create plugin files
-			files := map[string]string{
-				filepath.Join(pluginName, "plugin.go"): `package main
-
-import "github.com/tmc/pe/plugin"
-
-type MyPlugin struct{}
-
-func (p *MyPlugin) Name() string { return "myplugin" }
-
-func (p *MyPlugin) Complete(prompt string, opts plugin.Options) (string, error) {
-    return "Response from myplugin", nil
-}
-
-var Plugin MyPlugin
-`,
-				filepath.Join(pluginName, "plugin.yaml"): `name: myplugin
-version: 1.0.0
-description: Custom inference provider
-author: me@example.com
-pe_version: ">=1.0.0"
-`,
-				filepath.Join(pluginName, "README.md"): `# MyPlugin
-
-A custom PE plugin for...
-`,
-			}
-
-			for file, content := range files {
-				if err := os.WriteFile(file, []byte(content), 0644); err != nil {
-					return fmt.Errorf("failed to create file %s: %w", file, err)
-				}
-			}
-
-			return nil
-		},
-	}
 }
 
 func pluginBuildCmd() *cobra.Command {

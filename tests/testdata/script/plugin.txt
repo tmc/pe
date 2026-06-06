@@ -42,16 +42,7 @@ stdout 'Updated ollama configuration'
 pe experimental plugin config ollama --get endpoint
 stdout 'endpoint: http://localhost:11434'
 
-# Create new plugin
-pe experimental plugin create myplugin
-stdout 'Creating plugin template: myplugin'
-exists myplugin/
-exists myplugin/plugin.go
-exists myplugin/plugin.yaml
-exists myplugin/README.md
-grep 'type MyPlugin struct' myplugin/plugin.go
-
-# Build plugin
+# Build a local plugin fixture
 cd myplugin
 pe experimental plugin build
 stdout 'Building plugin: myplugin'
@@ -109,14 +100,8 @@ pe_version: ">=1.0.0"
 -- myplugin/plugin.go --
 package main
 
-import "github.com/tmc/pe/plugin"
-
 type MyPlugin struct{}
 
 func (p *MyPlugin) Name() string { return "myplugin" }
-
-func (p *MyPlugin) Complete(prompt string, opts plugin.Options) (string, error) {
-    return "Response from myplugin", nil
-}
 
 var Plugin MyPlugin

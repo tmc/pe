@@ -334,17 +334,6 @@ func runModInit(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Registry functions disabled pending implementation
-/*
-func runModList(cmd *cobra.Command, args []string) error {
-	// TODO: Implement fetching from root gist
-	fmt.Println("Available modules:")
-	fmt.Println("  (none - registry not configured)")
-	fmt.Printf("\nRoot gist: %s\n", rootGistID)
-	return nil
-}
-*/
-
 func runModGetLocal(cmd *cobra.Command, args []string) error {
 	moduleName := args[0]
 

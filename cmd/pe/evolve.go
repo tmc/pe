@@ -18,9 +18,9 @@ func evolveCmd() *cobra.Command {
 		Short: "Optimize prompts using evolutionary algorithms (NSGA-II)",
 		Long: `Perform evolutionary optimization on prompts using genetic algorithms.
 
-This command implements state-of-the-art evolutionary prompt optimization,
-including multi-objective optimization with NSGA-II (Non-dominated Sorting
-Genetic Algorithm II) for finding Pareto-optimal prompt variants.
+This command supports multi-objective optimization with NSGA-II
+(Non-dominated Sorting Genetic Algorithm II) for finding Pareto-optimal prompt
+variants.
 
 Features:
 - Population-based prompt improvement

@@ -53,7 +53,7 @@ func CalculatePassAtNDetailed(n int, samples []string, testFunc func(string) boo
 	return am.CalculatePassAtN(n, samples, testFunc)
 }
 
-// AdvancedMetrics provides state-of-the-art evaluation metrics for prompt engineering
+// AdvancedMetrics evaluates text generation metrics.
 type AdvancedMetrics struct {
 	llm llm.Provider
 }

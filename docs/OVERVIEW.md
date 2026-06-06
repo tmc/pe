@@ -23,7 +23,7 @@ PE embodies the Go toolchain philosophy:
 PE treats prompts as first-class artifacts that can be:
 - Version controlled with branches and tags
 - Tested with comprehensive test suites
-- Optimized using state-of-the-art methods
+- Optimized using PE optimization commands
 - Deployed with confidence
 
 ### 2. **The PE Toolchain** (✅ Core + ⚠️ Prototype Commands)

@@ -106,7 +106,7 @@ func metricsCmd() *cobra.Command {
 		Use:   "metrics [simple <file>] | [flags]",
 		Short: "Calculate advanced evaluation metrics for generated text",
 		Args:  cobra.RangeArgs(0, 2),
-		Long: `Calculate state-of-the-art evaluation metrics including:
+		Long: `Calculate evaluation metrics including:
 
 Reference-Based Metrics:
 • BLEU - N-gram precision with brevity penalty for translation quality

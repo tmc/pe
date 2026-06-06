@@ -97,9 +97,10 @@ Examples:
   pe eval config.yaml --watch --stream --metrics
 ```
 
-#### `pe optimize` - Cutting-Edge Prompt Optimization
+#### `pe optimize` - Prompt Optimization
 
-Revolutionary prompt optimization using 2024-2025 research breakthroughs.
+Prompt optimization using PE2, APEX, TextGrad, hybrid, and standard iterative
+methods.
 
 ```bash
 pe optimize [options] --prompt <prompt> | --prompt-file <file> | --config <config>
@@ -116,7 +117,7 @@ Optimization Methods (World-First Implementations):
   --population int            Population size for evolution (default 20)
   --generations int           Generations for evolution (default 10)
 
-Advanced Research Features:
+Research Options:
   --attention-flow            Enable TextGrad attention flow mapping
   --semantic-drift            Monitor semantic drift during optimization  
   --gradient-accumulation     Enable gradient accumulation for stability
@@ -135,7 +136,7 @@ Output and Tracking:
   --trace                     Enable detailed optimization tracing
   --genealogy                 Track evolutionary lineage (for evolve method)
 
-Advanced Control:
+Control:
   --convergence-threshold float  Stop when improvement < threshold (default 0.02)
   --temperature float         Optimization exploration temperature (default 0.1)
   --exploration-factor float  Exploration vs exploitation balance (default 0.2)
@@ -148,7 +149,7 @@ Examples:
   # APEX Long Prompt Optimization (Industry First)
   pe optimize --prompt-file system-prompt.txt --method apex --beam-width 5 --iterations 8
 
-  # TextGrad 2.0 with Attention Flow (Most Advanced)
+  # TextGrad with attention-flow output
   pe optimize --prompt "Solve problems" --method textgrad --attention-flow --iterations 6
 
   # Evolutionary Multi-Objective Optimization
@@ -196,7 +197,7 @@ Examples:
   pe view --promptfoo eval-123 --yes
 ```
 
-#### `pe interactive` - Advanced REPL Environment
+#### `pe interactive` - REPL Environment
 
 Intelligent interactive environment for rapid prompt development and testing.
 
@@ -215,7 +216,7 @@ Session Management:
   --load-session string       Load previous session
   --history-size int          Command history size (default 1000)
 
-Advanced Features:
+Options:
   --auto-optimize             Enable automatic prompt optimization suggestions
   --smart-completion          Enable AI-powered command completion
   --multi-provider            Enable multi-provider comparison mode
@@ -252,11 +253,11 @@ Examples:
   pe interactive --streaming --smart-completion --save-session dev-session.json
 ```
 
-### Advanced Optimization Commands
+### Optimization Commands
 
-#### `pe experimental compose` - Component-Based Prompt Engineering
+#### `pe experimental compose` - Component-Based Prompt Composition
 
-Revolutionary approach to building prompts from reusable, verified components.
+Build prompts from reusable components.
 
 ```bash
 pe experimental compose [options] <component-files...>
@@ -291,7 +292,7 @@ Examples:
   # Basic composition with style
   pe experimental compose context.txt instruction.txt examples.txt --style cot --output composed.txt
 
-  # Advanced composition with optimization
+  # Composition with optimization
   pe experimental compose components/*.txt --style few-shot --coherence --optimize --target gpt-4
 
   # Component management
@@ -300,7 +301,7 @@ Examples:
 
 #### `pe evolve` - Evolutionary Prompt Optimization
 
-Population-based genetic optimization using advanced evolutionary algorithms.
+Population-based prompt optimization.
 
 ```bash
 pe evolve [options] <base-prompt-file>
@@ -323,7 +324,7 @@ Multi-Objective Optimization:
   --pareto-analysis           Generate Pareto frontier analysis
   --weights strings           Objective weights if not using Pareto
 
-Advanced Features:
+Options:
   --trace-genealogy           Track complete evolutionary lineage
   --statistical-validation    Include statistical significance testing
   --convergence-detection     Auto-detect convergence and early stopping
@@ -341,7 +342,7 @@ Examples:
   # Multi-objective optimization with Pareto analysis
   pe evolve prompt.txt --multi-objective accuracy,latency,cost --nsga-ii --pareto-analysis
 
-  # Advanced evolution with full traceability
+  # Evolution with traceability
   pe evolve complex-prompt.txt --trace-genealogy --statistical-validation --adaptive-rates
 
   # Research-grade evolution
@@ -381,7 +382,7 @@ Input/Output Control:
   --no-newline                Suppress trailing newline for piping
   --input-file string         Read prompt from file instead of stdin
 
-Advanced Features:
+Options:
   --cache                     Enable response caching
   --retry-on-failure          Retry on API failures
   --timeout duration          Request timeout (default 30s)
@@ -391,7 +392,7 @@ Examples:
   # Basic pipeline usage
   echo "What is AI?" | pe ask
 
-  # Advanced provider with system context
+  # Provider with system context
   echo "Review this code" | pe ask --provider anthropic:claude-3-opus --system "You are a senior developer"
 
   # JSON output for further processing
@@ -404,7 +405,7 @@ Examples:
   pe ask --input-file prompts.txt --cache --format json --provider gpt-4
 ```
 
-#### `pe stream` - Advanced Result Processing
+#### `pe stream` - Result Processing
 
 Process evaluation results as Unix streams with rich filtering and transformation.
 
@@ -439,7 +440,7 @@ Examples:
   # CSV output for spreadsheet analysis
   pe eval config.yaml | pe stream --format csv --headers > results.csv
 
-  # Advanced filtering and grouping
+  # Filtering and grouping
   pe eval config.yaml | pe stream --filter "score>0.8" --group-by provider --format table
 
   # Performance analysis
@@ -449,9 +450,9 @@ Examples:
   pe eval config.yaml --stream | pe stream --select score --filter "score<0.7" --format table
 ```
 
-#### `pe filter` - Intelligent Result Filtering
+#### `pe filter` - Result Filtering
 
-Advanced filtering capabilities for evaluation results with multiple criteria.
+Filter evaluation results by provider, score, assertion status, and text.
 
 ```bash
 pe filter [options]
@@ -488,7 +489,7 @@ Provider/Prompt Filtering:
   --prompt string             Filter by prompt pattern
   --tags strings              Filter by test tags
 
-Advanced Filtering:
+Filtering:
   --expression string         Custom filter expression
   --statistical-outliers      Filter statistical outliers
   --quality-threshold float   Filter by quality metrics
@@ -500,7 +501,7 @@ Examples:
   # Content-based filtering
   pe eval config.yaml | pe filter --contains "Paris" --not-contains "London" --provider gpt-4
 
-  # Advanced statistical filtering
+  # Statistical filtering
   pe eval config.yaml | pe filter --score-range "0.8-1.0" --statistical-outliers
 
   # Complex expression filtering
@@ -510,9 +511,9 @@ Examples:
   pe eval config.yaml | pe filter --quality-threshold 0.9 --tags production
 ```
 
-#### `pe analyze` - Comprehensive Statistical Analysis
+#### `pe analyze` - Statistical Analysis
 
-Research-grade statistical analysis with advanced metrics and insights.
+Statistical analysis for evaluation result streams.
 
 ```bash
 pe analyze [options]
@@ -534,12 +535,12 @@ Statistical Analysis:
   --effect-size               Calculate effect sizes for comparisons
   --power-analysis            Perform statistical power analysis
 
-Advanced Analytics:
+Analytics:
   --trend-analysis            Perform time-series trend analysis
   --correlation               Calculate correlation matrices
   --regression                Perform regression analysis
   --clustering                Cluster analysis of results
-  --outlier-detection         Advanced outlier detection methods
+  --outlier-detection         Outlier detection methods
   --anomaly-detection         Detect anomalous patterns
 
 Visualization and Export:
@@ -557,7 +558,7 @@ Examples:
   # Comprehensive quality analysis
   pe eval config.yaml | pe analyze --metrics score,latency,cost --correlation --regression
 
-  # Advanced pattern analysis
+  # Pattern analysis
   pe eval config.yaml | pe analyze --clustering --anomaly-detection --trend-analysis
 
   # Research-grade analysis with full reporting
@@ -566,7 +567,7 @@ Examples:
 
 ### Development and Utility Commands
 
-#### `pe benchmark` - Advanced Performance Benchmarking
+#### `pe benchmark` - Performance Benchmarking
 
 Comprehensive benchmarking with statistical rigor and detailed performance analysis.
 
@@ -602,7 +603,7 @@ Output and Reporting:
   --charts                    Generate performance charts
   --report string             Generate comprehensive benchmark report
 
-Advanced Features:
+Options:
   --load-testing              Perform load testing analysis
   --stress-testing            Stress test with increasing load
   --endurance-testing         Long-duration endurance testing
@@ -615,14 +616,14 @@ Examples:
   # Comprehensive provider comparison
   pe benchmark config.yaml --compare-providers --cost-analysis --quality-benchmarks
 
-  # Advanced load testing
+  # Load testing
   pe benchmark config.yaml --load-testing --max-concurrency 16 --ramp-up 30s
 
   # Research-grade benchmarking
   pe benchmark config.yaml --stress-testing --memory-profiling --charts --report benchmark.html
 ```
 
-#### `pe test` - Advanced Testing Framework
+#### `pe test` - Testing Framework
 
 Comprehensive testing capabilities with property-based testing, regression testing, and A/B testing.
 
@@ -703,10 +704,10 @@ tests: []        # Test cases and scenarios
 metrics: []      # Custom metrics and scoring
 optimization: {} # Optimization settings
 output: {}       # Output and reporting configuration
-advanced: {}     # Advanced features and tuning
+advanced: {}     # Additional features and tuning
 ```
 
-### Advanced Prompt Configuration
+### Prompt Configuration
 
 ```yaml
 prompts:
@@ -716,7 +717,7 @@ prompts:
   # Comprehensive prompt object with metadata
   - id: "expert-analysis"
     content: |
-      You are a world-class expert in {{domain}} with {{years}} years of experience.
+      You are an expert in {{domain}} with {{years}} years of experience.
       
       Background Context:
       {{context}}
@@ -885,7 +886,7 @@ providers:
       presence_penalty: 0.0
       stop: ["###", "END", "STOP"]
       
-    # Advanced configuration
+    # Additional configuration
     advanced:
       request_timeout: 30
       retry_attempts: 3
@@ -1014,7 +1015,7 @@ provider_defaults:
     api_key_rotation: false
 ```
 
-### Advanced Test Configuration
+### Test Configuration
 
 ```yaml
 tests:
@@ -1057,7 +1058,7 @@ tests:
         description: "Accessible reading level"
         weight: 0.1
         
-      # Advanced content analysis
+      # Content analysis
       - type: "factuality"
         threshold: 0.9
         knowledge_cutoff: "2024-01-01"

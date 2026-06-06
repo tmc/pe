@@ -249,9 +249,9 @@ If modules aren't updating:
 2. Use `--update` flag when pushing updates
 3. Check the module version in module.json
 
-## Future Enhancements
+## Possible Enhancements
 
-Planned features for the module registry:
+Possible features for the module registry:
 - Module search and discovery
 - Module dependencies
 - Private registries with access control

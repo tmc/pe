@@ -165,7 +165,7 @@ pe vet .pe/modules/test/module/prompt.txt
 - Local cache prevents repeated fetches
 - Users control which modules they run
 
-## Future Enhancements
+## Possible Enhancements
 
 - Module dependencies
 - Private registries

@@ -120,13 +120,15 @@ pe run prompt.txt --temperature 0.8 --max-tokens 100
 4. **Tool-Based Providers**: Many providers wrap CLI tools for simplicity
 5. **Pluggable**: Easy to add new providers without changing core code
 
-## Future Enhancements
+## Possible Enhancements
 
-- [ ] Caching layer for identical requests
-- [ ] Retry logic with backoff
-- [ ] Request/response interceptors
-- [ ] Metrics and observability
-- [ ] Load balancing across providers
-- [ ] Cost tracking per provider
-- [ ] Prompt template support
-- [ ] Response validation
+These are design ideas, not current API guarantees:
+
+- Caching layer for identical requests
+- Retry logic with backoff
+- Request/response interceptors
+- Metrics and observability hooks
+- Load balancing across providers
+- Cost tracking per provider
+- Prompt template support
+- Response validation

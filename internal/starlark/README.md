@@ -362,7 +362,7 @@ Additional PE-specific restrictions:
 - Restricted built-in functions
 - No access to sensitive PE internals
 
-## Future Enhancements
+## Possible Enhancements
 
 1. **Module System**: Support for importing shared Starlark modules
 2. **Debugging**: Step-through debugging for Starlark scripts

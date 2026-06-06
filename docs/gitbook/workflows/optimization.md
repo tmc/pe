@@ -1,6 +1,6 @@
 # Optimization
 
-PE implements state-of-the-art algorithms to automatically improve your prompts.
+PE provides optimization commands for iteratively improving prompts.
 
 ## Available Methods
 
