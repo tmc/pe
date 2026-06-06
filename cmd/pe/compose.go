@@ -495,32 +495,7 @@ func validateComponentDependencies(components []PromptComponent) error {
 }
 
 func validateCoherence(ctx context.Context, prompt string) (float64, error) {
-	// Implement semantic coherence validation
-	// This would use an LLM to evaluate semantic consistency
-	// For now, return a placeholder score
-
-	// Simple heuristic based on prompt structure
-	sentences := strings.Split(prompt, ".")
-	if len(sentences) < 2 {
-		return 1.0, nil // Single sentence is coherent
-	}
-
-	// Check for transition words and consistency
-	transitionWords := []string{"however", "therefore", "additionally", "furthermore", "moreover", "consequently"}
-	transitionCount := 0
-	for _, word := range transitionWords {
-		if strings.Contains(strings.ToLower(prompt), word) {
-			transitionCount++
-		}
-	}
-
-	// Simple coherence score based on transitions and length
-	coherenceScore := float64(transitionCount) / float64(len(sentences))
-	if coherenceScore > 1.0 {
-		coherenceScore = 1.0
-	}
-
-	return coherenceScore, nil
+	return 0, fmt.Errorf("coherence validation is not yet implemented")
 }
 
 func outputComposeResult(cmd *cobra.Command, result *ComposeResult) error {

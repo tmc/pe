@@ -697,8 +697,10 @@ Features:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Printf("Cross-validating methods: %v with %d folds\n", methods, folds)
 
-			// Implementation would perform cross-validation
-			results := performCrossValidation(methods, folds, statistical)
+			results, err := performCrossValidation(methods, folds, statistical)
+			if err != nil {
+				return err
+			}
 
 			if outputFile != "" {
 				data, _ := json.MarshalIndent(results, "", "  ")
@@ -751,8 +753,10 @@ Statistical Tests:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Printf("Testing significance between %s and %s (α=%.3f)\n", baseline, optimized, alpha)
 
-			// Implementation would perform statistical tests
-			results := performSignificanceTests(baseline, optimized, alpha, tests)
+			results, err := performSignificanceTests(baseline, optimized, alpha, tests)
+			if err != nil {
+				return err
+			}
 
 			if outputFile != "" {
 				data, _ := json.MarshalIndent(results, "", "  ")
@@ -808,8 +812,10 @@ Features:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Printf("A/B testing: %s vs %s (metric: %s)\n", groupA, groupB, metric)
 
-			// Implementation would perform A/B testing
-			results := performABTest(groupA, groupB, metric, bayesian, power, effectSize)
+			results, err := performABTest(groupA, groupB, metric, bayesian, power, effectSize)
+			if err != nil {
+				return err
+			}
 
 			if outputFile != "" {
 				data, _ := json.MarshalIndent(results, "", "  ")
@@ -868,36 +874,14 @@ func generateTestCases(source, template string, count int) []map[string]interfac
 	return testCases
 }
 
-func performCrossValidation(methods []string, folds int, statistical bool) map[string]interface{} {
-	return map[string]interface{}{
-		"methods":     methods,
-		"folds":       folds,
-		"statistical": statistical,
-		"results":     "cross_validation_results_placeholder",
-	}
+func performCrossValidation(methods []string, folds int, statistical bool) (map[string]interface{}, error) {
+	return nil, fmt.Errorf("cross-validation statistical analysis is not yet implemented")
 }
 
-func performSignificanceTests(baseline, optimized string, alpha float64, tests []string) map[string]interface{} {
-	return map[string]interface{}{
-		"baseline":    baseline,
-		"optimized":   optimized,
-		"alpha":       alpha,
-		"tests":       tests,
-		"significant": true,
-		"p_value":     0.023,
-		"effect_size": 0.45,
-	}
+func performSignificanceTests(baseline, optimized string, alpha float64, tests []string) (map[string]interface{}, error) {
+	return nil, fmt.Errorf("statistical significance testing is not yet implemented")
 }
 
-func performABTest(groupA, groupB, metric string, bayesian bool, power, effectSize float64) map[string]interface{} {
-	return map[string]interface{}{
-		"group_a":     groupA,
-		"group_b":     groupB,
-		"metric":      metric,
-		"bayesian":    bayesian,
-		"power":       power,
-		"effect_size": effectSize,
-		"significant": true,
-		"probability": 0.95,
-	}
+func performABTest(groupA, groupB, metric string, bayesian bool, power, effectSize float64) (map[string]interface{}, error) {
+	return nil, fmt.Errorf("A/B test statistical analysis is not yet implemented")
 }

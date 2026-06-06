@@ -190,37 +190,7 @@ func (sa *StatisticalAnalyzer) PerformTTest(group1, group2 []float64, pairedTest
 		return nil, fmt.Errorf("paired test requires equal sample sizes")
 	}
 
-	var statistic, pValue, effectSize float64
-	var testName string
-
-	if pairedTest {
-		testName = "Paired t-test"
-		statistic, pValue = sa.pairedTTest(group1, group2)
-		effectSize = sa.calculateCohensD(group1, group2)
-	} else {
-		testName = "Independent t-test"
-		statistic, pValue = sa.independentTTest(group1, group2)
-		effectSize = sa.calculateCohensD(group1, group2)
-	}
-
-	alpha := 1.0 - sa.confidenceLevel
-	criticalValue := sa.getCriticalValue(len(group1)+len(group2)-2, alpha/2)
-	isSignificant := pValue < alpha
-
-	interpretation := sa.interpretTTestResult(pValue, effectSize, isSignificant)
-
-	power := sa.calculateStatisticalPower(group1, group2, alpha, effectSize)
-
-	return &HypothesisTestResult{
-		TestName:       testName,
-		Statistic:      statistic,
-		PValue:         pValue,
-		CriticalValue:  criticalValue,
-		IsSignificant:  isSignificant,
-		EffectSize:     effectSize,
-		PowerAnalysis:  power,
-		Interpretation: interpretation,
-	}, nil
+	return nil, fmt.Errorf("t-test statistical analysis is not yet implemented")
 }
 
 // PerformABTest performs comprehensive A/B test analysis
@@ -233,40 +203,7 @@ func (sa *StatisticalAnalyzer) PerformABTest(successesA, trialsA, successesB, tr
 		return nil, fmt.Errorf("successes cannot exceed trials")
 	}
 
-	conversionA := float64(successesA) / float64(trialsA)
-	conversionB := float64(successesB) / float64(trialsB)
-
-	relativeImprovement := 0.0
-	if conversionA > 0 {
-		relativeImprovement = (conversionB - conversionA) / conversionA
-	}
-
-	// Z-test for proportions
-	zTest := sa.performZTestProportions(successesA, trialsA, successesB, trialsB)
-
-	// Confidence interval for difference in proportions
-	ci := sa.confidenceIntervalProportions(conversionA, conversionB, trialsA, trialsB)
-
-	// Minimum detectable effect
-	mde := sa.calculateMinimumDetectableEffect(trialsA, trialsB, 0.8, 0.05)
-
-	// Power analysis
-	power := sa.performPowerAnalysisAB(conversionA, conversionB, trialsA, trialsB)
-
-	recommendation := sa.generateABTestRecommendation(zTest, relativeImprovement, power.CurrentPower)
-
-	return &ABTestResult{
-		SampleSizeA:         trialsA,
-		SampleSizeB:         trialsB,
-		ConversionRateA:     conversionA,
-		ConversionRateB:     conversionB,
-		RelativeImprovement: relativeImprovement,
-		StatisticalTest:     *zTest,
-		ConfidenceInterval:  ci,
-		MinimumDetectable:   mde,
-		PowerAnalysis:       power,
-		Recommendation:      recommendation,
-	}, nil
+	return nil, fmt.Errorf("A/B test statistical analysis is not yet implemented")
 }
 
 // CompareGroups performs comprehensive comparison between two groups
@@ -276,43 +213,15 @@ func (sa *StatisticalAnalyzer) CompareGroups(group1, group2 []float64) (*Compari
 	}
 
 	// Calculate summaries for both groups
-	summary1, err := sa.CalculateStatisticalSummary(group1)
-	if err != nil {
+	if _, err := sa.CalculateStatisticalSummary(group1); err != nil {
 		return nil, fmt.Errorf("failed to calculate summary for group 1: %w", err)
 	}
 
-	summary2, err := sa.CalculateStatisticalSummary(group2)
-	if err != nil {
+	if _, err := sa.CalculateStatisticalSummary(group2); err != nil {
 		return nil, fmt.Errorf("failed to calculate summary for group 2: %w", err)
 	}
 
-	// Perform t-test
-	tTest, err := sa.PerformTTest(group1, group2, false)
-	if err != nil {
-		return nil, fmt.Errorf("t-test failed: %w", err)
-	}
-
-	// Perform Mann-Whitney U test (non-parametric)
-	mannWhitneyU := sa.performMannWhitneyU(group1, group2)
-
-	// Perform Kolmogorov-Smirnov test
-	ksTest := sa.performKolmogorovSmirnov(group1, group2)
-
-	// Calculate effect sizes
-	effectSize := sa.calculateEffectSizes(group1, group2)
-
-	// Generate recommendation
-	recommendation := sa.generateComparisonRecommendation(tTest, mannWhitneyU, effectSize)
-
-	return &ComparisonResult{
-		Group1Summary:     *summary1,
-		Group2Summary:     *summary2,
-		TTest:             *tTest,
-		MannWhitneyU:      mannWhitneyU,
-		KolmogorovSmirnov: ksTest,
-		EffectSize:        effectSize,
-		Recommendation:    recommendation,
-	}, nil
+	return nil, fmt.Errorf("group comparison statistical tests are not yet implemented")
 }
 
 // Helper methods for statistical calculations
@@ -415,48 +324,20 @@ func (sa *StatisticalAnalyzer) calculateKurtosis(data []float64, mean, stdDev fl
 }
 
 func (sa *StatisticalAnalyzer) calculateConfidenceInterval(data []float64, mean, stdDev, level float64) ConfidenceInterval {
-	n := len(data)
-	alpha := 1.0 - level
-	tValue := sa.getTValue(n-1, alpha/2)
-
-	standardError := stdDev / math.Sqrt(float64(n))
-	marginOfError := tValue * standardError
-
 	return ConfidenceInterval{
 		Level:         level,
-		LowerBound:    mean - marginOfError,
-		UpperBound:    mean + marginOfError,
-		MarginOfError: marginOfError,
+		LowerBound:    math.NaN(),
+		UpperBound:    math.NaN(),
+		MarginOfError: math.NaN(),
 	}
 }
 
 func (sa *StatisticalAnalyzer) analyzeDistribution(data []float64) DistributionInfo {
-	// Simplified normality test using Shapiro-Wilk approximation
-	shapiroPValue := sa.shapiroWilkTest(data)
-	isNormal := shapiroPValue > 0.05
-
-	distributionType := "unknown"
-	if isNormal {
-		distributionType = "normal"
-	} else {
-		// Simple heuristic for distribution type
-		summary, _ := sa.CalculateStatisticalSummary(data)
-		if summary != nil {
-			if math.Abs(summary.Skewness) > 1 {
-				distributionType = "skewed"
-			} else if summary.Kurtosis > 3 {
-				distributionType = "heavy_tailed"
-			} else {
-				distributionType = "non_normal"
-			}
-		}
-	}
-
 	return DistributionInfo{
-		IsNormal:         isNormal,
-		Normality:        shapiroPValue,
-		ShapiroWilk:      shapiroPValue,
-		DistributionType: distributionType,
+		IsNormal:         false,
+		Normality:        math.NaN(),
+		ShapiroWilk:      math.NaN(),
+		DistributionType: "unknown",
 	}
 }
 
@@ -472,46 +353,6 @@ func (sa *StatisticalAnalyzer) detectOutliers(sortedData []float64, q1, q3, iqr 
 	}
 
 	return outliers
-}
-
-// Statistical test implementations (simplified)
-
-func (sa *StatisticalAnalyzer) pairedTTest(group1, group2 []float64) (float64, float64) {
-	differences := make([]float64, len(group1))
-	for i := range group1 {
-		differences[i] = group1[i] - group2[i]
-	}
-
-	mean := sa.calculateMean(differences)
-	stdDev := sa.calculateStandardDeviation(differences, mean)
-	n := float64(len(differences))
-
-	tStatistic := mean / (stdDev / math.Sqrt(n))
-
-	// Simplified p-value calculation (would use proper t-distribution in production)
-	pValue := 2 * (1 - sa.approximateTProbability(math.Abs(tStatistic), int(n-1)))
-
-	return tStatistic, pValue
-}
-
-func (sa *StatisticalAnalyzer) independentTTest(group1, group2 []float64) (float64, float64) {
-	mean1 := sa.calculateMean(group1)
-	mean2 := sa.calculateMean(group2)
-	std1 := sa.calculateStandardDeviation(group1, mean1)
-	std2 := sa.calculateStandardDeviation(group2, mean2)
-
-	n1, n2 := float64(len(group1)), float64(len(group2))
-
-	// Pooled standard deviation
-	pooledStd := math.Sqrt(((n1-1)*std1*std1 + (n2-1)*std2*std2) / (n1 + n2 - 2))
-
-	standardError := pooledStd * math.Sqrt(1/n1+1/n2)
-	tStatistic := (mean1 - mean2) / standardError
-
-	df := n1 + n2 - 2
-	pValue := 2 * (1 - sa.approximateTProbability(math.Abs(tStatistic), int(df)))
-
-	return tStatistic, pValue
 }
 
 func (sa *StatisticalAnalyzer) calculateCohensD(group1, group2 []float64) float64 {
@@ -576,110 +417,6 @@ func (sa *StatisticalAnalyzer) calculateCliffsDelta(group1, group2 []float64) fl
 	return float64(greater-less) / float64(total)
 }
 
-// Simplified implementations for additional statistical tests
-
-func (sa *StatisticalAnalyzer) performMannWhitneyU(group1, group2 []float64) HypothesisTestResult {
-	// Simplified Mann-Whitney U test
-	return HypothesisTestResult{
-		TestName:       "Mann-Whitney U",
-		Statistic:      0,   // Would calculate actual U statistic
-		PValue:         0.5, // Simplified
-		IsSignificant:  false,
-		Interpretation: "Non-parametric test result",
-	}
-}
-
-func (sa *StatisticalAnalyzer) performKolmogorovSmirnov(group1, group2 []float64) HypothesisTestResult {
-	// Simplified Kolmogorov-Smirnov test
-	return HypothesisTestResult{
-		TestName:       "Kolmogorov-Smirnov",
-		Statistic:      0,   // Would calculate actual KS statistic
-		PValue:         0.5, // Simplified
-		IsSignificant:  false,
-		Interpretation: "Distribution comparison test",
-	}
-}
-
-func (sa *StatisticalAnalyzer) performZTestProportions(successesA, trialsA, successesB, trialsB int) *HypothesisTestResult {
-	pA := float64(successesA) / float64(trialsA)
-	pB := float64(successesB) / float64(trialsB)
-
-	// Pooled proportion
-	pPooled := float64(successesA+successesB) / float64(trialsA+trialsB)
-
-	// Standard error
-	se := math.Sqrt(pPooled * (1 - pPooled) * (1/float64(trialsA) + 1/float64(trialsB)))
-
-	// Z statistic
-	z := (pB - pA) / se
-
-	// P-value (two-tailed)
-	pValue := 2 * (1 - sa.approximateNormalCDF(math.Abs(z)))
-
-	alpha := 0.05
-	isSignificant := pValue < alpha
-
-	interpretation := sa.interpretZTestResult(pValue, isSignificant, pB-pA)
-
-	return &HypothesisTestResult{
-		TestName:       "Z-test for proportions",
-		Statistic:      z,
-		PValue:         pValue,
-		CriticalValue:  1.96, // For 95% confidence
-		IsSignificant:  isSignificant,
-		Interpretation: interpretation,
-	}
-}
-
-// Utility methods for probability distributions (simplified approximations)
-
-func (sa *StatisticalAnalyzer) approximateTProbability(t float64, df int) float64 {
-	// Simplified t-distribution approximation
-	if df > 30 {
-		return sa.approximateNormalCDF(t)
-	}
-	// For small df, use rough approximation
-	return sa.approximateNormalCDF(t * math.Sqrt(float64(df)/(float64(df)+t*t)))
-}
-
-func (sa *StatisticalAnalyzer) approximateNormalCDF(z float64) float64 {
-	// Simplified normal CDF approximation using error function
-	return 0.5 * (1 + math.Erf(z/math.Sqrt(2)))
-}
-
-func (sa *StatisticalAnalyzer) getTValue(df int, alpha float64) float64 {
-	// Simplified t-value lookup (would use proper t-table in production)
-	if alpha <= 0.025 && df >= 30 {
-		return 1.96
-	} else if alpha <= 0.025 && df >= 10 {
-		return 2.228
-	} else {
-		return 2.5 // Conservative estimate
-	}
-}
-
-func (sa *StatisticalAnalyzer) getCriticalValue(df int, alpha float64) float64 {
-	return sa.getTValue(df, alpha)
-}
-
-func (sa *StatisticalAnalyzer) shapiroWilkTest(data []float64) float64 {
-	// Simplified Shapiro-Wilk test - returns p-value
-	// In production, would implement full Shapiro-Wilk algorithm
-	return 0.5 // Placeholder
-}
-
-func (sa *StatisticalAnalyzer) calculateStatisticalPower(group1, group2 []float64, alpha, effectSize float64) float64 {
-	// Simplified power calculation
-	n := float64(len(group1) + len(group2))
-	delta := effectSize * math.Sqrt(n/4)
-
-	// Approximate power using normal distribution
-	criticalValue := sa.getTValue(int(n-2), alpha/2)
-	power := 1 - sa.approximateNormalCDF(criticalValue-delta)
-
-	return power
-}
-
 // Interpretation methods
 
 func (sa *StatisticalAnalyzer) interpretTTestResult(pValue, effectSize float64, isSignificant bool) string {
@@ -731,51 +468,6 @@ func (sa *StatisticalAnalyzer) confidenceIntervalProportions(pA, pB float64, nA,
 		UpperBound:    diff + margin,
 		MarginOfError: margin,
 	}
-}
-
-func (sa *StatisticalAnalyzer) calculateMinimumDetectableEffect(nA, nB int, power, alpha float64) float64 {
-	// Simplified MDE calculation
-	z_alpha := 1.96 // For alpha = 0.05
-	z_beta := 0.84  // For power = 0.8
-
-	pooledN := 2 / (1/float64(nA) + 1/float64(nB))
-	mde := (z_alpha + z_beta) / math.Sqrt(pooledN/4)
-
-	return mde
-}
-
-func (sa *StatisticalAnalyzer) performPowerAnalysisAB(pA, pB float64, nA, nB int) PowerAnalysis {
-	effectSize := math.Abs(pB - pA)
-
-	// Calculate current power
-	currentPower := sa.calculateStatisticalPower(
-		[]float64{pA}, []float64{pB}, 0.05, effectSize)
-
-	// Estimate required sample size for 80% power
-	requiredN := sa.estimateRequiredSampleSize(effectSize, 0.8, 0.05)
-
-	recommendation := ""
-	if currentPower < 0.8 {
-		recommendation = fmt.Sprintf("Current power (%.2f) is below recommended 0.8. Consider increasing sample size to %d per group.", currentPower, requiredN)
-	} else {
-		recommendation = "Current sample size provides adequate statistical power."
-	}
-
-	return PowerAnalysis{
-		CurrentPower:       currentPower,
-		RequiredSampleSize: requiredN,
-		DetectedEffectSize: effectSize,
-		Recommendation:     recommendation,
-	}
-}
-
-func (sa *StatisticalAnalyzer) estimateRequiredSampleSize(effectSize, power, alpha float64) int {
-	// Simplified sample size calculation
-	z_alpha := 1.96
-	z_beta := 0.84
-
-	n := 2 * math.Pow((z_alpha+z_beta)/effectSize, 2)
-	return int(math.Ceil(n))
 }
 
 func (sa *StatisticalAnalyzer) generateABTestRecommendation(test *HypothesisTestResult, relativeImprovement, power float64) string {

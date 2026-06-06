@@ -28,11 +28,11 @@ func TestStatisticalAnalyzerSummary(t *testing.T) {
 	if summary.Percentiles["50th"] != summary.Median {
 		t.Fatalf("50th percentile = %v, median = %v", summary.Percentiles["50th"], summary.Median)
 	}
-	if summary.ConfidenceInterval.Level != 0.95 || summary.ConfidenceInterval.MarginOfError <= 0 {
+	if summary.ConfidenceInterval.Level != 0.95 || !math.IsNaN(summary.ConfidenceInterval.MarginOfError) {
 		t.Fatalf("confidence interval = %#v", summary.ConfidenceInterval)
 	}
-	if summary.Distribution.DistributionType == "" {
-		t.Fatalf("empty distribution type")
+	if summary.Distribution.DistributionType != "unknown" || !math.IsNaN(summary.Distribution.Normality) {
+		t.Fatalf("distribution = %#v", summary.Distribution)
 	}
 	if len(summary.Outliers) != 1 || summary.Outliers[0] != 100 {
 		t.Fatalf("outliers = %v, want [100]", summary.Outliers)
@@ -54,20 +54,12 @@ func TestStatisticalAnalyzerTTests(t *testing.T) {
 	group1 := []float64{10, 11, 12, 13, 14, 15}
 	group2 := []float64{1, 2, 3, 4, 5, 6}
 
-	independent, err := sa.PerformTTest(group1, group2, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if independent.TestName != "Independent t-test" || independent.Statistic <= 0 || independent.EffectSize <= 0 {
-		t.Fatalf("independent result = %#v", independent)
+	if result, err := sa.PerformTTest(group1, group2, false); err == nil || result != nil || !strings.Contains(err.Error(), "not yet implemented") {
+		t.Fatalf("independent result = %#v err=%v", result, err)
 	}
 
-	paired, err := sa.PerformTTest(group1, []float64{2, 3, 3, 5, 6, 8}, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if paired.TestName != "Paired t-test" || math.IsNaN(paired.PValue) {
-		t.Fatalf("paired result = %#v", paired)
+	if result, err := sa.PerformTTest(group1, []float64{2, 3, 3, 5, 6, 8}, true); err == nil || result != nil || !strings.Contains(err.Error(), "not yet implemented") {
+		t.Fatalf("paired result = %#v err=%v", result, err)
 	}
 
 	if _, err := sa.PerformTTest(nil, group2, false); err == nil {
@@ -80,21 +72,8 @@ func TestStatisticalAnalyzerTTests(t *testing.T) {
 
 func TestStatisticalAnalyzerABTest(t *testing.T) {
 	sa := NewStatisticalAnalyzer(0.95, 3)
-	result, err := sa.PerformABTest(60, 100, 75, 100)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result.SampleSizeA != 100 || result.SampleSizeB != 100 {
-		t.Fatalf("sample sizes = %d/%d", result.SampleSizeA, result.SampleSizeB)
-	}
-	if result.ConversionRateA != 0.6 || result.ConversionRateB != 0.75 {
-		t.Fatalf("conversion rates = %v/%v", result.ConversionRateA, result.ConversionRateB)
-	}
-	if result.RelativeImprovement <= 0 || result.MinimumDetectable <= 0 || result.PowerAnalysis.RequiredSampleSize <= 0 {
-		t.Fatalf("ab result = %#v", result)
-	}
-	if result.Recommendation == "" || result.StatisticalTest.TestName == "" {
-		t.Fatalf("missing recommendation or test: %#v", result)
+	if result, err := sa.PerformABTest(60, 100, 75, 100); err == nil || result != nil || !strings.Contains(err.Error(), "not yet implemented") {
+		t.Fatalf("ab result = %#v err=%v", result, err)
 	}
 
 	if _, err := sa.PerformABTest(1, 0, 1, 2); err == nil || !strings.Contains(err.Error(), "invalid trial") {
@@ -111,17 +90,8 @@ func TestStatisticalAnalyzerCompareGroups(t *testing.T) {
 		[]float64{10, 11, 12, 13, 14, 15},
 		[]float64{1, 2, 3, 4, 5, 6},
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result.Group1Summary.Count != 6 || result.Group2Summary.Count != 6 {
-		t.Fatalf("summaries = %#v %#v", result.Group1Summary, result.Group2Summary)
-	}
-	if result.TTest.TestName == "" || result.MannWhitneyU.TestName == "" || result.KolmogorovSmirnov.TestName == "" {
-		t.Fatalf("missing tests: %#v", result)
-	}
-	if result.EffectSize.Interpretation == "" || result.Recommendation == "" {
-		t.Fatalf("missing effect interpretation: %#v", result.EffectSize)
+	if err == nil || result != nil || !strings.Contains(err.Error(), "not yet implemented") {
+		t.Fatalf("compare result = %#v err=%v", result, err)
 	}
 	if _, err := sa.CompareGroups(nil, []float64{1}); err == nil || !strings.Contains(err.Error(), "empty groups") {
 		t.Fatalf("compare error = %v", err)

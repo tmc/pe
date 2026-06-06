@@ -3,6 +3,7 @@ package templates
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -359,15 +360,12 @@ func TestTemplateLibrary_CreateTemplate(t *testing.T) {
 	lib := NewTemplateLibrary("")
 
 	template, err := lib.CreateTemplate(nil)
-	if err != nil {
-		t.Fatalf("CreateTemplate failed: %v", err)
+	if err == nil || !strings.Contains(err.Error(), "not yet implemented") {
+		t.Fatalf("CreateTemplate err = %v", err)
 	}
 
-	if template == nil {
-		t.Fatal("CreateTemplate returned nil")
-	}
-	if template.Name != "new-template" {
-		t.Errorf("expected name 'new-template', got '%s'", template.Name)
+	if template != nil {
+		t.Fatalf("CreateTemplate returned %#v", template)
 	}
 }
 

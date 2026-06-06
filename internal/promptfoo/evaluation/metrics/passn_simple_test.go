@@ -196,10 +196,10 @@ func TestPassNGeneratorStrategies(t *testing.T) {
 }
 
 func TestPassNHelpers(t *testing.T) {
-	if got := generateHash("abcdef"); got != "616263646566" {
+	if got := generateHash("abcdef"); got != "bef57ec7f53a6d40beb640a780a639c83bc29ac8a9816f1fc6c5c6dcd93c4721" {
 		t.Fatalf("hash short = %q", got)
 	}
-	if got := generateHash("abcdefghijklmnopq"); got != "6162636465666768696a6b6c6d6e6f70" {
+	if got := generateHash("abcdefghijklmnopq"); got != "918a954ac4dfb54ac39f068d9868227f69ab39bc362e2c9b0083bf6a109d6ad7" {
 		t.Fatalf("hash long = %q", got)
 	}
 	if !containsAllTags([]string{"a", "b"}, []string{"a"}) || containsAllTags([]string{"a"}, []string{"b"}) {

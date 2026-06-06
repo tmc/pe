@@ -304,26 +304,7 @@ func (tl *TemplateLibrary) ExportTemplate(name, format string) ([]byte, error) {
 
 // CreateTemplate creates a new template interactively
 func (tl *TemplateLibrary) CreateTemplate(ctx context.Context) (*Template, error) {
-	// This would be implemented with interactive prompts
-	// For now, return a basic template structure
-	return &Template{
-		Name:        "new-template",
-		Description: "New template",
-		Category:    "general",
-		Tags:        []string{"custom"},
-		Version:     "1.0.0",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-		Prompt:      "{{input}}",
-		Variables: map[string]Variable{
-			"input": {
-				Name:        "input",
-				Description: "Input text",
-				Type:        "string",
-				Required:    true,
-			},
-		},
-	}, nil
+	return nil, fmt.Errorf("interactive template creation is not yet implemented")
 }
 
 // Helper methods

@@ -2,6 +2,8 @@ package metrics
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -472,8 +474,8 @@ func (s *PassNStore) updateStatistics(metadata *PassNMetadata) {
 }
 
 func generateHash(content string) string {
-	// Simple hash generation (implement proper hashing)
-	return fmt.Sprintf("%x", content[:min(16, len(content))])
+	sum := sha256.Sum256([]byte(content))
+	return hex.EncodeToString(sum[:])
 }
 
 func containsAllTags(metadataTags, searchTags []string) bool {

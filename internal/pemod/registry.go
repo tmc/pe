@@ -411,12 +411,7 @@ func (r *GistRegistry) createGist(ctx context.Context, gistReq map[string]interf
 
 // updateRegistryIndex updates the registry index with the new module
 func (r *GistRegistry) updateRegistryIndex(ctx context.Context, module *PromptModule) error {
-	// This would update the root gist's index.json file
-	// For now, return success - in a real implementation this would:
-	// 1. Fetch the current index
-	// 2. Add/update the module entry
-	// 3. Update the root gist with the new index
-	return nil
+	return fmt.Errorf("registry indexing is not yet implemented")
 }
 
 // registryCache provides caching for registry operations

@@ -101,8 +101,8 @@ func TestGistRegistryErrorsAndPublish(t *testing.T) {
 	registry.token = "token"
 	registry.client.Transport = &gistRoundTripper{create: &Gist{ID: "created"}, responses: map[string]Gist{}}
 	module := &PromptModule{Name: "x", Version: "v1", Description: "d", Author: "a", PromptFile: "prompt", Files: map[string]string{"extra.txt": "extra"}}
-	if err := registry.Publish(context.Background(), module, false); err != nil {
-		t.Fatalf("Publish: %v", err)
+	if err := registry.Publish(context.Background(), module, false); err == nil || !strings.Contains(err.Error(), "registry indexing is not yet implemented") {
+		t.Fatalf("Publish error = %v", err)
 	}
 	if module.GistID != "created" {
 		t.Fatalf("gist id = %q", module.GistID)

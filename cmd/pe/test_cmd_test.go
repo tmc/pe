@@ -123,29 +123,30 @@ func TestAdvancedTestSpecialCommandsAndGenerators(t *testing.T) {
 	if cases := generateTestCases("source", "template", 3); len(cases) != 3 || cases[0]["template"] != "template" {
 		t.Fatalf("cases = %#v", cases)
 	}
-	if cv := performCrossValidation([]string{"a"}, 2, true); cv["folds"] != 2 || cv["statistical"] != true {
-		t.Fatalf("cross validation = %#v", cv)
+	if cv, err := performCrossValidation([]string{"a"}, 2, true); err == nil || cv != nil || !strings.Contains(err.Error(), "not yet implemented") {
+		t.Fatalf("cross validation = %#v err=%v", cv, err)
 	}
-	if sig := performSignificanceTests("old", "new", 0.01, []string{"t"}); sig["alpha"] != 0.01 || sig["significant"] != true {
-		t.Fatalf("significance = %#v", sig)
+	if sig, err := performSignificanceTests("old", "new", 0.01, []string{"t"}); err == nil || sig != nil || !strings.Contains(err.Error(), "not yet implemented") {
+		t.Fatalf("significance = %#v err=%v", sig, err)
 	}
-	if ab := performABTest("a", "b", "score", true, 0.8, 0.2); ab["metric"] != "score" || ab["bayesian"] != true {
-		t.Fatalf("ab = %#v", ab)
+	if ab, err := performABTest("a", "b", "score", true, 0.8, 0.2); err == nil || ab != nil || !strings.Contains(err.Error(), "not yet implemented") {
+		t.Fatalf("ab = %#v err=%v", ab, err)
 	}
 }
 
 func TestAdvancedTestSubcommands(t *testing.T) {
 	tmpDir := t.TempDir()
 	for _, tt := range []struct {
-		name string
-		cmd  *cobra.Command
-		args map[string]string
+		name    string
+		cmd     *cobra.Command
+		args    map[string]string
+		wantErr bool
 	}{
 		{name: "suite", cmd: createTestSuiteCmd(), args: map[string]string{"name": "suite", "description": "desc", "prompts": "p1,p2", "assertions": "contains", "output": filepath.Join(tmpDir, "suite.json")}},
 		{name: "generate", cmd: generateTestsCmd(), args: map[string]string{"source": "src", "count": "2", "template": "tmpl", "output": filepath.Join(tmpDir, "gen.json")}},
-		{name: "significance", cmd: significanceTestCmd(), args: map[string]string{"baseline": "old.json", "optimized": "new.json", "alpha": "0.01", "tests": "t-test", "output": filepath.Join(tmpDir, "sig.json")}},
-		{name: "cross", cmd: crossValidateCmd(), args: map[string]string{"methods": "a,b", "folds": "3", "statistical": "true", "output": filepath.Join(tmpDir, "cross.json")}},
-		{name: "ab", cmd: abTestCmd(), args: map[string]string{"group-a": "a", "group-b": "b", "metric": "score", "bayesian": "true", "output": filepath.Join(tmpDir, "ab.json")}},
+		{name: "significance", cmd: significanceTestCmd(), args: map[string]string{"baseline": "old.json", "optimized": "new.json", "alpha": "0.01", "tests": "t-test", "output": filepath.Join(tmpDir, "sig.json")}, wantErr: true},
+		{name: "cross", cmd: crossValidateCmd(), args: map[string]string{"methods": "a,b", "folds": "3", "statistical": "true", "output": filepath.Join(tmpDir, "cross.json")}, wantErr: true},
+		{name: "ab", cmd: abTestCmd(), args: map[string]string{"group-a": "a", "group-b": "b", "metric": "score", "bayesian": "true", "output": filepath.Join(tmpDir, "ab.json")}, wantErr: true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := tt.cmd
@@ -157,7 +158,14 @@ func TestAdvancedTestSubcommands(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if err := cmd.RunE(cmd, nil); err != nil {
+			err := cmd.RunE(cmd, nil)
+			if tt.wantErr {
+				if err == nil || !strings.Contains(err.Error(), "not yet implemented") {
+					t.Fatalf("RunE err = %v", err)
+				}
+				return
+			}
+			if err != nil {
 				t.Fatal(err)
 			}
 		})
