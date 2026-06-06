@@ -394,6 +394,25 @@ func RegisterProviderSpec(client *Client, spec string, config map[string]interfa
 	return provider, nil
 }
 
+type defaultModelProvider struct {
+	Provider
+	model string
+}
+
+func (p *defaultModelProvider) Complete(ctx context.Context, req Request) (*Response, error) {
+	if req.Model == "" {
+		req.Model = p.model
+	}
+	return p.Provider.Complete(ctx, req)
+}
+
+func (p *defaultModelProvider) Stream(ctx context.Context, req Request) (<-chan StreamChunk, error) {
+	if req.Model == "" {
+		req.Model = p.model
+	}
+	return p.Provider.Stream(ctx, req)
+}
+
 func cloneLLMOptions(options map[string]interface{}) map[string]interface{} {
 	if len(options) == 0 {
 		return nil
@@ -432,6 +451,12 @@ func CreateProviderFromSpec(spec string, config map[string]interface{}) (Provide
 		}
 		provider, err := NewProvider(providerName, providerConfig)
 		if err == nil {
+			if model != "" {
+				provider = &defaultModelProvider{
+					Provider: provider,
+					model:    model,
+				}
+			}
 			return provider, nil
 		}
 	}

@@ -298,19 +298,42 @@ func TestRegisterProviderSpecRejectsNilClient(t *testing.T) {
 
 func TestCreateProviderFromSpecUsesBaseRegistryName(t *testing.T) {
 	const name = "migration-test-base"
+	const model = "test-model:quant"
+	created := &modernProvider{name: name, models: []string{model}}
 	inference.Register(name, func(config map[string]interface{}) (inference.Provider, error) {
-		if config["model"] != "test-model" {
+		if config["model"] != model {
 			t.Fatalf("config model = %#v", config["model"])
 		}
-		return &modernProvider{name: name, models: []string{"test-model"}}, nil
+		return created, nil
 	})
 
-	provider, err := inference.CreateProviderFromSpec(name+":test-model", nil)
+	provider, err := inference.CreateProviderFromSpec(name+":"+model, nil)
 	if err != nil {
 		t.Fatalf("CreateProviderFromSpec: %v", err)
 	}
 	if provider.Name() != name {
 		t.Fatalf("provider name = %q, want %q", provider.Name(), name)
+	}
+
+	if _, err := provider.Complete(context.Background(), inference.Request{Prompt: "hello"}); err != nil {
+		t.Fatalf("Complete: %v", err)
+	}
+	if created.lastReq.Model != model {
+		t.Fatalf("complete model = %q, want %q", created.lastReq.Model, model)
+	}
+
+	if _, err := provider.Complete(context.Background(), inference.Request{Prompt: "hello", Model: "override"}); err != nil {
+		t.Fatalf("Complete override: %v", err)
+	}
+	if created.lastReq.Model != "override" {
+		t.Fatalf("complete override model = %q, want override", created.lastReq.Model)
+	}
+
+	if _, err := provider.Stream(context.Background(), inference.Request{Prompt: "hello"}); err != nil {
+		t.Fatalf("Stream: %v", err)
+	}
+	if created.streamReq.Model != model {
+		t.Fatalf("stream model = %q, want %q", created.streamReq.Model, model)
 	}
 }
 
