@@ -33,7 +33,7 @@ Use `pe version` to show version information.
 | [`test`](#test) | Advanced testing framework | `pe test config.yaml --type property` |
 | [`version`](#version) | Print version information | `pe version` |
 | [`security`](#security) | Security testing (OWASP) | `pe security test prompt.txt` |
-| [`build`](#build) | Build optimized prompts | `pe build config.yaml --target anthropic` |
+| [`build`](#build) | Write prompts, metadata, and bundles | `pe build config.yaml --target anthropic` |
 | [`compose`](#compose) | Compose prompt components | `pe compose context.txt instruction.txt --style cot` |
 | [`config`](#config) | Inspect PE configuration | `pe config list` |
 | [`cat`](#cat) | Display prompt files | `pe cat prompts/analyze.prompt` |
@@ -1202,7 +1202,8 @@ pe mod init [module_path]
 
 #### mod publish
 
-Publish a module to the registry.
+Registered command for future registry publishing. Current registry backends do
+not publish modules.
 
 ```bash
 pe mod publish [flags]
@@ -1412,7 +1413,7 @@ pe template export code-review -o exported.yaml
 
 ## build
 
-Build optimized prompts for production deployment.
+Write prompts, metadata, and optional bundles for deployment.
 
 ### Synopsis
 
@@ -1422,7 +1423,10 @@ pe build [config/prompt] [flags]
 
 ### Description
 
-The `build` command analyzes and optimizes prompts for specific providers, validates quality, and packages them for deployment.
+The `build` command reads a prompt or config, applies supported provider
+formatting, writes output files, and can package a directory into a bundle.
+Validation and some provider-specific formatting paths return explicit
+not-implemented errors.
 
 ### Arguments
 
@@ -1436,7 +1440,7 @@ The `build` command analyzes and optimizes prompts for specific providers, valid
 -h, --help                help for build
     --minify              Minify prompt to reduce tokens
 -o, --output string       Output file path
-    --target string       Target provider for optimization
+    --target string       Target provider for formatting
     --targets strings     Multiple target providers
     --validate            Run validation checks
     --with-metadata       Include metadata file
@@ -1463,8 +1467,8 @@ pe build config.yaml --bundle -o bundle.tar.gz
 # Minify for token reduction
 pe build config.yaml --minify -o optimized.txt
 
-# Multi-target build
-pe build config.yaml --targets openai,anthropic,google
+# Multi-target build with supported formatters
+pe build config.yaml --targets openai,anthropic
 ```
 
 ---

@@ -148,7 +148,7 @@ Testing and validation:
 - **Property-based Testing**: Automated test generation
 - **Regression Testing**: Detect performance degradation
 - **Statistical Analysis**: Advanced metrics (BLEU, ROUGE, BERTScore, G-Eval)
-- **Security Testing**: Complete OWASP LLM Top 10 coverage
+- **Security Testing**: OWASP-oriented checks; incomplete analyses fail closed
 
 ### Infrastructure (Mixed Maturity)
 Infrastructure:
@@ -160,7 +160,7 @@ Infrastructure:
 
 ### Performance & Monitoring (✅ Implemented)
 Comprehensive observability:
-- **Benchmarking**: Statistical performance analysis with significance testing
+- **Benchmarking**: benchmark helpers; significance paths are incomplete
 - **Profiling**: CPU, memory, and execution tracing
 - **Metrics**: Advanced evaluation metrics and cost optimization
 - **Pipeline Processing**: Unix-style composable commands for complex workflows

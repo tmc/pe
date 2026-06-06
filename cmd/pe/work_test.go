@@ -153,6 +153,48 @@ func TestRunWorkEdit_NoWorkspace(t *testing.T) {
 	}
 }
 
+func TestRunWorkEdit_ReplaceRoundTrip(t *testing.T) {
+	tmpDir := t.TempDir()
+	origDir, _ := os.Getwd()
+	defer os.Chdir(origDir)
+	os.Chdir(tmpDir)
+
+	if err := runWorkInit(workInitCmd, []string{"./prompts"}); err != nil {
+		t.Fatalf("Failed to init workspace: %v", err)
+	}
+
+	workReplace = []string{"example.com/old=./local"}
+	workDropReplace = nil
+	t.Cleanup(func() {
+		workReplace = nil
+		workDropReplace = nil
+	})
+	if err := runWorkEdit(workEditCmd, nil); err != nil {
+		t.Fatalf("runWorkEdit replace: %v", err)
+	}
+
+	ws, err := loadWorkspace()
+	if err != nil {
+		t.Fatalf("loadWorkspace: %v", err)
+	}
+	if len(ws.Replace) != 1 || ws.Replace[0].Old != "example.com/old" || ws.Replace[0].New != "./local" {
+		t.Fatalf("replace = %#v", ws.Replace)
+	}
+
+	workReplace = nil
+	workDropReplace = []string{"example.com/old"}
+	if err := runWorkEdit(workEditCmd, nil); err != nil {
+		t.Fatalf("runWorkEdit drop: %v", err)
+	}
+	ws, err = loadWorkspace()
+	if err != nil {
+		t.Fatalf("loadWorkspace after drop: %v", err)
+	}
+	if len(ws.Replace) != 0 {
+		t.Fatalf("replace after drop = %#v", ws.Replace)
+	}
+}
+
 func TestRunWorkSync_NoWorkspace(t *testing.T) {
 	tmpDir := t.TempDir()
 	origDir, _ := os.Getwd()
@@ -284,6 +326,7 @@ func TestSaveWorkspace(t *testing.T) {
 	ws := &Workspace{
 		Version: "1",
 		Use:     []string{"./prompts", "./shared"},
+		Replace: []Replace{{Old: "example.com/old", New: "./local"}},
 	}
 
 	err := saveWorkspace(ws)
@@ -299,6 +342,17 @@ func TestSaveWorkspace(t *testing.T) {
 
 	if !strings.Contains(string(content), "prompts") {
 		t.Error("Expected pe.work to contain 'prompts'")
+	}
+	if !strings.Contains(string(content), "example.com/old => ./local") {
+		t.Error("Expected pe.work to contain replace directive")
+	}
+
+	loaded, err := loadWorkspace()
+	if err != nil {
+		t.Fatalf("Failed to load pe.work: %v", err)
+	}
+	if len(loaded.Replace) != 1 || loaded.Replace[0].Old != "example.com/old" || loaded.Replace[0].New != "./local" {
+		t.Fatalf("loaded replace = %#v", loaded.Replace)
 	}
 }
 

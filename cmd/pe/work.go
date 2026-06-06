@@ -302,12 +302,18 @@ func loadWorkspace() (*Workspace, error) {
 
 	lines := strings.Split(string(data), "\n")
 	inUse := false
+	inReplace := false
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 
 		if line == "use (" {
 			inUse = true
+			continue
+		}
+
+		if line == "replace (" {
+			inReplace = true
 			continue
 		}
 
@@ -319,6 +325,20 @@ func loadWorkspace() (*Workspace, error) {
 			// Add directory from use block
 			if line != "" {
 				ws.Use = append(ws.Use, line)
+			}
+		}
+
+		if inReplace {
+			if line == ")" {
+				inReplace = false
+				continue
+			}
+			parts := strings.SplitN(line, "=>", 2)
+			if len(parts) == 2 {
+				ws.Replace = append(ws.Replace, Replace{
+					Old: strings.TrimSpace(parts[0]),
+					New: strings.TrimSpace(parts[1]),
+				})
 			}
 		}
 	}
@@ -335,6 +355,14 @@ func saveWorkspace(ws *Workspace) error {
 		content.WriteString("\nuse (\n")
 		for _, dir := range ws.Use {
 			content.WriteString(fmt.Sprintf("\t%s\n", dir))
+		}
+		content.WriteString(")\n")
+	}
+
+	if len(ws.Replace) > 0 {
+		content.WriteString("\nreplace (\n")
+		for _, r := range ws.Replace {
+			content.WriteString(fmt.Sprintf("\t%s => %s\n", r.Old, r.New))
 		}
 		content.WriteString(")\n")
 	}
