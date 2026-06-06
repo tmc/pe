@@ -1,3 +1,5 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # Command Implementation Plan
 
 This document provides detailed technical implementation plans for the planned commands, including architecture decisions, interfaces, and development guidelines.

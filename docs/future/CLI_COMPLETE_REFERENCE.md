@@ -1,8 +1,10 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # PE: Complete CLI Reference
 
 **The Ultimate Command-Line Interface for Prompt Engineering**
 
-This comprehensive reference covers all PE commands, options, and usage patterns for mastering the world's most advanced prompt engineering toolkit.
+This comprehensive reference covers all PE commands, options, and usage patterns for mastering the prompt engineering toolkit.
 
 ## Table of Contents
 

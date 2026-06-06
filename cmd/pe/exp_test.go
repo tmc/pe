@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"strings"
 	"testing"
 )
@@ -47,19 +46,13 @@ func TestExpCommandsRegistry(t *testing.T) {
 			if cmdName == "compose" || cmdName == "distributed" || cmdName == "optimize" || cmdName == "consensus" {
 				return
 			}
+			if cmd.RunE == nil {
+				return
+			}
 
-			// Capture output
-			buf := new(bytes.Buffer)
-			cmd.SetOut(buf)
-			cmd.SetErr(buf)
-
-			// Execute the command
-			cmd.Run(cmd, []string{})
-
-			output := buf.String()
-			expectedOutput := "is an experimental prototype"
-			if !strings.Contains(output, expectedOutput) {
-				t.Errorf("Command %q output does not contain expected stub message.\nGot: %s\nExpected to contain: %s", cmdName, output, expectedOutput)
+			err = cmd.RunE(cmd, []string{})
+			if err == nil || !strings.Contains(err.Error(), "not yet implemented") {
+				t.Errorf("Command %q error = %v, want not implemented", cmdName, err)
 			}
 		})
 	}

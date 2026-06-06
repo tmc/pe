@@ -1,3 +1,5 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # Interactive Tutorials: From Beginner to Expert
 
 Master PE's cutting-edge capabilities through hands-on tutorials that progress from basic usage to advanced optimization techniques.

@@ -14,6 +14,7 @@ func TestOptimizeForProvider(t *testing.T) {
 		prompt   string
 		provider string
 		want     string
+		wantErr  bool
 	}{
 		{
 			name:     "anthropic provider",
@@ -31,25 +32,34 @@ func TestOptimizeForProvider(t *testing.T) {
 			name:     "google provider",
 			prompt:   "Hello, world!",
 			provider: "google",
-			want:     "Hello, world!",
+			wantErr:  true,
 		},
 		{
 			name:     "unknown provider",
 			prompt:   "Hello, world!",
 			provider: "unknown",
-			want:     "Hello, world!",
+			wantErr:  true,
 		},
 		{
 			name:     "empty provider",
 			prompt:   "Hello, world!",
 			provider: "",
-			want:     "Hello, world!",
+			wantErr:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := optimizeForProvider(tt.prompt, tt.provider)
+			got, err := optimizeForProvider(tt.prompt, tt.provider)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("optimizeForProvider() err = nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
 			if got != tt.want {
 				t.Errorf("optimizeForProvider() = %q, want %q", got, tt.want)
 			}
@@ -195,59 +205,59 @@ func TestBuildCmd_BasicUsage(t *testing.T) {
 	defer os.Setenv("PE_TEST_MODE", oldTestMode)
 
 	tests := []struct {
-		name           string
-		fileContent    string
-		fileName       string
-		args           []string
-		wantErr        bool
+		name            string
+		fileContent     string
+		fileName        string
+		args            []string
+		wantErr         bool
 		checkOutputFile bool
 	}{
 		{
-			name:           "build from yaml config",
-			fileContent:    "prompt: You are a helpful assistant.\nprovider: openai\nmodel: gpt-4",
-			fileName:       "config.yaml",
-			args:           []string{},
-			wantErr:        false,
+			name:            "build from yaml config",
+			fileContent:     "prompt: You are a helpful assistant.\nprovider: openai\nmodel: gpt-4",
+			fileName:        "config.yaml",
+			args:            []string{},
+			wantErr:         false,
 			checkOutputFile: true,
 		},
 		{
-			name:           "build from text file",
-			fileContent:    "You are a helpful assistant.",
-			fileName:       "prompt.txt",
-			args:           []string{},
-			wantErr:        false,
+			name:            "build from text file",
+			fileContent:     "You are a helpful assistant.",
+			fileName:        "prompt.txt",
+			args:            []string{},
+			wantErr:         false,
 			checkOutputFile: true,
 		},
 		{
-			name:           "build with target provider",
-			fileContent:    "You are a helpful assistant.",
-			fileName:       "prompt.txt",
-			args:           []string{"--target", "anthropic"},
-			wantErr:        false,
+			name:            "build with target provider",
+			fileContent:     "You are a helpful assistant.",
+			fileName:        "prompt.txt",
+			args:            []string{"--target", "anthropic"},
+			wantErr:         false,
 			checkOutputFile: true,
 		},
 		{
-			name:           "build with minify",
-			fileContent:    "Line one\n\nLine two\n\nLine three",
-			fileName:       "prompt.txt",
-			args:           []string{"--minify"},
-			wantErr:        false,
+			name:            "build with minify",
+			fileContent:     "Line one\n\nLine two\n\nLine three",
+			fileName:        "prompt.txt",
+			args:            []string{"--minify"},
+			wantErr:         false,
 			checkOutputFile: true,
 		},
 		{
-			name:           "build with validation",
-			fileContent:    "You are a helpful assistant.",
-			fileName:       "prompt.txt",
-			args:           []string{"--validate"},
-			wantErr:        false,
-			checkOutputFile: true,
+			name:            "build with validation",
+			fileContent:     "You are a helpful assistant.",
+			fileName:        "prompt.txt",
+			args:            []string{"--validate"},
+			wantErr:         true,
+			checkOutputFile: false,
 		},
 		{
-			name:           "build yaml missing prompt",
-			fileContent:    "provider: openai\nmodel: gpt-4",
-			fileName:       "config.yaml",
-			args:           []string{},
-			wantErr:        true,
+			name:            "build yaml missing prompt",
+			fileContent:     "provider: openai\nmodel: gpt-4",
+			fileName:        "config.yaml",
+			args:            []string{},
+			wantErr:         true,
 			checkOutputFile: false,
 		},
 	}

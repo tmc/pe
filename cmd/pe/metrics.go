@@ -181,10 +181,9 @@ Statistical Analysis:
 			if statistical {
 				stats, err := performStatisticalAnalysis(generated, reference, confidence, bootstrap)
 				if err != nil {
-					fmt.Printf("Warning: Statistical analysis failed: %v\n", err)
-				} else {
-					result.Statistics = stats
+					return err
 				}
+				result.Statistics = stats
 			}
 
 			// Output results
@@ -465,24 +464,7 @@ func min(a, b int) int {
 
 // performStatisticalAnalysis conducts comprehensive statistical analysis
 func performStatisticalAnalysis(generated, reference string, confidence float64, bootstrap int) (*metrics.ComparisonResult, error) {
-	// This would implement comprehensive statistical analysis
-	// For now, return a placeholder implementation
-	return &metrics.ComparisonResult{
-		Group1Summary: metrics.StatisticalSummary{
-			Count: 1,
-			Mean:  float64(len(generated)),
-		},
-		Group2Summary: metrics.StatisticalSummary{
-			Count: 1,
-			Mean:  float64(len(reference)),
-		},
-		TTest: metrics.HypothesisTestResult{
-			TestName:      "t-test",
-			PValue:        0.5,
-			IsSignificant: false,
-		},
-		Recommendation: "Statistical analysis placeholder",
-	}, nil
+	return nil, fmt.Errorf("statistical metrics analysis is not yet implemented")
 }
 
 // outputMetricsResult formats and outputs the metrics results

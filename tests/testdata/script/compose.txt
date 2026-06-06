@@ -35,11 +35,10 @@ stdout 'Injected 3 examples'
 grep 'Example 1:' few-shot.txt
 
 # Composition with optimization
-pe experimental compose context.txt task.txt --optimize --target gpt-4
+! pe experimental compose context.txt task.txt --optimize --target gpt-4
 stdout 'Composing with optimization'
 stdout 'Target model: gpt-4'
-stdout 'Optimizing coherence'
-stdout 'TextGrad optimization applied'
+stderr 'compose optimization is not yet implemented'
 
 # Component validation
 pe experimental compose context.txt incompatible.txt --validate
@@ -66,16 +65,12 @@ stdout 'Downloading github.com/anthropic/helpful-harmless@v1.2.0'
 stdout 'Composing from module requirements'
 
 # Import from URL
-pe experimental compose --import https://example.com/components.txtar
-stdout 'Importing components'
-stdout 'Added 5 components'
+! pe experimental compose --import https://example.com/components.txtar
+stderr 'component import is not yet implemented'
 
 # Coherence analysis
-pe experimental compose prompt1.txt prompt2.txt --coherence-check
-stdout 'Coherence analysis:'
-stdout 'Semantic similarity: 0.85'
-stdout 'Style consistency: 0.92'
-stdout 'No conflicts detected'
+! pe experimental compose prompt1.txt prompt2.txt --coherence-check
+stderr 'coherence check is not yet implemented'
 
 -- context.txt --
 You are an AI assistant with expertise in software engineering.

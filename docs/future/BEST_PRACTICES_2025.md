@@ -1,6 +1,8 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # PE Best Practices 2025: Industry-Leading Prompt Engineering
 
-This comprehensive guide covers industry-leading best practices for prompt engineering using PE, the world's most advanced prompt engineering toolkit. Based on the latest 2024-2025 research and production deployments.
+This comprehensive guide covers industry-leading best practices for prompt engineering using PE, the prompt engineering toolkit. Based on the latest 2024-2025 research and production deployments.
 
 ## 🎯 Core Principles
 

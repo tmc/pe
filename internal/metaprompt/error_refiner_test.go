@@ -44,10 +44,10 @@ func TestErrorDrivenRefinerRefinePrompt(t *testing.T) {
 	if len(result.ErrorPatterns) != 1 || len(result.AppliedFixes) != 1 || len(result.RegressionTests) != 1 {
 		t.Fatalf("analysis slices = %#v", result)
 	}
-	if result.ValidationResults.FixesSuccessful != 1 || result.ValidationResults.RegressionsPassed != 1 {
+	if result.ValidationResults.FixesSuccessful != 1 || result.ValidationResults.RegressionsPassed != 0 {
 		t.Fatalf("validation = %#v", result.ValidationResults)
 	}
-	if result.ImprovementScore <= 0 || len(result.Recommendations) != 3 {
+	if len(result.Recommendations) != 3 {
 		t.Fatalf("score/recommendations = %v %#v", result.ImprovementScore, result.Recommendations)
 	}
 }
@@ -57,18 +57,6 @@ func TestErrorDrivenRefinerFallbackParsingAndHelpers(t *testing.T) {
 	patterns, err := refiner.detectErrorPatterns(context.Background(), "prompt", nil)
 	if err != nil || len(patterns) != 1 {
 		t.Fatalf("patterns = %#v err=%v", patterns, err)
-	}
-	fallbackPatterns := refiner.parseErrorPatterns("not json")
-	if len(fallbackPatterns) != 1 || fallbackPatterns[0].PatternID == "" {
-		t.Fatalf("fallback patterns = %#v", fallbackPatterns)
-	}
-	fixes := refiner.parseFixSuggestions("not json")
-	if len(fixes) != 1 || fixes[0].FixID == "" {
-		t.Fatalf("fallback fixes = %#v", fixes)
-	}
-	tests := refiner.parseRegressionTests("not json")
-	if len(tests) != 1 || tests[0].TestID == "" {
-		t.Fatalf("fallback tests = %#v", tests)
 	}
 	if got := refiner.formatErrorExamples(nil); !strings.Contains(got, "No specific") {
 		t.Fatalf("empty examples = %q", got)
@@ -104,8 +92,11 @@ func TestErrorDrivenRefinerSelectionValidationAndScores(t *testing.T) {
 	if refiner.validateSingleFix(context.Background(), "missing", FixSuggestion{FixType: "addition", Implementation: "required"}) {
 		t.Fatal("missing addition validated")
 	}
-	if !refiner.runRegressionTest(context.Background(), "prompt", RegressionTest{}) {
-		t.Fatal("regression placeholder should pass")
+	if refiner.validateSingleFix(context.Background(), "prompt", FixSuggestion{FixType: "modification"}) {
+		t.Fatal("modification fix validated without implementation")
+	}
+	if refiner.runRegressionTest(context.Background(), "prompt", RegressionTest{}) {
+		t.Fatal("regression test validated without runner")
 	}
 	result := &RefinerResult{
 		ErrorPatterns:     []ErrorPattern{{Severity: "critical"}, {Severity: "high"}, {Severity: "medium"}, {Severity: "low"}},

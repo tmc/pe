@@ -432,14 +432,8 @@ func TestPromptComposerEnhancedPaths(t *testing.T) {
 		ComposeConfig:    ComposeConfig{Style: "structured"},
 		ProgramSynthesis: true,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if synthesized.Style != "synthesized" || !strings.Contains(synthesized.ComposedPrompt, "Explain the change.") {
-		t.Fatalf("synthesized = %#v", synthesized)
-	}
-	if synthesized.ValidationPass {
-		t.Fatalf("template synthesis should not pass quality gate: %#v", synthesized)
+	if err == nil || synthesized != nil || !strings.Contains(err.Error(), "not yet implemented") {
+		t.Fatalf("synthesized = %#v err=%v", synthesized, err)
 	}
 }
 
@@ -516,7 +510,7 @@ func TestComposerSynthesisQualityAndOptimization(t *testing.T) {
 		t.Fatalf("neural strategy = %q", got)
 	}
 	result, err := ps.SynthesizePrompt(context.Background(), spec)
-	if err != nil || result.Strategy != "neural" || len(ps.optimizationHistory) != 1 {
+	if err == nil || result != nil || !strings.Contains(err.Error(), "not yet implemented") {
 		t.Fatalf("synthesis = %#v err=%v", result, err)
 	}
 

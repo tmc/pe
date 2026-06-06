@@ -1,3 +1,5 @@
+<!-- Legacy draft: this file contains generated and historical command notes. Verify current behavior with `pe --help` and command-specific help before relying on listed flags or examples. -->
+
 # PE CLI Reference
 
 Complete reference for all PE commands, options, and usage patterns.
@@ -1502,7 +1504,8 @@ pe test generate [config_file] [flags]
 
 #### test significance
 
-Statistical significance testing for improvements.
+Registered compatibility entrypoint. It currently returns a not-implemented
+error instead of calculating statistical significance.
 
 ```bash
 pe test significance [baseline] [current] [flags]
@@ -1522,11 +1525,11 @@ pe test significance [baseline] [current] [flags]
 ### Testing Types
 
 - **property**: Property-based testing for robustness validation
-- **regression**: Performance regression detection with statistical significance
+- **regression**: Performance regression detection
 - **systematic**: Systematic test case execution
-- **ab-test**: A/B testing with Bayesian statistical analysis
-- **cross-validate**: Cross-validation between methods
-- **significance**: Statistical significance testing
+- **ab-test**: registered, not implemented
+- **cross-validate**: registered, not implemented
+- **significance**: registered, not implemented
 - **comprehensive**: All testing methods combined
 
 ### Examples

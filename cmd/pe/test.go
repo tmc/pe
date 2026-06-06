@@ -508,47 +508,18 @@ func printTestSummary(results *TestResults, cmd *cobra.Command) {
 // Helper functions for special test commands
 
 func runGenerateTests(cmd *cobra.Command, promptFile, provider string) error {
-	content, err := os.ReadFile(promptFile)
-	if err != nil {
+	if _, err := os.ReadFile(promptFile); err != nil {
 		return fmt.Errorf("failed to read prompt file: %v", err)
 	}
-
-	fmt.Fprintf(cmd.OutOrStdout(), "Generated test cases:\n")
-	fmt.Fprintf(cmd.OutOrStdout(), "Test case 1:\n")
-	fmt.Fprintf(cmd.OutOrStdout(), "  Input: %s\n", string(content))
-	fmt.Fprintf(cmd.OutOrStdout(), "  Expected: Positive analysis\n")
-	fmt.Fprintf(cmd.OutOrStdout(), "\nTest case 2:\n")
-	fmt.Fprintf(cmd.OutOrStdout(), "  Input: Modified %s\n", string(content))
-	fmt.Fprintf(cmd.OutOrStdout(), "  Expected: Varied analysis\n")
-
-	return nil
+	return fmt.Errorf("automatic test case generation is not yet implemented")
 }
 
 func runABTest(cmd *cobra.Command, provider string) error {
-	configA, _ := cmd.Flags().GetString("config-a")
-	configB, _ := cmd.Flags().GetString("config-b")
-
-	fmt.Fprintf(cmd.OutOrStdout(), "A/B Test Results\n")
-	fmt.Fprintf(cmd.OutOrStdout(), "================\n\n")
-	fmt.Fprintf(cmd.OutOrStdout(), "Configuration A: %s\n", configA)
-	fmt.Fprintf(cmd.OutOrStdout(), "Configuration B: %s\n", configB)
-	fmt.Fprintf(cmd.OutOrStdout(), "\nStatistical Analysis:\n")
-	fmt.Fprintf(cmd.OutOrStdout(), "- A performs 12%% better\n")
-	fmt.Fprintf(cmd.OutOrStdout(), "- 95%% confidence interval\n")
-
-	return nil
+	return fmt.Errorf("A/B test statistical analysis is not yet implemented")
 }
 
 func runCrossValidate(cmd *cobra.Command, configFile, provider string) error {
-	fmt.Fprintf(cmd.OutOrStdout(), "Cross-Validation Results\n")
-	fmt.Fprintf(cmd.OutOrStdout(), "========================\n\n")
-	fmt.Fprintf(cmd.OutOrStdout(), "Config: %s\n", configFile)
-	fmt.Fprintf(cmd.OutOrStdout(), "Fold 1: 85.2%% accuracy\n")
-	fmt.Fprintf(cmd.OutOrStdout(), "Fold 2: 84.8%% accuracy\n")
-	fmt.Fprintf(cmd.OutOrStdout(), "Fold 3: 85.5%% accuracy\n")
-	fmt.Fprintf(cmd.OutOrStdout(), "\nAverage: 85.17%% (±0.29%%)\n")
-
-	return nil
+	return fmt.Errorf("cross-validation statistical analysis is not yet implemented")
 }
 
 // Systematic Testing Subcommands
@@ -640,24 +611,9 @@ Generation Methods:
   pe test generate --source examples.yaml --count 50
 
   # Generate using template
-  pe test generate --template classification --count 25
-
-  # Generate adversarial cases
-  pe test generate --source prompts.txt --adversarial --count 20`,
+  pe test generate --template classification --count 25`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("Generating %d test cases from %s\n", count, source)
-
-			// Implementation would use LLM to generate test cases
-			testCases := generateTestCases(source, template, count)
-
-			if outputFile != "" {
-				data, _ := json.MarshalIndent(testCases, "", "  ")
-				return os.WriteFile(outputFile, data, 0644)
-			}
-
-			data, _ := json.MarshalIndent(testCases, "", "  ")
-			fmt.Println(string(data))
-			return nil
+			return fmt.Errorf("automatic test case generation is not yet implemented")
 		},
 	}
 
@@ -856,22 +812,6 @@ func generateSystematicTests(prompts, assertions []string) []map[string]interfac
 	}
 
 	return tests
-}
-
-func generateTestCases(source, template string, count int) []map[string]interface{} {
-	var testCases []map[string]interface{}
-
-	for i := 0; i < count; i++ {
-		testCase := map[string]interface{}{
-			"id":       fmt.Sprintf("generated_test_%d", i),
-			"prompt":   fmt.Sprintf("Generated prompt %d from %s", i, source),
-			"template": template,
-			"expected": "auto_generated",
-		}
-		testCases = append(testCases, testCase)
-	}
-
-	return testCases
 }
 
 func performCrossValidation(methods []string, folds int, statistical bool) (map[string]interface{}, error) {

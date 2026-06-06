@@ -1,6 +1,8 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # PE API Reference: Complete Technical Documentation
 
-Comprehensive API reference for PE, the world's most advanced prompt engineering toolkit. This documentation covers all commands, options, configurations, and programming interfaces.
+Comprehensive API reference for PE, the prompt engineering toolkit. This documentation covers all commands, options, configurations, and programming interfaces.
 
 ## 📋 Table of Contents
 

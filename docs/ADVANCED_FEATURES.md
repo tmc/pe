@@ -134,14 +134,15 @@ tests:
 
 ### Statistical Analysis
 
-PE provides enterprise-grade analytics with confidence intervals and significance testing.
+PE provides local text metrics and benchmarking helpers. Statistical
+significance testing and confidence intervals are not implemented yet.
 
 ```bash
 # Comprehensive benchmarking
 pe benchmark config.yaml --iterations 100 --confidence 0.95
 
-# A/B testing with statistical significance
-pe diff baseline.json variant.json --significance-test --alpha 0.05
+# Compare two result files
+pe diff baseline.json variant.json
 
 # Performance regression detection
 pe diff historical.json current.json --regression-threshold 0.1
@@ -195,7 +196,7 @@ pe eval benchmark.yaml | \
 PE includes built-in security testing capabilities for responsible AI deployment.
 
 ```bash
-# Red-team testing (coming soon)
+# Red-team testing command is not implemented in the current CLI
 pe redteam config.yaml --categories harmful,biased,hallucination,privacy
 
 # Toxicity detection

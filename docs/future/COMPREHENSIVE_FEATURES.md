@@ -1,6 +1,8 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # PE: Comprehensive Features Guide
 
-**The World's Most Advanced Prompt Engineering Toolkit**
+**Archived Prompt Engineering Toolkit Draft**
 
 PE implements the complete state-of-the-art in prompt engineering, combining cutting-edge 2024-2025 research with production-ready features that surpass all existing tools.
 
@@ -499,8 +501,8 @@ pe audit --activities all --period 90days --export compliance-report.pdf
 ### Speed Comparison
 | Metric | PE (Go) | Best Competitor | PE Advantage |
 |--------|---------|-----------------|--------------|
-| Execution Speed | **Fastest** | Node.js/Python | **3-5x faster** |
-| Memory Usage | **Lowest** | Python tools | **50-70% less** |
+| Execution Speed | **Fastest** | Node.js/Python | historical target |
+| Memory Usage | **Lowest** | Python tools | historical target |
 | Startup Time | **Instant** | 2-5 seconds | **10x faster** |
 | Concurrency | **Native** | Event-loop/threads | **Superior scaling** |
 

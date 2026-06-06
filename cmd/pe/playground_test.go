@@ -1,6 +1,9 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -68,6 +71,34 @@ func TestNewPlaygroundServer(t *testing.T) {
 	}
 }
 
+func TestPlaygroundUnimplementedHandlers(t *testing.T) {
+	server := NewPlaygroundServer()
+	server.setupRoutes()
+
+	tests := []struct {
+		name   string
+		method string
+		path   string
+		body   string
+	}{
+		{name: "compare", method: http.MethodPost, path: "/api/compare"},
+		{name: "security", method: http.MethodPost, path: "/api/security"},
+		{name: "components", method: http.MethodGet, path: "/api/components"},
+		{name: "history", method: http.MethodGet, path: "/api/history"},
+		{name: "bertscore", method: http.MethodPost, path: "/api/metrics", body: `{"generated":"a","reference":"b","metrics":["bertscore"]}`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(tt.method, tt.path, strings.NewReader(tt.body))
+			rec := httptest.NewRecorder()
+			server.router.ServeHTTP(rec, req)
+			if rec.Code != http.StatusNotImplemented {
+				t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+			}
+		})
+	}
+}
 
 func TestPlaygroundRequestStruct(t *testing.T) {
 	req := PlaygroundRequest{

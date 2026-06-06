@@ -64,22 +64,22 @@ func TestRunWorkInit(t *testing.T) {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	// Verify go.work was created
-	if _, err := os.Stat("go.work"); os.IsNotExist(err) {
-		t.Error("Expected go.work to be created")
+	// Verify pe.work was created
+	if _, err := os.Stat("pe.work"); os.IsNotExist(err) {
+		t.Error("Expected pe.work to be created")
 	}
 
 	// Read and verify content
-	content, err := os.ReadFile("go.work")
+	content, err := os.ReadFile("pe.work")
 	if err != nil {
-		t.Fatalf("Failed to read go.work: %v", err)
+		t.Fatalf("Failed to read pe.work: %v", err)
 	}
 
 	if !strings.Contains(string(content), "prompts") {
-		t.Error("Expected go.work to contain 'prompts'")
+		t.Error("Expected pe.work to contain 'prompts'")
 	}
 	if !strings.Contains(string(content), "shared") {
-		t.Error("Expected go.work to contain 'shared'")
+		t.Error("Expected pe.work to contain 'shared'")
 	}
 }
 
@@ -89,14 +89,14 @@ func TestRunWorkInit_AlreadyExists(t *testing.T) {
 	defer os.Chdir(origDir)
 	os.Chdir(tmpDir)
 
-	// Create existing go.work
-	if err := os.WriteFile("go.work", []byte("go 1.21\n"), 0644); err != nil {
-		t.Fatalf("Failed to create go.work: %v", err)
+	// Create existing pe.work
+	if err := os.WriteFile("pe.work", []byte("pe 1\n"), 0644); err != nil {
+		t.Fatalf("Failed to create pe.work: %v", err)
 	}
 
 	err := runWorkInit(workInitCmd, []string{"./prompts"})
 	if err == nil {
-		t.Error("Expected error when go.work already exists")
+		t.Error("Expected error when pe.work already exists")
 	}
 }
 
@@ -108,7 +108,7 @@ func TestRunWorkUse_NoWorkspace(t *testing.T) {
 
 	err := runWorkUse(workUseCmd, []string{"./prompts"})
 	if err == nil {
-		t.Error("Expected error when no go.work exists")
+		t.Error("Expected error when no pe.work exists")
 	}
 }
 
@@ -131,13 +131,13 @@ func TestRunWorkUse_AddDirectory(t *testing.T) {
 	}
 
 	// Verify content
-	content, err := os.ReadFile("go.work")
+	content, err := os.ReadFile("pe.work")
 	if err != nil {
-		t.Fatalf("Failed to read go.work: %v", err)
+		t.Fatalf("Failed to read pe.work: %v", err)
 	}
 
 	if !strings.Contains(string(content), "new-prompts") {
-		t.Error("Expected go.work to contain 'new-prompts'")
+		t.Error("Expected pe.work to contain 'new-prompts'")
 	}
 }
 
@@ -149,7 +149,7 @@ func TestRunWorkEdit_NoWorkspace(t *testing.T) {
 
 	err := runWorkEdit(workEditCmd, []string{})
 	if err == nil {
-		t.Error("Expected error when no go.work exists")
+		t.Error("Expected error when no pe.work exists")
 	}
 }
 
@@ -161,7 +161,7 @@ func TestRunWorkSync_NoWorkspace(t *testing.T) {
 
 	err := runWorkSync(workSyncCmd, []string{})
 	if err == nil {
-		t.Error("Expected error when no go.work exists")
+		t.Error("Expected error when no pe.work exists")
 	}
 }
 
@@ -202,7 +202,7 @@ func TestRunWorkList_NoWorkspace(t *testing.T) {
 
 	err := runWorkList(workListCmd, []string{})
 	if err == nil {
-		t.Error("Expected error when no go.work exists")
+		t.Error("Expected error when no pe.work exists")
 	}
 }
 
@@ -241,16 +241,16 @@ func TestLoadWorkspace(t *testing.T) {
 	defer os.Chdir(origDir)
 	os.Chdir(tmpDir)
 
-	// Create go.work
-	content := `go 1.21
+	// Create pe.work
+	content := `pe 1
 
 use (
 	./prompts
 	./shared
 )
 `
-	if err := os.WriteFile("go.work", []byte(content), 0644); err != nil {
-		t.Fatalf("Failed to create go.work: %v", err)
+	if err := os.WriteFile("pe.work", []byte(content), 0644); err != nil {
+		t.Fatalf("Failed to create pe.work: %v", err)
 	}
 
 	ws, err := loadWorkspace()
@@ -271,7 +271,7 @@ func TestLoadWorkspace_NotFound(t *testing.T) {
 
 	_, err := loadWorkspace()
 	if err == nil {
-		t.Error("Expected error when go.work not found")
+		t.Error("Expected error when pe.work not found")
 	}
 }
 
@@ -292,13 +292,13 @@ func TestSaveWorkspace(t *testing.T) {
 	}
 
 	// Verify file was created
-	content, err := os.ReadFile("go.work")
+	content, err := os.ReadFile("pe.work")
 	if err != nil {
-		t.Fatalf("Failed to read go.work: %v", err)
+		t.Fatalf("Failed to read pe.work: %v", err)
 	}
 
 	if !strings.Contains(string(content), "prompts") {
-		t.Error("Expected go.work to contain 'prompts'")
+		t.Error("Expected pe.work to contain 'prompts'")
 	}
 }
 

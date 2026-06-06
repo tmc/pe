@@ -15,7 +15,7 @@ var workCmd = &cobra.Command{
 	Long: `Work provides workspace support for developing multiple related prompts.
 
 A pe.work file in the root of your workspace lets you develop multiple prompt
-modules together, similar to go.work files.`,
+modules together.`,
 }
 
 // Workspace represents a pe.work file
@@ -92,9 +92,9 @@ func init() {
 }
 
 func runWorkInit(cmd *cobra.Command, args []string) error {
-	// Check if go.work already exists
-	if _, err := os.Stat("go.work"); err == nil {
-		return fmt.Errorf("go.work already exists")
+	// Check if pe.work already exists
+	if _, err := os.Stat("pe.work"); err == nil {
+		return fmt.Errorf("pe.work already exists")
 	}
 
 	// Create workspace
@@ -108,9 +108,9 @@ func runWorkInit(cmd *cobra.Command, args []string) error {
 		ws.Use[i] = filepath.Clean(dir)
 	}
 
-	// Write go.work file in go.work format
+	// Write pe.work file in pe.work format
 	var content strings.Builder
-	content.WriteString("go 1.21\n")
+	content.WriteString("pe 1\n")
 
 	if len(ws.Use) > 0 {
 		content.WriteString("\nuse (\n")
@@ -120,11 +120,11 @@ func runWorkInit(cmd *cobra.Command, args []string) error {
 		content.WriteString(")\n")
 	}
 
-	if err := os.WriteFile("go.work", []byte(content.String()), 0644); err != nil {
-		return fmt.Errorf("failed to write go.work: %w", err)
+	if err := os.WriteFile("pe.work", []byte(content.String()), 0644); err != nil {
+		return fmt.Errorf("failed to write pe.work: %w", err)
 	}
 
-	fmt.Println("Created go.work")
+	fmt.Println("Created pe.work")
 	return nil
 }
 
@@ -286,15 +286,15 @@ func runWorkList(cmd *cobra.Command, args []string) error {
 // Helper functions
 
 func loadWorkspace() (*Workspace, error) {
-	data, err := os.ReadFile("go.work")
+	data, err := os.ReadFile("pe.work")
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("no go.work file found (run 'pe work init')")
+			return nil, fmt.Errorf("no pe.work file found (run 'pe work init')")
 		}
-		return nil, fmt.Errorf("failed to read go.work: %w", err)
+		return nil, fmt.Errorf("failed to read pe.work: %w", err)
 	}
 
-	// Parse go.work format
+	// Parse pe.work format
 	ws := &Workspace{
 		Version: "1",
 		Use:     []string{},
@@ -327,9 +327,9 @@ func loadWorkspace() (*Workspace, error) {
 }
 
 func saveWorkspace(ws *Workspace) error {
-	// Write go.work file in go.work format
+	// Write pe.work file in pe.work format
 	var content strings.Builder
-	content.WriteString("go 1.21\n")
+	content.WriteString("pe 1\n")
 
 	if len(ws.Use) > 0 {
 		content.WriteString("\nuse (\n")
@@ -339,8 +339,8 @@ func saveWorkspace(ws *Workspace) error {
 		content.WriteString(")\n")
 	}
 
-	if err := os.WriteFile("go.work", []byte(content.String()), 0644); err != nil {
-		return fmt.Errorf("failed to write go.work: %w", err)
+	if err := os.WriteFile("pe.work", []byte(content.String()), 0644); err != nil {
+		return fmt.Errorf("failed to write pe.work: %w", err)
 	}
 
 	return nil

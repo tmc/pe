@@ -306,18 +306,17 @@ func TestMetricsCalculationOutputAndSimpleMode(t *testing.T) {
 	}
 
 	stats, err := performStatisticalAnalysis("abc", "de", 0.95, 10)
-	if err != nil || stats.Group1Summary.Mean != 3 || stats.Group2Summary.Mean != 2 {
+	if err == nil || stats != nil || !strings.Contains(err.Error(), "not yet implemented") {
 		t.Fatalf("stats = %#v err=%v", stats, err)
 	}
 	full := &MetricsResult{
-		BLEU:       &BLEUScore{Score: 0.5, BP: 1},
-		ROUGE:      &ROUGEScore{ROUGE1: 0.5, ROUGE2: 0.4, ROUGEL: 0.6, ROUGEW: 0.3},
-		METEOR:     &METEORScore{Score: 0.7},
-		BERTScore:  &BERTScoreResult{Precision: 0.8, Recall: 0.7, F1: 0.75, ConfidenceInterval: [2]float64{0.7, 0.8}},
-		GEval:      &GEvalResult{Scores: map[string]float64{"accuracy": 0.8}, OverallScore: 0.8, Reasoning: "ok"},
-		UniEval:    &UniEvalResult{Dimensions: map[string]float64{"coherence": 0.9}, OverallScore: 0.9},
-		PassAtN:    &PassAtNScore{N: 2, PassRate: 0.5, NumSamples: 2, NumPassed: 1, PassedRates: map[int]float64{1: 0.5}},
-		Statistics: stats,
+		BLEU:      &BLEUScore{Score: 0.5, BP: 1},
+		ROUGE:     &ROUGEScore{ROUGE1: 0.5, ROUGE2: 0.4, ROUGEL: 0.6, ROUGEW: 0.3},
+		METEOR:    &METEORScore{Score: 0.7},
+		BERTScore: &BERTScoreResult{Precision: 0.8, Recall: 0.7, F1: 0.75, ConfidenceInterval: [2]float64{0.7, 0.8}},
+		GEval:     &GEvalResult{Scores: map[string]float64{"accuracy": 0.8}, OverallScore: 0.8, Reasoning: "ok"},
+		UniEval:   &UniEvalResult{Dimensions: map[string]float64{"coherence": 0.9}, OverallScore: 0.9},
+		PassAtN:   &PassAtNScore{N: 2, PassRate: 0.5, NumSamples: 2, NumPassed: 1, PassedRates: map[int]float64{1: 0.5}},
 	}
 	for _, format := range []string{"table", "json", "yaml", "csv"} {
 		outFile := filepath.Join(t.TempDir(), "metrics."+format)

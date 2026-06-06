@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -34,9 +36,8 @@ func createStubCmd(use, short string) *cobra.Command {
 	return &cobra.Command{
 		Use:   use,
 		Short: short,
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Printf("Command '%s' is an experimental prototype.\n", use)
-			cmd.Println("This feature is planned but not yet fully implemented.")
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return fmt.Errorf("experimental command %q is not yet implemented", use)
 		},
 	}
 }

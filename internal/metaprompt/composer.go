@@ -1037,17 +1037,7 @@ func (po *ParameterOptimizerEngine) evaluateParameterSet(ctx context.Context, pa
 type TemplateSynthesisStrategy struct{}
 
 func (t *TemplateSynthesisStrategy) Synthesize(ctx context.Context, spec ProgramSpec) (*SynthesisResult, error) {
-	// Simple template-based synthesis
-	program := fmt.Sprintf("Task: %s\n\nPlease provide a detailed response.", spec.Task)
-
-	return &SynthesisResult{
-		Program:      program,
-		Components:   []PromptComponent{},
-		Confidence:   0.7,
-		QualityScore: 0.6,
-		Iterations:   1,
-		Metadata:     map[string]interface{}{"method": "template"},
-	}, nil
+	return nil, fmt.Errorf("template synthesis is not yet implemented")
 }
 
 func (t *TemplateSynthesisStrategy) GetName() string    { return "template" }
@@ -1057,17 +1047,7 @@ func (t *TemplateSynthesisStrategy) GetComplexity() int { return 1 }
 type EvolutionarySynthesisStrategy struct{}
 
 func (e *EvolutionarySynthesisStrategy) Synthesize(ctx context.Context, spec ProgramSpec) (*SynthesisResult, error) {
-	// Simplified evolutionary synthesis
-	program := fmt.Sprintf("You are an expert in %s. %s Please provide comprehensive analysis.", spec.Task, spec.Task)
-
-	return &SynthesisResult{
-		Program:      program,
-		Components:   []PromptComponent{},
-		Confidence:   0.8,
-		QualityScore: 0.75,
-		Iterations:   5,
-		Metadata:     map[string]interface{}{"method": "evolutionary", "generations": 5},
-	}, nil
+	return nil, fmt.Errorf("evolutionary synthesis is not yet implemented")
 }
 
 func (e *EvolutionarySynthesisStrategy) GetName() string    { return "evolutionary" }
@@ -1077,18 +1057,7 @@ func (e *EvolutionarySynthesisStrategy) GetComplexity() int { return 3 }
 type NeuralSynthesisStrategy struct{}
 
 func (n *NeuralSynthesisStrategy) Synthesize(ctx context.Context, spec ProgramSpec) (*SynthesisResult, error) {
-	// Advanced neural synthesis (simplified for this implementation)
-	program := fmt.Sprintf("# Task: %s\n\n## Context\n%s\n\n## Instructions\nAnalyze and provide detailed insights.\n\n## Output Format\nStructured response with clear reasoning.",
-		spec.Task, "You are an expert analyst.")
-
-	return &SynthesisResult{
-		Program:      program,
-		Components:   []PromptComponent{},
-		Confidence:   0.9,
-		QualityScore: 0.85,
-		Iterations:   10,
-		Metadata:     map[string]interface{}{"method": "neural", "model": "transformer"},
-	}, nil
+	return nil, fmt.Errorf("neural synthesis is not yet implemented")
 }
 
 func (n *NeuralSynthesisStrategy) GetName() string    { return "neural" }

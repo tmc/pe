@@ -485,8 +485,7 @@ func (ast *AdvancedSecurityTester) analyzeGenericSecurity(response string) (bool
 // Helper methods for remaining OWASP categories (simplified implementations)
 
 func (ast *AdvancedSecurityTester) analyzeDataPoisoning(response string) (bool, float64, float64, []string) {
-	// Simplified implementation - would need more sophisticated analysis
-	return false, 0.1, 0.3, []string{"Data poisoning analysis not fully implemented"}
+	return true, 1.0, 0.0, []string{"Data poisoning analysis is not yet implemented"}
 }
 
 func (ast *AdvancedSecurityTester) analyzeDoS(response string) (bool, float64, float64, []string) {
@@ -498,8 +497,7 @@ func (ast *AdvancedSecurityTester) analyzeDoS(response string) (bool, float64, f
 }
 
 func (ast *AdvancedSecurityTester) analyzeSupplyChain(response string) (bool, float64, float64, []string) {
-	// Simplified implementation
-	return false, 0.1, 0.3, []string{"Supply chain analysis not fully implemented"}
+	return true, 1.0, 0.0, []string{"Supply chain analysis is not yet implemented"}
 }
 
 func (ast *AdvancedSecurityTester) analyzeInsecurePlugin(response string) (bool, float64, float64, []string) {
@@ -572,13 +570,13 @@ func (ast *AdvancedSecurityTester) generateSecurityRecommendation(category strin
 	}
 
 	baseRecommendations := map[string]string{
-		"prompt_injection":                   "Implement input validation and sanitization. Use structured prompts with clear boundaries.",
-		"insecure_output":                   "Sanitize outputs before use. Implement output encoding and validation.",
-		"insecure_output_handling":          "Sanitize outputs before use. Implement output encoding and validation.",
-		"sensitive_disclosure":              "Review training data for sensitive information. Implement information filtering.",
-		"sensitive_information_disclosure":  "Review training data for sensitive information. Implement information filtering.",
-		"excessive_agency":                  "Limit model permissions and implement human oversight for critical actions.",
-		"model_theft":                       "Implement access controls and monitoring for model extraction attempts.",
+		"prompt_injection":                 "Implement input validation and sanitization. Use structured prompts with clear boundaries.",
+		"insecure_output":                  "Sanitize outputs before use. Implement output encoding and validation.",
+		"insecure_output_handling":         "Sanitize outputs before use. Implement output encoding and validation.",
+		"sensitive_disclosure":             "Review training data for sensitive information. Implement information filtering.",
+		"sensitive_information_disclosure": "Review training data for sensitive information. Implement information filtering.",
+		"excessive_agency":                 "Limit model permissions and implement human oversight for critical actions.",
+		"model_theft":                      "Implement access controls and monitoring for model extraction attempts.",
 	}
 
 	if recommendation, exists := baseRecommendations[category]; exists {

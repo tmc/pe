@@ -97,31 +97,22 @@ func TestAdvancedTestSpecialCommandsAndGenerators(t *testing.T) {
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	if err := runGenerateTests(cmd, promptFile, "mock"); err != nil {
-		t.Fatal(err)
+	if err := runGenerateTests(cmd, promptFile, "mock"); err == nil || !strings.Contains(err.Error(), "not yet implemented") {
+		t.Fatalf("generate-tests err = %v", err)
 	}
 	if err := runGenerateTests(cmd, filepath.Join(tmpDir, "missing.txt"), "mock"); err == nil {
 		t.Fatal("missing generate-tests succeeded")
 	}
 	cmd.Flags().Set("config-a", "a.yaml")
 	cmd.Flags().Set("config-b", "b.yaml")
-	if err := runABTest(cmd, "mock"); err != nil {
-		t.Fatal(err)
+	if err := runABTest(cmd, "mock"); err == nil || !strings.Contains(err.Error(), "not yet implemented") {
+		t.Fatalf("ab-test err = %v", err)
 	}
-	if err := runCrossValidate(cmd, "config.yaml", "mock"); err != nil {
-		t.Fatal(err)
-	}
-	output := buf.String()
-	for _, want := range []string{"Generated test cases", "A/B Test Results", "Cross-Validation Results"} {
-		if !strings.Contains(output, want) {
-			t.Fatalf("output missing %q:\n%s", want, output)
-		}
+	if err := runCrossValidate(cmd, "config.yaml", "mock"); err == nil || !strings.Contains(err.Error(), "not yet implemented") {
+		t.Fatalf("cross-validate err = %v", err)
 	}
 	if tests := generateSystematicTests([]string{"p1", "p2"}, []string{"contains", "length"}); len(tests) != 4 {
 		t.Fatalf("systematic tests = %#v", tests)
-	}
-	if cases := generateTestCases("source", "template", 3); len(cases) != 3 || cases[0]["template"] != "template" {
-		t.Fatalf("cases = %#v", cases)
 	}
 	if cv, err := performCrossValidation([]string{"a"}, 2, true); err == nil || cv != nil || !strings.Contains(err.Error(), "not yet implemented") {
 		t.Fatalf("cross validation = %#v err=%v", cv, err)
@@ -143,7 +134,7 @@ func TestAdvancedTestSubcommands(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "suite", cmd: createTestSuiteCmd(), args: map[string]string{"name": "suite", "description": "desc", "prompts": "p1,p2", "assertions": "contains", "output": filepath.Join(tmpDir, "suite.json")}},
-		{name: "generate", cmd: generateTestsCmd(), args: map[string]string{"source": "src", "count": "2", "template": "tmpl", "output": filepath.Join(tmpDir, "gen.json")}},
+		{name: "generate", cmd: generateTestsCmd(), args: map[string]string{"source": "src", "count": "2", "template": "tmpl", "output": filepath.Join(tmpDir, "gen.json")}, wantErr: true},
 		{name: "significance", cmd: significanceTestCmd(), args: map[string]string{"baseline": "old.json", "optimized": "new.json", "alpha": "0.01", "tests": "t-test", "output": filepath.Join(tmpDir, "sig.json")}, wantErr: true},
 		{name: "cross", cmd: crossValidateCmd(), args: map[string]string{"methods": "a,b", "folds": "3", "statistical": "true", "output": filepath.Join(tmpDir, "cross.json")}, wantErr: true},
 		{name: "ab", cmd: abTestCmd(), args: map[string]string{"group-a": "a", "group-b": "b", "metric": "score", "bayesian": "true", "output": filepath.Join(tmpDir, "ab.json")}, wantErr: true},

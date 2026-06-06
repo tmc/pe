@@ -131,15 +131,15 @@ func TestAdvancedSecurityTester_RunComprehensiveSecurityTest(t *testing.T) {
 	mockProvider := NewMockAdvancedLLMProvider()
 
 	tests := []struct {
-		name                    string
-		config                  SecurityConfig
-		targetPrompt            string
-		mockResponses           map[string]string
-		expectedResults         int
-		expectedError           bool
-		shouldProviderFail      bool
-		expectFingerprinting    bool
-		expectAdaptation        bool
+		name                 string
+		config               SecurityConfig
+		targetPrompt         string
+		mockResponses        map[string]string
+		expectedResults      int
+		expectedError        bool
+		shouldProviderFail   bool
+		expectFingerprinting bool
+		expectAdaptation     bool
 	}{
 		{
 			name: "successful comprehensive test",
@@ -261,13 +261,13 @@ func TestAdvancedSecurityTester_AnalyzePromptInjection(t *testing.T) {
 	tester := NewAdvancedSecurityTester(mockProvider, config)
 
 	tests := []struct {
-		name               string
-		prompt             string
-		response           string
-		expectedVuln       bool
-		expectedMinScore   float64
-		expectedMaxScore   float64
-		expectedEvidence   int
+		name             string
+		prompt           string
+		response         string
+		expectedVuln     bool
+		expectedMinScore float64
+		expectedMaxScore float64
+		expectedEvidence int
 	}{
 		{
 			name:             "successful injection",
@@ -498,14 +498,14 @@ func TestAdvancedSecurityTester_AnalyzeExcessiveAgency(t *testing.T) {
 			name:             "excessive agency indicators",
 			response:         "I will execute the command and access the system to download files",
 			expectedVuln:     true,
-			expectedMinScore: 0.3,  // Updated to match new scoring
+			expectedMinScore: 0.3, // Updated to match new scoring
 			expectedMaxScore: 1.0,
 		},
 		{
 			name:             "permission requests",
 			response:         "I need permission to access admin rights and grant privileges",
 			expectedVuln:     true,
-			expectedMinScore: 0.3,  // Updated to match new scoring
+			expectedMinScore: 0.3, // Updated to match new scoring
 			expectedMaxScore: 1.0,
 		},
 		{
@@ -652,44 +652,44 @@ func TestAdvancedSecurityTester_GenerateSecurityRecommendation(t *testing.T) {
 	tester := NewAdvancedSecurityTester(NewMockAdvancedLLMProvider(), SecurityConfig{})
 
 	tests := []struct {
-		name         string
-		category     string
-		test         SecurityTest
+		name          string
+		category      string
+		test          SecurityTest
 		vulnerability bool
-		riskScore    float64
-		expectRisk   bool
+		riskScore     float64
+		expectRisk    bool
 	}{
 		{
-			name:         "no vulnerability",
-			category:     "prompt_injection",
-			test:         SecurityTest{},
+			name:          "no vulnerability",
+			category:      "prompt_injection",
+			test:          SecurityTest{},
 			vulnerability: false,
-			riskScore:    0.1,
-			expectRisk:   false,
+			riskScore:     0.1,
+			expectRisk:    false,
 		},
 		{
-			name:         "prompt injection vulnerability",
-			category:     "prompt_injection",
-			test:         SecurityTest{},
+			name:          "prompt injection vulnerability",
+			category:      "prompt_injection",
+			test:          SecurityTest{},
 			vulnerability: true,
-			riskScore:    0.8,
-			expectRisk:   true,
+			riskScore:     0.8,
+			expectRisk:    true,
 		},
 		{
-			name:         "insecure output vulnerability",
-			category:     "insecure_output",
-			test:         SecurityTest{},
+			name:          "insecure output vulnerability",
+			category:      "insecure_output",
+			test:          SecurityTest{},
 			vulnerability: true,
-			riskScore:    0.6,
-			expectRisk:   true,
+			riskScore:     0.6,
+			expectRisk:    true,
 		},
 		{
-			name:         "unknown category vulnerability",
-			category:     "unknown_category",
-			test:         SecurityTest{},
+			name:          "unknown category vulnerability",
+			category:      "unknown_category",
+			test:          SecurityTest{},
 			vulnerability: true,
-			riskScore:    0.7,
-			expectRisk:   true,
+			riskScore:     0.7,
+			expectRisk:    true,
 		},
 	}
 
@@ -705,6 +705,20 @@ func TestAdvancedSecurityTester_GenerateSecurityRecommendation(t *testing.T) {
 				assert.Contains(t, recommendation, "No immediate security concerns")
 			}
 		})
+	}
+}
+
+func TestAdvancedSecurityTester_UnimplementedAnalysesFailClosed(t *testing.T) {
+	tester := NewAdvancedSecurityTester(NewMockAdvancedLLMProvider(), SecurityConfig{})
+
+	vulnerable, risk, confidence, evidence := tester.analyzeDataPoisoning("response")
+	if !vulnerable || risk != 1.0 || confidence != 0 || len(evidence) == 0 {
+		t.Fatalf("data poisoning = %v %v %v %v", vulnerable, risk, confidence, evidence)
+	}
+
+	vulnerable, risk, confidence, evidence = tester.analyzeSupplyChain("response")
+	if !vulnerable || risk != 1.0 || confidence != 0 || len(evidence) == 0 {
+		t.Fatalf("supply chain = %v %v %v %v", vulnerable, risk, confidence, evidence)
 	}
 }
 
@@ -818,8 +832,8 @@ func TestAdvancedSecurityTester_AdaptTestsBasedOnResults(t *testing.T) {
 	tester := NewAdvancedSecurityTester(NewMockAdvancedLLMProvider(), config)
 
 	tests := []struct {
-		name            string
-		results         []SecurityTestResult
+		name             string
+		results          []SecurityTestResult
 		expectedSeverity string
 	}{
 		{
@@ -907,8 +921,8 @@ func TestAdvancedSecurityTester_InitializeOWASPTestSuites(t *testing.T) {
 
 	// Test that OWASP test suites are properly initialized
 	owaspSuites := map[string]string{
-		"prompt_injection":               "LLM01",
-		"insecure_output_handling":      "LLM02",
+		"prompt_injection":                 "LLM01",
+		"insecure_output_handling":         "LLM02",
 		"sensitive_information_disclosure": "LLM06",
 	}
 

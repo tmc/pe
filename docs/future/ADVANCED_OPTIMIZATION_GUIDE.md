@@ -1,3 +1,5 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # Advanced Optimization Guide
 
 ## PE's Cutting-Edge Optimization Methods

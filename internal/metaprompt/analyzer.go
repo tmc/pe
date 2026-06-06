@@ -136,8 +136,7 @@ FORMAT your response as JSON:
 	}
 
 	if err := json.Unmarshal([]byte(resp.Text), &result); err != nil {
-		// Fallback to manual parsing if JSON fails
-		return tga.parseAttentionFlows(resp.Text), nil
+		return nil, fmt.Errorf("parse attention flows: %w", err)
 	}
 
 	return result.AttentionFlows, nil
@@ -187,7 +186,7 @@ FORMAT your response as JSON:
 	}
 
 	if err := json.Unmarshal([]byte(resp.Text), &result); err != nil {
-		return tga.parseSemanticDrifts(resp.Text), nil
+		return nil, fmt.Errorf("parse semantic drifts: %w", err)
 	}
 
 	return result.SemanticDrifts, nil
@@ -229,7 +228,7 @@ FORMAT your response as JSON:
 
 	var metrics CoherenceMetrics
 	if err := json.Unmarshal([]byte(resp.Text), &metrics); err != nil {
-		return tga.parseCoherenceMetrics(resp.Text), nil
+		return CoherenceMetrics{}, fmt.Errorf("parse coherence metrics: %w", err)
 	}
 
 	return metrics, nil
@@ -313,40 +312,6 @@ FORMAT:
 	}
 
 	return tga.parseOptimizationHints(resp.Text), nil
-}
-
-// Helper functions for parsing fallbacks
-func (tga *TextGradAnalyzer) parseAttentionFlows(text string) []AttentionFlow {
-	// Simple fallback parsing logic
-	return []AttentionFlow{
-		{
-			SourceToken: "prompt_instruction",
-			TargetToken: "response_output",
-			Weight:      0.7,
-			Metadata:    map[string]string{"type": "fallback", "importance": "medium"},
-		},
-	}
-}
-
-func (tga *TextGradAnalyzer) parseSemanticDrifts(text string) []SemanticDrift {
-	return []SemanticDrift{
-		{
-			ConceptID:     "main_concept",
-			OriginalValue: "prompt_intent",
-			CurrentValue:  "response_interpretation",
-			DriftScore:    0.3,
-			DriftType:     "semantic",
-		},
-	}
-}
-
-func (tga *TextGradAnalyzer) parseCoherenceMetrics(text string) CoherenceMetrics {
-	return CoherenceMetrics{
-		LocalCoherence:  0.7,
-		GlobalCoherence: 0.7,
-		LogicalFlow:     0.7,
-		Consistency:     0.7,
-	}
 }
 
 func (tga *TextGradAnalyzer) parseOptimizationHints(text string) []string {

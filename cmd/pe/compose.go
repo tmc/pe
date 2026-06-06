@@ -278,10 +278,7 @@ func runCompose(cmd *cobra.Command, args []string) error {
 
 	// Apply optimization if requested
 	if config.Optimize {
-		// Note: Would need LLM provider for actual optimization
-		// For now, apply simple optimization
-		result.ComposedPrompt = simpleOptimizePrompt(result.ComposedPrompt)
-		fmt.Println("Applied basic prompt optimization")
+		return fmt.Errorf("compose optimization is not yet implemented")
 	}
 
 	// Display enhanced features if enabled
@@ -561,23 +558,6 @@ func initComponentLibrary() error {
 	return nil
 }
 
-func simpleOptimizePrompt(prompt string) string {
-	optimized := prompt
-
-	// Add structure if missing
-	if !strings.Contains(prompt, ":") && !strings.Contains(prompt, "\n") {
-		optimized = "Task: " + optimized + "\n\nPlease provide a detailed response."
-	}
-
-	// Add specificity cues
-	if !strings.Contains(strings.ToLower(prompt), "specific") &&
-		!strings.Contains(strings.ToLower(prompt), "detailed") {
-		optimized += " Please be specific and detailed in your response."
-	}
-
-	return optimized
-}
-
 // synthesizeCmd implements DSPy-style program synthesis
 var synthesizeCmd = &cobra.Command{
 	Use:   "synthesize [task description]",
@@ -802,18 +782,7 @@ func listComponents() error {
 
 // importComponents imports components from a URL
 func importComponents(url string) error {
-	fmt.Printf("Importing components from %s\n", url)
-
-	// In a real implementation, this would:
-	// 1. Download the archive from the URL
-	// 2. Extract components
-	// 3. Add them to the library
-
-	// For now, simulate the import
-	fmt.Println("Importing components...")
-	fmt.Println("Added 5 components from archive")
-
-	return nil
+	return fmt.Errorf("component import is not yet implemented")
 }
 
 // checkCoherence performs coherence analysis between components
@@ -822,32 +791,13 @@ func checkCoherence(components []string) error {
 		return fmt.Errorf("coherence check requires at least 2 components")
 	}
 
-	fmt.Println("Coherence analysis:")
-
-	// Load and analyze components
-	var contents []string
 	for _, comp := range components {
-		content, err := os.ReadFile(comp)
-		if err != nil {
+		if _, err := os.ReadFile(comp); err != nil {
 			return fmt.Errorf("failed to read %s: %v", comp, err)
 		}
-		contents = append(contents, string(content))
 	}
 
-	// Simple coherence calculation
-	coherenceScore := calculateSimpleCoherence(contents)
-	styleConsistency := calculateStyleConsistency(contents)
-
-	fmt.Printf("Semantic similarity: %.2f\n", coherenceScore)
-	fmt.Printf("Style consistency: %.2f\n", styleConsistency)
-
-	if coherenceScore >= 0.8 && styleConsistency >= 0.8 {
-		fmt.Println("No conflicts detected")
-	} else if coherenceScore < 0.5 {
-		fmt.Println("Warning: Low semantic coherence between components")
-	}
-
-	return nil
+	return fmt.Errorf("coherence check is not yet implemented")
 }
 
 // calculateSimpleCoherence calculates basic coherence between texts

@@ -1,3 +1,5 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # Research Foundations: 2024 Prompt Engineering Advances
 
 PE implements the latest academic research and industry best practices in prompt engineering, making cutting-edge techniques accessible to practitioners. This document outlines the research foundations that make PE a state-of-the-art tool.

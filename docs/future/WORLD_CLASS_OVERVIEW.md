@@ -1,3 +1,5 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # PE: World-Class Prompt Engineering Toolkit
 
 ## State-of-the-Art Implementation (2024-2025)

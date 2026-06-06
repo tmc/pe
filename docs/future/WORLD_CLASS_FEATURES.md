@@ -1,3 +1,5 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # PE: World-Class Prompt Engineering Toolkit
 
 PE represents the pinnacle of prompt engineering tools, implementing cutting-edge 2024-2025 research and surpassing all existing solutions.
@@ -200,8 +202,8 @@ pe eval large-suite.yaml --stream | \
 
 | **Metric** | **PE (Go)** | **Best Competitor** | **PE Advantage** |
 |------------|-------------|---------------------|------------------|
-| **Execution Speed** | 🥇 **Fastest** | Node.js/Python | **3-5x faster** |
-| **Memory Usage** | 🥇 **Lowest** | Python tools | **50-70% less** |
+| **Execution Speed** | 🥇 **Fastest** | Node.js/Python | historical target |
+| **Memory Usage** | 🥇 **Lowest** | Python tools | historical target |
 | **Startup Time** | 🥇 **Instant** | 2-5 seconds | **10x faster** |
 | **Concurrency** | 🥇 **Native** | Event-loop/threads | **Superior scaling** |
 

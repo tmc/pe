@@ -1,3 +1,5 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # Executable Text
 
 PE is the Go toolchain for safe prompting. Its primary artifact is executable,

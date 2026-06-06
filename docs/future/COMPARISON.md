@@ -1,3 +1,5 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # PE vs Industry Leaders: Comprehensive Comparison
 
 This document provides a detailed comparison of PE against the leading prompt engineering tools in the market, demonstrating why PE is the superior choice for professional prompt engineering work.
@@ -291,6 +293,8 @@ PE represents the next generation of prompt engineering tools, combining:
 
 **PE is the only tool that delivers all these capabilities in a single, cohesive package.**
 
-While other tools excel in specific areas (DSPy for optimization research, LangSmith for observability, promptfoo for basic evaluation), PE is the only tool that combines all essential capabilities while exceeding the state-of-the-art in each area.
+Historical positioning note: this draft compared PE's intended scope with DSPy,
+LangSmith, and promptfoo. It should not be read as evidence of current feature
+parity or performance.
 
 For serious prompt engineering work, PE is the clear choice.

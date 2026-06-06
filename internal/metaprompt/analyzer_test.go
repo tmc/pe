@@ -1,6 +1,8 @@
 package metaprompt
 
 import (
+	"context"
+	"strings"
 	"testing"
 )
 
@@ -91,39 +93,29 @@ func TestComputeGradientStrength(t *testing.T) {
 }
 
 func TestParseAttentionFlows(t *testing.T) {
-	provider := &mockProvider{}
+	provider := &mockProvider{responses: map[string]string{}}
 	analyzer := NewTextGradAnalyzer(provider)
 
-	// Test fallback parsing
-	result := analyzer.parseAttentionFlows("unparseable text")
-	if len(result) != 1 {
-		t.Errorf("parseAttentionFlows() returned %d flows, want 1", len(result))
-	}
-	if result[0].SourceToken != "prompt_instruction" {
-		t.Error("parseAttentionFlows() fallback has wrong source token")
+	if flows, err := analyzer.analyzeAttentionFlows(context.Background(), "prompt", "response"); err == nil || flows != nil || !strings.Contains(err.Error(), "parse attention flows") {
+		t.Fatalf("analyzeAttentionFlows = %#v err=%v", flows, err)
 	}
 }
 
 func TestParseSemanticDrifts(t *testing.T) {
-	provider := &mockProvider{}
+	provider := &mockProvider{responses: map[string]string{}}
 	analyzer := NewTextGradAnalyzer(provider)
 
-	result := analyzer.parseSemanticDrifts("unparseable text")
-	if len(result) != 1 {
-		t.Errorf("parseSemanticDrifts() returned %d drifts, want 1", len(result))
-	}
-	if result[0].DriftType != "semantic" {
-		t.Error("parseSemanticDrifts() fallback has wrong drift type")
+	if drifts, err := analyzer.detectSemanticDrift(context.Background(), "prompt", "response"); err == nil || drifts != nil || !strings.Contains(err.Error(), "parse semantic drifts") {
+		t.Fatalf("detectSemanticDrift = %#v err=%v", drifts, err)
 	}
 }
 
 func TestParseCoherenceMetrics(t *testing.T) {
-	provider := &mockProvider{}
+	provider := &mockProvider{responses: map[string]string{}}
 	analyzer := NewTextGradAnalyzer(provider)
 
-	result := analyzer.parseCoherenceMetrics("unparseable text")
-	if result.LocalCoherence != 0.7 {
-		t.Errorf("parseCoherenceMetrics() LocalCoherence = %v, want 0.7", result.LocalCoherence)
+	if result, err := analyzer.calculateCoherenceMetrics(context.Background(), "prompt", "response"); err == nil || result != (CoherenceMetrics{}) || !strings.Contains(err.Error(), "parse coherence metrics") {
+		t.Fatalf("calculateCoherenceMetrics = %#v err=%v", result, err)
 	}
 }
 

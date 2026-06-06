@@ -728,9 +728,7 @@ func (ps *PlaygroundServer) handleOptimize(w http.ResponseWriter, r *http.Reques
 
 // handleCompare processes multi-provider comparison requests
 func (ps *PlaygroundServer) handleCompare(w http.ResponseWriter, r *http.Request) {
-	// Implementation for comparing prompts across multiple providers
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "comparison feature coming soon"})
+	http.Error(w, "comparison is not yet implemented", http.StatusNotImplemented)
 }
 
 // handleMetrics processes advanced metrics requests
@@ -757,8 +755,8 @@ func (ps *PlaygroundServer) handleMetrics(w http.ResponseWriter, r *http.Request
 			result := metrics.CalculateROUGE(req.Generated, req.Reference, "L")
 			results[metric] = result.Score
 		case "bertscore":
-			// For now, use a simple calculation without LLM provider
-			results[metric] = 0.85 // Placeholder
+			http.Error(w, "bertscore is not yet implemented", http.StatusNotImplemented)
+			return
 		}
 	}
 
@@ -768,23 +766,17 @@ func (ps *PlaygroundServer) handleMetrics(w http.ResponseWriter, r *http.Request
 
 // handleSecurity processes security testing requests
 func (ps *PlaygroundServer) handleSecurity(w http.ResponseWriter, r *http.Request) {
-	// Implementation for OWASP LLM Top 10 security testing
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "security testing feature coming soon"})
+	http.Error(w, "security testing is not yet implemented", http.StatusNotImplemented)
 }
 
 // handleComponents processes component library requests
 func (ps *PlaygroundServer) handleComponents(w http.ResponseWriter, r *http.Request) {
-	// Implementation for component library management
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "components library coming soon"})
+	http.Error(w, "component library is not yet implemented", http.StatusNotImplemented)
 }
 
 // handleHistory processes history requests
 func (ps *PlaygroundServer) handleHistory(w http.ResponseWriter, r *http.Request) {
-	// Implementation for prompt history management
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode([]interface{}{})
+	http.Error(w, "prompt history is not yet implemented", http.StatusNotImplemented)
 }
 
 // handleWebSocket handles WebSocket connections for real-time updates

@@ -1,6 +1,8 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # PE Quick Start: From Zero to World-Class Prompt Engineering
 
-Welcome to PE, the world's most advanced prompt engineering toolkit. This guide will get you from installation to optimizing prompts in under 5 minutes.
+Welcome to PE, the prompt engineering toolkit. This guide will get you from installation to optimizing prompts in under 5 minutes.
 
 ## 🚀 30-Second Installation
 
@@ -12,7 +14,7 @@ go install github.com/tmc/pe/cmd/pe@latest
 ### Verify Installation
 ```bash
 pe --version
-# PE v1.0.0 - World's Most Advanced Prompt Engineering Toolkit
+# PE v1.0.0 - Archived Prompt Engineering Toolkit Draft
 ```
 
 ## 🎯 Your First Optimization (60 seconds)

@@ -16,20 +16,16 @@ stdout 'Results saved to: results.json'
 exists results.json
 
 # Generate tests from prompt
-pe test generate-tests prompt.txt --provider mock
-stdout 'Generated test cases:'
-stdout 'Test case 1:'
+! pe test generate-tests prompt.txt --provider mock
+stderr 'automatic test case generation is not yet implemented'
 
 # A/B testing
-pe test ab-test --config-a config-a.yaml --config-b config-b.yaml --provider mock
-stdout 'A/B Test Results'
-stdout 'Configuration A:'
-stdout 'Configuration B:'
+! pe test ab-test --config-a config-a.yaml --config-b config-b.yaml --provider mock
+stderr 'A/B test statistical analysis is not yet implemented'
 
 # Cross validation
-pe test cross-validate config.yaml --provider mock
-stdout 'Cross-Validation Results'
-stdout 'Fold 1:'
+! pe test cross-validate config.yaml --provider mock
+stderr 'cross-validation statistical analysis is not yet implemented'
 
 -- config.yaml --
 prompts:

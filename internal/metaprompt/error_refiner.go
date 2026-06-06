@@ -195,7 +195,7 @@ FORMAT your response as JSON:
 	}
 
 	if err := json.Unmarshal([]byte(resp.Text), &result); err != nil {
-		return edr.parseErrorPatterns(resp.Text), nil
+		return nil, fmt.Errorf("parse error patterns: %w", err)
 	}
 
 	return result.ErrorPatterns, nil
@@ -248,7 +248,7 @@ FORMAT your response as JSON:
 	}
 
 	if err := json.Unmarshal([]byte(resp.Text), &result); err != nil {
-		return edr.parseFixSuggestions(resp.Text), nil
+		return nil, fmt.Errorf("parse fix suggestions: %w", err)
 	}
 
 	return result.FixSuggestions, nil
@@ -340,7 +340,7 @@ FORMAT your response as JSON:
 	}
 
 	if err := json.Unmarshal([]byte(resp.Text), &result); err != nil {
-		return edr.parseRegressionTests(resp.Text), nil
+		return nil, fmt.Errorf("parse regression tests: %w", err)
 	}
 
 	return result.RegressionTests, nil
@@ -446,26 +446,16 @@ func (edr *ErrorDrivenRefiner) selectBestFixes(fixes []FixSuggestion) []FixSugge
 }
 
 func (edr *ErrorDrivenRefiner) validateSingleFix(ctx context.Context, refinedPrompt string, fix FixSuggestion) bool {
-	// Simple validation: check if the fix implementation appears in the refined prompt
 	switch fix.FixType {
 	case "addition":
 		return strings.Contains(refinedPrompt, strings.TrimSpace(fix.Implementation))
-	case "modification":
-		// More complex validation would be needed for modifications
-		return true
-	case "removal":
-		// Check that the problematic text is not present
-		return true
 	default:
-		return true
+		return false
 	}
 }
 
 func (edr *ErrorDrivenRefiner) runRegressionTest(ctx context.Context, refinedPrompt string, test RegressionTest) bool {
-	// In a real implementation, this would run the prompt with the test input
-	// and validate the output against the expected criteria
-	// For now, return true as a placeholder
-	return true
+	return false
 }
 
 func (edr *ErrorDrivenRefiner) calculateQualityMetrics(result *RefinerResult) QualityMetrics {
@@ -584,47 +574,6 @@ func (edr *ErrorDrivenRefiner) calculateValidationSuccessRate(validation Validat
 
 	success := validation.RegressionsPassed + validation.FixesSuccessful
 	return float64(success) / float64(total)
-}
-
-// Parsing fallback functions
-func (edr *ErrorDrivenRefiner) parseErrorPatterns(text string) []ErrorPattern {
-	return []ErrorPattern{
-		{
-			PatternID:   "generic_pattern",
-			ErrorType:   "semantic",
-			Description: "General improvement opportunities identified",
-			Frequency:   0.5,
-			Severity:    "medium",
-			RootCause:   "Analysis incomplete",
-			Triggers:    []string{"various conditions"},
-		},
-	}
-}
-
-func (edr *ErrorDrivenRefiner) parseFixSuggestions(text string) []FixSuggestion {
-	return []FixSuggestion{
-		{
-			FixID:          "generic_fix",
-			TargetPattern:  "generic_pattern",
-			FixType:        "modification",
-			Description:    "General improvements suggested",
-			Implementation: "Review and refine prompt structure",
-			Confidence:     0.6,
-		},
-	}
-}
-
-func (edr *ErrorDrivenRefiner) parseRegressionTests(text string) []RegressionTest {
-	return []RegressionTest{
-		{
-			TestID:       "basic_functionality",
-			TestType:     "positive",
-			Input:        "Standard test input",
-			ExpectedType: "semantic",
-			Expected:     "Appropriate response",
-			Rationale:    "Ensure basic functionality works",
-		},
-	}
 }
 
 func (edr *ErrorDrivenRefiner) parseRecommendations(text string) []string {

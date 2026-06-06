@@ -1,3 +1,5 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # pe.mod Capabilities
 
 `pe.mod` should become the module-level capability and placement contract for

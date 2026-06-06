@@ -1,4 +1,6 @@
-# Getting Started with PE: The World's Most Advanced Prompt Engineering Toolkit
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
+# Getting Started with PE: Archived Prompt Engineering Toolkit Draft
 
 Welcome to **PE**, the definitive prompt engineering toolkit that implements cutting-edge 2024-2025 research and surpasses all existing tools. This guide will get you from zero to optimizing prompts in under 5 minutes.
 
@@ -13,7 +15,7 @@ PE is the **only production toolkit** implementing:
 - 🤝 **Multi-Model Consensus**: Cross-provider optimization with reflection-based synthesis
 - 🏗️ **Component-Based Engineering**: DSPy-style reusable prompt components
 
-**Performance advantage**: 3-5x faster than Python alternatives, 50-70% less memory usage, instant startup.
+**Performance advantage**: instant startup.
 
 ## ⚡ Installation (30 seconds)
 
@@ -297,8 +299,8 @@ ENTRYPOINT ["pe"]
 
 | **Metric** | **PE (Go)** | **Best Competitor** | **PE Advantage** |
 |------------|-------------|---------------------|------------------|
-| **Execution Speed** | 🥇 **Fastest** | Node.js/Python | **3-5x faster** |
-| **Memory Usage** | 🥇 **Lowest** | Python tools | **50-70% less** |
+| **Execution Speed** | 🥇 **Fastest** | Node.js/Python | historical target |
+| **Memory Usage** | 🥇 **Lowest** | Python tools | historical target |
 | **Startup Time** | 🥇 **Instant** | 2-5 seconds | **10x faster** |
 | **Feature Completeness** | 🥇 **100%** | 60-85% | **Most comprehensive** |
 | **Research Implementation** | 🥇 **2024-2025** | 2022-2023 | **Years ahead** |

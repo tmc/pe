@@ -1,3 +1,5 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # Future Features Documentation
 
 This directory contains documentation for features that are **planned but not yet implemented** in PE.

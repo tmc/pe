@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -473,40 +474,8 @@ func TestDetectSpecialization(t *testing.T) {
 	}
 }
 
-func TestSimpleOptimizePrompt(t *testing.T) {
-	tests := []struct {
-		name  string
-		input string
-		check func(output string) bool
-	}{
-		{
-			name:  "adds structure to simple prompt",
-			input: "Hello",
-			check: func(output string) bool {
-				return len(output) > len("Hello")
-			},
-		},
-		{
-			name:  "preserves structured prompt",
-			input: "Task: Analyze this\nPlease provide a detailed response.",
-			check: func(output string) bool {
-				return output == "Task: Analyze this\nPlease provide a detailed response."
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := simpleOptimizePrompt(tt.input)
-			if !tt.check(got) {
-				t.Errorf("simpleOptimizePrompt() = %q, failed check", got)
-			}
-		})
-	}
-}
-
 func TestComposeCmd_Flags(t *testing.T) {
-	cmd := composeCmd
+	cmd := newComposeCmd()
 
 	expectedFlags := []string{
 		"components", "style", "target", "coherence", "validation-gate",
@@ -613,15 +582,15 @@ func TestComposeCmd_WithOptimization(t *testing.T) {
 	os.Chdir(tmpDir)
 	defer os.Chdir(oldDir)
 
-	cmd := composeCmd
+	cmd := newComposeCmd()
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
 	cmd.SetArgs([]string{contextFile, "--optimize", "--target", "gpt-4"})
 
 	err := cmd.Execute()
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
+	if err == nil || !strings.Contains(err.Error(), "not yet implemented") {
+		t.Fatalf("compose optimize err = %v", err)
 	}
 }
 
@@ -801,6 +770,7 @@ func TestComposeConfigAndRunPaths(t *testing.T) {
 	if cfg.Metadata["synthesis_strategy"] != "evolutionary" || cfg.Metadata["optimization_method"] != "grid" || cfg.Metadata["quality_threshold"] != 0.9 {
 		t.Fatalf("metadata = %#v", cfg.Metadata)
 	}
+	cmd.Flags().Set("optimize", "false")
 	if err := runCompose(cmd, []string{contextFile, instructionFile}); err != nil {
 		t.Fatal(err)
 	}
@@ -843,8 +813,8 @@ func TestComposeLibraryAndCoherenceHelpers(t *testing.T) {
 	if err := listComponents(); err != nil {
 		t.Fatal(err)
 	}
-	if err := importComponents("https://example.com/components.zip"); err != nil {
-		t.Fatal(err)
+	if err := importComponents("https://example.com/components.zip"); err == nil || !strings.Contains(err.Error(), "not yet implemented") {
+		t.Fatalf("importComponents err = %v", err)
 	}
 	if err := addComponentToLibrary(filepath.Join(tmpDir, "missing.txt"), "x"); err == nil {
 		t.Fatal("missing add component succeeded")
@@ -856,8 +826,8 @@ func TestComposeLibraryAndCoherenceHelpers(t *testing.T) {
 	if err := os.WriteFile(other, []byte("Determine the emotional tone."), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := checkCoherence([]string{source, other}); err != nil {
-		t.Fatal(err)
+	if err := checkCoherence([]string{source, other}); err == nil || !strings.Contains(err.Error(), "not yet implemented") {
+		t.Fatalf("checkCoherence err = %v", err)
 	}
 	if err := checkCoherence([]string{source, filepath.Join(tmpDir, "missing.txt")}); err == nil {
 		t.Fatal("missing coherence file succeeded")
@@ -893,7 +863,7 @@ func TestComposeRunSpecialCases(t *testing.T) {
 	}
 	cmd = newComposeCmd()
 	cmd.Flags().Set("import", "https://example.com/x")
-	if err := runCompose(cmd, nil); err != nil {
-		t.Fatal(err)
+	if err := runCompose(cmd, nil); err == nil || !strings.Contains(err.Error(), "not yet implemented") {
+		t.Fatalf("import err = %v", err)
 	}
 }

@@ -1,3 +1,5 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # Interactive Examples Library
 
 A comprehensive collection of real-world examples demonstrating PE's capabilities across different industries and use cases. Each example includes complete configurations, explanations, and optimization strategies.

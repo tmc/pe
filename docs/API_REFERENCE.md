@@ -1,3 +1,5 @@
+<!-- Legacy draft: this file is not the authoritative current CLI reference. Verify current behavior with `pe --help` and command-specific help before relying on listed flags or examples. -->
+
 # 🛠️ PE API Reference: Complete Developer Guide
 
 The comprehensive reference for PE's command-line interface, configuration options, and programmatic APIs. Everything you need to integrate PE into your development workflow and production systems.
@@ -110,7 +112,7 @@ Input Options:
   --prompt-file string        File containing prompt to optimize
   --config string             Configuration file with optimization settings
 
-Optimization Methods (World-First Implementations):
+Optimization Methods:
   --method string             Method: pe2, apex, textgrad, evolve, fusion, hybrid
   --iterations int            Number of optimization iterations (default 5)
   --beam-width int            Beam search width for APEX (default 3)
@@ -277,7 +279,7 @@ Composition Options:
 
 Quality Control:
   --validate                  Validate composed prompt before output
-  --optimize                  Auto-optimize composed prompt
+  --optimize                  Registered flag; currently returns not implemented
   --test-suite                Generate test suite for composed prompt
 
 Output Options:
@@ -293,7 +295,7 @@ Examples:
   pe experimental compose context.txt instruction.txt examples.txt --style cot --output composed.txt
 
   # Composition with optimization
-  pe experimental compose components/*.txt --style few-shot --coherence --optimize --target gpt-4
+  pe experimental compose components/*.txt --style few-shot --coherence
 
   # Component management
   pe experimental compose --add-component expert-context.txt --category context --verify

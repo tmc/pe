@@ -1,6 +1,8 @@
+<!-- Historical draft: archived planning material, not current product documentation. Claims, metrics, and command examples in this file may be stale or aspirational. -->
+
 # PE vs Competition: Comprehensive Analysis 2025
 
-PE stands alone as the world's most advanced prompt engineering toolkit. This detailed analysis shows why PE leads the industry across every dimension that matters.
+PE stands alone as the prompt engineering toolkit. This detailed analysis shows why PE leads the industry across every dimension that matters.
 
 ## 🏆 Executive Summary
 
@@ -69,7 +71,7 @@ PE stands alone as the world's most advanced prompt engineering toolkit. This de
 | **Memory Usage** | 🥇 **25MB** | 85MB | 120MB | 200MB |
 | **Concurrent Processing** | 🥇 **Native** | Event loop | Threads | Limited |
 
-**PE advantage: 3-5x faster execution, 50-70% less memory usage**
+**PE advantage: historical performance target**
 
 ### Scalability Testing
 
@@ -321,8 +323,8 @@ PE is the only tool implementing 2024-2025 breakthrough research:
 
 ### 2. **Performance Superiority**
 Go-based architecture delivers:
-- 3-5x faster execution
-- 50-70% less memory usage
+- historical target execution
+- historical target memory usage
 - Native concurrency
 - Instant startup
 

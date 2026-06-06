@@ -125,20 +125,24 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		}
 
 		prompt = config.Prompt
-	} else {
-		// Plain text prompt file
+	} else if _, err := os.Stat(input); err == nil {
 		data, err := os.ReadFile(input)
 		if err != nil {
 			return fmt.Errorf("failed to read prompt: %w", err)
 		}
 		prompt = string(data)
+	} else {
+		prompt = input
 	}
 
 	// Handle multiple targets
 	if len(buildTargets) > 0 {
 		fmt.Println("Building for multiple targets")
 		for _, target := range buildTargets {
-			targetPrompt := optimizeForProvider(prompt, target)
+			targetPrompt, err := optimizeForProvider(prompt, target)
+			if err != nil {
+				return err
+			}
 			targetDir := filepath.Join("builds", target)
 			if err := os.MkdirAll(targetDir, 0755); err != nil {
 				return err
@@ -154,11 +158,19 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	// Single target optimization
 	if buildTarget != "" {
 		fmt.Printf("Target provider: %s\n", buildTarget)
-		fmt.Println("Applying provider-specific optimizations")
-		prompt = optimizeForProvider(prompt, buildTarget)
+		fmt.Println("Applying provider-specific formatting")
+		var err error
+		prompt, err = optimizeForProvider(prompt, buildTarget)
+		if err != nil {
+			return err
+		}
 	} else if config.Provider != "" {
 		buildTarget = config.Provider
-		prompt = optimizeForProvider(prompt, config.Provider)
+		var err error
+		prompt, err = optimizeForProvider(prompt, config.Provider)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Minification
@@ -175,46 +187,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 
 	// Validation
 	if buildValidate {
-		fmt.Println("Validation checks:")
-		fmt.Println("✓ Grammar check passed")
-		fmt.Println("✓ Clarity score: 0.92")
-		fmt.Println("✓ No bias detected")
-		fmt.Println("✓ Security scan passed")
-		fmt.Println("Validation passed")
-
-		// Create dist directory and tar.gz file for validated builds
-		if err := os.MkdirAll("dist", 0755); err != nil {
-			return fmt.Errorf("failed to create dist directory: %w", err)
-		}
-
-		// Create tar.gz file with the validated prompt
-		tarFile, err := os.Create("dist/prompts.tar.gz")
-		if err != nil {
-			return fmt.Errorf("failed to create tar file: %w", err)
-		}
-		defer tarFile.Close()
-
-		gzWriter := gzip.NewWriter(tarFile)
-		defer gzWriter.Close()
-
-		tarWriter := tar.NewWriter(gzWriter)
-		defer tarWriter.Close()
-
-		// Add the prompt to the tar
-		header := &tar.Header{
-			Name:    "prompt.txt",
-			Size:    int64(len(prompt)),
-			Mode:    0644,
-			ModTime: time.Now(),
-		}
-
-		if err := tarWriter.WriteHeader(header); err != nil {
-			return fmt.Errorf("failed to write tar header: %w", err)
-		}
-
-		if _, err := tarWriter.Write([]byte(prompt)); err != nil {
-			return fmt.Errorf("failed to write tar content: %w", err)
-		}
+		return fmt.Errorf("build validation is not yet implemented")
 	}
 
 	// Add production mode marker if in production environment
@@ -324,7 +297,7 @@ func buildPromptBundle(dir string) error {
 	}
 
 	fmt.Printf("Including %d components\n", components)
-	fmt.Println("Resolving dependencies")
+	fmt.Println("Writing bundle")
 
 	// Create tar.gz bundle
 	bundleFile, err := os.Create("prompt_bundle.tar.gz")
@@ -375,19 +348,16 @@ func buildPromptBundle(dir string) error {
 	})
 }
 
-func optimizeForProvider(prompt string, provider string) string {
+func optimizeForProvider(prompt string, provider string) (string, error) {
 	switch provider {
 	case "anthropic":
-		// Add Anthropic-specific formatting
-		return fmt.Sprintf("Human: %s\n\nAssistant: ", prompt)
+		return fmt.Sprintf("Human: %s\n\nAssistant: ", prompt), nil
 	case "openai":
-		// OpenAI optimization (already in standard format)
-		return prompt
+		return prompt, nil
 	case "google":
-		// Google-specific optimization
-		return prompt
+		return "", fmt.Errorf("provider-specific formatting for %q is not yet implemented", provider)
 	default:
-		return prompt
+		return "", fmt.Errorf("provider-specific formatting for %q is not yet implemented", provider)
 	}
 }
 
