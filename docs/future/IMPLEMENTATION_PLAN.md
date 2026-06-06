@@ -510,7 +510,7 @@ if err := validation.ValidatePrompt(prompt); err != nil {
 ## Documentation Requirements
 
 For each new command:
-1. Add to `docs/COMMANDS.md` with examples
+1. Add to `docs/CLI_REFERENCE.md` with examples
 2. Create man page style documentation
 3. Add to README.md command list
 4. Include in CLAUDE.md development guidance

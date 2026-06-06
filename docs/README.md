@@ -79,10 +79,6 @@ source of truth for coverage numbers.
 - [PROJECT_MANAGEMENT.md](PROJECT_MANAGEMENT.md) - project board, sprint,
   review, bug tracking, and validation process.
 - [../CONTRIBUTING.md](../CONTRIBUTING.md) - contributor guide.
-- [IMPLEMENTATION_TODOS.md](IMPLEMENTATION_TODOS.md) - tombstone pointing to
-  [../ROADMAP.md](../ROADMAP.md).
-- [PLANNED_COMMANDS.md](PLANNED_COMMANDS.md) - aspirational command ideas, not
-  current command status.
 
 ## Examples
 

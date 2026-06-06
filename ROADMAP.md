@@ -11,9 +11,9 @@ This file is the source of truth for planned PE work. Beads is deprecated for th
 - `CHANGELOG.md`: concise release deltas only.
 - `RELEASE_NOTES.md`: v0.5.0 release-candidate narrative, known limitations,
   and validation checklist.
-- `docs/PLANNED_COMMANDS.md`: aspirational command ideas, not status or command
-  counts.
-- `docs/IMPLEMENTATION_TODOS.md`: tombstone pointing here.
+- `docs/future/PLANNED_COMMANDS.md`: aspirational command ideas, not status or
+  command counts.
+- `docs/archive/IMPLEMENTATION_TODOS.md`: tombstone pointing here.
 - `docs/future/`: aspirational design material only.
 
 ## Priority Guide
@@ -544,11 +544,10 @@ References:
 Review and update all command documentation for accuracy.
 
 Review these docs:
-- docs/COMMANDS.md
 - docs/CLI_REFERENCE.md
-- docs/COMMAND_REFERENCE.md (if different)
-- CLI_COMMANDS_REFERENCE.md (root)
 - docs/COMMAND_EXAMPLES_GUIDE.md
+- docs/command-taxonomy.md
+- docs/CLI_HELP_AUDIT.md
 
 Verify:
 1. Current generated command inventory is documented
@@ -1131,7 +1130,7 @@ Organization:
 
 ## Architecture Implementation Backlog
 
-This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work lives in one tracked file.
+This checklist was moved from `docs/archive/IMPLEMENTATION_TODOS.md` so roadmap work lives in one tracked file.
 
 ### PE Architecture Implementation Todo List
 

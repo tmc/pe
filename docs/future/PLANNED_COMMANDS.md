@@ -2,8 +2,9 @@
 
 This document is an aspirational command-idea catalog. It does not own release
 scope, command counts, or implementation status. Keep priorities and remaining
-work in [../ROADMAP.md](../ROADMAP.md), and verify current commands from the
-generated CLI help or command reference before moving any item into active work.
+work in [../../ROADMAP.md](../../ROADMAP.md), and verify current commands from
+the generated CLI help or command reference before moving any item into active
+work.
 
 Some names below may already exist as current commands or experimental commands.
 Treat those entries as enhancement sketches, not evidence that the command is
