@@ -18,7 +18,9 @@ resp, err := client.CompleteWith(ctx, spec, inference.Request{Prompt: prompt})
 ```
 
 Use the provider spec as the client key. A spec can be a short provider name,
-such as `cgpt`, or a provider/model pair, such as `openai:gpt-4o-mini`.
+such as `cgpt`, or a provider/model pair, such as `openai:gpt-4o-mini`. Split
+the provider spec at the first colon only; local model tags may contain
+additional colons, as in `ollama:llama3.2:3b`.
 
 Command code that still calls a package requiring `llm.Provider` should use the
 command helper instead of calling `llm.GetProvider` directly:

@@ -4,7 +4,7 @@ prompts:
   - file://prompt.txt
 
 providers:
-  - id: "ollama:llama3.2"
+  - id: "ollama:llama3.2:3b"
     label: "local ollama"
     config:
       base_url: "http://localhost:11434"

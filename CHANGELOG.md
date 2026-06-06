@@ -11,6 +11,8 @@ may still include behavior changes while the CLI and provider interfaces settle.
 - `exp` command root and experimental command registry tests.
 - Local runtime provider materialization for string and object provider specs.
 - Native Ollama provider bridge support for direct generation configuration.
+- Provider specs with colon-bearing local model tags, such as
+  `ollama:llama3.2:3b`.
 - MLX local runtime provider presets and comparison examples.
 - Promptfoo-compatible provider labels, prompt scoping, delays, and bounded
   concurrency.
@@ -29,6 +31,8 @@ may still include behavior changes while the CLI and provider interfaces settle.
 - Direct `llm.Provider.Generate` options now preserve provider-specific values in
   `ProviderOptions` while keeping portable options typed.
 - Local runtime provider docs and examples use the current object provider shape.
+- Local Ollama example validation now covers a real daemon with
+  `ollama:llama3.2:3b`.
 - ROADMAP.md replaces Beads and legacy TODO files as the active planning source.
 
 ### Fixed

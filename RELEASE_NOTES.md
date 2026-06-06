@@ -27,6 +27,8 @@ maintainer explicitly promotes it to `master` or creates `main`.
 - Native OpenAI and Anthropic providers are available through the provider
   factory system.
 - Native Ollama support is registered through the local-runtime provider bridge.
+- Provider specs preserve model suffixes containing additional colons, such as
+  `ollama:llama3.2:3b`.
 - CLI-backed providers support argv-based execution and explicit JSON telemetry
   parsing when configured.
 - The `llm` CLI backend is registered as provider `llm`; argument construction is
@@ -81,6 +83,8 @@ maintainer explicitly promotes it to `master` or creates `main`.
 - Recorded the v0.5.0 migration and NOTICE decisions.
 - Corrected command docs for experimental command paths and current CLI surface.
 - Documented local runtime provider design and scripttest runner limits.
+- Validated the local Ollama example against a real daemon using
+  `ollama:llama3.2:3b`.
 - Added hermetic tests for provider registration, exp command registration,
   Promptfoo judge provider overrides, REPL command wiring, and `llm` CLI argv
   construction.

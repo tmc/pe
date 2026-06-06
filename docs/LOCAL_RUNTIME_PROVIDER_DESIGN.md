@@ -45,7 +45,7 @@ Example provider object:
 
 ```yaml
 providers:
-  - id: "ollama:llama3.2"
+  - id: "ollama:llama3.2:3b"
     label: "local ollama"
     config:
       base_url: "http://localhost:11434"
@@ -61,6 +61,10 @@ overrides the configured or default URL. `raw` controls Ollama raw prompting.
 
 No API key is required. An Ollama daemon must be running, and the configured
 model must already be available to that daemon.
+
+The release smoke test for this path lives in
+`examples/local-ollama/README.md`. It records the representative local-model
+matrix and the focused commands to run against a real Ollama daemon.
 
 ## Preset Override Rules
 
