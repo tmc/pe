@@ -32,6 +32,9 @@ Results:
 | Coverage CI | `.github/workflows/ci.yml` runs tests and `make coverage-check` |
 | Local coverage target | `make coverage-check` enforces the current floor; `make coverage` writes `coverage.out` and `coverage.html` |
 
+This report is the source of truth for release coverage numbers. Older roadmap
+backlog entries with lower percentages are historical.
+
 The 70% target is not met yet. Coverage is improving, but the next work should
 focus on command/plugin paths and packages with executable code that currently
 show 0% statement coverage.

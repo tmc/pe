@@ -59,6 +59,16 @@ Utility:
 5. Should `completion` and Cobra `help` stay excluded from release-facing
    command inventories?
 
+## Stakeholder Response Needed
+
+Reply in `ROADMAP.md` or a follow-up review note with:
+
+- answers to the five review questions above;
+- approval that the proposed criteria below are sufficient for sign-off, or
+  specific changes to the criteria;
+- one of: approve the current grouping, approve with listed edits, or request a
+  revised taxonomy packet.
+
 ## Proposed Sign-Off Criteria
 
 - The generated root help and `docs/command-taxonomy.md` list the same
@@ -69,3 +79,9 @@ Utility:
   and help grouping unless a separate compatibility plan is approved.
 - Any command moved between groups gets a matching documentation update in
   `docs/CLI_REFERENCE.md` and `docs/command-taxonomy.md`.
+
+## Next Action
+
+Send this packet to the stakeholder reviewer and keep the `ROADMAP.md`
+stakeholder-review item open until the response records one of the outcomes
+listed above.

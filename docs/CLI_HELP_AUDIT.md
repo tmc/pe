@@ -1,12 +1,12 @@
 # CLI Help Audit
 
-Last run: 2026-05-05
+Last run: 2026-05-11
 Branch: `exp`
 
 Command used:
 
 ```bash
-go run ./cmd/pe --help
+GOTOOLCHAIN=go1.25.9 go run ./cmd/pe --help
 ```
 
 Root commands from generated help, excluding Cobra's built-in `help` and

@@ -43,11 +43,11 @@ Current Issues:
 - Multiple overlapping getting started docs
 - Future docs mixed with current implementation docs
 - Legacy TODO material now points at this roadmap, but current documentation still needs an accuracy pass
-- Recent scripttest, provider, and release-note work is documented; remaining
-  command and getting-started docs still need a pass
+- Recent scripttest, provider, release-note, CLI-help-audit, and current-status
+  work is documented; remaining getting-started docs still need a pass
 - `docs/CLI_HELP_AUDIT.md` records the generated root command inventory from
-  `go run ./cmd/pe --help`; `docs/CLI_REFERENCE.md` now includes every root
-  command from that inventory.
+  `GOTOOLCHAIN=go1.25.9 go run ./cmd/pe --help`; `docs/CLI_REFERENCE.md` now
+  includes every root command from that inventory.
 
 Remaining sub-tasks:
 1. DONE: Replace stale coverage claims with references to docs/TEST_COVERAGE_REPORT.md
@@ -791,14 +791,16 @@ Current status:
 - Core module management exists.
 - `pe mod download`, `pe mod list`, `pe mod search`, and `pe mod publish` have
   command implementations.
-- Module registry support still needs release validation and clearer user
-  documentation.
+- Module registry support still needs release validation. Current docs now cover
+  supported registry configuration, failure modes, and tidy/vendor limits.
 
 Tasks:
 1. Validate the implemented module commands against a real or fixture registry.
-2. Complete `pe mod tidy` and `pe mod vendor` behavior.
+2. DONE current pass: Document `pe mod tidy` / `pe mod vendor` current behavior
+   and add a focused vendor cache-miss validation.
 3. Add integrity verification, version upgrade, and dependency graph behavior.
-4. Document supported registry configuration and failure modes.
+4. DONE current pass: Document supported registry configuration and failure
+   modes.
 5. Decide whether a hosted registry server belongs in this repository or a
    separate project.
 
@@ -1026,7 +1028,7 @@ integrity and failure semantics.
 Current status:
 - Module commands and registry code exist.
 - `pe mod tidy --json --write` is implemented for local dependency hygiene.
-- Remote registry behavior still needs fixture-backed validation and user docs.
+- Remote registry behavior still needs fixture-backed validation.
 
 Tasks:
 1. Add a fixture-backed remote registry test path before relying on live
@@ -1034,7 +1036,8 @@ Tasks:
 2. Verify `pe mod download` extracts exactly the expected files and rejects
    path escapes.
 3. Define integrity checks for downloaded modules.
-4. Document supported registry configuration and failure modes.
+4. DONE current pass: Document supported registry configuration and failure
+   modes.
 
 Verification:
 - `rg 'GitHubRegistry|download|registry' internal cmd/pe docs`
@@ -1264,6 +1267,9 @@ This checklist was moved from `docs/IMPLEMENTATION_TODOS.md` so roadmap work liv
 - [ ] Review with stakeholders
   - Prepared `docs/COMMAND_TAXONOMY_REVIEW.md` with the current generated
     command groups, evidence, review questions, and sign-off criteria.
+  - Next action: send the packet to the stakeholder reviewer and record their
+    answers, sign-off criteria decision, and approve/request-changes outcome
+    before closing this item.
 - [x] Finalize command hierarchy
 - [x] Document command relationships
 

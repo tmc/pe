@@ -126,17 +126,17 @@ We welcome various types of contributions:
 
 ### 2. Commit Your Changes
 
-Use clear, descriptive commit messages:
+Use clear, descriptive commit messages that match the existing Go-project style:
 
 ```bash
 # Good commit messages
-git commit -m "feat: add streaming support to eval command"
-git commit -m "fix: handle timeout errors in provider calls"
-git commit -m "docs: add examples for custom metrics"
-
-# Follow conventional commits format when possible
-git commit -m "type(scope): description"
+git commit -m "eval: add streaming support"
+git commit -m "provider: handle timeout errors"
+git commit -m "docs: add custom metric examples"
 ```
+
+Keep commits focused, do not stage binary files, and do not include `.beads/`
+changes.
 
 ### 3. Submit Your Pull Request
 
@@ -555,8 +555,12 @@ We follow [Semantic Versioning](https://semver.org/):
 4. **Update Documentation**
 5. **Create Release Notes**
 6. **Verify LICENSE, migration, and security docs**
-7. **Tag Release**
-8. **Publish Binaries**
+7. **Run Release Gates**: follow [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md),
+   including `GOTOOLCHAIN=go1.25.9 go test ./...`, `GOTOOLCHAIN=go1.25.9 go vet ./...`,
+   `make coverage-check`, `make security`, and `make bench`.
+8. **Confirm ROADMAP.md Release Blockers Are Closed**
+9. **Tag Release**
+10. **Publish Binaries**
 
 ## Getting Help
 

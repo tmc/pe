@@ -9,7 +9,7 @@ Command shape:
 ```bash
 GOTOOLCHAIN=go1.25.9 CGO_ENABLED=0 GOOS=<goos> GOARCH=<goarch> \
   go build -trimpath \
-  -ldflags "-X main.Version=v0.5.0-rc -X main.Commit=$(git rev-parse --short HEAD) -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  -ldflags "-X main.Version=v0.5.0 -X main.Commit=$(git rev-parse --short HEAD) -X main.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   -o /tmp/pe-build-<goos>-<goarch> ./cmd/pe
 ```
 

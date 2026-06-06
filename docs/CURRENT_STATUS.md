@@ -1,6 +1,6 @@
 # PE Current Implementation Status
 
-Last Updated: 2026-05-05
+Last Updated: 2026-05-11
 
 ## Overview
 
@@ -55,10 +55,10 @@ is the source of truth for planned work and release-blocking follow-ups.
 - ✅ **mock** - For testing
 
 ### Optimization Commands
-- `pe experimental optimize` - Multiple optimization methods
-- `pe experimental semantic` - Semantic backpropagation
-- `pe experimental evolve` - Evolutionary optimization
-- `pe experimental compose` - Component composition in experimental command group
+- `pe optimize` - Multiple optimization methods
+- `pe semantic` - Semantic backpropagation
+- `pe evolve` - Evolutionary optimization
+- `pe compose` - Component composition
 
 ### Local Workflow Prototypes
 - `pe exp distributed` - Bounded local task scheduler from JSON task files
@@ -97,7 +97,7 @@ pe ask "prompt" --provider cgpt  # Uses cgpt CLI
 
 ### Module Registry
 - Local registry at `~/.pe/registry/`
-- Sample modules included (greeting, math)
+- HTTP and GitHub registry backends exist, but still need release validation
 - Download functionality actually works (not mock)
 
 ## Recent Release-Prep Fixes
@@ -141,10 +141,7 @@ Basic assertions work, but these are incomplete:
 The measured coverage baseline is tracked in
 [TEST_COVERAGE_REPORT.md](TEST_COVERAGE_REPORT.md):
 
-- Latest local coverage-check total: 48.8%
-- Native OpenAI provider: 74.0%
-- Native Anthropic provider: 73.3%
-- `cmd/pe`: 40.6%
+- Current measured baseline is tracked in the coverage report and roadmap.
 
 Use the coverage report instead of older approximate coverage claims.
 
@@ -201,7 +198,7 @@ pe ask "What is 2+2?" --provider cgpt
 
 1. **Template Syntax**: Only Go templates with dots work
 2. **Provider Defaults**: Need API keys in environment
-3. **Module Registry**: Only local registry, no remote yet
+3. **Module Registry**: Remote registry behavior still needs release validation
 4. **Advanced Features**: Many documented features are designs
 5. **Documentation**: Some docs describe planned features
 

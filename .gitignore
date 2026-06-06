@@ -8,6 +8,9 @@ test_workspace/
 lastsession.txt
 *.log
 
+# Go test artifacts
+coverage.out
+
 # Test binaries
 *.test
 test_binary
