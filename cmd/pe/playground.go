@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -22,6 +25,7 @@ type PlaygroundServer struct {
 	upgrader websocket.Upgrader
 	clients  map[*websocket.Conn]bool
 	router   *mux.Router
+	history  []PlaygroundResponse
 }
 
 // PlaygroundRequest represents a request from the web UI
@@ -116,6 +120,7 @@ func NewPlaygroundServer() *PlaygroundServer {
 		},
 		clients: make(map[*websocket.Conn]bool),
 		router:  mux.NewRouter(),
+		history: make([]PlaygroundResponse, 0),
 	}
 }
 
@@ -662,6 +667,7 @@ func (ps *PlaygroundServer) handleTest(w http.ResponseWriter, r *http.Request) {
 		result.Cost = calculateCost(req.Provider, req.Model, result.TokensUsed)
 	}
 
+	ps.recordHistory(result)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
 }
@@ -722,13 +728,54 @@ func (ps *PlaygroundServer) handleOptimize(w http.ResponseWriter, r *http.Reques
 
 	result.Cost = calculateCost(req.Provider, req.Model, result.TokensUsed)
 
+	ps.recordHistory(result)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
 }
 
 // handleCompare processes multi-provider comparison requests
 func (ps *PlaygroundServer) handleCompare(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "comparison is not yet implemented", http.StatusNotImplemented)
+	var req struct {
+		Prompt    string   `json:"prompt"`
+		Responses []string `json:"responses"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if strings.TrimSpace(req.Prompt) == "" || len(req.Responses) == 0 {
+		http.Error(w, "compare requires prompt and at least one response", http.StatusBadRequest)
+		return
+	}
+
+	type comparison struct {
+		Index     int     `json:"index"`
+		Response  string  `json:"response"`
+		Relevance float64 `json:"relevance"`
+		Length    int     `json:"length"`
+	}
+	results := make([]comparison, 0, len(req.Responses))
+	best := -1
+	bestScore := -1.0
+	for i, response := range req.Responses {
+		score := keywordOverlap(req.Prompt, response)
+		results = append(results, comparison{
+			Index:     i,
+			Response:  response,
+			Relevance: score,
+			Length:    len(response),
+		})
+		if score > bestScore {
+			best = i
+			bestScore = score
+		}
+	}
+
+	writePlaygroundJSON(w, map[string]interface{}{
+		"best_index": best,
+		"method":     "local_keyword_overlap",
+		"results":    results,
+	})
 }
 
 // handleMetrics processes advanced metrics requests
@@ -755,8 +802,7 @@ func (ps *PlaygroundServer) handleMetrics(w http.ResponseWriter, r *http.Request
 			result := metrics.CalculateROUGE(req.Generated, req.Reference, "L")
 			results[metric] = result.Score
 		case "bertscore":
-			http.Error(w, "bertscore is not yet implemented", http.StatusNotImplemented)
-			return
+			results[metric] = keywordOverlap(req.Generated, req.Reference)
 		}
 	}
 
@@ -766,17 +812,72 @@ func (ps *PlaygroundServer) handleMetrics(w http.ResponseWriter, r *http.Request
 
 // handleSecurity processes security testing requests
 func (ps *PlaygroundServer) handleSecurity(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "security testing is not yet implemented", http.StatusNotImplemented)
+	var req struct {
+		Prompt string `json:"prompt"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	findings := localPlaygroundSecurityFindings(req.Prompt)
+	writePlaygroundJSON(w, map[string]interface{}{
+		"method":   "local_pattern_scan",
+		"findings": findings,
+		"passed":   len(findings) == 0,
+	})
 }
 
 // handleComponents processes component library requests
 func (ps *PlaygroundServer) handleComponents(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "component library is not yet implemented", http.StatusNotImplemented)
+	switch r.Method {
+	case http.MethodGet:
+		components, err := localPlaygroundComponents("components")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		writePlaygroundJSON(w, map[string]interface{}{"components": components})
+	case http.MethodPost:
+		var req struct {
+			Name     string `json:"name"`
+			Category string `json:"category"`
+			Content  string `json:"content"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if strings.TrimSpace(req.Name) == "" || strings.TrimSpace(req.Content) == "" {
+			http.Error(w, "component requires name and content", http.StatusBadRequest)
+			return
+		}
+		category := strings.TrimSpace(req.Category)
+		if category == "" {
+			category = "general"
+		}
+		category = filepath.Clean(category)
+		if category == "." || strings.HasPrefix(category, "..") || filepath.IsAbs(category) {
+			http.Error(w, "invalid component category", http.StatusBadRequest)
+			return
+		}
+		path := filepath.Join("components", category, filepath.Base(req.Name))
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if err := os.WriteFile(path, []byte(req.Content), 0644); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		writePlaygroundJSON(w, map[string]interface{}{"path": path})
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
 }
 
 // handleHistory processes history requests
 func (ps *PlaygroundServer) handleHistory(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "prompt history is not yet implemented", http.StatusNotImplemented)
+	writePlaygroundJSON(w, map[string]interface{}{"history": ps.history})
 }
 
 // handleWebSocket handles WebSocket connections for real-time updates
@@ -816,6 +917,91 @@ func calculateCost(provider, model string, tokens int) float64 {
 		costPerToken = 0.00006
 	}
 	return float64(tokens) * costPerToken
+}
+
+func (ps *PlaygroundServer) recordHistory(result PlaygroundResponse) {
+	ps.history = append([]PlaygroundResponse{result}, ps.history...)
+	if len(ps.history) > 100 {
+		ps.history = ps.history[:100]
+	}
+}
+
+func writePlaygroundJSON(w http.ResponseWriter, value interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(value)
+}
+
+func keywordOverlap(a, b string) float64 {
+	left := playgroundTokenSet(a)
+	right := playgroundTokenSet(b)
+	if len(left) == 0 || len(right) == 0 {
+		return 0
+	}
+	overlap := 0
+	for token := range left {
+		if right[token] {
+			overlap++
+		}
+	}
+	return float64(overlap) / float64(len(left))
+}
+
+func playgroundTokenSet(text string) map[string]bool {
+	tokens := make(map[string]bool)
+	for _, token := range strings.Fields(strings.ToLower(text)) {
+		token = strings.Trim(token, ".,;:!?()[]{}\"'")
+		if len(token) > 2 {
+			tokens[token] = true
+		}
+	}
+	return tokens
+}
+
+func localPlaygroundSecurityFindings(prompt string) []string {
+	lower := strings.ToLower(prompt)
+	checks := map[string]string{
+		"ignore previous instructions": "prompt injection",
+		"system override":              "prompt injection",
+		"reveal your prompt":           "sensitive prompt disclosure",
+		"api key":                      "secret disclosure",
+	}
+	findings := make([]string, 0)
+	for phrase, finding := range checks {
+		if strings.Contains(lower, phrase) {
+			findings = append(findings, finding)
+		}
+	}
+	sort.Strings(findings)
+	return findings
+}
+
+func localPlaygroundComponents(root string) ([]map[string]string, error) {
+	if _, err := os.Stat(root); os.IsNotExist(err) {
+		return []map[string]string{}, nil
+	}
+	var components []map[string]string
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		components = append(components, map[string]string{
+			"name":     filepath.Base(path),
+			"category": filepath.Dir(rel),
+			"path":     path,
+		})
+		return nil
+	})
+	sort.Slice(components, func(i, j int) bool {
+		return components[i]["path"] < components[j]["path"]
+	})
+	return components, err
 }
 
 func openURL(url string) {

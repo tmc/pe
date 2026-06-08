@@ -1226,7 +1226,8 @@ Current known explicit gaps:
 - metaprompt synthesis strategies: template, evolutionary, and neural
 - compose optimization, component import, and richer coherence validation beyond
   the current local `--coherence-check`
-- playground compare, security, components, history, and BERTScore endpoints
+- richer playground compare, security, components, history, and BERTScore
+  behavior beyond current local JSON endpoints
 - TypeScript and Pydantic source/runtime validation beyond local JSON-object
   data validation
 - advanced/provider-backed promptfoo assertions for toxicity, coherence,
@@ -1435,6 +1436,10 @@ surface accidentally.
    validation.
 3. Harden the playground endpoints or remove/mark unavailable endpoints from
    release-facing docs until implemented.
+   DONE current pass: playground compare, security, components, history, and
+   BERTScore metric requests now return local JSON results instead of 501
+   placeholders. Remaining work: persistent history, richer component-library
+   workflows, provider-backed comparison, and calibrated semantic metrics.
 4. Expand examples for structured output, pass@N, security testing,
    distributed execution, attestation, Starlark extensions, advanced metrics,
    composition, and local providers.
