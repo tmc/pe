@@ -134,8 +134,9 @@ tests:
 
 ### Statistical Analysis
 
-PE provides local text metrics and benchmarking helpers. Statistical
-significance testing and confidence intervals are not implemented yet.
+PE provides local text metrics, benchmarking helpers, and metrics-package
+statistical primitives. Command-level statistical workflows are still future
+work.
 
 ```bash
 # Comprehensive benchmarking

@@ -28,7 +28,7 @@ func TestStatisticalAnalyzerSummary(t *testing.T) {
 	if summary.Percentiles["50th"] != summary.Median {
 		t.Fatalf("50th percentile = %v, median = %v", summary.Percentiles["50th"], summary.Median)
 	}
-	if summary.ConfidenceInterval.Level != 0.95 || !math.IsNaN(summary.ConfidenceInterval.MarginOfError) {
+	if summary.ConfidenceInterval.Level != 0.95 || math.IsNaN(summary.ConfidenceInterval.MarginOfError) || summary.ConfidenceInterval.LowerBound >= summary.ConfidenceInterval.UpperBound {
 		t.Fatalf("confidence interval = %#v", summary.ConfidenceInterval)
 	}
 	if summary.Distribution.DistributionType != "unknown" || !math.IsNaN(summary.Distribution.Normality) {
@@ -54,16 +54,36 @@ func TestStatisticalAnalyzerTTests(t *testing.T) {
 	group1 := []float64{10, 11, 12, 13, 14, 15}
 	group2 := []float64{1, 2, 3, 4, 5, 6}
 
-	if result, err := sa.PerformTTest(group1, group2, false); err == nil || result != nil || !strings.Contains(err.Error(), "not yet implemented") {
+	result, err := sa.PerformTTest(group1, group2, false)
+	if err != nil {
 		t.Fatalf("independent result = %#v err=%v", result, err)
 	}
+	if result.TestName != "welch_t_test" || result.Statistic <= 8 || result.PValue >= 0.001 || !result.IsSignificant {
+		t.Fatalf("independent result = %#v", result)
+	}
+	if result.EffectSize <= 4 {
+		t.Fatalf("effect size = %v, want large positive", result.EffectSize)
+	}
 
-	if result, err := sa.PerformTTest(group1, []float64{2, 3, 3, 5, 6, 8}, true); err == nil || result != nil || !strings.Contains(err.Error(), "not yet implemented") {
+	paired, err := sa.PerformTTest(group1, []float64{2, 3, 3, 5, 6, 8}, true)
+	if err != nil {
 		t.Fatalf("paired result = %#v err=%v", result, err)
+	}
+	if paired.Statistic <= 10 || paired.PValue >= 0.001 || !paired.IsSignificant {
+		t.Fatalf("paired result = %#v", paired)
 	}
 
 	if _, err := sa.PerformTTest(nil, group2, false); err == nil {
 		t.Fatalf("empty groups did not error")
+	}
+	if _, err := sa.PerformTTest([]float64{1}, group2, false); err == nil || !strings.Contains(err.Error(), "below minimum") {
+		t.Fatalf("tiny group error = %v", err)
+	}
+	if _, err := sa.PerformTTest([]float64{math.NaN(), 1}, group2, false); err == nil || !strings.Contains(err.Error(), "non-finite") {
+		t.Fatalf("nan error = %v", err)
+	}
+	if _, err := sa.PerformTTest([]float64{1, 1, 1}, []float64{2, 2, 2}, false); err == nil || !strings.Contains(err.Error(), "zero variance") {
+		t.Fatalf("zero variance error = %v", err)
 	}
 	if _, err := sa.PerformTTest(group1, group2[:3], true); err == nil || !strings.Contains(err.Error(), "equal sample sizes") {
 		t.Fatalf("paired size error = %v", err)
@@ -72,8 +92,24 @@ func TestStatisticalAnalyzerTTests(t *testing.T) {
 
 func TestStatisticalAnalyzerABTest(t *testing.T) {
 	sa := NewStatisticalAnalyzer(0.95, 3)
-	if result, err := sa.PerformABTest(60, 100, 75, 100); err == nil || result != nil || !strings.Contains(err.Error(), "not yet implemented") {
+	result, err := sa.PerformABTest(60, 100, 75, 100)
+	if err != nil {
 		t.Fatalf("ab result = %#v err=%v", result, err)
+	}
+	if result.SampleSizeA != 100 || result.SampleSizeB != 100 {
+		t.Fatalf("sample sizes = %#v", result)
+	}
+	if !near(result.ConversionRateA, 0.60, 1e-12) || !near(result.ConversionRateB, 0.75, 1e-12) {
+		t.Fatalf("conversion rates = %#v", result)
+	}
+	if !near(result.RelativeImprovement, 0.25, 1e-12) {
+		t.Fatalf("relative improvement = %v", result.RelativeImprovement)
+	}
+	if result.StatisticalTest.TestName != "two_proportion_z_test" || result.StatisticalTest.PValue <= 0 || result.StatisticalTest.PValue >= 0.05 {
+		t.Fatalf("statistical test = %#v", result.StatisticalTest)
+	}
+	if result.ConfidenceInterval.UpperBound <= result.ConfidenceInterval.LowerBound {
+		t.Fatalf("confidence interval = %#v", result.ConfidenceInterval)
 	}
 
 	if _, err := sa.PerformABTest(1, 0, 1, 2); err == nil || !strings.Contains(err.Error(), "invalid trial") {
@@ -81,6 +117,12 @@ func TestStatisticalAnalyzerABTest(t *testing.T) {
 	}
 	if _, err := sa.PerformABTest(3, 2, 1, 2); err == nil || !strings.Contains(err.Error(), "successes") {
 		t.Fatalf("success error = %v", err)
+	}
+	if _, err := sa.PerformABTest(-1, 2, 1, 2); err == nil || !strings.Contains(err.Error(), "successes") {
+		t.Fatalf("negative success error = %v", err)
+	}
+	if _, err := sa.PerformABTest(0, 10, 0, 10); err == nil || !strings.Contains(err.Error(), "zero standard error") {
+		t.Fatalf("zero standard error = %v", err)
 	}
 }
 
@@ -90,12 +132,32 @@ func TestStatisticalAnalyzerCompareGroups(t *testing.T) {
 		[]float64{10, 11, 12, 13, 14, 15},
 		[]float64{1, 2, 3, 4, 5, 6},
 	)
-	if err == nil || result != nil || !strings.Contains(err.Error(), "not yet implemented") {
+	if err != nil {
 		t.Fatalf("compare result = %#v err=%v", result, err)
+	}
+	if result.Group1Summary.Count != 6 || result.Group2Summary.Count != 6 {
+		t.Fatalf("summaries = %#v", result)
+	}
+	if !result.TTest.IsSignificant || result.MannWhitneyU.PValue >= 0.05 || result.KolmogorovSmirnov.Statistic != 1 {
+		t.Fatalf("tests = %#v", result)
+	}
+	if result.EffectSize.Interpretation != "large" || result.Recommendation == "" {
+		t.Fatalf("effect/recommendation = %#v %q", result.EffectSize, result.Recommendation)
+	}
+	tied, err := sa.CompareGroups([]float64{1, 2, 2, 3}, []float64{2, 2, 4, 5})
+	if err != nil {
+		t.Fatalf("tied compare: %v", err)
+	}
+	if tied.MannWhitneyU.Statistic <= 0 || tied.MannWhitneyU.PValue <= 0 {
+		t.Fatalf("tied Mann-Whitney = %#v", tied.MannWhitneyU)
 	}
 	if _, err := sa.CompareGroups(nil, []float64{1}); err == nil || !strings.Contains(err.Error(), "empty groups") {
 		t.Fatalf("compare error = %v", err)
 	}
+}
+
+func near(got, want, tolerance float64) bool {
+	return math.Abs(got-want) <= tolerance
 }
 
 func TestStatisticalAnalyzerDefaultsAndSmallHelpers(t *testing.T) {

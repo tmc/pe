@@ -160,7 +160,7 @@ Infrastructure:
 
 ### Performance & Monitoring (✅ Implemented)
 Comprehensive observability:
-- **Benchmarking**: benchmark helpers; significance paths are incomplete
+- **Benchmarking**: benchmark helpers; command-level significance workflows are incomplete
 - **Profiling**: CPU, memory, and execution tracing
 - **Metrics**: Advanced evaluation metrics and cost optimization
 - **Pipeline Processing**: Unix-style composable commands for complex workflows

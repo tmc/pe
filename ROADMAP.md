@@ -1186,8 +1186,7 @@ not-implemented error with matching documentation.
    the registered command surface until implementation work starts.
 
 Current known explicit gaps:
-- statistical significance, t-test, group comparison, and metrics-analysis
-  paths
+- cross-validation summaries and command-level statistical analysis surfaces
 - non-interactive template creation and interactive template-library creation
 - metaprompt synthesis strategies: template, evolutionary, and neural
 - compose optimization, component import, coherence check, and coherence
@@ -1209,9 +1208,11 @@ the current command surface.
 2. DONE current pass: Add provider formatting only where PE can prove the
    format locally; unsupported providers return explicit errors before
    multi-target builds write partial artifacts.
-3. Implement statistical test primitives behind `pe test` and metrics packages:
-   t-test, A/B test, cross-validation summaries, group comparison, confidence
-   intervals, and multiple-comparison caveats.
+3. DONE current pass: Implement local statistical primitives in the metrics
+   package: summary confidence intervals, Welch/paired t-test, two-proportion
+   A/B test, Mann-Whitney U, Kolmogorov-Smirnov, group comparison, effect-size
+   reporting, and edge-case errors. Remaining work: command-level exposure,
+   cross-validation summaries, and multiple-comparison caveats.
 4. Implement automatic test generation only after the input/output contract is
    narrow enough to test deterministically with a mock provider.
 5. Implement TypeScript and Pydantic validation through isolated adapters with
@@ -1220,7 +1221,7 @@ the current command surface.
 
 Verification:
 - Unit tests for each statistical primitive with edge cases for empty, tiny,
-  NaN, and tied samples.
+  non-finite, zero-variance, and tied samples.
 - Script tests for `pe build --validate`, future statistical commands, and
   structured validation success/failure cases.
 - No command shells out to user-provided tools unless the CLI contract requires
