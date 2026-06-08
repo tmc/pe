@@ -1182,11 +1182,10 @@ not-implemented error with matching documentation.
    and `ROADMAP.md` synchronized for each classified command.
 3. Add tests for not-implemented command surfaces so future changes cannot
    regress into fake success.
-4. Decide whether dormant commands should remain registered, move under
-   `pe experimental`, or be removed until implementation work starts.
+4. DONE current pass: remove dormant `pe exp` and `pe test` placeholders from
+   the registered command surface until implementation work starts.
 
 Current known explicit gaps:
-- `pe test generate-tests`, `pe test ab-test`, and `pe test cross-validate`
 - statistical significance, t-test, group comparison, and metrics-analysis
   paths
 - non-interactive template creation and interactive template-library creation
@@ -1222,8 +1221,8 @@ the current command surface.
 Verification:
 - Unit tests for each statistical primitive with edge cases for empty, tiny,
   NaN, and tied samples.
-- Script tests for `pe build --validate`, `pe test ab-test`, and structured
-  validation success/failure cases.
+- Script tests for `pe build --validate`, future statistical commands, and
+  structured validation success/failure cases.
 - No command shells out to user-provided tools unless the CLI contract requires
   it and the path is covered by tests.
 

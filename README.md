@@ -173,8 +173,7 @@ Run `pe --help` for the generated command list. The current top-level surface in
 
 ### Experimental Commands
 - `pe experimental` and `pe exp` expose prototype optimization, composition,
-  local scheduling, consensus, unsigned attestation, local cache, workflow,
-  import/export, and report commands.
+  local scheduling, consensus, unsigned attestation, and local cache commands.
   Treat these as active development surfaces unless their subcommand docs state
   otherwise.
 

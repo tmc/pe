@@ -88,40 +88,8 @@ regression_tests:
 }
 
 func TestAdvancedTestSpecialCommandsAndGenerators(t *testing.T) {
-	tmpDir := t.TempDir()
-	promptFile := filepath.Join(tmpDir, "prompt.txt")
-	if err := os.WriteFile(promptFile, []byte("Analyze sentiment"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	cmd := testCmd()
-	var buf bytes.Buffer
-	cmd.SetOut(&buf)
-	cmd.SetErr(&buf)
-	if err := runGenerateTests(cmd, promptFile, "mock"); err == nil || !strings.Contains(err.Error(), "not yet implemented") {
-		t.Fatalf("generate-tests err = %v", err)
-	}
-	if err := runGenerateTests(cmd, filepath.Join(tmpDir, "missing.txt"), "mock"); err == nil {
-		t.Fatal("missing generate-tests succeeded")
-	}
-	cmd.Flags().Set("config-a", "a.yaml")
-	cmd.Flags().Set("config-b", "b.yaml")
-	if err := runABTest(cmd, "mock"); err == nil || !strings.Contains(err.Error(), "not yet implemented") {
-		t.Fatalf("ab-test err = %v", err)
-	}
-	if err := runCrossValidate(cmd, "config.yaml", "mock"); err == nil || !strings.Contains(err.Error(), "not yet implemented") {
-		t.Fatalf("cross-validate err = %v", err)
-	}
 	if tests := generateSystematicTests([]string{"p1", "p2"}, []string{"contains", "length"}); len(tests) != 4 {
 		t.Fatalf("systematic tests = %#v", tests)
-	}
-	if cv, err := performCrossValidation([]string{"a"}, 2, true); err == nil || cv != nil || !strings.Contains(err.Error(), "not yet implemented") {
-		t.Fatalf("cross validation = %#v err=%v", cv, err)
-	}
-	if sig, err := performSignificanceTests("old", "new", 0.01, []string{"t"}); err == nil || sig != nil || !strings.Contains(err.Error(), "not yet implemented") {
-		t.Fatalf("significance = %#v err=%v", sig, err)
-	}
-	if ab, err := performABTest("a", "b", "score", true, 0.8, 0.2); err == nil || ab != nil || !strings.Contains(err.Error(), "not yet implemented") {
-		t.Fatalf("ab = %#v err=%v", ab, err)
 	}
 }
 
@@ -134,10 +102,6 @@ func TestAdvancedTestSubcommands(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "suite", cmd: createTestSuiteCmd(), args: map[string]string{"name": "suite", "description": "desc", "prompts": "p1,p2", "assertions": "contains", "output": filepath.Join(tmpDir, "suite.json")}},
-		{name: "generate", cmd: generateTestsCmd(), args: map[string]string{"source": "src", "count": "2", "template": "tmpl", "output": filepath.Join(tmpDir, "gen.json")}, wantErr: true},
-		{name: "significance", cmd: significanceTestCmd(), args: map[string]string{"baseline": "old.json", "optimized": "new.json", "alpha": "0.01", "tests": "t-test", "output": filepath.Join(tmpDir, "sig.json")}, wantErr: true},
-		{name: "cross", cmd: crossValidateCmd(), args: map[string]string{"methods": "a,b", "folds": "3", "statistical": "true", "output": filepath.Join(tmpDir, "cross.json")}, wantErr: true},
-		{name: "ab", cmd: abTestCmd(), args: map[string]string{"group-a": "a", "group-b": "b", "metric": "score", "bayesian": "true", "output": filepath.Join(tmpDir, "ab.json")}, wantErr: true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := tt.cmd
@@ -158,6 +122,27 @@ func TestAdvancedTestSubcommands(t *testing.T) {
 			}
 			if err != nil {
 				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestAdvancedTestRemovedPlaceholders(t *testing.T) {
+	for _, args := range [][]string{
+		{"generate"},
+		{"generate-tests", "prompt.txt"},
+		{"ab-test"},
+		{"cross-validate", "config.yaml"},
+		{"significance"},
+	} {
+		t.Run(args[0], func(t *testing.T) {
+			cmd := testCmd()
+			var buf bytes.Buffer
+			cmd.SetOut(&buf)
+			cmd.SetErr(&buf)
+			err := cmd.RunE(cmd, args)
+			if err == nil || !strings.Contains(err.Error(), `unknown command "`+args[0]+`"`) {
+				t.Fatalf("RunE err = %v", err)
 			}
 		})
 	}

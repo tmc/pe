@@ -1486,7 +1486,7 @@ pe test [command]
 
 ### Description
 
-Comprehensive testing framework implementing property-based testing, regression detection, A/B testing with Bayesian analysis, and systematic test case generation.
+Comprehensive testing framework implementing property-based testing, regression detection, and systematic test suite creation.
 
 ### Subcommands
 
@@ -1498,31 +1498,12 @@ Create systematic test suite from prompts.
 pe test create-suite [prompt_file] [flags]
 ```
 
-#### test generate
-
-Generate test cases automatically.
-
-```bash
-pe test generate [config_file] [flags]
-```
-
-#### test significance
-
-Registered compatibility entrypoint. It currently returns a not-implemented
-error instead of calculating statistical significance.
-
-```bash
-pe test significance [baseline] [current] [flags]
-```
-
 ### Flags
 
 ```bash
 -b, --baseline string          Baseline file for regression testing
-    --bootstrap int            Bootstrap samples for statistical analysis (default 1000)
 -c, --config string           Configuration file path
--t, --type string             Test type: property, regression, systematic, ab-test, cross-validate (default "systematic")
-    --confidence float        Confidence level for statistical tests (default 0.95)
+-t, --type string             Test type: property, regression, systematic, comprehensive (default "systematic")
     --comprehensive           Run all testing methods combined
 ```
 
@@ -1531,9 +1512,6 @@ pe test significance [baseline] [current] [flags]
 - **property**: Property-based testing for robustness validation
 - **regression**: Performance regression detection
 - **systematic**: Systematic test case execution
-- **ab-test**: registered, not implemented
-- **cross-validate**: registered, not implemented
-- **significance**: registered, not implemented
 - **comprehensive**: All testing methods combined
 
 ### Examples
@@ -1548,20 +1526,11 @@ pe test config.yaml --type property
 # Regression testing against baseline
 pe test config.yaml --type regression --baseline baseline.json
 
-# A/B testing
-pe test config.yaml --type ab-test
-
-# Statistical significance test
-pe test significance baseline.json current.json
-
 # Generate test suite
 pe test create-suite prompt.txt -o test-suite.yaml
 
 # Comprehensive testing
 pe test config.yaml --comprehensive
-
-# Generate test cases
-pe test generate config.yaml --count 100
 ```
 
 ---

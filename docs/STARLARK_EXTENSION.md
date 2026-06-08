@@ -436,8 +436,8 @@ pe optimize prompt.txt --test-generator tests.star
 # Apply Starlark rubrics to existing results
 pe evaluate results.json --rubric quality.star
 
-# Generate test cases and run them
-pe test generate --generator cases.star | pe test run -
+# Build a suite from explicit prompt/assertion inputs
+pe test create-suite --prompts prompt.txt --assertions contains,length
 ```
 
 ## Best Practices

@@ -41,10 +41,8 @@ func testCmd() *cobra.Command {
 Test-Driven Development Features:
 • Systematic test case generation and management
 • Automated test suite creation from prompts
-• Regression testing with statistical significance
+• Regression testing against saved baselines
 • Property-based testing for robustness validation
-• A/B testing with Bayesian analysis
-• Cross-validation and confidence intervals
 • Test case templates and reusable patterns
 • Automated test case discovery and execution
 
@@ -52,34 +50,19 @@ Testing Types:
 • property - Property-based testing for robustness
 • regression - Performance regression detection
 • systematic - Systematic test case execution
-• ab-test - A/B testing with statistical analysis
-• cross-validate - Cross-validation between methods
-• significance - Statistical significance testing
 • comprehensive - All testing methods combined
 
 Advanced Features:
-• Test case generation from examples
+• Test suite creation from examples
 • Automated assertion discovery
 • Performance benchmarking
 • Quality gate enforcement
 • Test result analytics and reporting`,
 		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Handle special test commands
 			if len(args) > 0 {
-				switch args[0] {
-				case "generate-tests":
-					if len(args) < 2 {
-						return fmt.Errorf("generate-tests requires a prompt file")
-					}
-					return runGenerateTests(cmd, args[1], provider)
-				case "ab-test":
-					return runABTest(cmd, provider)
-				case "cross-validate":
-					if len(args) < 2 {
-						return fmt.Errorf("cross-validate requires a config file")
-					}
-					return runCrossValidate(cmd, args[1], provider)
+				if removedTestCommand(args[0]) {
+					return fmt.Errorf("unknown command %q for %q", args[0], cmd.CommandPath())
 				}
 			}
 
@@ -93,7 +76,7 @@ Advanced Features:
 		},
 	}
 
-	cmd.Flags().StringVarP(&testType, "type", "t", "property", "Test type: property, regression, systematic, ab-test, cross-validate, significance, comprehensive")
+	cmd.Flags().StringVarP(&testType, "type", "t", "property", "Test type: property, regression, systematic, comprehensive")
 	cmd.Flags().StringVarP(&baseline, "baseline", "b", "", "Baseline file for regression testing")
 	cmd.Flags().StringVarP(&saveBaseline, "save-baseline", "", "", "Save current results as baseline")
 	cmd.Flags().IntVarP(&iterations, "iterations", "i", 50, "Number of iterations for property testing")
@@ -103,11 +86,7 @@ Advanced Features:
 	cmd.Flags().StringVar(&provider, "provider", "openai", "LLM provider to use for testing")
 
 	// Additional test-driven development flags
-	cmd.Flags().Bool("generate-tests", false, "Generate test cases from prompt examples")
-	cmd.Flags().Bool("statistical-validation", false, "Include statistical significance testing")
 	cmd.Flags().String("template", "", "Test case template to use")
-	cmd.Flags().Float64("confidence", 0.95, "Confidence level for statistical tests")
-	cmd.Flags().Int("bootstrap", 1000, "Bootstrap samples for statistical analysis")
 	cmd.Flags().String("format", "table", "Output format (table, json, yaml, html)")
 	cmd.Flags().Bool("quality-gates", false, "Enforce quality gates for test results")
 	cmd.Flags().StringSlice("providers", []string{}, "Providers to test against")
@@ -115,18 +94,17 @@ Advanced Features:
 	cmd.Flags().Int("max-failures", 10, "Maximum failures before stopping")
 	cmd.Flags().String("test-suite", "", "Pre-defined test suite to run")
 
-	// Additional flags for special test types
-	cmd.Flags().String("config-a", "", "First configuration for A/B testing")
-	cmd.Flags().String("config-b", "", "Second configuration for A/B testing")
-
-	// Add subcommands for systematic testing
 	cmd.AddCommand(createTestSuiteCmd())
-	cmd.AddCommand(generateTestsCmd())
-	// cmd.AddCommand(crossValidateCmd()) // Commented out to handle cross-validate in parent command
-	cmd.AddCommand(significanceTestCmd())
-	// cmd.AddCommand(abTestCmd()) // Commented out to handle ab-test in parent command
 
 	return cmd
+}
+
+func removedTestCommand(name string) bool {
+	switch name {
+	case "generate", "generate-tests", "ab-test", "cross-validate", "significance":
+		return true
+	}
+	return false
 }
 
 // AdvancedTestConfig represents the configuration for advanced testing
@@ -505,23 +483,6 @@ func printTestSummary(results *TestResults, cmd *cobra.Command) {
 	}
 }
 
-// Helper functions for special test commands
-
-func runGenerateTests(cmd *cobra.Command, promptFile, provider string) error {
-	if _, err := os.ReadFile(promptFile); err != nil {
-		return fmt.Errorf("failed to read prompt file: %v", err)
-	}
-	return fmt.Errorf("automatic test case generation is not yet implemented")
-}
-
-func runABTest(cmd *cobra.Command, provider string) error {
-	return fmt.Errorf("A/B test statistical analysis is not yet implemented")
-}
-
-func runCrossValidate(cmd *cobra.Command, configFile, provider string) error {
-	return fmt.Errorf("cross-validation statistical analysis is not yet implemented")
-}
-
 // Systematic Testing Subcommands
 
 // createTestSuiteCmd creates test suites from prompts
@@ -587,215 +548,6 @@ Features:
 	return cmd
 }
 
-// generateTestsCmd generates test cases automatically
-func generateTestsCmd() *cobra.Command {
-	var (
-		source     string
-		count      int
-		outputFile string
-		template   string
-	)
-
-	cmd := &cobra.Command{
-		Use:   "generate",
-		Short: "Generate test cases automatically",
-		Long: `Automatically generate comprehensive test cases:
-
-Generation Methods:
-• Example-based generation from existing prompts
-• Template-based test case creation
-• Adversarial test case generation
-• Edge case discovery and creation
-• Combinatorial test case generation`,
-		Example: `  # Generate from examples
-  pe test generate --source examples.yaml --count 50
-
-  # Generate using template
-  pe test generate --template classification --count 25`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return fmt.Errorf("automatic test case generation is not yet implemented")
-		},
-	}
-
-	cmd.Flags().StringVar(&source, "source", "", "Source for test generation")
-	cmd.Flags().IntVar(&count, "count", 10, "Number of test cases to generate")
-	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for generated tests")
-	cmd.Flags().StringVar(&template, "template", "", "Template for test generation")
-
-	return cmd
-}
-
-// crossValidateCmd performs cross-validation testing
-func crossValidateCmd() *cobra.Command {
-	var (
-		methods     []string
-		folds       int
-		outputFile  string
-		statistical bool
-	)
-
-	cmd := &cobra.Command{
-		Use:   "cross-validate",
-		Short: "Cross-validation between optimization methods",
-		Long: `Perform systematic cross-validation between different methods:
-
-Features:
-• K-fold cross-validation
-• Method comparison with statistical significance
-• Performance benchmarking across methods
-• Confidence interval estimation
-• Effect size analysis`,
-		Example: `  # Cross-validate optimization methods
-  pe test cross-validate --methods textgrad,evolve,fusion --folds 5
-
-  # With statistical analysis
-  pe test cross-validate --methods pe2,apex --folds 10 --statistical`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("Cross-validating methods: %v with %d folds\n", methods, folds)
-
-			results, err := performCrossValidation(methods, folds, statistical)
-			if err != nil {
-				return err
-			}
-
-			if outputFile != "" {
-				data, _ := json.MarshalIndent(results, "", "  ")
-				return os.WriteFile(outputFile, data, 0644)
-			}
-
-			fmt.Printf("Cross-validation completed. Methods: %v\n", methods)
-			return nil
-		},
-	}
-
-	cmd.Flags().StringSliceVar(&methods, "methods", []string{"textgrad", "pe2", "apex"}, "Optimization methods to compare")
-	cmd.Flags().IntVar(&folds, "folds", 5, "Number of cross-validation folds")
-	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for results")
-	cmd.Flags().BoolVar(&statistical, "statistical", false, "Include statistical analysis")
-
-	return cmd
-}
-
-// significanceTestCmd performs statistical significance testing
-func significanceTestCmd() *cobra.Command {
-	var (
-		baseline   string
-		optimized  string
-		alpha      float64
-		outputFile string
-		tests      []string
-	)
-
-	cmd := &cobra.Command{
-		Use:   "significance",
-		Short: "Statistical significance testing for improvements",
-		Long: `Perform comprehensive statistical significance testing:
-
-Statistical Tests:
-• T-test for comparing means
-• Mann-Whitney U test for non-parametric comparison
-• Wilcoxon signed-rank test for paired samples
-• Effect size analysis (Cohen's D, Glass's Delta)
-• Confidence interval estimation
-• Power analysis and sample size calculation`,
-		Example: `  # Test significance of optimization
-  pe test significance --baseline baseline.json --optimized optimized.json --alpha 0.05
-
-  # Multiple statistical tests
-  pe test significance --baseline old.json --optimized new.json --tests t-test,mann-whitney
-
-  # With effect size analysis
-  pe test significance --baseline control.json --optimized treatment.json --effect-size`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("Testing significance between %s and %s (α=%.3f)\n", baseline, optimized, alpha)
-
-			results, err := performSignificanceTests(baseline, optimized, alpha, tests)
-			if err != nil {
-				return err
-			}
-
-			if outputFile != "" {
-				data, _ := json.MarshalIndent(results, "", "  ")
-				return os.WriteFile(outputFile, data, 0644)
-			}
-
-			fmt.Printf("Statistical significance testing completed.\n")
-			return nil
-		},
-	}
-
-	cmd.Flags().StringVar(&baseline, "baseline", "", "Baseline results file")
-	cmd.Flags().StringVar(&optimized, "optimized", "", "Optimized results file")
-	cmd.Flags().Float64Var(&alpha, "alpha", 0.05, "Significance level")
-	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for results")
-	cmd.Flags().StringSliceVar(&tests, "tests", []string{"t-test", "mann-whitney"}, "Statistical tests to perform")
-
-	return cmd
-}
-
-// abTestCmd performs A/B testing with Bayesian analysis
-func abTestCmd() *cobra.Command {
-	var (
-		groupA     string
-		groupB     string
-		metric     string
-		bayesian   bool
-		outputFile string
-		power      float64
-		effectSize float64
-	)
-
-	cmd := &cobra.Command{
-		Use:   "ab-test",
-		Short: "A/B testing with Bayesian analysis",
-		Long: `Perform rigorous A/B testing with advanced statistical analysis:
-
-Features:
-• Classical A/B testing with power analysis
-• Bayesian A/B testing with credible intervals
-• Effect size estimation and interpretation
-• Sample size calculation and power analysis
-• Early stopping criteria based on Bayesian factors
-• Multiple comparison correction`,
-		Example: `  # Classical A/B test
-  pe test ab-test --group-a control.json --group-b treatment.json --metric accuracy
-
-  # Bayesian A/B test
-  pe test ab-test --group-a baseline.json --group-b optimized.json --bayesian
-
-  # With power analysis
-  pe test ab-test --group-a old.json --group-b new.json --power 0.8 --effect-size 0.2`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("A/B testing: %s vs %s (metric: %s)\n", groupA, groupB, metric)
-
-			results, err := performABTest(groupA, groupB, metric, bayesian, power, effectSize)
-			if err != nil {
-				return err
-			}
-
-			if outputFile != "" {
-				data, _ := json.MarshalIndent(results, "", "  ")
-				return os.WriteFile(outputFile, data, 0644)
-			}
-
-			fmt.Printf("A/B testing completed.\n")
-			return nil
-		},
-	}
-
-	cmd.Flags().StringVar(&groupA, "group-a", "", "Group A results file")
-	cmd.Flags().StringVar(&groupB, "group-b", "", "Group B results file")
-	cmd.Flags().StringVar(&metric, "metric", "accuracy", "Metric to compare")
-	cmd.Flags().BoolVar(&bayesian, "bayesian", false, "Use Bayesian analysis")
-	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for results")
-	cmd.Flags().Float64Var(&power, "power", 0.8, "Statistical power for sample size calculation")
-	cmd.Flags().Float64Var(&effectSize, "effect-size", 0.2, "Expected effect size")
-
-	return cmd
-}
-
-// Helper functions for test generation
-
 func generateSystematicTests(prompts, assertions []string) []map[string]interface{} {
 	var tests []map[string]interface{}
 
@@ -812,16 +564,4 @@ func generateSystematicTests(prompts, assertions []string) []map[string]interfac
 	}
 
 	return tests
-}
-
-func performCrossValidation(methods []string, folds int, statistical bool) (map[string]interface{}, error) {
-	return nil, fmt.Errorf("cross-validation statistical analysis is not yet implemented")
-}
-
-func performSignificanceTests(baseline, optimized string, alpha float64, tests []string) (map[string]interface{}, error) {
-	return nil, fmt.Errorf("statistical significance testing is not yet implemented")
-}
-
-func performABTest(groupA, groupB, metric string, bayesian bool, power, effectSize float64) (map[string]interface{}, error) {
-	return nil, fmt.Errorf("A/B test statistical analysis is not yet implemented")
 }
