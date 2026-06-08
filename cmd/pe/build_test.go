@@ -249,7 +249,7 @@ func TestBuildCmd_BasicUsage(t *testing.T) {
 			fileContent:     "You are a helpful assistant.",
 			fileName:        "prompt.txt",
 			args:            []string{"--validate"},
-			wantErr:         true,
+			wantErr:         false,
 			checkOutputFile: false,
 		},
 		{
@@ -314,6 +314,122 @@ func TestBuildCmd_BasicUsage(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestValidateBuildPrompt(t *testing.T) {
+	tests := []struct {
+		name      string
+		prompt    string
+		variables map[string]interface{}
+		wantErr   string
+	}{
+		{
+			name:   "plain text",
+			prompt: "Review this change.\n",
+		},
+		{
+			name: "typed executable text",
+			prompt: `---
+kind: pe.text.v1
+inputs:
+  topic:
+    type: string
+---
+Review {{ .topic }}.
+`,
+			variables: map[string]interface{}{"topic": "release"},
+		},
+		{
+			name: "missing input",
+			prompt: `---
+kind: pe.text.v1
+inputs:
+  topic:
+    type: string
+---
+Review {{ .topic }}.
+`,
+			wantErr: "missing input topic",
+		},
+		{
+			name: "unsupported kind",
+			prompt: `---
+kind: pe.future.v1
+---
+Review this.
+`,
+			wantErr: "unsupported executable text kind",
+		},
+		{
+			name: "malformed front matter",
+			prompt: `---
+kind: pe.text.v1
+Review this.
+`,
+			wantErr: "front matter missing closing",
+		},
+		{
+			name:    "template references undeclared input",
+			prompt:  "Review {{ .topic }}.\n",
+			wantErr: "map has no entry for key",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateBuildPrompt("", tt.prompt, tt.variables)
+			if tt.wantErr == "" {
+				if err != nil {
+					t.Fatalf("validateBuildPrompt: %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("validateBuildPrompt error = %v, want %q", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestBuildValidateAllowsImports(t *testing.T) {
+	tmpDir := t.TempDir()
+	part := filepath.Join(tmpDir, "part.prompt")
+	if err := os.WriteFile(part, []byte("part\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	main := filepath.Join(tmpDir, "main.prompt")
+	if err := os.WriteFile(main, []byte(`---
+kind: pe.text.v1
+imports:
+  part: part.prompt
+---
+{{ import "part" }}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	oldDir, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldDir)
+
+	buildOutput = ""
+	buildWithMetadata = false
+	buildTarget = ""
+	buildTargets = nil
+	buildMinify = false
+	buildValidate = false
+	buildBundle = false
+	buildCompress = false
+
+	cmd := buildCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{main, "--validate"})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("build validate imports: %v", err)
 	}
 }
 

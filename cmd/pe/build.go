@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/tmc/pe/internal/exectext"
 	"gopkg.in/yaml.v3"
 )
 
@@ -24,8 +25,8 @@ var buildCmd = &cobra.Command{
 
 The build command reads a prompt or config, applies supported provider
 formatting, writes output files, and can package a directory into a bundle.
-Validation and some provider-specific formatting paths return explicit
-not-implemented errors.`,
+Some provider-specific formatting paths return explicit not-implemented
+errors.`,
 	Example: `  # Build from config
   pe build config.yaml
   
@@ -35,7 +36,7 @@ not-implemented errors.`,
   # Build for specific provider
   pe build config.yaml --target anthropic
   
-  # Validation currently returns an explicit not-implemented error
+  # Validate without writing build artifacts
   pe build config.yaml --validate`,
 	Args: cobra.ExactArgs(1),
 	RunE: runBuild,
@@ -108,6 +109,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	// Load config or prompt
 	var config buildConfig
 	var prompt string
+	var promptFile string
 
 	if strings.HasSuffix(input, ".yaml") || strings.HasSuffix(input, ".yml") {
 		data, err := os.ReadFile(input)
@@ -133,8 +135,18 @@ func runBuild(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to read prompt: %w", err)
 		}
 		prompt = string(data)
+		promptFile = input
 	} else {
 		prompt = input
+	}
+
+	// Validation
+	if buildValidate {
+		if err := validateBuildPrompt(promptFile, prompt, config.Variables); err != nil {
+			return err
+		}
+		fmt.Println("Validation passed")
+		return nil
 	}
 
 	// Handle multiple targets
@@ -185,11 +197,6 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Original tokens: %d\n", originalTokens)
 		fmt.Printf("Minified tokens: %d\n", minifiedTokens)
 		fmt.Printf("Reduction: %.0f%%\n", reduction)
-	}
-
-	// Validation
-	if buildValidate {
-		return fmt.Errorf("build validation is not yet implemented")
 	}
 
 	// Add production mode marker if in production environment
@@ -277,6 +284,28 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	fmt.Println("Optimization complete")
 	fmt.Println("✓ Built successfully")
 
+	return nil
+}
+
+func validateBuildPrompt(name, prompt string, variables map[string]interface{}) error {
+	file, err := exectext.Parse(strings.NewReader(prompt))
+	if err != nil {
+		return fmt.Errorf("validating prompt: %w", err)
+	}
+	if err := file.Validate(); err != nil {
+		return fmt.Errorf("validating prompt: %w", err)
+	}
+	vars := make(map[string]string)
+	for name, value := range variables {
+		vars[name] = fmt.Sprint(value)
+	}
+	imports, err := readExecTextImports(name, file)
+	if err != nil {
+		return fmt.Errorf("validating prompt: %w", err)
+	}
+	if _, err := file.RenderWithImports(vars, imports); err != nil {
+		return fmt.Errorf("validating prompt: %w", err)
+	}
 	return nil
 }
 

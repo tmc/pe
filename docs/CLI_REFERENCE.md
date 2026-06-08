@@ -1425,8 +1425,8 @@ pe build [config/prompt] [flags]
 
 The `build` command reads a prompt or config, applies supported provider
 formatting, writes output files, and can package a directory into a bundle.
-Validation and some provider-specific formatting paths return explicit
-not-implemented errors.
+Validation is local and deterministic. Some provider-specific formatting paths
+return explicit not-implemented errors.
 
 ### Arguments
 

@@ -37,9 +37,9 @@ stdout 'Context Integration:'
 stdout 'Instructions:'
 
 # Production deployment workflow
-! pe build build-config.yaml --validate
+pe build build-config.yaml --validate
 stdout 'Building prompts from build-config.yaml'
-stderr 'build validation is not yet implemented'
+stdout 'Validation passed'
 
 # Continuous optimization workflow  
 pe experimental optimize prompt.txt --method hybrid --iterations 2 --provider mock

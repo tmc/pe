@@ -49,8 +49,12 @@ stdout 'Minified tokens:'
 stdout 'Reduction:'
 
 # Build with validation
-! pe build config.yaml --validate
-stderr 'build validation is not yet implemented'
+pe build config.yaml --validate
+stdout 'Validation passed'
+
+# Build validation fails closed on invalid executable text
+! pe build invalid-exectext.prompt --validate
+stderr 'unsupported executable text kind'
 
 # Build bundle with dependencies
 pe build project/ --bundle
@@ -103,6 +107,12 @@ You are an incredibly helpful, knowledgeable, and friendly AI assistant who alwa
 # Missing prompt field
 provider: openai
 model: gpt-4
+
+-- invalid-exectext.prompt --
+---
+kind: pe.future.v1
+---
+This kind is not supported.
 
 -- large-prompt.txt --
 This is a large prompt with many repeated sections for testing compression.
