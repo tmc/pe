@@ -131,7 +131,7 @@ func TestSemanticFlowCmd_FlagParsing(t *testing.T) {
 func TestSemanticGradientsCmd_FlagParsing(t *testing.T) {
 	cmd := semanticGradientsCmd()
 
-	flags := []string{"prompt", "prompt-file", "visualize", "output"}
+	flags := []string{"prompt", "prompt-file", "visualize", "output", "format"}
 	for _, name := range flags {
 		if cmd.Flags().Lookup(name) == nil {
 			t.Errorf("Expected flag %q to exist", name)
@@ -397,8 +397,17 @@ func TestSemanticLocalSubcommands(t *testing.T) {
 	gradients := semanticGradientsCmd()
 	gradients.Flags().Set("prompt-file", promptFile)
 	gradients.Flags().Set("visualize", "true")
-	if err := gradients.RunE(gradients, nil); err == nil || !strings.Contains(err.Error(), "semantic gradient field visualization is not yet implemented") {
+	gradientOut := filepath.Join(tmpDir, "gradients.html")
+	gradients.Flags().Set("output", gradientOut)
+	if err := gradients.RunE(gradients, nil); err != nil {
 		t.Fatalf("gradients error = %v", err)
+	}
+	gradientData, err := os.ReadFile(gradientOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(gradientData), "<h1>Semantic Gradients</h1>") {
+		t.Fatalf("gradient output = %q", gradientData)
 	}
 	monitor := semanticMonitorCmd()
 	monitor.Flags().Set("baseline", baselineFile)
@@ -481,5 +490,25 @@ func TestAnalyzeSemanticDependenciesDetectsCycles(t *testing.T) {
 	}
 	if !strings.Contains(text, "Cycle: a -> b -> a") {
 		t.Fatalf("text = %q", text)
+	}
+}
+
+func TestAnalyzeLocalSemanticGradients(t *testing.T) {
+	report := analyzeLocalSemanticGradients("Summarize the issue clearly.")
+	if report.TokenCount == 0 || len(report.Gradients) == 0 {
+		t.Fatalf("report = %#v", report)
+	}
+	if report.Gradients[0].Component != "specificity" {
+		t.Fatalf("gradients = %#v", report.Gradients)
+	}
+	text, err := formatSemanticGradients(report, "text")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(text, "Semantic Gradients") {
+		t.Fatalf("text = %q", text)
+	}
+	if _, err := formatSemanticGradients(report, "bad"); err == nil {
+		t.Fatal("bad format succeeded")
 	}
 }

@@ -1448,6 +1448,9 @@ keeping provider dependencies behind small interfaces.
    DONE current pass: `pe experimental semantic analyze --dependencies` now
    emits local JSON/YAML/text dependency reports with source/sink/isolation,
    centrality, warnings, and cycle detection.
+   DONE current pass: `pe experimental semantic gradients` now emits local
+   prompt-improvement gradient signals and optional static HTML visualization
+   without provider calls.
 
 Verification:
 - Fake-provider tests for candidate generation.

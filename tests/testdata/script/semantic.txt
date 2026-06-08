@@ -44,9 +44,10 @@ pe experimental semantic flow --system system.yaml
 stdout '"node_count": 4'
 stdout '"edge_count": 3'
 
-# Gradient visualization is explicit about unsupported behavior
-! pe experimental semantic gradients --prompt prompt.txt --visualize
-stderr 'semantic gradient field visualization is not yet implemented'
+# Gradient analysis produces local prompt improvement signals
+pe experimental semantic gradients --prompt prompt.txt --format text
+stdout 'Semantic Gradients'
+stdout 'specificity: add concrete task details'
 
 # Adaptive learning rate
 pe experimental semantic descent --prompt prompt.txt --objective "engaging" --adaptive

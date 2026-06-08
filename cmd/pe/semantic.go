@@ -58,6 +58,23 @@ type semanticDependencyReport struct {
 	ComponentRank []semanticFlowNode `json:"component_rank" yaml:"component_rank"`
 }
 
+type semanticGradientReport struct {
+	PromptLength int                     `json:"prompt_length" yaml:"prompt_length"`
+	TokenCount   int                     `json:"token_count" yaml:"token_count"`
+	LineCount    int                     `json:"line_count" yaml:"line_count"`
+	Gradients    []semanticLocalGradient `json:"gradients" yaml:"gradients"`
+	Summary      string                  `json:"summary" yaml:"summary"`
+}
+
+type semanticLocalGradient struct {
+	Component   string   `json:"component" yaml:"component"`
+	Direction   string   `json:"direction" yaml:"direction"`
+	Magnitude   float64  `json:"magnitude" yaml:"magnitude"`
+	Confidence  float64  `json:"confidence" yaml:"confidence"`
+	Reasoning   string   `json:"reasoning" yaml:"reasoning"`
+	Suggestions []string `json:"suggestions,omitempty" yaml:"suggestions,omitempty"`
+}
+
 // semanticCmd implements semantic backpropagation and gradient descent for GASO
 func semanticCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -1017,6 +1034,7 @@ func semanticGradientsCmd() *cobra.Command {
 		promptFile string
 		visualize  bool
 		outputFile string
+		format     string
 	)
 
 	cmd := &cobra.Command{
@@ -1024,13 +1042,31 @@ func semanticGradientsCmd() *cobra.Command {
 		Short: "Compute and visualize semantic gradients",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Load prompt content
-			_, err := loadPromptContent(prompt, promptFile)
+			promptText, err := loadPromptContent(prompt, promptFile)
 			if err != nil {
 				return fmt.Errorf("failed to load prompt: %v", err)
 			}
-			_ = visualize
-			_ = outputFile
-			return fmt.Errorf("semantic gradient field visualization is not yet implemented")
+			report := analyzeLocalSemanticGradients(promptText)
+			outputFormat := format
+			if visualize && outputFormat == "json" {
+				outputFormat = "html"
+			}
+			output, err := formatSemanticGradients(report, outputFormat)
+			if err != nil {
+				return err
+			}
+			if outputFile != "" {
+				if err := os.WriteFile(outputFile, []byte(output), 0644); err != nil {
+					return fmt.Errorf("write semantic gradient output: %w", err)
+				}
+				fmt.Printf("Semantic gradients written to %s\n", outputFile)
+				return nil
+			}
+			fmt.Print(output)
+			if !strings.HasSuffix(output, "\n") {
+				fmt.Println()
+			}
+			return nil
 		},
 	}
 
@@ -1038,8 +1074,153 @@ func semanticGradientsCmd() *cobra.Command {
 	cmd.Flags().StringVar(&promptFile, "prompt-file", "", "File containing prompt")
 	cmd.Flags().BoolVar(&visualize, "visualize", false, "Generate visualization")
 	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file")
+	cmd.Flags().StringVarP(&format, "format", "f", "json", "Output format (json, yaml, text, html)")
 
 	return cmd
+}
+
+func analyzeLocalSemanticGradients(prompt string) *semanticGradientReport {
+	trimmed := strings.TrimSpace(prompt)
+	tokens := strings.Fields(trimmed)
+	lines := nonEmptyLines(trimmed)
+	gradients := []semanticLocalGradient{}
+	if len(tokens) < 12 {
+		gradients = append(gradients, semanticLocalGradient{
+			Component:  "specificity",
+			Direction:  "add concrete task details and success criteria",
+			Magnitude:  0.75,
+			Confidence: 0.82,
+			Reasoning:  "short prompts often omit intent, constraints, or expected output shape",
+			Suggestions: []string{
+				"state the exact task",
+				"include the expected output format",
+				"add constraints that define a good answer",
+			},
+		})
+	}
+	if !containsAnyFold(trimmed, "format", "json", "yaml", "table", "bullet", "output") {
+		gradients = append(gradients, semanticLocalGradient{
+			Component:  "output_format",
+			Direction:  "specify the response structure",
+			Magnitude:  0.6,
+			Confidence: 0.78,
+			Reasoning:  "no explicit output-format instruction was detected",
+			Suggestions: []string{
+				"name the required format",
+				"describe required sections or fields",
+			},
+		})
+	}
+	if !containsAnyFold(trimmed, "do not", "must", "only", "avoid", "constraint") {
+		gradients = append(gradients, semanticLocalGradient{
+			Component:  "constraints",
+			Direction:  "add boundaries for unacceptable output",
+			Magnitude:  0.5,
+			Confidence: 0.72,
+			Reasoning:  "the prompt does not appear to define hard constraints",
+			Suggestions: []string{
+				"add must or must-not conditions",
+				"state assumptions that should not be made",
+			},
+		})
+	}
+	if len(lines) <= 1 && len(tokens) > 20 {
+		gradients = append(gradients, semanticLocalGradient{
+			Component:  "structure",
+			Direction:  "split the prompt into labeled sections",
+			Magnitude:  0.45,
+			Confidence: 0.68,
+			Reasoning:  "long single-paragraph prompts are harder to scan and preserve",
+			Suggestions: []string{
+				"use context, task, constraints, and output sections",
+			},
+		})
+	}
+	if len(gradients) == 0 {
+		gradients = append(gradients, semanticLocalGradient{
+			Component:  "maintenance",
+			Direction:  "preserve current prompt structure",
+			Magnitude:  0.2,
+			Confidence: 0.64,
+			Reasoning:  "local checks found task detail, constraints, and output guidance",
+		})
+	}
+	return &semanticGradientReport{
+		PromptLength: len(prompt),
+		TokenCount:   len(tokens),
+		LineCount:    len(lines),
+		Gradients:    gradients,
+		Summary:      fmt.Sprintf("%d local gradient signals", len(gradients)),
+	}
+}
+
+func nonEmptyLines(text string) []string {
+	var lines []string
+	for _, line := range strings.Split(text, "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			lines = append(lines, line)
+		}
+	}
+	return lines
+}
+
+func containsAnyFold(text string, needles ...string) bool {
+	text = strings.ToLower(text)
+	for _, needle := range needles {
+		if strings.Contains(text, strings.ToLower(needle)) {
+			return true
+		}
+	}
+	return false
+}
+
+func formatSemanticGradients(report *semanticGradientReport, format string) (string, error) {
+	switch format {
+	case "", "json":
+		data, err := json.MarshalIndent(report, "", "  ")
+		if err != nil {
+			return "", fmt.Errorf("marshal semantic gradients: %w", err)
+		}
+		return string(data) + "\n", nil
+	case "yaml":
+		data, err := yaml.Marshal(report)
+		if err != nil {
+			return "", fmt.Errorf("marshal semantic gradients: %w", err)
+		}
+		return string(data), nil
+	case "text", "table":
+		var b strings.Builder
+		fmt.Fprintf(&b, "Semantic Gradients\n")
+		fmt.Fprintf(&b, "Tokens: %d, Lines: %d\n", report.TokenCount, report.LineCount)
+		for _, gradient := range report.Gradients {
+			fmt.Fprintf(&b, "%s: %s (magnitude %.2f, confidence %.2f)\n", gradient.Component, gradient.Direction, gradient.Magnitude, gradient.Confidence)
+			fmt.Fprintf(&b, "  %s\n", gradient.Reasoning)
+		}
+		return b.String(), nil
+	case "html":
+		return renderSemanticGradientHTML(report), nil
+	default:
+		return "", fmt.Errorf("unsupported semantic gradient format: %s", format)
+	}
+}
+
+func renderSemanticGradientHTML(report *semanticGradientReport) string {
+	var b strings.Builder
+	b.WriteString("<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>Semantic Gradients</title>\n")
+	b.WriteString("<style>body{font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;margin:32px;color:#1f2937}.bar{height:18px;background:#4f46e5;margin:4px 0 16px}.item{margin-bottom:18px}</style></head><body>\n")
+	b.WriteString("<h1>Semantic Gradients</h1>\n")
+	fmt.Fprintf(&b, "<p>Tokens: %d, Lines: %d</p>\n", report.TokenCount, report.LineCount)
+	for _, gradient := range report.Gradients {
+		width := int(gradient.Magnitude * 100)
+		fmt.Fprintf(&b, "<div class=\"item\"><h2>%s</h2><p>%s</p><div class=\"bar\" style=\"width:%d%%\"></div><p>%s</p></div>\n",
+			html.EscapeString(gradient.Component),
+			html.EscapeString(gradient.Direction),
+			width,
+			html.EscapeString(gradient.Reasoning))
+	}
+	b.WriteString("</body></html>\n")
+	return b.String()
 }
 
 // semanticMonitorCmd monitors semantic drift
