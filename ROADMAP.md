@@ -1,6 +1,6 @@
 # PE Roadmap
 
-Last updated: 2026-05-05
+Last updated: 2026-06-08
 
 This file is the source of truth for planned PE work. Beads is deprecated for this repository: do not create or update `.beads` issues for new work. Keep roadmap changes in tracked commits with the code or documentation they describe.
 
@@ -788,8 +788,10 @@ Complete the module registry system for sharing and discovering prompts.
 
 Current status:
 - Core module management exists.
-- `pe mod download`, `pe mod list`, `pe mod search`, and `pe mod publish` have
-  command implementations.
+- `pe mod download`, `pe mod list`, and `pe mod search` have command
+  implementations.
+- `pe mod publish` is registered but publishing/indexing is not implemented in
+  the current registry backends.
 - Module registry support still needs release validation. Current docs now cover
   supported registry configuration, failure modes, and tidy/vendor limits.
 
@@ -1128,6 +1130,207 @@ Organization:
 - Add to documentation
 
 
+## Future Implementation Roadmap
+
+This section groups the remaining post-cleanup implementation work into a
+sequenced plan. It is intentionally broader than the v0.5 release checklist:
+v0.5 should ship only after the P1 release gates are closed; later milestones
+can graduate selected experimental and aspirational surfaces into stable APIs.
+
+### Milestone 0: v0.5 Release Closure
+
+Goal: ship the current stable core without claiming unfinished behavior.
+
+1. Run the remote release workflow dry-run after `.github/workflows/release.yml`
+   is present on the remote release/default branch, or after the release branch
+   is promoted.
+2. Fix remaining release-facing documentation drift, including README feature
+   claims about OWASP/security completeness and any roadmap entries that still
+   imply module publishing is implemented.
+3. Validate the remote registry read path with fixtures: `pe mod download`,
+   `pe mod list`, and `pe mod search` should have deterministic success and
+   failure tests that do not depend on live services.
+4. Run the Ollama example against a real local daemon and record model/version
+   notes, error modes, and privacy caveats.
+5. Keep promptfoo shell-out behavior explicitly opt-in; do not add implicit
+   CLI execution paths without a reviewed command contract and tests.
+
+Verification:
+- `GOTOOLCHAIN=go1.25.11 go test ./... -count=1`
+- `PE_BIN=/tmp/pe ./examples/current-commands/smoke.sh`
+- `PE_BIN=/tmp/pe ./examples/current-commands/release-local-workflows/smoke.sh`
+- GitHub Actions release dry-run evidence linked from release notes or build
+  matrix docs.
+
+### Milestone 1: Accuracy and Explicitness
+
+Goal: every registered command either works, fails closed, or returns a precise
+not-implemented error with matching documentation.
+
+1. Audit all explicit not-implemented paths and classify them as stable,
+   experimental, future, or removable.
+2. Keep `docs/CLI_REFERENCE.md`, generated help, README, `docs/CURRENT_STATUS.md`,
+   and `ROADMAP.md` synchronized for each classified command.
+3. Add tests for not-implemented command surfaces so future changes cannot
+   regress into fake success.
+4. Decide whether dormant commands should remain registered, move under
+   `pe experimental`, or be removed until implementation work starts.
+
+Current known explicit gaps:
+- `pe build --validate`
+- unsupported provider build formatting targets such as `google`
+- `pe test generate-tests`, `pe test ab-test`, and `pe test cross-validate`
+- statistical significance, t-test, group comparison, and metrics-analysis
+  paths
+- non-interactive template creation and interactive template-library creation
+- metaprompt synthesis strategies: template, evolutionary, and neural
+- compose optimization, component import, coherence check, and coherence
+  validation
+- playground compare, security, components, history, and BERTScore endpoints
+- YAML output in selected semantic command result paths
+- TypeScript and Pydantic structured validation
+- advanced promptfoo assertions for toxicity, coherence, factuality,
+  classification, similarity, SQL, and structure
+- data-poisoning and supply-chain security analyses, currently fail-closed
+
+### Milestone 2: Build, Test, Metrics, and Structured Validation
+
+Goal: finish the high-visibility command paths that users naturally expect from
+the current command surface.
+
+1. Implement `pe build --validate` as a local validation pass over prompt/config
+   syntax, front matter, declared inputs, output targets, and bundle metadata.
+2. Add provider formatting only where PE can prove the format locally; keep
+   unsupported providers as explicit errors.
+3. Implement statistical test primitives behind `pe test` and metrics packages:
+   t-test, A/B test, cross-validation summaries, group comparison, confidence
+   intervals, and multiple-comparison caveats.
+4. Implement automatic test generation only after the input/output contract is
+   narrow enough to test deterministically with a mock provider.
+5. Implement TypeScript and Pydantic validation through isolated adapters with
+   clear dependency and execution boundaries.
+6. Add examples and script tests for each promoted command path.
+
+Verification:
+- Unit tests for each statistical primitive with edge cases for empty, tiny,
+  NaN, and tied samples.
+- Script tests for `pe build --validate`, `pe test ab-test`, and structured
+  validation success/failure cases.
+- No command shells out to user-provided tools unless the CLI contract requires
+  it and the path is covered by tests.
+
+### Milestone 3: Module Registry and Supply Chain
+
+Goal: make modules useful beyond local examples while preserving clear trust and
+integrity semantics.
+
+1. Finish registry indexing and publishing, or explicitly split publishing into
+   a separate service/repository if PE should remain client-only.
+2. Define module archive format, path-cleaning rules, checksum recording, and
+   extraction guarantees.
+3. Add fixture-backed HTTP and GitHub registry tests for list, search, download,
+   missing version, malformed archive, checksum mismatch, and path traversal.
+4. Implement version upgrade and dependency graph behavior with predictable
+   conflict reporting.
+5. Connect `pe.mod` capability, placement, and policy blocks to static
+   validation, then runtime enforcement for provider/tool/file/network access.
+6. Sign attest manifests with an Ed25519 envelope while preserving unsigned
+   local integrity workflows.
+
+Verification:
+- `go test ./cmd/pe ./internal/module ./internal/pemod`
+- Fixture archives prove exact file extraction and rejection of path escapes.
+- Signature tests cover wrong key, tampered payload, missing signature, and
+  unsigned compatibility modes.
+
+### Milestone 4: Evaluation Quality and Safety
+
+Goal: graduate advanced assertions and security analyses only when they have
+honest scoring semantics and failure modes.
+
+1. Implement similarity scoring with a local deterministic baseline first, then
+   add optional embedding/provider-backed variants.
+2. Implement coherence and factuality checks behind explicit data/model
+   dependencies; avoid presenting heuristic scores as ground truth.
+3. Implement toxicity/classification/SQL/structure assertions with clear
+   provider requirements or local validators.
+4. Replace fail-closed data-poisoning and supply-chain placeholders with
+   concrete local checks, then optional remote or model-assisted analysis.
+5. Add benchmark fixtures and calibration docs for false positives, false
+   negatives, and unsupported environments.
+
+Verification:
+- Assertion tests include supported, unsupported, and dependency-missing paths.
+- Docs explain what each metric proves and what it does not prove.
+
+### Milestone 5: Composition, Synthesis, and Optimization
+
+Goal: make optimization and composition more than isolated experiments while
+keeping provider dependencies behind small interfaces.
+
+1. Define the adapter boundary between provider-backed candidate generation and
+   deterministic local optimization.
+2. Implement template/evolutionary/neural synthesis strategies only after their
+   inputs, outputs, scoring, and trace format are specified.
+3. Implement compose optimization, component import, and coherence validation
+   with local-first checks and provider-assisted options.
+4. Add DAG scheduling for semantic optimization graphs with deterministic
+   topological execution, cancellation, and cycle errors.
+5. Add static visualization for semantic/GASO graph structures through a
+   local-only endpoint or generated HTML artifact.
+
+Verification:
+- Fake-provider tests for candidate generation.
+- Deterministic optimizer tests that do not call live providers.
+- Graph tests for ordering, failed parents, cancellation, and cycles.
+
+### Milestone 6: Local Workflow and Developer Experience
+
+Goal: improve day-to-day workflows without widening the trusted execution
+surface accidentally.
+
+1. Verify and harden the interactive REPL: history, multiline input, context
+   preservation, save/load, provider switching, and temperature/token controls.
+2. Finish non-interactive template creation and template-library interactive
+   creation.
+3. Harden the playground endpoints or remove/mark unavailable endpoints from
+   release-facing docs until implemented.
+4. Expand examples for structured output, pass@N, security testing,
+   distributed execution, attestation, Starlark extensions, advanced metrics,
+   composition, and local providers.
+5. Continue coverage work in low-coverage packages listed in
+   `docs/TEST_COVERAGE_REPORT.md`.
+
+Verification:
+- REPL behavior tests where possible, with manual transcript fixtures for
+  terminal-only behavior.
+- Script tests for promoted template and playground paths.
+- Coverage report refreshed after each major test push.
+
+### Milestone 7: Service, IDE, and Multimodal Expansion
+
+Goal: add larger product surfaces only after the CLI contracts are stable.
+
+1. Define a REST API around stable command semantics, not internal package
+   shapes.
+2. Add authentication, authorization, rate limits, health checks, metrics, and
+   streaming/WebSocket behavior before documenting multi-user deployment.
+3. Design IDE integrations around executable text, traces, diagnostics, and
+   module policy validation.
+4. Add visual prompt engineering only after there is a stable graph/artifact
+   model to render and edit.
+5. Add multimodal prompt support with explicit media typing, size limits,
+   provider capability detection, and fixture-backed local validation.
+6. Keep neurosymbolic synthesis as a research milestone until the deterministic
+   synthesis and optimization trace contracts are stable.
+
+Verification:
+- API conformance tests for each endpoint.
+- Local smoke tests for streaming and cancellation.
+- No stable docs claim multimodal, IDE, visual, or neurosymbolic support until
+  the implementation and tests land.
+
+
 ## Architecture Implementation Backlog
 
 This checklist was moved from `docs/archive/IMPLEMENTATION_TODOS.md` so roadmap work lives in one tracked file.
@@ -1237,7 +1440,7 @@ This checklist was moved from `docs/archive/IMPLEMENTATION_TODOS.md` so roadmap 
 - [x] Add `pe mod verify` for integrity checking
 - [x] Implement `pe mod list` for installed modules
 - [x] Add `pe mod search` for registry search
-- [x] Implement `pe mod publish` for module publishing
+- [ ] Implement `pe mod publish` registry indexing and module publishing
 - [x] Add `pe mod upgrade` for version updates
 - [x] Implement `pe mod graph` for dependency visualization
 
