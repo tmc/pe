@@ -1,13 +1,17 @@
 package pemod
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -22,7 +26,7 @@ type PromptModule struct {
 	Created     time.Time         `json:"created"`
 	Updated     time.Time         `json:"updated"`
 	PromptFile  string            `json:"prompt_file,omitempty"` // Main prompt content
-	Files       map[string]string `json:"files,omitempty"`      // Additional files (filename -> content)
+	Files       map[string]string `json:"files,omitempty"`       // Additional files (filename -> content)
 	Tags        []string          `json:"tags,omitempty"`
 	License     string            `json:"license,omitempty"`
 	Repository  string            `json:"repository,omitempty"`
@@ -30,13 +34,13 @@ type PromptModule struct {
 
 // Gist represents a GitHub gist response
 type Gist struct {
-	ID          string                `json:"id"`
-	Description string                `json:"description"`
-	Public      bool                  `json:"public"`
-	Files       map[string]GistFile   `json:"files"`
-	CreatedAt   time.Time             `json:"created_at"`
-	UpdatedAt   time.Time             `json:"updated_at"`
-	Owner       *GistOwner            `json:"owner,omitempty"`
+	ID          string              `json:"id"`
+	Description string              `json:"description"`
+	Public      bool                `json:"public"`
+	Files       map[string]GistFile `json:"files"`
+	CreatedAt   time.Time           `json:"created_at"`
+	UpdatedAt   time.Time           `json:"updated_at"`
+	Owner       *GistOwner          `json:"owner,omitempty"`
 }
 
 // GistFile represents a file within a gist
@@ -60,46 +64,46 @@ type GistOwner struct {
 type ModuleRegistry interface {
 	// List returns all available modules in the registry
 	List(ctx context.Context) ([]ModuleInfo, error)
-	
+
 	// Get retrieves information about a specific module
 	Get(ctx context.Context, name string) (*ModuleInfo, error)
-	
+
 	// Resolve finds the best version for a module given version constraints
 	Resolve(ctx context.Context, name, version string) (*ModuleVersion, error)
-	
+
 	// Download downloads a module to the specified directory
 	Download(ctx context.Context, name, version string, targetDir string) error
-	
+
 	// Publish publishes a module to the registry
 	Publish(ctx context.Context, module *PromptModule, public bool) error
-	
+
 	// Close closes any resources used by the registry
 	Close() error
 }
 
 // ModuleInfo contains basic information about a module
 type ModuleInfo struct {
-	Name        string            `json:"name"`
-	Description string            `json:"description"`
-	Author      string            `json:"author"`
-	Versions    []ModuleVersion   `json:"versions"`
-	Tags        []string          `json:"tags,omitempty"`
-	License     string            `json:"license,omitempty"`
-	Repository  string            `json:"repository,omitempty"`
-	Created     time.Time         `json:"created"`
-	Updated     time.Time         `json:"updated"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	Author      string          `json:"author"`
+	Versions    []ModuleVersion `json:"versions"`
+	Tags        []string        `json:"tags,omitempty"`
+	License     string          `json:"license,omitempty"`
+	Repository  string          `json:"repository,omitempty"`
+	Created     time.Time       `json:"created"`
+	Updated     time.Time       `json:"updated"`
 }
 
 // ModuleVersion contains information about a specific version of a module
 type ModuleVersion struct {
-	Version     string            `json:"version"`
-	GistID      string            `json:"gist_id"`
-	Published   time.Time         `json:"published"`
-	Files       []string          `json:"files"`
-	Size        int64             `json:"size"`
-	Checksum    string            `json:"checksum"`
-	Deprecated  bool              `json:"deprecated,omitempty"`
-	PreRelease  bool              `json:"pre_release,omitempty"`
+	Version    string    `json:"version"`
+	GistID     string    `json:"gist_id"`
+	Published  time.Time `json:"published"`
+	Files      []string  `json:"files"`
+	Size       int64     `json:"size"`
+	Checksum   string    `json:"checksum"`
+	Deprecated bool      `json:"deprecated,omitempty"`
+	PreRelease bool      `json:"pre_release,omitempty"`
 }
 
 // GistRegistry implements ModuleRegistry using GitHub gists
@@ -120,16 +124,16 @@ func NewGistRegistry(rootGistID, token string) (*GistRegistry, error) {
 			rootGistID = "pe-public-registry"
 		}
 	}
-	
+
 	if token == "" {
 		token = os.Getenv("GITHUB_TOKEN")
 	}
-	
+
 	cache, err := newRegistryCache()
 	if err != nil {
 		return nil, fmt.Errorf("creating registry cache: %w", err)
 	}
-	
+
 	return &GistRegistry{
 		rootGistID: rootGistID,
 		token:      token,
@@ -144,31 +148,31 @@ func (r *GistRegistry) List(ctx context.Context) ([]ModuleInfo, error) {
 	if modules, err := r.cache.getModuleList(); err == nil && len(modules) > 0 {
 		return modules, nil
 	}
-	
+
 	// Fetch from GitHub
 	gist, err := r.fetchGist(ctx, r.rootGistID)
 	if err != nil {
 		return nil, fmt.Errorf("fetching root gist: %w", err)
 	}
-	
+
 	indexFile, ok := gist.Files["index.json"]
 	if !ok {
 		return nil, fmt.Errorf("registry index not found in root gist")
 	}
-	
+
 	var index map[string]ModuleInfo
 	if err := json.Unmarshal([]byte(indexFile.Content), &index); err != nil {
 		return nil, fmt.Errorf("parsing registry index: %w", err)
 	}
-	
+
 	modules := make([]ModuleInfo, 0, len(index))
 	for _, module := range index {
 		modules = append(modules, module)
 	}
-	
+
 	// Cache the result
 	r.cache.setModuleList(modules)
-	
+
 	return modules, nil
 }
 
@@ -178,19 +182,19 @@ func (r *GistRegistry) Get(ctx context.Context, name string) (*ModuleInfo, error
 	if module, err := r.cache.getModule(name); err == nil {
 		return module, nil
 	}
-	
+
 	modules, err := r.List(ctx)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	for _, module := range modules {
 		if module.Name == name {
 			r.cache.setModule(name, &module)
 			return &module, nil
 		}
 	}
-	
+
 	return nil, fmt.Errorf("module %s not found in registry", name)
 }
 
@@ -200,7 +204,7 @@ func (r *GistRegistry) Resolve(ctx context.Context, name, version string) (*Modu
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if version == "latest" || version == "" {
 		// Find the latest stable version
 		var latest *ModuleVersion
@@ -215,15 +219,15 @@ func (r *GistRegistry) Resolve(ctx context.Context, name, version string) (*Modu
 		if latest != nil {
 			return latest, nil
 		}
-		
+
 		// Fall back to any version if no stable version found
 		if len(module.Versions) > 0 {
 			return &module.Versions[0], nil
 		}
-		
+
 		return nil, fmt.Errorf("no versions available for module %s", name)
 	}
-	
+
 	// Look for exact version match
 	for i := range module.Versions {
 		v := &module.Versions[i]
@@ -231,7 +235,7 @@ func (r *GistRegistry) Resolve(ctx context.Context, name, version string) (*Modu
 			return v, nil
 		}
 	}
-	
+
 	return nil, fmt.Errorf("version %s not found for module %s", version, name)
 }
 
@@ -241,26 +245,32 @@ func (r *GistRegistry) Download(ctx context.Context, name, version string, targe
 	if err != nil {
 		return err
 	}
-	
+
 	// Fetch the module gist
 	gist, err := r.fetchGist(ctx, moduleVersion.GistID)
 	if err != nil {
 		return fmt.Errorf("fetching module gist: %w", err)
 	}
-	
+
 	// Create target directory
 	if err := os.MkdirAll(targetDir, 0755); err != nil {
 		return fmt.Errorf("creating target directory: %w", err)
 	}
-	
+
 	// Save all files from the gist
 	for filename, file := range gist.Files {
-		filePath := filepath.Join(targetDir, filename)
+		filePath, err := containedRegistryFile(targetDir, filename)
+		if err != nil {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+			return fmt.Errorf("creating directory for %s: %w", filename, err)
+		}
 		if err := os.WriteFile(filePath, []byte(file.Content), 0644); err != nil {
 			return fmt.Errorf("saving %s: %w", filename, err)
 		}
 	}
-	
+
 	// Create module metadata
 	moduleInfo := map[string]interface{}{
 		"name":      name,
@@ -269,13 +279,13 @@ func (r *GistRegistry) Download(ctx context.Context, name, version string, targe
 		"published": moduleVersion.Published,
 		"checksum":  moduleVersion.Checksum,
 	}
-	
+
 	metaBytes, _ := json.MarshalIndent(moduleInfo, "", "  ")
 	metaPath := filepath.Join(targetDir, "module.json")
 	if err := os.WriteFile(metaPath, metaBytes, 0644); err != nil {
 		return fmt.Errorf("saving module metadata: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -284,28 +294,31 @@ func (r *GistRegistry) Publish(ctx context.Context, module *PromptModule, public
 	if r.token == "" {
 		return fmt.Errorf("GITHUB_TOKEN environment variable is required for publishing")
 	}
-	
+
 	// Create gist with module files
 	gistReq := map[string]interface{}{
 		"description": fmt.Sprintf("PE Module: %s", module.Name),
 		"public":      public,
 		"files":       make(map[string]interface{}),
 	}
-	
+
 	// Add prompt file
 	if module.PromptFile != "" {
 		gistReq["files"].(map[string]interface{})["prompt.txt"] = map[string]interface{}{
 			"content": module.PromptFile,
 		}
 	}
-	
+
 	// Add other files
 	for filename, content := range module.Files {
+		if _, err := containedRegistryFile(".", filename); err != nil {
+			return err
+		}
 		gistReq["files"].(map[string]interface{})[filename] = map[string]interface{}{
 			"content": content,
 		}
 	}
-	
+
 	// Add module metadata
 	metadata := map[string]interface{}{
 		"name":        module.Name,
@@ -319,15 +332,15 @@ func (r *GistRegistry) Publish(ctx context.Context, module *PromptModule, public
 	gistReq["files"].(map[string]interface{})["module.json"] = map[string]interface{}{
 		"content": string(metaBytes),
 	}
-	
+
 	// Create the gist
 	gistResp, err := r.createGist(ctx, gistReq)
 	if err != nil {
 		return fmt.Errorf("creating module gist: %w", err)
 	}
-	
+
 	module.GistID = gistResp.ID
-	
+
 	// Update registry index
 	return r.updateRegistryIndex(ctx, module)
 }
@@ -340,33 +353,33 @@ func (r *GistRegistry) Close() error {
 // fetchGist fetches a gist from GitHub
 func (r *GistRegistry) fetchGist(ctx context.Context, gistID string) (*Gist, error) {
 	url := fmt.Sprintf("https://api.github.com/gists/%s", gistID)
-	
+
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if r.token != "" {
 		req.Header.Set("Authorization", "token "+r.token)
 	}
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
-	
+
 	resp, err := r.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("GitHub API error: %s - %s", resp.Status, string(body))
 	}
-	
+
 	var gist Gist
 	if err := json.NewDecoder(resp.Body).Decode(&gist); err != nil {
 		return nil, err
 	}
-	
+
 	return &gist, nil
 }
 
@@ -375,43 +388,232 @@ func (r *GistRegistry) createGist(ctx context.Context, gistReq map[string]interf
 	if r.token == "" {
 		return nil, fmt.Errorf("GitHub token required for creating gist")
 	}
-	
+
 	reqBytes, err := json.Marshal(gistReq)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.github.com/gists", strings.NewReader(string(reqBytes)))
 	if err != nil {
 		return nil, err
 	}
-	
+
 	req.Header.Set("Authorization", "token "+r.token)
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	resp, err := r.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("GitHub API error: %s - %s", resp.Status, string(body))
 	}
-	
+
 	var gist Gist
 	if err := json.NewDecoder(resp.Body).Decode(&gist); err != nil {
 		return nil, err
 	}
-	
+
 	return &gist, nil
 }
 
 // updateRegistryIndex updates the registry index with the new module
 func (r *GistRegistry) updateRegistryIndex(ctx context.Context, module *PromptModule) error {
-	return fmt.Errorf("registry indexing is not yet implemented")
+	if module == nil {
+		return fmt.Errorf("module is required")
+	}
+	if strings.TrimSpace(module.Name) == "" {
+		return fmt.Errorf("module name is required")
+	}
+	if strings.TrimSpace(module.Version) == "" {
+		return fmt.Errorf("module version is required")
+	}
+	if strings.TrimSpace(module.GistID) == "" {
+		return fmt.Errorf("module gist id is required")
+	}
+
+	root, err := r.fetchGist(ctx, r.rootGistID)
+	if err != nil {
+		return fmt.Errorf("fetching root gist: %w", err)
+	}
+
+	index := make(map[string]ModuleInfo)
+	if indexFile, ok := root.Files["index.json"]; ok && strings.TrimSpace(indexFile.Content) != "" {
+		if err := json.Unmarshal([]byte(indexFile.Content), &index); err != nil {
+			return fmt.Errorf("parsing registry index: %w", err)
+		}
+	}
+
+	now := module.Updated
+	if now.IsZero() {
+		now = time.Now().UTC()
+	}
+	created := module.Created
+	if created.IsZero() {
+		created = now
+	}
+
+	info := index[module.Name]
+	if info.Name == "" {
+		info.Name = module.Name
+		info.Created = created
+	}
+	if info.Created.IsZero() {
+		info.Created = created
+	}
+	info.Description = module.Description
+	info.Author = module.Author
+	info.Tags = append([]string(nil), module.Tags...)
+	info.License = module.License
+	info.Repository = module.Repository
+	info.Updated = now
+
+	version := ModuleVersion{
+		Version:   module.Version,
+		GistID:    module.GistID,
+		Published: now,
+		Files:     moduleFileNames(module),
+		Size:      moduleContentSize(module),
+		Checksum:  moduleChecksum(module),
+	}
+	replaced := false
+	for i := range info.Versions {
+		if info.Versions[i].Version == module.Version {
+			info.Versions[i] = version
+			replaced = true
+			break
+		}
+	}
+	if !replaced {
+		info.Versions = append(info.Versions, version)
+	}
+	sort.Slice(info.Versions, func(i, j int) bool {
+		return info.Versions[i].Published.After(info.Versions[j].Published)
+	})
+	index[module.Name] = info
+
+	indexData, err := json.MarshalIndent(index, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshaling registry index: %w", err)
+	}
+	reqBody := map[string]interface{}{
+		"description": root.Description,
+		"files": map[string]interface{}{
+			"index.json": map[string]interface{}{
+				"content": string(indexData),
+			},
+		},
+	}
+	if reqBody["description"] == "" {
+		reqBody["description"] = "PE Module Registry"
+	}
+	body, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("marshaling registry update: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, fmt.Sprintf("https://api.github.com/gists/%s", r.rootGistID), bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "token "+r.token)
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("GitHub API error: %s - %s", resp.Status, string(body))
+	}
+
+	modules := make([]ModuleInfo, 0, len(index))
+	for _, module := range index {
+		modules = append(modules, module)
+	}
+	r.cache.setModuleList(modules)
+	r.cache.setModule(module.Name, &info)
+	return nil
+}
+
+func moduleFileNames(module *PromptModule) []string {
+	var files []string
+	if module.PromptFile != "" {
+		files = append(files, "prompt.txt")
+	}
+	for name := range module.Files {
+		files = append(files, name)
+	}
+	files = append(files, "module.json")
+	sort.Strings(files)
+	return files
+}
+
+func containedRegistryFile(base, name string) (string, error) {
+	if name == "" || filepath.IsAbs(name) {
+		return "", fmt.Errorf("invalid registry file path: %q", name)
+	}
+	clean := filepath.Clean(name)
+	if clean == "." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) || clean == ".." {
+		return "", fmt.Errorf("invalid registry file path: %q", name)
+	}
+	baseAbs, err := filepath.Abs(base)
+	if err != nil {
+		return "", err
+	}
+	target := filepath.Join(baseAbs, clean)
+	targetAbs, err := filepath.Abs(target)
+	if err != nil {
+		return "", err
+	}
+	rel, err := filepath.Rel(baseAbs, targetAbs)
+	if err != nil {
+		return "", err
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("invalid registry file path: %q", name)
+	}
+	return targetAbs, nil
+}
+
+func moduleContentSize(module *PromptModule) int64 {
+	var size int64
+	if module.PromptFile != "" {
+		size += int64(len(module.PromptFile))
+	}
+	for _, content := range module.Files {
+		size += int64(len(content))
+	}
+	return size
+}
+
+func moduleChecksum(module *PromptModule) string {
+	h := sha256.New()
+	if module.PromptFile != "" {
+		h.Write([]byte("prompt.txt\n"))
+		h.Write([]byte(module.PromptFile))
+		h.Write([]byte{0})
+	}
+	names := make([]string, 0, len(module.Files))
+	for name := range module.Files {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		h.Write([]byte(name))
+		h.Write([]byte{'\n'})
+		h.Write([]byte(module.Files[name]))
+		h.Write([]byte{0})
+	}
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // registryCache provides caching for registry operations
@@ -425,7 +627,7 @@ func newRegistryCache() (*registryCache, error) {
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {
 		return nil, err
 	}
-	
+
 	return &registryCache{
 		cacheDir: cacheDir,
 	}, nil
@@ -438,12 +640,12 @@ func (c *registryCache) getModuleList() ([]ModuleInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var modules []ModuleInfo
 	if err := json.Unmarshal(data, &modules); err != nil {
 		return nil, err
 	}
-	
+
 	return modules, nil
 }
 
@@ -454,7 +656,7 @@ func (c *registryCache) setModuleList(modules []ModuleInfo) error {
 	if err != nil {
 		return err
 	}
-	
+
 	return os.WriteFile(path, data, 0644)
 }
 
@@ -465,12 +667,12 @@ func (c *registryCache) getModule(name string) (*ModuleInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var module ModuleInfo
 	if err := json.Unmarshal(data, &module); err != nil {
 		return nil, err
 	}
-	
+
 	return &module, nil
 }
 
@@ -481,7 +683,7 @@ func (c *registryCache) setModule(name string, module *ModuleInfo) error {
 	if err != nil {
 		return err
 	}
-	
+
 	return os.WriteFile(path, data, 0644)
 }
 

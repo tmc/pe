@@ -3,6 +3,7 @@ package pemod
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -99,16 +100,95 @@ func TestGistRegistryErrorsAndPublish(t *testing.T) {
 	}
 
 	registry.token = "token"
-	registry.client.Transport = &gistRoundTripper{create: &Gist{ID: "created"}, responses: map[string]Gist{}}
+	updated := time.Date(2026, 6, 8, 12, 0, 0, 0, time.UTC)
+	transport := &gistRoundTripper{
+		create: &Gist{ID: "created"},
+		responses: map[string]Gist{
+			"/gists/root": {
+				ID:          "root",
+				Description: "Root registry",
+				Files: map[string]GistFile{
+					"index.json": {Content: `{"existing/module":{"name":"existing/module","versions":[{"version":"v1","gist_id":"old"}]}}`},
+				},
+			},
+		},
+	}
+	registry.client.Transport = transport
 	module := &PromptModule{Name: "x", Version: "v1", Description: "d", Author: "a", PromptFile: "prompt", Files: map[string]string{"extra.txt": "extra"}}
-	if err := registry.Publish(context.Background(), module, false); err == nil || !strings.Contains(err.Error(), "registry indexing is not yet implemented") {
-		t.Fatalf("Publish error = %v", err)
+	module.Updated = updated
+	if err := registry.Publish(context.Background(), module, false); err != nil {
+		t.Fatalf("Publish: %v", err)
 	}
 	if module.GistID != "created" {
 		t.Fatalf("gist id = %q", module.GistID)
 	}
+	if transport.patchPath != "/gists/root" {
+		t.Fatalf("patch path = %q", transport.patchPath)
+	}
+	var update struct {
+		Files map[string]struct {
+			Content string `json:"content"`
+		} `json:"files"`
+	}
+	if err := json.Unmarshal([]byte(transport.patchBody), &update); err != nil {
+		t.Fatalf("patch body: %v", err)
+	}
+	var index map[string]ModuleInfo
+	if err := json.Unmarshal([]byte(update.Files["index.json"].Content), &index); err != nil {
+		t.Fatalf("index content: %v", err)
+	}
+	if _, ok := index["existing/module"]; !ok {
+		t.Fatalf("existing module missing from index %#v", index)
+	}
+	got := index["x"]
+	if got.Name != "x" || len(got.Versions) != 1 || got.Versions[0].GistID != "created" {
+		t.Fatalf("published index entry = %#v", got)
+	}
+	if got.Versions[0].Checksum == "" || got.Versions[0].Size != int64(len("prompt")+len("extra")) {
+		t.Fatalf("published version = %#v", got.Versions[0])
+	}
 	if _, err := registry.Resolve(context.Background(), "missing", "latest"); err == nil {
 		t.Fatal("Resolve missing succeeded")
+	}
+}
+
+func TestGistRegistryRejectsFileTraversal(t *testing.T) {
+	oldwd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(oldwd) })
+	if err := os.Chdir(t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+
+	registry, err := NewGistRegistry("root", "token")
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now()
+	index := map[string]ModuleInfo{
+		"x": {
+			Name: "x",
+			Versions: []ModuleVersion{
+				{Version: "v1", GistID: "module-gist", Published: now},
+			},
+		},
+	}
+	indexBytes, _ := json.Marshal(index)
+	registry.client.Transport = &gistRoundTripper{responses: map[string]Gist{
+		"/gists/root": {ID: "root", Files: map[string]GistFile{
+			"index.json": {Content: string(indexBytes)},
+		}},
+		"/gists/module-gist": {ID: "module-gist", Files: map[string]GistFile{
+			"../escape.txt": {Content: "bad"},
+		}},
+	}}
+	if err := registry.Download(context.Background(), "x", "v1", t.TempDir()); err == nil || !strings.Contains(err.Error(), "invalid registry file path") {
+		t.Fatalf("Download traversal error = %v", err)
+	}
+
+	registry.client.Transport = &gistRoundTripper{create: &Gist{ID: "created"}}
+	module := &PromptModule{Name: "x", Version: "v1", Files: map[string]string{"../escape.txt": "bad"}}
+	if err := registry.Publish(context.Background(), module, false); err == nil || !strings.Contains(err.Error(), "invalid registry file path") {
+		t.Fatalf("Publish traversal error = %v", err)
 	}
 }
 
@@ -147,6 +227,8 @@ type gistRoundTripper struct {
 	create    *Gist
 	status    int
 	count     map[string]int
+	patchPath string
+	patchBody string
 }
 
 func (rt *gistRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -167,6 +249,12 @@ func (rt *gistRoundTripper) RoundTrip(req *http.Request) (*http.Response, error)
 		}
 		data, _ := json.Marshal(gist)
 		body = string(data)
+	} else if req.Method == http.MethodPatch {
+		status = http.StatusOK
+		reqBody, _ := io.ReadAll(req.Body)
+		rt.patchPath = req.URL.Path
+		rt.patchBody = string(reqBody)
+		body = `{"id":"root"}`
 	} else if gist, ok := rt.responses[req.URL.Path]; ok {
 		data, _ := json.Marshal(gist)
 		body = string(data)

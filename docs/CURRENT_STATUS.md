@@ -104,7 +104,9 @@ pe ask "prompt" --provider cgpt  # Uses cgpt CLI
 - Local registry at `~/.pe/registry/`
 - HTTP and GitHub registry backends exist, but still need release validation
 - Download functionality actually works (not mock)
-- Publishing is not implemented in the current registry backends.
+- Publishing remains limited: local registry publishing works, gist-backed
+  `pemod` publishing updates the registry index, and hosted GitHub/HTTP module
+  publishing still needs a product boundary decision.
 
 ## Recent Release-Prep Fixes
 

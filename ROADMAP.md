@@ -1337,6 +1337,11 @@ integrity semantics.
 
 1. Finish registry indexing and publishing, or explicitly split publishing into
    a separate service/repository if PE should remain client-only.
+   DONE current pass: gist-backed `pemod` publishing now updates the root
+   `index.json` with version metadata, file lists, size, checksum, path-cleaning
+   checks, and cache refresh after creating the module gist. Remaining work:
+   archive extraction guarantees, richer registry fixtures, dependency graph
+   behavior, and the broader publishing-service boundary decision.
 2. Define module archive format, path-cleaning rules, checksum recording, and
    extraction guarantees.
 3. Add fixture-backed HTTP and GitHub registry tests for list, search, download,
