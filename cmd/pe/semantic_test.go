@@ -311,8 +311,12 @@ func TestSemanticHelpersAndOutput(t *testing.T) {
 	if err := outputSemanticResult(semantic, "", "table"); err != nil {
 		t.Fatal(err)
 	}
-	if err := outputSemanticResult(semantic, "", "yaml"); err == nil {
-		t.Fatal("semantic yaml succeeded")
+	semanticYAML := filepath.Join(tmpDir, "semantic.yaml")
+	if err := outputSemanticResult(semantic, semanticYAML, "yaml"); err != nil {
+		t.Fatal(err)
+	}
+	if data, err := os.ReadFile(semanticYAML); err != nil || !strings.Contains(string(data), "optimized_prompt: better") {
+		t.Fatalf("semantic yaml = %q err=%v", data, err)
 	}
 	if err := outputSemanticResult(semantic, "", "bad"); err == nil {
 		t.Fatal("semantic bad format succeeded")
@@ -329,8 +333,12 @@ func TestSemanticHelpersAndOutput(t *testing.T) {
 	if err := outputGASOResult(gaso, "", "table"); err != nil {
 		t.Fatal(err)
 	}
-	if err := outputGASOResult(gaso, "", "yaml"); err == nil {
-		t.Fatal("gaso yaml succeeded")
+	gasoYAML := filepath.Join(tmpDir, "gaso.yaml")
+	if err := outputGASOResult(gaso, gasoYAML, "yaml"); err != nil {
+		t.Fatal(err)
+	}
+	if data, err := os.ReadFile(gasoYAML); err != nil || !strings.Contains(string(data), "overall_performance: 0.8") {
+		t.Fatalf("gaso yaml = %q err=%v", data, err)
 	}
 	if err := outputGASOResult(gaso, "", "bad"); err == nil {
 		t.Fatal("gaso bad format succeeded")
@@ -362,35 +370,32 @@ func TestSemanticLocalSubcommands(t *testing.T) {
 
 	flow := semanticFlowCmd()
 	flow.Flags().Set("system", systemFile)
-	if err := flow.RunE(flow, nil); err != nil {
-		t.Fatal(err)
+	if err := flow.RunE(flow, nil); err == nil || !strings.Contains(err.Error(), "semantic flow analysis is not yet implemented") {
+		t.Fatalf("flow error = %v", err)
 	}
 	gradients := semanticGradientsCmd()
 	gradients.Flags().Set("prompt-file", promptFile)
 	gradients.Flags().Set("visualize", "true")
-	if err := gradients.RunE(gradients, nil); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat("gradients.png"); err != nil {
-		t.Fatal(err)
+	if err := gradients.RunE(gradients, nil); err == nil || !strings.Contains(err.Error(), "semantic gradient field visualization is not yet implemented") {
+		t.Fatalf("gradients error = %v", err)
 	}
 	monitor := semanticMonitorCmd()
 	monitor.Flags().Set("baseline", baselineFile)
 	monitor.Flags().Set("current", currentFile)
-	if err := monitor.RunE(monitor, nil); err != nil {
-		t.Fatal(err)
+	if err := monitor.RunE(monitor, nil); err == nil || !strings.Contains(err.Error(), "semantic drift monitoring is not yet implemented") {
+		t.Fatalf("monitor error = %v", err)
 	}
 	analyze := semanticAnalyzeCmd()
 	analyze.Flags().Set("system", systemFile)
 	analyze.Flags().Set("dependencies", "true")
-	if err := analyze.RunE(analyze, nil); err != nil {
-		t.Fatal(err)
+	if err := analyze.RunE(analyze, nil); err == nil || !strings.Contains(err.Error(), "semantic dependency analysis is not yet implemented") {
+		t.Fatalf("analyze error = %v", err)
 	}
 	benchmark := semanticBenchmarkCmd()
 	benchmark.Flags().Set("prompt-file", promptFile)
 	benchmark.Flags().Set("baselines", "gpt4, claude, missing")
-	if err := benchmark.RunE(benchmark, nil); err != nil {
-		t.Fatal(err)
+	if err := benchmark.RunE(benchmark, nil); err == nil || !strings.Contains(err.Error(), "semantic optimization benchmarking is not yet implemented") {
+		t.Fatalf("benchmark error = %v", err)
 	}
 
 	badFlow := semanticFlowCmd()

@@ -1,0 +1,23 @@
+# Test non-interactive template creation.
+
+pe template create review --prompt 'Review {{ .code }} for {{ audience }}.' --output review.prompt --interactive=false
+stdout 'Created template review at review.prompt'
+exists review.prompt
+grep 'Review {{ .code }} for {{ audience }}.' review.prompt
+
+pe template create review-yaml --prompt 'Summarize {{ .text }} for {{ .audience }}.' --description 'Review summary' --category writing --tags summary,review --output review.yaml --interactive=false
+stdout 'Created template review-yaml at review.yaml'
+exists review.yaml
+grep 'name: review-yaml' review.yaml
+grep 'description: Review summary' review.yaml
+grep 'category: writing' review.yaml
+grep 'text:' review.yaml
+grep 'audience:' review.yaml
+
+pe template create dotless --prompt 'Legacy {{ audience }} placeholder.' --output dotless.yaml --interactive=false
+stdout 'Created template dotless at dotless.yaml'
+exists dotless.yaml
+! grep 'audience:' dotless.yaml
+
+! pe template create broken --interactive=false
+stderr 'template prompt is required'

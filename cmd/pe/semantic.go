@@ -636,8 +636,7 @@ func outputSemanticResult(result *metaprompt.SemanticResult, outputFile, format 
 	case "json":
 		output, err = json.MarshalIndent(result, "", "  ")
 	case "yaml":
-		// YAML output would require a YAML library
-		return fmt.Errorf("YAML output not yet implemented")
+		output, err = yaml.Marshal(result)
 	case "table":
 		return outputSemanticTable(result)
 	default:
@@ -664,7 +663,7 @@ func outputGASOResult(result *metaprompt.GASOResult, outputFile, format string) 
 	case "json":
 		output, err = json.MarshalIndent(result, "", "  ")
 	case "yaml":
-		return fmt.Errorf("YAML output not yet implemented")
+		output, err = yaml.Marshal(result)
 	case "table":
 		return outputGASOTable(result)
 	default:
@@ -724,23 +723,8 @@ func semanticFlowCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load system definition: %v", err)
 			}
-
-			fmt.Println("Semantic Flow Analysis")
-			fmt.Println("Information flow:")
-
-			// Display flow based on components
-			if len(systemDef.Components) > 0 {
-				fmt.Printf("  input -> %s (confidence: 0.95)\n", systemDef.Components[0].Name)
-				if len(systemDef.Components) > 1 {
-					fmt.Printf("  %s -> %s (confidence: 0.88)\n", systemDef.Components[0].Name, systemDef.Components[1].Name)
-					if len(systemDef.Components) > 2 {
-						fmt.Printf("  %s -> output (confidence: 0.92)\n", systemDef.Components[1].Name)
-						fmt.Printf("Bottleneck detected: %s component\n", systemDef.Components[1].Name)
-					}
-				}
-			}
-
-			return nil
+			_ = systemDef
+			return fmt.Errorf("semantic flow analysis is not yet implemented")
 		},
 	}
 
@@ -771,20 +755,9 @@ func semanticGradientsCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load prompt: %v", err)
 			}
-
-			fmt.Println("Computing gradient field")
-			fmt.Println("Gradient magnitude: 0.68")
-			fmt.Println("Direction: [clarity: +0.45, conciseness: +0.23]")
-
-			if visualize {
-				outputFile := "gradients.png"
-				// Create a dummy file to satisfy the test
-				if err := os.WriteFile(outputFile, []byte("PNG"), 0644); err == nil {
-					fmt.Printf("Saved visualization to: %s\n", outputFile)
-				}
-			}
-
-			return nil
+			_ = visualize
+			_ = outputFile
+			return fmt.Errorf("semantic gradient field visualization is not yet implemented")
 		},
 	}
 
@@ -818,14 +791,7 @@ func semanticMonitorCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to read current: %v", err)
 			}
-
-			fmt.Println("Semantic Drift Analysis")
-			fmt.Println("Baseline embedding computed")
-			fmt.Println("Drift score: 0.15")
-			fmt.Println("Warning: Moderate semantic drift detected")
-			fmt.Println("Affected concepts: [formality, technical depth]")
-
-			return nil
+			return fmt.Errorf("semantic drift monitoring is not yet implemented")
 		},
 	}
 
@@ -854,16 +820,8 @@ func semanticAnalyzeCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load system: %v", err)
 			}
-
-			if dependencies {
-				fmt.Println("Dependency Analysis")
-				fmt.Println("Strong coupling: analyzer <-> validator (0.87)")
-				fmt.Println("Weak coupling: input -> summarizer (0.23)")
-				fmt.Println("Circular dependency detected: A -> B -> C -> A")
-				fmt.Println("Optimization recommendation: Decouple validator")
-			}
-
-			return nil
+			_ = dependencies
+			return fmt.Errorf("semantic dependency analysis is not yet implemented")
 		},
 	}
 
@@ -892,31 +850,8 @@ func semanticBenchmarkCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load prompt: %v", err)
 			}
-
-			fmt.Println("Semantic Optimization Benchmark")
-
-			// Parse baselines
-			baselineList := strings.Split(baselines, ",")
-			scores := map[string]float64{
-				"gpt4":     0.82,
-				"claude":   0.84,
-				"textgrad": 0.78,
-			}
-
-			for _, baseline := range baselineList {
-				baseline = strings.TrimSpace(baseline)
-				if score, ok := scores[baseline]; ok {
-					fmt.Printf("Baseline: %s (score: %.2f)\n", strings.ToUpper(baseline[:1])+baseline[1:], score)
-				}
-			}
-
-			// Our score
-			ourScore := 0.93
-			bestBaseline := 0.84
-			improvement := ((ourScore - bestBaseline) / bestBaseline) * 100
-			fmt.Printf("Semantic Backprop: %.2f (+%.1f%% vs best baseline)\n", ourScore, improvement)
-
-			return nil
+			_ = baselines
+			return fmt.Errorf("semantic optimization benchmarking is not yet implemented")
 		},
 	}
 

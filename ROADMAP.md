@@ -1189,6 +1189,9 @@ not-implemented error with matching documentation.
    DONE current pass: add fail-closed regression guards for unsupported
    promptfoo assertions, TypeScript/Pydantic parser and validator adapters, and
    playground not-implemented endpoints.
+   DONE current pass: replace canned-success semantic flow, gradient
+   visualization, drift monitor, dependency analysis, and benchmark outputs with
+   precise not-implemented errors after input validation.
 4. DONE current pass: remove dormant `pe exp` and `pe test` placeholders from
    the registered command surface until implementation work starts.
 
@@ -1229,6 +1232,9 @@ the current command surface.
     analyzer for strict numeric group comparison from text or JSON-array
     inputs, with confidence intervals, p-values, effect sizes, finite structured
     output, and the multiple-comparison caveat.
+3c. DONE current pass: Implement YAML output for semantic optimization and
+    GASO results using local marshaling, with script coverage for generated
+    GASO YAML artifacts.
 4. Implement automatic test generation only after the input/output contract is
    narrow enough to test deterministically with a mock provider.
 5. Implement TypeScript and Pydantic validation through isolated adapters with
@@ -1325,6 +1331,10 @@ surface accidentally.
    preservation, save/load, provider switching, and temperature/token controls.
 2. Finish non-interactive template creation and template-library interactive
    creation.
+   DONE current pass: implement non-interactive `pe template create` for plain
+   `.prompt` artifacts and YAML/JSON template definitions, including inferred
+   variables from `{{ .name }}` placeholders and fail-closed missing prompt
+   validation.
 3. Harden the playground endpoints or remove/mark unavailable endpoints from
    release-facing docs until implemented.
 4. Expand examples for structured output, pass@N, security testing,

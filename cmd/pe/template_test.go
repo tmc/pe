@@ -189,15 +189,50 @@ func TestTemplateApplyCreateValidateExportImport(t *testing.T) {
 	}
 
 	createJSON := filepath.Join(tmpDir, "created.json")
-	if err := runTemplateCreate(cmd, "mine", createJSON, true); err != nil {
+	if err := runTemplateCreate(cmd, "mine", createJSON, true, "", "", "custom", nil); err != nil {
 		t.Fatal(err)
 	}
 	createYAML := filepath.Join(tmpDir, "created.yaml")
-	if err := runTemplateCreate(cmd, "mine-yaml", createYAML, true); err != nil {
+	if err := runTemplateCreate(cmd, "mine-yaml", createYAML, true, "", "", "custom", nil); err != nil {
 		t.Fatal(err)
 	}
-	if err := runTemplateCreate(cmd, "mine", "", false); err == nil {
-		t.Fatal("non-interactive create succeeded")
+	createPrompt := filepath.Join(tmpDir, "created.prompt")
+	if err := runTemplateCreate(cmd, "mine-prompt", createPrompt, false, "Analyze {{ .topic }} carefully.", "", "custom", []string{"analysis"}); err != nil {
+		t.Fatal(err)
+	}
+	if data, err := os.ReadFile(createPrompt); err != nil || string(data) != "Analyze {{ .topic }} carefully." {
+		t.Fatalf("created prompt = %q err=%v", data, err)
+	}
+	createNonInteractiveYAML := filepath.Join(tmpDir, "created-noninteractive.yaml")
+	if err := runTemplateCreate(cmd, "mine-vars", createNonInteractiveYAML, false, "Summarize {{ .text }} for {{ .audience }}.", "Summarizer", "writing", []string{"summary"}); err != nil {
+		t.Fatal(err)
+	}
+	created, err := templates.NewTemplateLibrary("").LoadTemplateFromFile(createNonInteractiveYAML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if created.Description != "Summarizer" || created.Category != "writing" {
+		t.Fatalf("created template metadata = %#v", created)
+	}
+	if _, ok := created.Variables["text"]; !ok {
+		t.Fatalf("created variables = %#v, want text", created.Variables)
+	}
+	if _, ok := created.Variables["audience"]; !ok {
+		t.Fatalf("created variables = %#v, want audience", created.Variables)
+	}
+	dotlessYAML := filepath.Join(tmpDir, "dotless.yaml")
+	if err := runTemplateCreate(cmd, "dotless", dotlessYAML, false, "Legacy {{ audience }} placeholder.", "", "custom", nil); err != nil {
+		t.Fatal(err)
+	}
+	dotless, err := templates.NewTemplateLibrary("").LoadTemplateFromFile(dotlessYAML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(dotless.Variables) != 0 {
+		t.Fatalf("dotless variables = %#v, want none", dotless.Variables)
+	}
+	if err := runTemplateCreate(cmd, "mine", "", false, "", "", "custom", nil); err == nil {
+		t.Fatal("non-interactive create without prompt succeeded")
 	}
 	if err := runTemplateValidate(cmd, nil); err == nil {
 		t.Fatal("validate without files succeeded")

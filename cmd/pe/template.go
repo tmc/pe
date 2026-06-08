@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -132,6 +135,10 @@ func templateApplyCmd() *cobra.Command {
 func templateCreateCmd() *cobra.Command {
 	var interactive bool
 	var outputFile string
+	var prompt string
+	var description string
+	var category string
+	var tags []string
 
 	cmd := &cobra.Command{
 		Use:   "create [template_name]",
@@ -142,12 +149,16 @@ func templateCreateCmd() *cobra.Command {
 			if len(args) > 0 {
 				name = args[0]
 			}
-			return runTemplateCreate(cmd, name, outputFile, interactive)
+			return runTemplateCreate(cmd, name, outputFile, interactive, prompt, description, category, tags)
 		},
 	}
 
 	cmd.Flags().BoolVarP(&interactive, "interactive", "i", true, "Interactive template creation")
 	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for the template")
+	cmd.Flags().StringVar(&prompt, "prompt", "", "Prompt text for non-interactive template creation")
+	cmd.Flags().StringVar(&description, "description", "", "Template description")
+	cmd.Flags().StringVar(&category, "category", "custom", "Template category")
+	cmd.Flags().StringSliceVar(&tags, "tags", []string{"user-created"}, "Template tags")
 
 	return cmd
 }
@@ -306,9 +317,9 @@ func runTemplateApply(cmd *cobra.Command, name, varsFile, outputFile string, int
 	return nil
 }
 
-func runTemplateCreate(cmd *cobra.Command, name, outputFile string, interactive bool) error {
-	if !interactive {
-		return fmt.Errorf("non-interactive template creation not yet implemented")
+func runTemplateCreate(cmd *cobra.Command, name, outputFile string, interactive bool, prompt, description, category string, tags []string) error {
+	if !interactive || prompt != "" {
+		return runTemplateCreateNonInteractive(cmd, name, outputFile, prompt, description, category, tags)
 	}
 
 	// For now, create a basic template structure
@@ -351,6 +362,102 @@ func runTemplateCreate(cmd *cobra.Command, name, outputFile string, interactive 
 	}
 	fmt.Fprintln(cmd.OutOrStdout(), string(data))
 	return nil
+}
+
+func runTemplateCreateNonInteractive(cmd *cobra.Command, name, outputFile, prompt, description, category string, tags []string) error {
+	if name == "" {
+		return fmt.Errorf("template name is required")
+	}
+	if strings.TrimSpace(prompt) == "" {
+		return fmt.Errorf("template prompt is required for non-interactive creation")
+	}
+	if outputFile == "" {
+		outputFile = name + ".prompt"
+	}
+	if description == "" {
+		description = "Custom template"
+	}
+	if category == "" {
+		category = "custom"
+	}
+	if len(tags) == 0 {
+		tags = []string{"user-created"}
+	}
+
+	ext := strings.ToLower(filepath.Ext(outputFile))
+	switch ext {
+	case ".prompt", ".txt", ".md":
+		if err := os.WriteFile(outputFile, []byte(prompt), 0644); err != nil {
+			return err
+		}
+	default:
+		template := newTemplateDefinition(name, prompt, description, category, tags)
+		var (
+			data []byte
+			err  error
+		)
+		if ext == ".json" {
+			data, err = json.MarshalIndent(template, "", "  ")
+		} else {
+			data, err = yaml.Marshal(template)
+		}
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(outputFile, data, 0644); err != nil {
+			return err
+		}
+	}
+
+	fmt.Fprintf(cmd.OutOrStdout(), "Created template %s at %s\n", name, outputFile)
+	return nil
+}
+
+func newTemplateDefinition(name, prompt, description, category string, tags []string) *templates.Template {
+	now := time.Now().UTC()
+	variables := inferTemplateVariables(prompt)
+	return &templates.Template{
+		Name:        name,
+		Description: description,
+		Category:    category,
+		Tags:        append([]string(nil), tags...),
+		Version:     "1.0.0",
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		Prompt:      prompt,
+		Variables:   variables,
+	}
+}
+
+var templateVariablePattern = regexp.MustCompile(`\{\{\s*\.([A-Za-z_][A-Za-z0-9_]*)\s*\}\}`)
+
+func inferTemplateVariables(prompt string) map[string]templates.Variable {
+	matches := templateVariablePattern.FindAllStringSubmatch(prompt, -1)
+	if len(matches) == 0 {
+		return map[string]templates.Variable{}
+	}
+
+	names := make(map[string]bool)
+	for _, match := range matches {
+		names[match[1]] = true
+	}
+
+	ordered := make([]string, 0, len(names))
+	for name := range names {
+		ordered = append(ordered, name)
+	}
+	sort.Strings(ordered)
+
+	variables := make(map[string]templates.Variable, len(ordered))
+	for _, name := range ordered {
+		variables[name] = templates.Variable{
+			Name:        name,
+			Description: name,
+			Type:        "string",
+			Required:    true,
+		}
+	}
+	return variables
 }
 
 func runTemplateValidate(cmd *cobra.Command, files []string) error {
@@ -518,59 +625,59 @@ func templateInteractiveCmd() *cobra.Command {
 func runTemplateInteractive(cmd *cobra.Command, args []string) error {
 	library := templates.GetDefaultLibrary()
 	templateList := library.ListTemplates()
-	
+
 	if len(templateList) == 0 {
 		return fmt.Errorf("no templates available")
 	}
-	
+
 	// Show available templates
 	fmt.Fprintf(cmd.OutOrStdout(), "Available templates:\n\n")
 	for i, tmpl := range templateList {
 		fmt.Fprintf(cmd.OutOrStdout(), "%d. %s - %s\n", i+1, tmpl.Name, tmpl.Description)
 	}
-	
+
 	// Ask user to select a template
 	fmt.Fprintf(cmd.OutOrStdout(), "\nSelect a template (1-%d): ", len(templateList))
-	
+
 	var selection int
 	if _, err := fmt.Fscanf(cmd.InOrStdin(), "%d", &selection); err != nil {
 		return fmt.Errorf("invalid selection: %v", err)
 	}
-	
+
 	if selection < 1 || selection > len(templateList) {
 		return fmt.Errorf("selection out of range")
 	}
-	
+
 	selectedTemplate := templateList[selection-1]
 	fmt.Fprintf(cmd.OutOrStdout(), "\nSelected: %s\n\n", selectedTemplate.Name)
-	
+
 	// Collect variables interactively
 	vars, err := collectVariablesInteractively(cmd, selectedTemplate)
 	if err != nil {
 		return err
 	}
-	
+
 	// Apply the template
 	result, err := library.ApplyTemplate(selectedTemplate.Name, vars)
 	if err != nil {
 		return err
 	}
-	
+
 	fmt.Fprintf(cmd.OutOrStdout(), "\nGenerated prompt:\n\n%s\n", result)
 	return nil
 }
 
 func collectVariablesInteractively(cmd *cobra.Command, template *templates.Template) (map[string]interface{}, error) {
 	vars := make(map[string]interface{})
-	
+
 	if len(template.Variables) == 0 {
 		return vars, nil
 	}
-	
+
 	fmt.Fprintf(cmd.OutOrStdout(), "Please provide values for the following variables:\n\n")
 
 	scanner := bufio.NewScanner(cmd.InOrStdin())
-	
+
 	for name, variable := range template.Variables {
 		fmt.Fprintf(cmd.OutOrStdout(), "%s", name)
 		if variable.Description != "" {
@@ -583,7 +690,7 @@ func collectVariablesInteractively(cmd *cobra.Command, template *templates.Templ
 			fmt.Fprintf(cmd.OutOrStdout(), " *")
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), ": ")
-		
+
 		// Read user input
 		if !scanner.Scan() {
 			if err := scanner.Err(); err != nil {
@@ -591,9 +698,9 @@ func collectVariablesInteractively(cmd *cobra.Command, template *templates.Templ
 			}
 			return nil, fmt.Errorf("unexpected end of input")
 		}
-		
+
 		input := strings.TrimSpace(scanner.Text())
-		
+
 		// Use default if no input and default exists
 		if input == "" && variable.Default != nil {
 			vars[name] = variable.Default
