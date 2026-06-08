@@ -53,8 +53,9 @@ GOTOOLCHAIN=go1.25.9 go test ./internal/providers -run 'TestGenericCLIProvider' 
   G204 13, G302 2, G112 1, G114 1. `gosec` also reported SSA/build errors for
   `plugins/starlark/main.go`, so coverage is not complete.
 - Command execution: command execution is concentrated in CLI providers, cgpt
-  adapters, plugin execution, metrics helpers, and scripttests. Most calls use
-  `exec.Command` or `exec.CommandContext` with argv rather than an explicit
+  adapters, plugin execution, metrics helpers, the explicit `pe view
+  --promptfoo` delegation path, browser openers, and scripttests. Most calls
+  use `exec.Command` or `exec.CommandContext` with argv rather than an explicit
   shell, which limits shell injection. Generic CLI command templates now quote
   prompt data before shell-style splitting, so prompt text cannot add argv
   entries. Risk remains where trusted local config controls executable names,
@@ -81,10 +82,13 @@ GOTOOLCHAIN=go1.25.9 go test ./internal/providers -run 'TestGenericCLIProvider' 
   Go 1.24.13 toolchain still reports called standard-library vulnerabilities.
 - G204 triage: plugin execution is now limited to `PE_PLUGIN_PATH` discovery and
   explicit plugin runs instead of PATH-wide startup execution. Generic CLI,
-  cgpt, custom metric, and scripttest subprocesses remain intended behavior for
-  trusted local configuration or test fixtures. Generic CLI prompt interpolation
+  cgpt, custom metric, `pe view --promptfoo`, browser opener, and scripttest
+  subprocesses remain intended behavior for trusted local configuration,
+  explicit user delegation, or test fixtures. Generic CLI prompt interpolation
   is quoted before argv splitting and covered by
-  `TestGenericCLIProvider_CommandTemplateQuotesPrompt`.
+  `TestGenericCLIProvider_CommandTemplateQuotesPrompt`. Promptfoo viewer
+  delegation is covered by `TestRunPromptfooViewUsesExplicitArgv` and default
+  local behavior is covered by `TestViewCmd_MissingEvalDoesNotRunPromptfoo`.
 - G304 triage: config expansion, Starlark `load_tests`, module cache paths, and
   module publish prompt paths now have containment checks. Unsigned manifests
   and cache objects reject path escapes, unsafe keys, and symlinks. Broad CLI

@@ -1,6 +1,9 @@
 package main
 
 import (
+	"errors"
+	"os/exec"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -63,5 +66,91 @@ func TestViewCmd_MissingEvalDoesNotRunPromptfoo(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), `evaluation "missing-eval" not found`) {
 		t.Fatalf("error = %v, want local not found", err)
+	}
+}
+
+func TestRunPromptfooViewRequiresNpx(t *testing.T) {
+	oldLookPath := promptfooViewLookPath
+	oldRun := promptfooViewRun
+	defer func() {
+		promptfooViewLookPath = oldLookPath
+		promptfooViewRun = oldRun
+	}()
+
+	promptfooViewLookPath = func(string) (string, error) {
+		return "", exec.ErrNotFound
+	}
+	promptfooViewRun = func(string, []string) error {
+		t.Fatal("promptfoo view command ran without npx")
+		return nil
+	}
+
+	err := runPromptfooView(nil, false)
+	if err == nil {
+		t.Fatal("runPromptfooView succeeded without npx")
+	}
+	if err.Error() != "npx not found for promptfoo viewer" {
+		t.Fatalf("error = %v, want npx not found", err)
+	}
+}
+
+func TestRunPromptfooViewUsesExplicitArgv(t *testing.T) {
+	oldLookPath := promptfooViewLookPath
+	oldRun := promptfooViewRun
+	defer func() {
+		promptfooViewLookPath = oldLookPath
+		promptfooViewRun = oldRun
+	}()
+
+	var gotName string
+	var gotArgs []string
+	promptfooViewLookPath = func(name string) (string, error) {
+		if name != "npx" {
+			t.Fatalf("look path name = %q, want npx", name)
+		}
+		return "/usr/bin/npx", nil
+	}
+	promptfooViewRun = func(name string, args []string) error {
+		gotName = name
+		gotArgs = append([]string(nil), args...)
+		return nil
+	}
+
+	if err := runPromptfooView([]string{"eval-123"}, true); err != nil {
+		t.Fatalf("runPromptfooView: %v", err)
+	}
+
+	if gotName != "npx" {
+		t.Fatalf("command name = %q, want npx", gotName)
+	}
+	wantArgs := []string{"promptfoo", "view", "eval-123", "-y"}
+	if !reflect.DeepEqual(gotArgs, wantArgs) {
+		t.Fatalf("args = %#v, want %#v", gotArgs, wantArgs)
+	}
+}
+
+func TestViewCmdPromptfooFlagDelegatesExplicitly(t *testing.T) {
+	oldLookPath := promptfooViewLookPath
+	oldRun := promptfooViewRun
+	defer func() {
+		promptfooViewLookPath = oldLookPath
+		promptfooViewRun = oldRun
+	}()
+
+	promptfooViewLookPath = func(string) (string, error) {
+		return "/usr/bin/npx", nil
+	}
+	promptfooViewRun = func(string, []string) error {
+		return errors.New("sentinel promptfoo delegation")
+	}
+
+	cmd := viewCmd()
+	cmd.SetArgs([]string{"--promptfoo", "eval-123"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("view --promptfoo succeeded")
+	}
+	if err.Error() != "sentinel promptfoo delegation" {
+		t.Fatalf("error = %v, want sentinel promptfoo delegation", err)
 	}
 }

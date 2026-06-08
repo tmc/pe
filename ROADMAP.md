@@ -1139,6 +1139,20 @@ This section groups the remaining post-cleanup implementation work into a
 sequenced plan. It is intentionally broader than the v0.5 release checklist:
 v0.5 should ship only after the P1 release gates are closed; later milestones
 can graduate selected experimental and aspirational surfaces into stable APIs.
+Each implementation slice should follow the same loop:
+
+1. Sync the current checkout to the NotebookLM cleanup notebook.
+2. Run a focused `generate-chat` review for either cleanup or visionary scope.
+3. Verify every notebook claim against the filesystem before changing code.
+4. Implement one narrow slice with fail-closed behavior for unfinished paths.
+5. Run focused tests, then the full suite when the slice changes shared
+   behavior.
+6. Sync again and ask for a post-change review before staging.
+
+Cleanup sessions should prefer removing stale claims, fake success, and
+unreviewed execution paths. Visionary sessions should produce design notes or
+roadmap entries until the API contract, dependencies, and test strategy are
+small enough to implement.
 
 ### Milestone 0: v0.5 Release Closure
 
@@ -1165,7 +1179,10 @@ Goal: ship the current stable core without claiming unfinished behavior.
    `verify`.
 4. Run the Ollama example against a real local daemon and record model/version
    notes, error modes, and privacy caveats.
-5. Keep promptfoo shell-out behavior explicitly opt-in; do not add implicit
+5. Archive or tombstone old documentation on the cleanup branch before release:
+   release-facing docs stay current, `docs/archive/` keeps historical material,
+   and `docs/future/` keeps aspirational material with clear headers.
+6. Keep promptfoo shell-out behavior explicitly opt-in; do not add implicit
    CLI execution paths without a reviewed command contract and tests.
 
 Verification:
@@ -1197,13 +1214,13 @@ not-implemented error with matching documentation.
 
 Current known explicit gaps:
 - cross-validation summaries and richer command-level statistical analysis
-  surfaces
-- non-interactive template creation and interactive template-library creation
+  surfaces beyond the current `pe diff --statistical` and
+  `pe metrics --statistical` paths
+- interactive template-library creation
 - metaprompt synthesis strategies: template, evolutionary, and neural
 - compose optimization, component import, coherence check, and coherence
   validation
 - playground compare, security, components, history, and BERTScore endpoints
-- YAML output in selected semantic command result paths
 - TypeScript and Pydantic structured validation
 - advanced promptfoo assertions for toxicity, coherence, factuality,
   classification, similarity, SQL, and structure
@@ -1240,6 +1257,8 @@ the current command surface.
 5. Implement TypeScript and Pydantic validation through isolated adapters with
    clear dependency and execution boundaries.
 6. Add examples and script tests for each promoted command path.
+7. Refresh the roadmap and release-facing docs whenever a gap is closed so this
+   section does not keep stale blockers.
 
 Verification:
 - Unit tests for each statistical primitive with edge cases for empty, tiny,
@@ -1247,7 +1266,39 @@ Verification:
 - Script tests for `pe build --validate`, future statistical commands, and
   structured validation success/failure cases.
 - No command shells out to user-provided tools unless the CLI contract requires
-  it and the path is covered by tests.
+  it, the user opts in explicitly, and the path is covered by tests.
+
+### Milestone 2a: Promptfoo CLI and External Execution Policy
+
+Goal: make every external process boundary deliberate, documented, and tested.
+
+1. Inventory all runtime `exec.Command` and `exec.CommandContext` paths and
+   classify them as build/test-only, plugin execution, provider execution,
+   platform opener, promptfoo compatibility, metric script hook, or removable.
+2. Keep direct promptfoo CLI delegation behind explicit user intent. The current
+   acceptable shape is an option like `pe view --promptfoo`, where the help text
+   names the delegation and tests prove the default path stays local.
+   DONE current pass: `pe view --promptfoo` uses a tested direct argv boundary
+   through `npx promptfoo view`, and default `pe view <evalId>` stays on the
+   local viewer path when `--promptfoo` is absent.
+3. Decide whether metric script hooks should remain supported. If they remain,
+   require explicit configuration, timeouts, argument separation, no shell
+   interpolation, and tests for missing executable, timeout, stderr, and
+   non-zero exit handling.
+4. Keep provider CLI adapters as provider execution, not promptfoo
+   compatibility. They must validate executable names, avoid shell expansion,
+   use timeouts, and document that they run local tools.
+5. Remove any promptfoo shell-out that is merely a convenience wrapper and can
+   be replaced with local Go behavior.
+6. Document the policy in release-facing docs only after tests cover every
+   allowed external execution path.
+
+Verification:
+- `rg -n 'exec\\.Command|CommandContext' cmd internal plugins tests`
+- Unit tests for each allowed non-test external execution path.
+- Script tests proving defaults do not invoke promptfoo or arbitrary shells.
+- Manual smoke only for explicitly delegated promptfoo CLI behavior, because it
+  depends on `npx` and the local promptfoo install.
 
 ### Milestone 3: Module Registry and Supply Chain
 

@@ -15,6 +15,11 @@ import (
 	"github.com/tmc/pe/internal/promptfoo"
 )
 
+var (
+	promptfooViewLookPath = exec.LookPath
+	promptfooViewRun      = runPromptfooViewCommand
+)
+
 // viewCmd returns a cobra.Command for the 'view' subcommand.
 //
 // view displays evaluation results in a browser
@@ -170,7 +175,7 @@ func listEvaluations(cmd *cobra.Command) error {
 }
 
 func runPromptfooView(args []string, yes bool) error {
-	if _, err := exec.LookPath("npx"); err != nil {
+	if _, err := promptfooViewLookPath("npx"); err != nil {
 		return fmt.Errorf("npx not found for promptfoo viewer")
 	}
 
@@ -182,7 +187,11 @@ func runPromptfooView(args []string, yes bool) error {
 		promptfooArgs = append(promptfooArgs, "-y")
 	}
 
-	cmd := exec.Command("npx", promptfooArgs...)
+	return promptfooViewRun("npx", promptfooArgs)
+}
+
+func runPromptfooViewCommand(name string, args []string) error {
+	cmd := exec.Command(name, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
