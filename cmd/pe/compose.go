@@ -791,13 +791,34 @@ func checkCoherence(components []string) error {
 		return fmt.Errorf("coherence check requires at least 2 components")
 	}
 
+	texts := make([]string, 0, len(components))
 	for _, comp := range components {
-		if _, err := os.ReadFile(comp); err != nil {
+		data, err := os.ReadFile(comp)
+		if err != nil {
 			return fmt.Errorf("failed to read %s: %v", comp, err)
 		}
+		text := strings.TrimSpace(string(data))
+		if text == "" {
+			return fmt.Errorf("coherence check requires non-empty component %s", comp)
+		}
+		texts = append(texts, text)
 	}
 
-	return fmt.Errorf("coherence check is not yet implemented")
+	semanticScore := calculateSimpleCoherence(texts)
+	styleScore := calculateStyleConsistency(texts)
+	score := (semanticScore + styleScore) / 2
+
+	fmt.Printf("Coherence Score: %.2f\n", score)
+	fmt.Printf("Semantic Overlap: %.2f\n", semanticScore)
+	fmt.Printf("Style Consistency: %.2f\n", styleScore)
+	if score < 0.35 {
+		fmt.Println("Coherence: weak")
+	} else if score < 0.7 {
+		fmt.Println("Coherence: mixed")
+	} else {
+		fmt.Println("Coherence: strong")
+	}
+	return nil
 }
 
 // calculateSimpleCoherence calculates basic coherence between texts
@@ -909,7 +930,11 @@ func calculateStyleConsistency(texts []string) float64 {
 				punctCount++
 			}
 		}
-		punctuationDensity = append(punctuationDensity, float64(punctCount)/float64(len(text)))
+		if len(text) == 0 {
+			punctuationDensity = append(punctuationDensity, 0)
+		} else {
+			punctuationDensity = append(punctuationDensity, float64(punctCount)/float64(len(text)))
+		}
 	}
 
 	// Calculate variance in metrics

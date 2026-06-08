@@ -826,11 +826,18 @@ func TestComposeLibraryAndCoherenceHelpers(t *testing.T) {
 	if err := os.WriteFile(other, []byte("Determine the emotional tone."), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := checkCoherence([]string{source, other}); err == nil || !strings.Contains(err.Error(), "not yet implemented") {
+	if err := checkCoherence([]string{source, other}); err != nil {
 		t.Fatalf("checkCoherence err = %v", err)
 	}
 	if err := checkCoherence([]string{source, filepath.Join(tmpDir, "missing.txt")}); err == nil {
 		t.Fatal("missing coherence file succeeded")
+	}
+	empty := filepath.Join(tmpDir, "empty.txt")
+	if err := os.WriteFile(empty, nil, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkCoherence([]string{source, empty}); err == nil {
+		t.Fatal("empty coherence file succeeded")
 	}
 	validateComponentCompatibility([]PromptComponent{
 		{Type: "context", Content: "software engineering code"},

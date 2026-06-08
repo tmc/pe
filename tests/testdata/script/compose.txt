@@ -69,8 +69,10 @@ stdout 'Composing from module requirements'
 stderr 'component import is not yet implemented'
 
 # Coherence analysis
-! pe experimental compose prompt1.txt prompt2.txt --coherence-check
-stderr 'coherence check is not yet implemented'
+pe experimental compose prompt1.txt prompt2.txt --coherence-check
+stdout 'Coherence Score:'
+stdout 'Semantic Overlap:'
+stdout 'Style Consistency:'
 
 -- context.txt --
 You are an AI assistant with expertise in software engineering.

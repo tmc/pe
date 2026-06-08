@@ -1224,8 +1224,8 @@ Current known explicit gaps:
   `pe metrics --statistical` paths
 - interactive template-library creation
 - metaprompt synthesis strategies: template, evolutionary, and neural
-- compose optimization, component import, coherence check, and coherence
-  validation
+- compose optimization, component import, and richer coherence validation beyond
+  the current local `--coherence-check`
 - playground compare, security, components, history, and BERTScore endpoints
 - TypeScript and Pydantic source/runtime validation beyond local JSON-object
   data validation
@@ -1394,6 +1394,10 @@ keeping provider dependencies behind small interfaces.
    inputs, outputs, scoring, and trace format are specified.
 3. Implement compose optimization, component import, and coherence validation
    with local-first checks and provider-assisted options.
+   DONE current pass: `pe compose --coherence-check` now reads component files,
+   rejects missing or empty components, and reports deterministic local
+   semantic-overlap and style-consistency scores. Remaining work: provider-
+   assisted coherence validation, optimization, and remote component import.
 4. Add DAG scheduling for semantic optimization graphs with deterministic
    topological execution, cancellation, and cycle errors.
    DONE current pass: add the local generic DAG scheduler primitive with

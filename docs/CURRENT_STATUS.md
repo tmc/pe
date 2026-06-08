@@ -58,7 +58,7 @@ is the source of truth for planned work and release-blocking follow-ups.
 - `pe optimize` - Multiple optimization methods
 - `pe semantic` - Semantic backpropagation
 - `pe evolve` - Evolutionary optimization
-- `pe compose` - Component composition
+- `pe compose` - Component composition with local coherence checks
 
 ### Local Workflow Prototypes
 - `pe exp distributed` - Bounded local task scheduler from JSON task files
