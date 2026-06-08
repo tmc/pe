@@ -1222,7 +1222,7 @@ Current known explicit gaps:
 - cross-validation summaries and richer command-level statistical analysis
   surfaces beyond the current `pe diff --statistical` and
   `pe metrics --statistical` paths
-- interactive template-library creation
+- richer prompted template-library creation beyond current starter-template API
 - metaprompt synthesis strategies: template, evolutionary, and neural
 - compose optimization, component import, and richer coherence validation beyond
   the current local `--coherence-check`
@@ -1434,6 +1434,9 @@ surface accidentally.
    `.prompt` artifacts and YAML/JSON template definitions, including inferred
    variables from `{{ .name }}` placeholders and fail-closed missing prompt
    validation.
+   DONE current pass: implement `TemplateLibrary.CreateTemplate` as a
+   deterministic starter-template creator with unique names, validation-ready
+   variables, optional library-path persistence, and context cancellation.
 3. Harden the playground endpoints or remove/mark unavailable endpoints from
    release-facing docs until implemented.
    DONE current pass: playground compare, security, components, history, and

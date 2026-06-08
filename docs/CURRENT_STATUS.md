@@ -44,7 +44,8 @@ is the source of truth for planned work and release-blocking follow-ups.
 - `pe template list` - List templates
 - `pe template apply` - Apply templates
 - `pe template create` - Create templates
-- `pe template interactive` - Interactive mode (newly implemented)
+- `pe template interactive` - Interactive mode; library APIs can create
+  starter templates non-interactively
 - `pe template show` - Show template details
 - `pe template validate` - Validate templates
 

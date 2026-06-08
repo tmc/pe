@@ -1,9 +1,9 @@
 package templates
 
 import (
+	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -359,13 +359,42 @@ func TestTemplateLibrary_LoadBuiltinTemplates(t *testing.T) {
 func TestTemplateLibrary_CreateTemplate(t *testing.T) {
 	lib := NewTemplateLibrary("")
 
-	template, err := lib.CreateTemplate(nil)
-	if err == nil || !strings.Contains(err.Error(), "not yet implemented") {
+	template, err := lib.CreateTemplate(context.Background())
+	if err != nil {
 		t.Fatalf("CreateTemplate err = %v", err)
 	}
+	if template.Name != "untitled-template" || template.Prompt == "" {
+		t.Fatalf("template = %#v", template)
+	}
+	if _, err := lib.GetTemplate(template.Name); err != nil {
+		t.Fatalf("created template not indexed: %v", err)
+	}
+	if _, err := lib.ApplyTemplate(template.Name, map[string]interface{}{"topic": "testing"}); err != nil {
+		t.Fatalf("created template does not apply: %v", err)
+	}
 
-	if template != nil {
-		t.Fatalf("CreateTemplate returned %#v", template)
+	again, err := lib.CreateTemplate(context.Background())
+	if err != nil {
+		t.Fatalf("second CreateTemplate err = %v", err)
+	}
+	if again.Name == template.Name {
+		t.Fatalf("duplicate template name %q", again.Name)
+	}
+
+	tmpDir := t.TempDir()
+	fileLib := NewTemplateLibrary(tmpDir)
+	saved, err := fileLib.CreateTemplate(context.Background())
+	if err != nil {
+		t.Fatalf("file CreateTemplate err = %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, saved.Name+".yaml")); err != nil {
+		t.Fatalf("created template was not saved: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if cancelled, err := lib.CreateTemplate(ctx); err == nil || cancelled != nil {
+		t.Fatalf("cancelled CreateTemplate = %#v, %v", cancelled, err)
 	}
 }
 

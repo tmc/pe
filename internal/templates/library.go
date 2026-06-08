@@ -304,10 +304,69 @@ func (tl *TemplateLibrary) ExportTemplate(name, format string) ([]byte, error) {
 
 // CreateTemplate creates a new template interactively
 func (tl *TemplateLibrary) CreateTemplate(ctx context.Context) (*Template, error) {
-	return nil, fmt.Errorf("interactive template creation is not yet implemented")
+	if ctx != nil {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+	}
+
+	now := time.Now()
+	template := &Template{
+		Name:        uniqueTemplateName(tl, "untitled-template"),
+		Description: "Starter prompt template",
+		Category:    "general",
+		Tags:        []string{"starter"},
+		Version:     "1.0.0",
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		Prompt:      "Write a concise response about {{topic}}.",
+		Variables: map[string]Variable{
+			"topic": {
+				Name:        "topic",
+				Description: "Subject to write about",
+				Type:        "string",
+				Required:    true,
+			},
+		},
+		Examples: []Example{
+			{
+				Name:      "basic",
+				Variables: map[string]interface{}{"topic": "prompt engineering"},
+				Expected:  "A concise response about prompt engineering.",
+			},
+		},
+		Options: make(map[string]interface{}),
+	}
+	if err := tl.AddTemplate(template); err != nil {
+		return nil, err
+	}
+	if tl.basePath != "" {
+		if err := os.MkdirAll(tl.basePath, 0755); err != nil {
+			return nil, err
+		}
+		filename := filepath.Join(tl.basePath, template.Name+".yaml")
+		if err := tl.SaveTemplate(template, filename); err != nil {
+			return nil, err
+		}
+	}
+	return template, nil
 }
 
 // Helper methods
+
+func uniqueTemplateName(tl *TemplateLibrary, base string) string {
+	if _, exists := tl.templates[base]; !exists {
+		return base
+	}
+	for i := 2; ; i++ {
+		name := fmt.Sprintf("%s-%d", base, i)
+		if _, exists := tl.templates[name]; !exists {
+			return name
+		}
+	}
+}
 
 func (tl *TemplateLibrary) addToIndex(key, value string) {
 	if _, exists := tl.indexes[key]; !exists {
