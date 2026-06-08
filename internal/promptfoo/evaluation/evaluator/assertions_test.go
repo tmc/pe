@@ -125,35 +125,70 @@ func TestAssertionEvaluatorCoversAllAssertionTypes(t *testing.T) {
 	}
 }
 
-func TestUnimplementedAssertionsFailClosed(t *testing.T) {
+func TestAssertionEvaluatorCoherenceLocalBaseline(t *testing.T) {
+	evaluator := NewAssertionEvaluator(nil)
+	threshold := 0.6
+	result, err := evaluator.EvaluateAssertion(context.Background(), Assertion{
+		Type:      AssertionCoherence,
+		Threshold: &threshold,
+	}, "The answer introduces the task. Therefore it explains the result. Finally it names the next step.", nil)
+	require.NoError(t, err)
+	assert.True(t, result.Passed)
+	assert.GreaterOrEqual(t, result.Score, threshold)
+	assert.Equal(t, "local_transition_repetition", result.Metadata["method"])
+
+	threshold = 0.9
+	result, err = evaluator.EvaluateAssertion(context.Background(), Assertion{
+		Type:      AssertionCoherence,
+		Threshold: &threshold,
+	}, "repeat repeat repeat. repeat repeat repeat. repeat repeat repeat.", nil)
+	require.NoError(t, err)
+	assert.False(t, result.Passed)
+	assert.Less(t, result.Score, threshold)
+}
+
+func TestAssertionEvaluatorFactualityLocalFacts(t *testing.T) {
+	evaluator := NewAssertionEvaluator(nil)
+	result, err := evaluator.EvaluateAssertion(context.Background(), Assertion{
+		Type:  AssertionFactuality,
+		Value: []interface{}{"Paris is the capital of France", "Berlin is the capital of Germany"},
+	}, "Paris is the capital of France. Berlin is the capital of Germany.", nil)
+	require.NoError(t, err)
+	assert.True(t, result.Passed)
+	assert.Equal(t, 1.0, result.Score)
+	assert.Equal(t, "required_fact_contains", result.Metadata["method"])
+
+	threshold := 0.5
+	result, err = evaluator.EvaluateAssertion(context.Background(), Assertion{
+		Type:      AssertionFactuality,
+		Threshold: &threshold,
+		Config: map[string]interface{}{
+			"facts": []interface{}{"Paris is the capital of France", "Berlin is the capital of Germany"},
+		},
+	}, "Paris is the capital of France.", nil)
+	require.NoError(t, err)
+	assert.True(t, result.Passed)
+	assert.Equal(t, 0.5, result.Score)
+
+	result, err = evaluator.EvaluateAssertion(context.Background(), Assertion{
+		Type: AssertionFactuality,
+	}, "answer", nil)
+	require.NoError(t, err)
+	assert.False(t, result.Passed)
+	assert.Contains(t, result.Message, "requires fact strings")
+}
+
+func TestAssertionEvaluatorHasNoFailClosedPlaceholders(t *testing.T) {
 	evaluator := NewAssertionEvaluator(nil)
 
-	tests := []struct {
-		name string
-		eval func() *AssertionResult
-	}{
-		{
-			name: "coherence",
-			eval: func() *AssertionResult {
-				return evaluator.evaluateCoherence(context.Background(), Assertion{Type: AssertionCoherence}, "answer")
-			},
-		},
-		{
-			name: "factuality",
-			eval: func() *AssertionResult {
-				return evaluator.evaluateFactuality(context.Background(), Assertion{Type: AssertionFactuality}, "answer")
-			},
-		},
+	results := []*AssertionResult{
+		evaluator.evaluateCoherence(context.Background(), Assertion{Type: AssertionCoherence}, "answer"),
+		evaluator.evaluateFactuality(context.Background(), Assertion{Type: AssertionFactuality}, "answer"),
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := tt.eval()
-			require.NotNil(t, result)
-			assert.False(t, result.Passed)
-			assert.Equal(t, 0.0, result.Score)
-			assert.Contains(t, result.Message, "not yet implemented")
-		})
+	for _, result := range results {
+		require.NotNil(t, result)
+		assert.NotContains(t, result.Message, "not yet implemented")
 	}
 }
 

@@ -775,8 +775,6 @@ FEEDBACK: [brief analysis]`, language, output)
 	}
 }
 
-// Placeholder implementations for remaining assertion types
-
 func (ae *AssertionEvaluator) evaluateToxicity(ctx context.Context, assertion Assertion, output string) *AssertionResult {
 	terms := toxicityTerms(assertion)
 	matches := matchingTerms(output, terms)
@@ -805,24 +803,57 @@ func (ae *AssertionEvaluator) evaluateToxicity(ctx context.Context, assertion As
 }
 
 func (ae *AssertionEvaluator) evaluateCoherence(ctx context.Context, assertion Assertion, output string) *AssertionResult {
-	// NOTE: Coherence evaluation pending implementation
-	// Will use LLM-based coherence scoring in future release
+	score, details := localCoherenceScore(output)
+	threshold := 0.5
+	if assertion.Threshold != nil {
+		threshold = *assertion.Threshold
+	}
+	passed := score >= threshold
+
 	return &AssertionResult{
 		Type:    assertion.Type,
-		Passed:  false,
-		Score:   0.0,
-		Message: "Coherence evaluation not yet implemented (coming in future release)",
+		Passed:  passed,
+		Score:   score,
+		Message: fmt.Sprintf("Local coherence score: %.2f", score),
+		Metadata: map[string]interface{}{
+			"method":    "local_transition_repetition",
+			"threshold": threshold,
+			"details":   details,
+		},
 	}
 }
 
 func (ae *AssertionEvaluator) evaluateFactuality(ctx context.Context, assertion Assertion, output string) *AssertionResult {
-	// NOTE: Factuality checking pending implementation
-	// Will integrate with fact-checking service in future release
+	facts := factualityFacts(assertion)
+	if len(facts) == 0 {
+		return &AssertionResult{
+			Type:    assertion.Type,
+			Passed:  false,
+			Score:   0.0,
+			Message: "Factuality assertion requires fact strings in value or config.facts",
+		}
+	}
+
+	missing := missingFacts(output, facts)
+	score := float64(len(facts)-len(missing)) / float64(len(facts))
+	threshold := 1.0
+	if assertion.Threshold != nil {
+		threshold = *assertion.Threshold
+	}
+	passed := score >= threshold
+
 	return &AssertionResult{
-		Type:    assertion.Type,
-		Passed:  false,
-		Score:   0.0,
-		Message: "Factuality evaluation not yet implemented (coming in future release)",
+		Type:     assertion.Type,
+		Passed:   passed,
+		Score:    score,
+		Expected: facts,
+		Actual:   missing,
+		Message:  fmt.Sprintf("Local factuality facts matched: %d/%d", len(facts)-len(missing), len(facts)),
+		Metadata: map[string]interface{}{
+			"method":    "required_fact_contains",
+			"threshold": threshold,
+			"missing":   missing,
+		},
 	}
 }
 
@@ -1004,6 +1035,101 @@ func tokenSet(text string) map[string]bool {
 		tokens[word] = true
 	}
 	return tokens
+}
+
+func sentenceList(text string) []string {
+	parts := regexp.MustCompile(`[.!?]+`).Split(text, -1)
+	sentences := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			sentences = append(sentences, part)
+		}
+	}
+	return sentences
+}
+
+func localCoherenceScore(output string) (float64, map[string]interface{}) {
+	sentences := sentenceList(output)
+	if len(sentences) == 0 {
+		return 0, map[string]interface{}{
+			"sentences":        0,
+			"transition_words": 0,
+			"repetition_score": 0.0,
+		}
+	}
+	if len(sentences) == 1 {
+		return 1, map[string]interface{}{
+			"sentences":        1,
+			"transition_words": 0,
+			"repetition_score": 0.0,
+		}
+	}
+
+	lower := strings.ToLower(output)
+	transitionWords := []string{"however", "therefore", "additionally", "furthermore", "moreover", "consequently", "thus", "hence", "because", "finally"}
+	transitionCount := 0
+	for _, word := range transitionWords {
+		if strings.Contains(lower, word) {
+			transitionCount++
+		}
+	}
+
+	tokens := regexp.MustCompile(`[A-Za-z0-9_]+`).FindAllString(lower, -1)
+	counts := make(map[string]int)
+	for _, token := range tokens {
+		if len(token) > 3 {
+			counts[token]++
+		}
+	}
+	repeated := 0
+	for _, count := range counts {
+		if count > 1 {
+			repeated += count - 1
+		}
+	}
+	repetitionScore := 0.0
+	if len(tokens) > 0 {
+		repetitionScore = float64(repeated) / float64(len(tokens))
+	}
+
+	base := 0.55
+	transitionScore := math.Min(float64(transitionCount)/float64(len(sentences)), 0.35)
+	score := math.Max(0, math.Min(1, base+transitionScore-repetitionScore))
+	return score, map[string]interface{}{
+		"sentences":        len(sentences),
+		"transition_words": transitionCount,
+		"repetition_score": repetitionScore,
+	}
+}
+
+func factualityFacts(assertion Assertion) []string {
+	facts := stringList(assertion.Value)
+	if raw, ok := assertion.Config["facts"]; ok {
+		facts = append(facts, stringList(raw)...)
+	}
+	result := make([]string, 0, len(facts))
+	seen := make(map[string]bool)
+	for _, fact := range facts {
+		fact = strings.TrimSpace(fact)
+		key := strings.ToLower(fact)
+		if fact != "" && !seen[key] {
+			result = append(result, fact)
+			seen[key] = true
+		}
+	}
+	return result
+}
+
+func missingFacts(output string, facts []string) []string {
+	lower := strings.ToLower(output)
+	missing := make([]string, 0)
+	for _, fact := range facts {
+		if !strings.Contains(lower, strings.ToLower(fact)) {
+			missing = append(missing, fact)
+		}
+	}
+	return missing
 }
 
 func validateSQLShape(query string) error {

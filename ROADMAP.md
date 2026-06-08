@@ -1363,6 +1363,10 @@ honest scoring semantics and failure modes.
    threshold support and explicit method metadata.
 2. Implement coherence and factuality checks behind explicit data/model
    dependencies; avoid presenting heuristic scores as ground truth.
+   DONE current pass: add local coherence scoring based on transitions and
+   repetition, plus local factuality checks against required fact strings from
+   `value` or `config.facts`. Provider-backed scoring and external grounding
+   remain future work.
 3. Implement toxicity/classification/SQL/structure assertions with clear
    provider requirements or local validators.
    DONE current pass: add local SQL shape assertions for recognized starting
