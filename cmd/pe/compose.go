@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/metaprompt"
@@ -866,7 +869,7 @@ func listComponents() error {
 // importComponents imports components from a local file, directory, or txtar archive.
 func importComponents(source string) error {
 	if strings.HasPrefix(source, "http://") || strings.HasPrefix(source, "https://") {
-		return fmt.Errorf("remote component import is not yet implemented")
+		return importRemoteComponents(source)
 	}
 	info, err := os.Stat(source)
 	if err != nil {
@@ -879,6 +882,46 @@ func importComponents(source string) error {
 		return importComponentTxtar(source)
 	}
 	return importComponentFile(source, filepath.Join("components", inferCategory(source), filepath.Base(source)))
+}
+
+func importRemoteComponents(source string) error {
+	client := &http.Client{Timeout: 30 * time.Second}
+	req, err := http.NewRequest(http.MethodGet, source, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("fetch remote components: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("fetch remote components: status %d", resp.StatusCode)
+	}
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20+1))
+	if err != nil {
+		return fmt.Errorf("read remote components: %w", err)
+	}
+	if len(data) > 1<<20 {
+		return fmt.Errorf("remote component import exceeds 1048576 byte limit")
+	}
+	content := string(data)
+	contentType := resp.Header.Get("Content-Type")
+	if strings.EqualFold(filepath.Ext(resp.Request.URL.Path), ".txtar") ||
+		strings.Contains(contentType, "application/txtar") ||
+		strings.HasPrefix(strings.TrimSpace(content), "-- ") {
+		return importComponentTxtarContent(content)
+	}
+	name := filepath.Base(resp.Request.URL.Path)
+	if name == "." || name == "/" || name == "" {
+		name = "remote.txt"
+	}
+	dest := filepath.Join("components", inferCategory(name), name)
+	if err := writeImportedComponent(dest, data); err != nil {
+		return err
+	}
+	fmt.Printf("Imported remote component: %s\n", dest)
+	return nil
 }
 
 func importComponentDirectory(dir string) error {
@@ -916,7 +959,11 @@ func importComponentTxtar(filename string) error {
 	if err != nil {
 		return err
 	}
-	files, err := parseComponentTxtar(string(data))
+	return importComponentTxtarContent(string(data))
+}
+
+func importComponentTxtarContent(content string) error {
+	files, err := parseComponentTxtar(content)
 	if err != nil {
 		return err
 	}

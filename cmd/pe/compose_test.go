@@ -3,6 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -889,9 +892,6 @@ func TestComposeLibraryAndCoherenceHelpers(t *testing.T) {
 	if err := listComponents(); err != nil {
 		t.Fatal(err)
 	}
-	if err := importComponents("https://example.com/components.zip"); err == nil || !strings.Contains(err.Error(), "remote component import is not yet implemented") {
-		t.Fatalf("importComponents err = %v", err)
-	}
 	importFile := filepath.Join(tmpDir, "import.txt")
 	if err := os.WriteFile(importFile, []byte("Imported component"), 0644); err != nil {
 		t.Fatal(err)
@@ -931,6 +931,37 @@ func TestComposeLibraryAndCoherenceHelpers(t *testing.T) {
 	}
 	if err := importComponents(badTxtar); err == nil {
 		t.Fatal("path-escaping txtar import succeeded")
+	}
+	remote := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/components.txtar":
+			fmt.Fprint(w, "-- remote/c.txt --\nC\n")
+		case "/plain.txt":
+			fmt.Fprint(w, "Remote plain component")
+		case "/bad.txtar":
+			fmt.Fprint(w, "-- ../bad.txt --\nno\n")
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer remote.Close()
+	if err := importComponents(remote.URL + "/components.txtar"); err != nil {
+		t.Fatalf("import remote txtar err = %v", err)
+	}
+	if _, err := os.Stat(filepath.Join("components", "remote", "c.txt")); err != nil {
+		t.Fatalf("imported remote txtar file missing: %v", err)
+	}
+	if err := importComponents(remote.URL + "/plain.txt"); err != nil {
+		t.Fatalf("import remote file err = %v", err)
+	}
+	if _, err := os.Stat(filepath.Join("components", "plain.txt")); err != nil {
+		t.Fatalf("imported remote file missing: %v", err)
+	}
+	if err := importComponents(remote.URL + "/bad.txtar"); err == nil {
+		t.Fatal("path-escaping remote txtar import succeeded")
+	}
+	if err := importComponents(remote.URL + "/missing.txt"); err == nil || !strings.Contains(err.Error(), "status 404") {
+		t.Fatalf("missing remote import err = %v", err)
 	}
 	if err := addComponentToLibrary(filepath.Join(tmpDir, "missing.txt"), "x"); err == nil {
 		t.Fatal("missing add component succeeded")
@@ -984,9 +1015,13 @@ func TestComposeRunSpecialCases(t *testing.T) {
 	if err := runCompose(cmd, nil); err == nil {
 		t.Fatal("list without components dir succeeded")
 	}
+	remote := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "Imported over HTTP")
+	}))
+	defer remote.Close()
 	cmd = newComposeCmd()
-	cmd.Flags().Set("import", "https://example.com/x")
-	if err := runCompose(cmd, nil); err == nil || !strings.Contains(err.Error(), "remote component import is not yet implemented") {
-		t.Fatalf("import err = %v", err)
+	cmd.Flags().Set("import", remote.URL+"/instruction.txt")
+	if err := runCompose(cmd, nil); err != nil {
+		t.Fatalf("remote import err = %v", err)
 	}
 }

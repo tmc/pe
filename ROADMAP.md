@@ -1426,6 +1426,10 @@ keeping provider dependencies behind small interfaces.
    directories, and txtar archives into `components/`, with path-cleaning
    checks that reject archive path escapes. Remaining work: remote component
    import and richer component-library workflows.
+   DONE current pass: `pe compose --import` now imports remote HTTP(S) txtar
+   bundles and single component files with a bounded response size, direct GET,
+   and the same path-cleaning checks as local imports. Remaining work: richer
+   component-library workflows and provider-assisted composition.
    DONE current pass: `pe compose --optimize` now applies deterministic local
    composition polish without provider calls, records optimization metadata, and
    avoids claiming TextGrad/provider execution. Remaining work: provider-assisted
