@@ -1,8 +1,10 @@
 # Archived README
 
 This file is a legacy snapshot. It is not the source of truth for current PE
-functionality or release status. See [../README.md](../README.md),
-[../RELEASE_NOTES.md](../RELEASE_NOTES.md), and [../ROADMAP.md](../ROADMAP.md).
+functionality, security coverage, or release status. See
+[../README.md](../README.md), [../RELEASE_NOTES.md](../RELEASE_NOTES.md), and
+[../ROADMAP.md](../ROADMAP.md). Current security testing is OWASP-oriented;
+some advanced analyses are incomplete and fail closed.
 
 # PE: Go for Prompts
 
@@ -47,7 +49,7 @@ PE combines the simplicity of Go tooling with cutting-edge research:
 | **🥇 Overall Score** | **100/100** | 78/100 | 75/100 | 85/100 | 70/100 |
 | **2024-2025 Research Implementation** | ✅ **Complete** | ❌ None | ❌ None | ✅ DSPy Only | ❌ None |
 | **Advanced Evaluation Metrics** | ✅ **All** (BLEU, ROUGE, BERTScore, G-Eval, UniEval) | ❌ Basic | ❌ Basic | ❌ Limited | ❌ None |
-| **OWASP LLM Top 10 Security** | ✅ **Complete** | ✅ Basic | ✅ Basic | ❌ None | ❌ None |
+| **OWASP LLM Top 10 Security** | Historical claim; current checks are OWASP-oriented and incomplete analyses fail closed | ✅ Basic | ✅ Basic | ❌ None | ❌ None |
 | **Statistical Analysis** | ✅ **Research-Grade** (Significance Testing, A/B Tests, Effect Size) | ✅ Basic | ✅ Good | ❌ None | ❌ None |
 | **Optimization Methods** | ✅ **6 Advanced** | ❌ None | ❌ None | ✅ 1 Method | ❌ None |
 | **Unix Pipeline Processing** | ✅ **Revolutionary** | ❌ None | ❌ None | ❌ None | ❌ None |
@@ -486,8 +488,8 @@ pe eval large-suite.yaml --stream | \
 - 📈 **Statistical Analysis**: Significance testing, A/B tests, effect size analysis
 - 🔍 **Distribution Analysis**: Normality tests, outlier detection, confidence intervals
 
-### Enterprise Security Testing (OWASP Complete)
-- 🛡️ **OWASP LLM Top 10**: Complete coverage of all security categories
+### Enterprise Security Testing (Historical Snapshot)
+- 🛡️ **OWASP LLM Top 10**: Historical claim; current PE security checks are OWASP-oriented, and incomplete analyses fail closed
 - 🔍 **Advanced Red-Teaming**: Automated vulnerability discovery and assessment
 - 🎯 **Prompt Injection**: Direct, indirect, and context poisoning detection
 - 📡 **Information Disclosure**: PII, training data, and sensitive information detection

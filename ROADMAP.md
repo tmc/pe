@@ -1150,6 +1150,10 @@ Goal: ship the current stable core without claiming unfinished behavior.
 2. Fix remaining release-facing documentation drift, including README feature
    claims about OWASP/security completeness and any roadmap entries that still
    imply module publishing is implemented.
+   DONE current pass: root README, `README.md.old`, and the archived
+   `docs-legacy/README.md` now describe security checks as OWASP-oriented with
+   incomplete analyses reported explicitly or failed closed, rather than
+   complete OWASP coverage.
 3. Validate the remote registry read path with fixtures: `pe mod download`,
    `pe mod list`, and `pe mod search` should have deterministic success and
    failure tests that do not depend on live services.
