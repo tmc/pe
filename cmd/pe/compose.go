@@ -811,9 +811,134 @@ func listComponents() error {
 	return nil
 }
 
-// importComponents imports components from a URL
-func importComponents(url string) error {
-	return fmt.Errorf("component import is not yet implemented")
+// importComponents imports components from a local file, directory, or txtar archive.
+func importComponents(source string) error {
+	if strings.HasPrefix(source, "http://") || strings.HasPrefix(source, "https://") {
+		return fmt.Errorf("remote component import is not yet implemented")
+	}
+	info, err := os.Stat(source)
+	if err != nil {
+		return fmt.Errorf("failed to read import source: %v", err)
+	}
+	if info.IsDir() {
+		return importComponentDirectory(source)
+	}
+	if strings.EqualFold(filepath.Ext(source), ".txtar") {
+		return importComponentTxtar(source)
+	}
+	return importComponentFile(source, filepath.Join("components", inferCategory(source), filepath.Base(source)))
+}
+
+func importComponentDirectory(dir string) error {
+	count := 0
+	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		dest, err := cleanComponentImportPath(rel)
+		if err != nil {
+			return err
+		}
+		if err := importComponentFile(path, dest); err != nil {
+			return err
+		}
+		count++
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Imported %d components\n", count)
+	return nil
+}
+
+func importComponentTxtar(filename string) error {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+	files, err := parseComponentTxtar(string(data))
+	if err != nil {
+		return err
+	}
+	for name, content := range files {
+		dest, err := cleanComponentImportPath(name)
+		if err != nil {
+			return err
+		}
+		if err := writeImportedComponent(dest, []byte(content)); err != nil {
+			return err
+		}
+	}
+	fmt.Printf("Imported %d components\n", len(files))
+	return nil
+}
+
+func importComponentFile(source, dest string) error {
+	data, err := os.ReadFile(source)
+	if err != nil {
+		return err
+	}
+	if err := writeImportedComponent(dest, data); err != nil {
+		return err
+	}
+	fmt.Printf("Imported component: %s\n", dest)
+	return nil
+}
+
+func writeImportedComponent(dest string, data []byte) error {
+	dest, err := cleanComponentImportPath(strings.TrimPrefix(dest, "components"+string(filepath.Separator)))
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(dest, data, 0644)
+}
+
+func cleanComponentImportPath(name string) (string, error) {
+	name = filepath.Clean(name)
+	if name == "." || strings.HasPrefix(name, "..") || filepath.IsAbs(name) {
+		return "", fmt.Errorf("invalid component path %q", name)
+	}
+	return filepath.Join("components", name), nil
+}
+
+func parseComponentTxtar(content string) (map[string]string, error) {
+	files := make(map[string]string)
+	var current string
+	var body strings.Builder
+	flush := func() {
+		if current != "" {
+			files[current] = strings.TrimSuffix(body.String(), "\n")
+			body.Reset()
+		}
+	}
+	for _, line := range strings.Split(content, "\n") {
+		if strings.HasPrefix(line, "-- ") && strings.HasSuffix(line, " --") {
+			flush()
+			current = strings.TrimSuffix(strings.TrimPrefix(line, "-- "), " --")
+			current = strings.TrimSpace(current)
+			continue
+		}
+		if current != "" {
+			body.WriteString(line)
+			body.WriteByte('\n')
+		}
+	}
+	flush()
+	if len(files) == 0 {
+		return nil, fmt.Errorf("component txtar contains no files")
+	}
+	return files, nil
 }
 
 // checkCoherence performs coherence analysis between components

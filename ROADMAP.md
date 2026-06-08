@@ -1224,7 +1224,7 @@ Current known explicit gaps:
   `pe metrics --statistical` paths
 - richer prompted template-library creation beyond current starter-template API
 - metaprompt synthesis strategies: template, evolutionary, and neural
-- compose optimization, component import, and richer/provider-assisted
+- compose optimization, remote component import, and richer/provider-assisted
   coherence validation beyond current local compose checks
 - richer playground compare, security, components, history, and BERTScore
   behavior beyond current local JSON endpoints
@@ -1408,6 +1408,10 @@ keeping provider dependencies behind small interfaces.
    including empty-prompt and context-cancellation errors. Remaining work:
    provider-assisted coherence validation, optimization, and remote component
    import.
+   DONE current pass: `pe compose --import` now imports local component files,
+   directories, and txtar archives into `components/`, with path-cleaning
+   checks that reject archive path escapes. Remaining work: remote component
+   import and richer component-library workflows.
 4. Add DAG scheduling for semantic optimization graphs with deterministic
    topological execution, cancellation, and cycle errors.
    DONE current pass: add the local generic DAG scheduler primitive with

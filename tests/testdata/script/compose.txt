@@ -64,9 +64,10 @@ stdout 'Resolving dependencies'
 stdout 'Downloading github.com/anthropic/helpful-harmless@v1.2.0'
 stdout 'Composing from module requirements'
 
-# Import from URL
-! pe experimental compose --import https://example.com/components.txtar
-stderr 'component import is not yet implemented'
+# Import from local file
+pe experimental compose --import import-component.txt
+stdout 'Imported component:'
+exists components/import-component.txt
 
 # Coherence analysis
 pe experimental compose prompt1.txt prompt2.txt --coherence-check
@@ -123,3 +124,6 @@ Analyze this text for sentiment.
 
 -- prompt2.txt --
 Determine the emotional tone of the provided text.
+
+-- import-component.txt --
+Imported component content.

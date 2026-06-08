@@ -847,8 +847,48 @@ func TestComposeLibraryAndCoherenceHelpers(t *testing.T) {
 	if err := listComponents(); err != nil {
 		t.Fatal(err)
 	}
-	if err := importComponents("https://example.com/components.zip"); err == nil || !strings.Contains(err.Error(), "not yet implemented") {
+	if err := importComponents("https://example.com/components.zip"); err == nil || !strings.Contains(err.Error(), "remote component import is not yet implemented") {
 		t.Fatalf("importComponents err = %v", err)
+	}
+	importFile := filepath.Join(tmpDir, "import.txt")
+	if err := os.WriteFile(importFile, []byte("Imported component"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := importComponents(importFile); err != nil {
+		t.Fatalf("import file err = %v", err)
+	}
+	if _, err := os.Stat(filepath.Join("components", filepath.Base(tmpDir), "import.txt")); err != nil {
+		t.Fatalf("imported file missing: %v", err)
+	}
+	importDir := filepath.Join(tmpDir, "bundle")
+	if err := os.MkdirAll(filepath.Join(importDir, "context"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(importDir, "context", "a.txt"), []byte("A"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := importComponents(importDir); err != nil {
+		t.Fatalf("import dir err = %v", err)
+	}
+	if _, err := os.Stat(filepath.Join("components", "context", "a.txt")); err != nil {
+		t.Fatalf("imported dir file missing: %v", err)
+	}
+	txtarFile := filepath.Join(tmpDir, "components.txtar")
+	if err := os.WriteFile(txtarFile, []byte("-- examples/b.txt --\nB\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := importComponents(txtarFile); err != nil {
+		t.Fatalf("import txtar err = %v", err)
+	}
+	if _, err := os.Stat(filepath.Join("components", "examples", "b.txt")); err != nil {
+		t.Fatalf("imported txtar file missing: %v", err)
+	}
+	badTxtar := filepath.Join(tmpDir, "bad.txtar")
+	if err := os.WriteFile(badTxtar, []byte("-- ../bad.txt --\nno\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := importComponents(badTxtar); err == nil {
+		t.Fatal("path-escaping txtar import succeeded")
 	}
 	if err := addComponentToLibrary(filepath.Join(tmpDir, "missing.txt"), "x"); err == nil {
 		t.Fatal("missing add component succeeded")

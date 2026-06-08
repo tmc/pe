@@ -2317,6 +2317,7 @@ pe compose [component files...] [flags]
     --validate           Validate component compatibility
     --coherence          Add local coherence score to composed output
     --coherence-check    Report local semantic-overlap and style-consistency scores
+    --import string      Import local component file, directory, or txtar archive
     --optimize           Apply TextGrad optimization after composition
 ```
 
@@ -2327,6 +2328,7 @@ pe compose context.txt instruction.txt examples.txt --style cot
 pe compose components/ --style few-shot --validate --output prompt.txt
 pe compose context.txt instruction.txt --coherence
 pe compose context.txt instruction.txt --coherence-check
+pe compose --import components.txtar
 ```
 
 ---
