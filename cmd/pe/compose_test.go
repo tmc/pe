@@ -590,8 +590,12 @@ func TestComposeCmd_WithOptimization(t *testing.T) {
 	cmd.SetArgs([]string{contextFile, "--optimize", "--target", "gpt-4"})
 
 	err := cmd.Execute()
-	if err == nil || !strings.Contains(err.Error(), "not yet implemented") {
+	if err != nil {
 		t.Fatalf("compose optimize err = %v", err)
+	}
+	optimized, metadata := optimizeComposedPrompt("Context:\nHelp users.")
+	if !strings.Contains(optimized, "Be specific") || metadata["optimization_method"] != "local_compose_polish" {
+		t.Fatalf("optimized=%q metadata=%#v", optimized, metadata)
 	}
 }
 
@@ -944,7 +948,7 @@ func TestComposeRunSpecialCases(t *testing.T) {
 	}
 	cmd = newComposeCmd()
 	cmd.Flags().Set("import", "https://example.com/x")
-	if err := runCompose(cmd, nil); err == nil || !strings.Contains(err.Error(), "not yet implemented") {
+	if err := runCompose(cmd, nil); err == nil || !strings.Contains(err.Error(), "remote component import is not yet implemented") {
 		t.Fatalf("import err = %v", err)
 	}
 }

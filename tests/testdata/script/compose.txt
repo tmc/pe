@@ -35,10 +35,10 @@ stdout 'Injected 3 examples'
 grep 'Example 1:' few-shot.txt
 
 # Composition with optimization
-! pe experimental compose context.txt task.txt --optimize --target gpt-4
+pe experimental compose context.txt task.txt --optimize --target gpt-4
 stdout 'Composing with optimization'
 stdout 'Target model: gpt-4'
-stderr 'compose optimization is not yet implemented'
+stdout 'Local composition optimization applied'
 
 # Component validation
 pe experimental compose context.txt incompatible.txt --validate

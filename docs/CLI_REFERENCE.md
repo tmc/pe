@@ -2318,7 +2318,7 @@ pe compose [component files...] [flags]
     --coherence          Add local coherence score to composed output
     --coherence-check    Report local semantic-overlap and style-consistency scores
     --import string      Import local component file, directory, or txtar archive
-    --optimize           Apply TextGrad optimization after composition
+    --optimize           Apply local composition polish after composition
 ```
 
 ### Examples

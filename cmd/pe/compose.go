@@ -278,7 +278,15 @@ func runCompose(cmd *cobra.Command, args []string) error {
 
 	// Apply optimization if requested
 	if config.Optimize {
-		return fmt.Errorf("compose optimization is not yet implemented")
+		optimized, metadata := optimizeComposedPrompt(result.ComposedPrompt)
+		result.ComposedPrompt = optimized
+		if result.Metadata == nil {
+			result.Metadata = make(map[string]interface{})
+		}
+		for key, value := range metadata {
+			result.Metadata[key] = value
+		}
+		fmt.Println("Local composition optimization applied")
 	}
 
 	// Display enhanced features if enabled
@@ -293,11 +301,6 @@ func runCompose(cmd *cobra.Command, args []string) error {
 	}
 	if config.SignatureValidation {
 		fmt.Println("Signature validation enabled - type-safe composition verified")
-	}
-
-	// Apply optimization if requested
-	if config.Optimize {
-		fmt.Println("TextGrad optimization applied")
 	}
 
 	// Print expected output for the test
@@ -524,6 +527,34 @@ func promptSections(prompt string) []string {
 		sections = []string{strings.TrimSpace(prompt)}
 	}
 	return sections
+}
+
+func optimizeComposedPrompt(prompt string) (string, map[string]interface{}) {
+	sections := promptSections(prompt)
+	if len(sections) == 0 {
+		return prompt, map[string]interface{}{
+			"optimization_method": "local_compose_polish",
+			"optimization_steps":  0,
+		}
+	}
+
+	optimized := strings.TrimSpace(prompt)
+	steps := 0
+	if !strings.Contains(strings.ToLower(optimized), "be specific") {
+		optimized = strings.TrimSpace(optimized) + "\n\nConstraints:\n- Be specific, concise, and preserve the requested output structure."
+		steps++
+	}
+	if !strings.Contains(strings.ToLower(optimized), "if information is missing") {
+		optimized += "\n- If information is missing, state the gap instead of inventing details."
+		steps++
+	}
+	score, _ := validateCoherence(context.Background(), optimized)
+	return optimized, map[string]interface{}{
+		"optimization_method":          "local_compose_polish",
+		"optimization_steps":           steps,
+		"post_optimization_coherence":  score,
+		"provider_optimization_called": false,
+	}
 }
 
 func outputComposeResult(cmd *cobra.Command, result *ComposeResult) error {
