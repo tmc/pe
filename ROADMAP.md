@@ -1293,6 +1293,9 @@ Goal: make every external process boundary deliberate, documented, and tested.
 4. Keep provider CLI adapters as provider execution, not promptfoo
    compatibility. They must validate executable names, avoid shell expansion,
    use timeouts, and document that they run local tools.
+   DONE current pass: `GenericCLIProvider` validates rendered executable names
+   before lookup, keeps prompt data in argv or stdin instead of shell
+   expansion, and uses direct executable stubs in structured-output tests.
 5. Remove any promptfoo shell-out that is merely a convenience wrapper and can
    be replaced with local Go behavior.
 6. Document the policy in release-facing docs only after tests cover every

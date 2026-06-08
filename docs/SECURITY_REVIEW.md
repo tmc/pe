@@ -93,6 +93,9 @@ GOTOOLCHAIN=go1.25.9 go test ./internal/providers -run 'TestGenericCLIProvider' 
   separate argv entries; `TestMetricEvaluatorScriptMetricErrors` and
   `TestMetricEvaluatorScriptMetricCancellation` cover missing executable,
   stderr/non-zero exits, malformed output, missing fields, and cancellation.
+  Generic CLI providers validate rendered executable names before PATH lookup,
+  preserve prompt text as argv or stdin, and cover invalid executable names
+  plus direct-argv structured output in `TestGenericCLIProvider_*`.
 - G304 triage: config expansion, Starlark `load_tests`, module cache paths, and
   module publish prompt paths now have containment checks. Unsigned manifests
   and cache objects reject path escapes, unsafe keys, and symlinks. Broad CLI

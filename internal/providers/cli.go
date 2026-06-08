@@ -188,8 +188,8 @@ func (p *GenericCLIProvider) buildCommand(ctx context.Context, data templateData
 			return nil, fmt.Errorf("render executable: %w", err)
 		}
 		executable = strings.TrimSpace(executable)
-		if executable == "" {
-			return nil, fmt.Errorf("empty executable")
+		if err := validateCLIExecutable(executable); err != nil {
+			return nil, err
 		}
 
 		args, err := renderTemplateArgs(p.argTemplates, data)
@@ -230,6 +230,9 @@ func (p *GenericCLIProvider) buildCommand(ctx context.Context, data templateData
 
 	executable := parts[0]
 	args := parts[1:]
+	if err := validateCLIExecutable(executable); err != nil {
+		return nil, err
+	}
 	if _, err := exec.LookPath(executable); err != nil {
 		return nil, fmt.Errorf("executable not found: %s", executable)
 	}
@@ -238,6 +241,19 @@ func (p *GenericCLIProvider) buildCommand(ctx context.Context, data templateData
 		cmd.Stdin = strings.NewReader(data.Prompt)
 	}
 	return cmd, nil
+}
+
+func validateCLIExecutable(executable string) error {
+	if executable == "" {
+		return fmt.Errorf("empty executable")
+	}
+	if strings.ContainsAny(executable, "\x00\r\n") {
+		return fmt.Errorf("invalid executable name: %q", executable)
+	}
+	if strings.ContainsAny(executable, " \t") {
+		return fmt.Errorf("invalid executable name: %q", executable)
+	}
+	return nil
 }
 
 func makeTemplateData(model, prompt string, providerOptions map[string]interface{}, options llm.GenerateOptions) templateData {

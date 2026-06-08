@@ -114,9 +114,32 @@ func TestGenericCLIProvider_CommandTemplateQuotesPrompt(t *testing.T) {
 	}
 }
 
+func TestGenericCLIProvider_InvalidExecutableName(t *testing.T) {
+	p, err := NewGenericCLIProvider("bad-model", map[string]interface{}{
+		"executable": "echo -n",
+	})
+	if err != nil {
+		t.Fatalf("NewGenericCLIProvider() failed: %v", err)
+	}
+
+	_, err = p.Generate(context.Background(), "ignored", llm.GenerateOptions{})
+	if err == nil {
+		t.Fatal("Generate() succeeded with invalid executable name")
+	}
+	if !strings.Contains(err.Error(), "invalid executable name") {
+		t.Fatalf("error = %v, want invalid executable name", err)
+	}
+}
+
 func TestGenericCLIProvider_Generate_StructuredJSON(t *testing.T) {
+	binDir := t.TempDir()
+	writeExecutable(t, filepath.Join(binDir, "json-stub"), `#!/bin/sh
+printf '%s\n' '{"output":"hi","prompt_tokens":3,"completion_tokens":5,"total_tokens":8,"latency_ms":21,"metrics":{"tokens_per_second":99.5}}'
+`)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
 	options := map[string]interface{}{
-		"command":             `sh -c 'printf '\''{"output":"hi","prompt_tokens":3,"completion_tokens":5,"total_tokens":8,"latency_ms":21,"metrics":{"tokens_per_second":99.5}}'\'''`,
+		"executable":          "json-stub",
 		"parse_json_response": true,
 	}
 	p, err := NewGenericCLIProvider("echo-model", options)
@@ -144,8 +167,14 @@ func TestGenericCLIProvider_Generate_StructuredJSON(t *testing.T) {
 }
 
 func TestGenericCLIProvider_Generate_JSONOutputWithoutOptIn(t *testing.T) {
+	binDir := t.TempDir()
+	writeExecutable(t, filepath.Join(binDir, "json-raw-stub"), `#!/bin/sh
+printf '%s\n' '{"output":"hi"}'
+`)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
 	options := map[string]interface{}{
-		"command": `sh -c 'printf '\''{"output":"hi"}'\'''`,
+		"executable": "json-raw-stub",
 	}
 	p, err := NewGenericCLIProvider("echo-model", options)
 	if err != nil {
