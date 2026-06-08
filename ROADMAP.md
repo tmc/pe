@@ -1296,6 +1296,10 @@ keeping provider dependencies behind small interfaces.
    with local-first checks and provider-assisted options.
 4. Add DAG scheduling for semantic optimization graphs with deterministic
    topological execution, cancellation, and cycle errors.
+   DONE current pass: add the local generic DAG scheduler primitive with
+   upfront cycle and graph validation, bounded worker execution, input-order
+   results, and dependency-failure skips. Remaining work: wire it into concrete
+   semantic optimization graph execution.
 5. Add static visualization for semantic/GASO graph structures through a
    local-only endpoint or generated HTML artifact.
 
