@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/promptfoo"
+	evalmetrics "github.com/tmc/pe/internal/promptfoo/evaluation/metrics"
 )
 
 // statsCmd shows quick statistics from evaluation results
@@ -79,6 +80,7 @@ func diffCmd() *cobra.Command {
 	var maxTokenIncrease int32
 	var maxFailureIncrease int
 	var maxErrorIncrease int
+	var statistical bool
 
 	cmd := &cobra.Command{
 		Use:   "diff [baseline] [current]",
@@ -91,15 +93,34 @@ Use "-" as the current file to read the current result from stdin.`,
   pe eval config.yaml -o current.json && pe diff --fail-on-regression baseline.json current.json`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			base, err := readResultSummaryFile(args[0], cmd.InOrStdin())
-			if err != nil {
-				return fmt.Errorf("read baseline: %w", err)
-			}
-			current, err := readResultSummaryFile(args[1], cmd.InOrStdin())
-			if err != nil {
-				return fmt.Errorf("read current: %w", err)
+			var base resultSummary
+			var current resultSummary
+			var stats *diffStatistical
+			if statistical {
+				baseResults, baseStats, err := readResultSetFile(args[0], cmd.InOrStdin())
+				if err != nil {
+					return fmt.Errorf("read baseline: %w", err)
+				}
+				currentResults, currentStats, err := readResultSetFile(args[1], cmd.InOrStdin())
+				if err != nil {
+					return fmt.Errorf("read current: %w", err)
+				}
+				base = summarizeResultSet(baseResults, baseStats)
+				current = summarizeResultSet(currentResults, currentStats)
+				stats = compareResultSetsStatistically(baseResults, currentResults)
+			} else {
+				var err error
+				base, err = readResultSummaryFile(args[0], cmd.InOrStdin())
+				if err != nil {
+					return fmt.Errorf("read baseline: %w", err)
+				}
+				current, err = readResultSummaryFile(args[1], cmd.InOrStdin())
+				if err != nil {
+					return fmt.Errorf("read current: %w", err)
+				}
 			}
 			diff := compareSummaries(base, current)
+			diff.Statistical = stats
 			gate := evaluateDiffGate(diff, diffGateConfig{
 				FailOnChange:         failOnChange,
 				FailOnRegression:     failOnRegression,
@@ -133,6 +154,7 @@ Use "-" as the current file to read the current result from stdin.`,
 	cmd.Flags().Int32Var(&maxTokenIncrease, "max-token-increase", 0, "Allowed token total increase with --fail-on-regression")
 	cmd.Flags().IntVar(&maxFailureIncrease, "max-failure-increase", 0, "Allowed failure count increase with --fail-on-regression")
 	cmd.Flags().IntVar(&maxErrorIncrease, "max-error-increase", 0, "Allowed error count increase with --fail-on-regression")
+	cmd.Flags().BoolVar(&statistical, "statistical", false, "Print statistical significance for pass rate, score, and latency")
 
 	return cmd
 }
@@ -186,10 +208,11 @@ type providerBuilder struct {
 }
 
 type resultDiff struct {
-	Baseline resultSummary `json:"baseline"`
-	Current  resultSummary `json:"current"`
-	Delta    diffDelta     `json:"delta"`
-	Gate     *diffGate     `json:"gate,omitempty"`
+	Baseline    resultSummary    `json:"baseline"`
+	Current     resultSummary    `json:"current"`
+	Delta       diffDelta        `json:"delta"`
+	Gate        *diffGate        `json:"gate,omitempty"`
+	Statistical *diffStatistical `json:"statistical,omitempty"`
 }
 
 type diffDelta struct {
@@ -221,6 +244,24 @@ type diffGate struct {
 	Reasons []string `json:"reasons,omitempty"`
 }
 
+type diffStatistical struct {
+	PassRate           *diffSignificance `json:"passRate,omitempty"`
+	Score              *diffSignificance `json:"score,omitempty"`
+	Latency            *diffSignificance `json:"latency,omitempty"`
+	MultipleComparison string            `json:"multipleComparison"`
+}
+
+type diffSignificance struct {
+	BaselineN      int     `json:"baselineN"`
+	CurrentN       int     `json:"currentN"`
+	Test           string  `json:"test,omitempty"`
+	PValue         float64 `json:"pValue,omitempty"`
+	EffectSize     float64 `json:"effectSize,omitempty"`
+	Significant    bool    `json:"significant,omitempty"`
+	Interpretation string  `json:"interpretation,omitempty"`
+	Skipped        string  `json:"skipped,omitempty"`
+}
+
 func readResultSummaryFile(name string, stdin io.Reader) (resultSummary, error) {
 	if name == "-" {
 		return readResultSummary(stdin)
@@ -231,6 +272,18 @@ func readResultSummaryFile(name string, stdin io.Reader) (resultSummary, error) 
 	}
 	defer f.Close()
 	return readResultSummary(f)
+}
+
+func readResultSetFile(name string, stdin io.Reader) ([]promptfoo.TestResult, promptfoo.Stats, error) {
+	if name == "-" {
+		return readResultSet(stdin)
+	}
+	f, err := os.Open(name)
+	if err != nil {
+		return nil, promptfoo.Stats{}, fmt.Errorf("open %s: %w", name, err)
+	}
+	defer f.Close()
+	return readResultSet(f)
 }
 
 func readResultSummary(r io.Reader) (resultSummary, error) {
@@ -630,6 +683,102 @@ func compareSummaries(base, current resultSummary) resultDiff {
 	}
 }
 
+const diffMultipleComparisonCaveat = "Comparing multiple metrics increases the risk of false positives. Consider Bonferroni correction for strict gating."
+
+func compareResultSetsStatistically(base, current []promptfoo.TestResult) *diffStatistical {
+	return &diffStatistical{
+		PassRate:           comparePassRatesStatistically(base, current),
+		Score:              compareContinuousMetricStatistically("score", resultScoreValues(base), resultScoreValues(current)),
+		Latency:            compareContinuousMetricStatistically("latency", resultLatencyValues(base), resultLatencyValues(current)),
+		MultipleComparison: diffMultipleComparisonCaveat,
+	}
+}
+
+func comparePassRatesStatistically(base, current []promptfoo.TestResult) *diffSignificance {
+	result := &diffSignificance{
+		BaselineN: len(base),
+		CurrentN:  len(current),
+	}
+	if len(base) == 0 || len(current) == 0 {
+		result.Skipped = "insufficient data for statistical significance"
+		return result
+	}
+	baseSuccesses := countSuccesses(base)
+	currentSuccesses := countSuccesses(current)
+	test, err := evalmetrics.NewStatisticalAnalyzer(0.95, 2).PerformABTest(baseSuccesses, len(base), currentSuccesses, len(current))
+	if err != nil {
+		result.Skipped = "insufficient data for statistical significance: " + err.Error()
+		return result
+	}
+	result.Test = test.StatisticalTest.TestName
+	result.PValue = test.StatisticalTest.PValue
+	result.EffectSize = test.StatisticalTest.EffectSize
+	result.Significant = test.StatisticalTest.IsSignificant
+	result.Interpretation = test.StatisticalTest.Interpretation
+	return result
+}
+
+func compareContinuousMetricStatistically(name string, base, current []float64) *diffSignificance {
+	result := &diffSignificance{
+		BaselineN: len(base),
+		CurrentN:  len(current),
+	}
+	if len(base) < 2 || len(current) < 2 {
+		result.Skipped = "insufficient data for statistical significance"
+		return result
+	}
+	test, err := evalmetrics.NewStatisticalAnalyzer(0.95, 2).PerformTTest(current, base, false)
+	if err != nil {
+		result.Skipped = "insufficient data for statistical significance: " + err.Error()
+		return result
+	}
+	result.Test = test.TestName
+	result.PValue = test.PValue
+	result.EffectSize = test.EffectSize
+	result.Significant = test.IsSignificant
+	result.Interpretation = test.Interpretation
+	if name == "latency" && result.Interpretation != "" {
+		result.Interpretation = strings.Replace(result.Interpretation, "difference", "latency difference", 1)
+	}
+	return result
+}
+
+func countSuccesses(results []promptfoo.TestResult) int {
+	successes := 0
+	for _, result := range results {
+		if result.Success || result.GradingResult.Pass {
+			successes++
+		}
+	}
+	return successes
+}
+
+func resultScoreValues(results []promptfoo.TestResult) []float64 {
+	values := make([]float64, 0, len(results))
+	for _, result := range results {
+		score := result.Score
+		if score == 0 && result.GradingResult.Score != 0 {
+			score = result.GradingResult.Score
+		}
+		values = append(values, score)
+	}
+	return values
+}
+
+func resultLatencyValues(results []promptfoo.TestResult) []float64 {
+	values := make([]float64, 0, len(results))
+	for _, result := range results {
+		latency := result.LatencyMs
+		if latency == 0 {
+			latency = result.Response.LatencyMs
+		}
+		if latency > 0 {
+			values = append(values, float64(latency))
+		}
+	}
+	return values
+}
+
 func evaluateDiffGate(diff resultDiff, cfg diffGateConfig) diffGate {
 	gate := diffGate{
 		Enabled: cfg.FailOnChange || cfg.FailOnRegression,
@@ -699,6 +848,9 @@ func writeDiff(w io.Writer, diff resultDiff, format string) error {
 		fmt.Fprintf(w, "  Average latency: %+.2f ms\n", diff.Delta.AverageLatencyMs)
 		fmt.Fprintf(w, "  Total tokens: %+d\n", diff.Delta.TokenTotal)
 		fmt.Fprintf(w, "  Cost: %+.6f\n", diff.Delta.Cost)
+		if diff.Statistical != nil {
+			writeDiffStatisticalText(w, diff.Statistical)
+		}
 		if diff.Gate != nil {
 			status := "pass"
 			if !diff.Gate.Passed {
@@ -716,6 +868,35 @@ func writeDiff(w io.Writer, diff resultDiff, format string) error {
 		return enc.Encode(diff)
 	default:
 		return fmt.Errorf("unsupported format %q", format)
+	}
+}
+
+func writeDiffStatisticalText(w io.Writer, stats *diffStatistical) {
+	fmt.Fprintln(w, "\nStatistical significance:")
+	writeDiffSignificanceText(w, "Pass rate", stats.PassRate)
+	writeDiffSignificanceText(w, "Score", stats.Score)
+	writeDiffSignificanceText(w, "Latency", stats.Latency)
+	if stats.MultipleComparison != "" {
+		fmt.Fprintf(w, "  Caveat: %s\n", stats.MultipleComparison)
+	}
+}
+
+func writeDiffSignificanceText(w io.Writer, name string, result *diffSignificance) {
+	if result == nil {
+		return
+	}
+	if result.Skipped != "" {
+		fmt.Fprintf(w, "  %s: %s (baseline n=%d, current n=%d)\n", name, result.Skipped, result.BaselineN, result.CurrentN)
+		return
+	}
+	status := "not significant"
+	if result.Significant {
+		status = "significant"
+	}
+	fmt.Fprintf(w, "  %s: %s, p=%.4f, effect=%.4f, test=%s (baseline n=%d, current n=%d)\n",
+		name, status, result.PValue, result.EffectSize, result.Test, result.BaselineN, result.CurrentN)
+	if result.Interpretation != "" {
+		fmt.Fprintf(w, "    %s\n", result.Interpretation)
 	}
 }
 

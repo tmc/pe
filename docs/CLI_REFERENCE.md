@@ -691,6 +691,7 @@ Compares evaluation results to identify differences in scores, latency, costs, a
 --max-pass-rate-drop float        Allowed pass-rate drop in percentage points with --fail-on-regression
 --max-score-drop float            Allowed average score drop with --fail-on-regression
 --max-token-increase int32        Allowed token total increase with --fail-on-regression
+--statistical                     Print statistical significance for pass rate, score, and latency
 ```
 
 ### Examples
@@ -707,6 +708,9 @@ pe diff --format json baseline.json current.json
 
 # CI regression gate with explicit thresholds
 pe diff --fail-on-regression --max-pass-rate-drop 5 --max-latency-increase-ms 100 baseline.json current.json
+
+# Add informational significance checks
+pe diff --statistical baseline.json current.json
 ```
 
 ---

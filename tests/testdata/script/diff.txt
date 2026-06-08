@@ -13,6 +13,13 @@ stdout 'Gate: pass'
 pe diff --format json --fail-on-regression --max-pass-rate-drop 60 --max-score-drop 0.6 --max-latency-increase-ms 60 --max-failure-increase 1 baseline.json current.jsonl
 stdout '"passed": true'
 
+pe diff --statistical baseline.json current.jsonl
+stdout 'Statistical significance:'
+stdout 'Pass rate:'
+stdout 'Score:'
+stdout 'Latency:'
+stdout 'Comparing multiple metrics increases the risk of false positives'
+
 -- baseline.json --
 [
   {"id":"base-1","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":100,"response":{"tokenUsage":{"total":10}}},

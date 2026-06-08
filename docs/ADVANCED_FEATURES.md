@@ -134,16 +134,16 @@ tests:
 
 ### Statistical Analysis
 
-PE provides local text metrics, benchmarking helpers, and metrics-package
-statistical primitives. Command-level statistical workflows are still future
-work.
+PE provides local text metrics, benchmarking helpers, metrics-package
+statistical primitives, and an informational `pe diff --statistical` overlay
+for comparing saved evaluation results.
 
 ```bash
 # Comprehensive benchmarking
 pe benchmark config.yaml --iterations 100 --confidence 0.95
 
 # Compare two result files
-pe diff baseline.json variant.json
+pe diff --statistical baseline.json variant.json
 
 # Performance regression detection
 pe diff historical.json current.json --regression-threshold 0.1

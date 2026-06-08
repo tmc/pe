@@ -1186,7 +1186,8 @@ not-implemented error with matching documentation.
    the registered command surface until implementation work starts.
 
 Current known explicit gaps:
-- cross-validation summaries and command-level statistical analysis surfaces
+- cross-validation summaries and richer command-level statistical analysis
+  surfaces
 - non-interactive template creation and interactive template-library creation
 - metaprompt synthesis strategies: template, evolutionary, and neural
 - compose optimization, component import, coherence check, and coherence
@@ -1213,6 +1214,10 @@ the current command surface.
    A/B test, Mann-Whitney U, Kolmogorov-Smirnov, group comparison, effect-size
    reporting, and edge-case errors. Remaining work: command-level exposure,
    cross-validation summaries, and multiple-comparison caveats.
+3a. DONE current pass: Expose an informational `pe diff --statistical` overlay
+    for pass-rate, score, and latency significance on saved evaluation results.
+    The output includes a multiple-comparison caveat and does not alter diff
+    gate behavior.
 4. Implement automatic test generation only after the input/output contract is
    narrow enough to test deterministically with a mock provider.
 5. Implement TypeScript and Pydantic validation through isolated adapters with

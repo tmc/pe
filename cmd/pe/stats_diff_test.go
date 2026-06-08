@@ -184,6 +184,79 @@ func TestDiffCmdWritesJSONDelta(t *testing.T) {
 	}
 }
 
+func TestDiffCmdStatisticalSignificance(t *testing.T) {
+	base := writeTempFile(t, `{"results":[
+  {"id":"b1","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":100},
+  {"id":"b2","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":100},
+  {"id":"b3","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":100},
+  {"id":"b4","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":100}
+]}`)
+	current := writeTempFile(t, strings.Join([]string{
+		`{"id":"c1","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":120}`,
+		`{"id":"c2","provider":{"id":"mock"},"success":false,"score":0,"latencyMs":180}`,
+		`{"id":"c3","provider":{"id":"mock"},"success":false,"score":0,"latencyMs":200}`,
+		`{"id":"c4","provider":{"id":"mock"},"success":false,"score":0,"latencyMs":220}`,
+	}, "\n"))
+
+	cmd := diffCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--statistical", base, current})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("diff Execute() error = %v", err)
+	}
+	output := out.String()
+	for _, want := range []string{
+		"Statistical significance:",
+		"Pass rate: significant",
+		"Score: significant",
+		"Latency: significant",
+		"Comparing multiple metrics increases the risk of false positives",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("statistical diff output missing %q:\n%s", want, output)
+		}
+	}
+}
+
+func TestDiffCmdStatisticalJSON(t *testing.T) {
+	base := writeTempFile(t, `{"results":[
+  {"id":"b1","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":100},
+  {"id":"b2","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":100}
+]}`)
+	current := writeTempFile(t, `{"results":[
+  {"id":"c1","provider":{"id":"mock"},"success":false,"score":0,"latencyMs":120},
+  {"id":"c2","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":180}
+]}`)
+
+	cmd := diffCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--format", "json", "--statistical", base, current})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("diff Execute() error = %v", err)
+	}
+
+	var got resultDiff
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("diff JSON output did not decode: %v\n%s", err, out.String())
+	}
+	if got.Statistical == nil {
+		t.Fatal("Statistical = nil")
+	}
+	if got.Statistical.PassRate == nil || got.Statistical.PassRate.Test != "two_proportion_z_test" {
+		t.Fatalf("PassRate = %#v", got.Statistical.PassRate)
+	}
+	if got.Statistical.Score == nil || got.Statistical.Score.Test != "welch_t_test" {
+		t.Fatalf("Score = %#v", got.Statistical.Score)
+	}
+	if got.Statistical.MultipleComparison == "" {
+		t.Fatal("MultipleComparison is empty")
+	}
+}
+
 func TestDiffCmdFailOnRegression(t *testing.T) {
 	base := writeTempFile(t, `{"results":[
   {"id":"r1","provider":{"id":"mock"},"success":true,"score":1,"latencyMs":100,"response":{"tokenUsage":{"total":10}}},
