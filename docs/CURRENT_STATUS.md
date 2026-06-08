@@ -128,6 +128,11 @@ Basic assertions work, but these are incomplete:
 - factuality checking
 - similarity metrics
 
+### Structured Validation
+JSON and YAML validation are local. TypeScript and Pydantic formatter plugins
+can generate schema shapes and validate JSON object data against PE schemas, but
+they do not execute TypeScript or Python runtimes or parse source files.
+
 ## Not Implemented ❌
 
 ### Planned Features

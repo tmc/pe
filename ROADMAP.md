@@ -1221,7 +1221,8 @@ Current known explicit gaps:
 - compose optimization, component import, coherence check, and coherence
   validation
 - playground compare, security, components, history, and BERTScore endpoints
-- TypeScript and Pydantic structured validation
+- TypeScript and Pydantic source/runtime validation beyond local JSON-object
+  data validation
 - advanced promptfoo assertions for toxicity, coherence, factuality,
   classification, similarity, SQL, and structure
 - data-poisoning and supply-chain security analyses, currently fail-closed
@@ -1256,6 +1257,10 @@ the current command surface.
    narrow enough to test deterministically with a mock provider.
 5. Implement TypeScript and Pydantic validation through isolated adapters with
    clear dependency and execution boundaries.
+   DONE current pass: TypeScript and Pydantic formatter plugins now validate
+   JSON object data locally against PE schemas without shelling out to
+   TypeScript or Python runtimes. Parsing TypeScript/Python source remains out
+   of scope until an isolated runtime adapter is designed.
 6. Add examples and script tests for each promoted command path.
 7. Refresh the roadmap and release-facing docs whenever a gap is closed so this
    section does not keep stale blockers.

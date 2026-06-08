@@ -469,59 +469,62 @@ func TestPydanticPluginFormat(t *testing.T) {
 	}
 }
 
-func TestUnimplementedParsersFailClosed(t *testing.T) {
+func TestTypeScriptAndPydanticValidateJSONData(t *testing.T) {
 	schema := &Schema{
 		Name: "test",
 		Type: "object",
 		Properties: map[string]*Property{
 			"name": {Type: "string"},
+			"age":  {Type: "integer"},
 		},
-		Required: []string{"name"},
+		Required: []string{"name", "age"},
 	}
 
 	tests := []struct {
-		name     string
-		parse    func() (map[string]interface{}, error)
-		validate func() error
+		name   string
+		plugin FormatterPlugin
 	}{
 		{
-			name: "typescript",
-			parse: func() (map[string]interface{}, error) {
-				return (&TypeScriptPlugin{}).Parse(`const value = { name: "test" }`)
-			},
-			validate: func() error {
-				return (&TypeScriptPlugin{}).Validate(`const value = { name: "test" }`, schema)
-			},
+			name:   "typescript",
+			plugin: &TypeScriptPlugin{},
 		},
 		{
-			name: "pydantic",
-			parse: func() (map[string]interface{}, error) {
-				return (&PydanticPlugin{}).Parse(`{"name": "test"}`)
-			},
-			validate: func() error {
-				return (&PydanticPlugin{}).Validate(`{"name": "test"}`, schema)
-			},
+			name:   "pydantic",
+			plugin: &PydanticPlugin{},
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name+"/parse", func(t *testing.T) {
-			result, err := tt.parse()
-			if err == nil {
-				t.Fatalf("Parse() = %#v, want error", result)
+		t.Run(tt.name+"/valid", func(t *testing.T) {
+			result, err := tt.plugin.Parse(`{"name":"Ada","age":37}`)
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
 			}
-			if !strings.Contains(strings.ToLower(err.Error()), "not implemented") {
-				t.Fatalf("Parse() error = %q, want not implemented", err)
+			if result["name"] != "Ada" {
+				t.Fatalf("Parse() = %#v", result)
+			}
+			if err := tt.plugin.Validate(`{"name":"Ada","age":37}`, schema); err != nil {
+				t.Fatalf("Validate() error = %v", err)
 			}
 		})
 
-		t.Run(tt.name+"/validate", func(t *testing.T) {
-			err := tt.validate()
+		t.Run(tt.name+"/schema-error", func(t *testing.T) {
+			err := tt.plugin.Validate(`{"name":"Ada"}`, schema)
 			if err == nil {
-				t.Fatal("Validate() returned nil, want error")
+				t.Fatal("Validate() succeeded without required age")
 			}
-			if !strings.Contains(strings.ToLower(err.Error()), "not implemented") {
-				t.Fatalf("Validate() error = %q, want not implemented", err)
+			if !strings.Contains(err.Error(), "missing required field: age") {
+				t.Fatalf("Validate() error = %v, want missing age", err)
+			}
+		})
+
+		t.Run(tt.name+"/source-rejected", func(t *testing.T) {
+			err := tt.plugin.Validate(`const value = { name: "Ada", age: 37 }`, schema)
+			if err == nil {
+				t.Fatal("Validate() accepted source code")
+			}
+			if !strings.Contains(err.Error(), "expects JSON object data") {
+				t.Fatalf("Validate() error = %v, want JSON object data", err)
 			}
 		})
 	}

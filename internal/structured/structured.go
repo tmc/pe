@@ -365,12 +365,15 @@ func (p *TypeScriptPlugin) Format(schema *Schema) (string, error) {
 }
 
 func (p *TypeScriptPlugin) Parse(content string) (map[string]interface{}, error) {
-	// TypeScript parsing would require more complex logic
-	return nil, fmt.Errorf("TypeScript parsing not implemented")
+	return parseJSONObjectForStructuredFormat(content, "TypeScript")
 }
 
 func (p *TypeScriptPlugin) Validate(content string, schema *Schema) error {
-	return fmt.Errorf("TypeScript validation not implemented")
+	data, err := p.Parse(content)
+	if err != nil {
+		return err
+	}
+	return validateAgainstSchema(data, schema)
 }
 
 func (p *TypeScriptPlugin) GetPromptInstructions(schema *Schema) string {
@@ -428,12 +431,15 @@ func (p *PydanticPlugin) Format(schema *Schema) (string, error) {
 }
 
 func (p *PydanticPlugin) Parse(content string) (map[string]interface{}, error) {
-	// Python parsing would require executing Python code
-	return nil, fmt.Errorf("Pydantic parsing not implemented")
+	return parseJSONObjectForStructuredFormat(content, "Pydantic")
 }
 
 func (p *PydanticPlugin) Validate(content string, schema *Schema) error {
-	return fmt.Errorf("Pydantic validation not implemented")
+	data, err := p.Parse(content)
+	if err != nil {
+		return err
+	}
+	return validateAgainstSchema(data, schema)
 }
 
 func (p *PydanticPlugin) GetPromptInstructions(schema *Schema) string {
@@ -446,6 +452,17 @@ Return only the dictionary data, not the model definition.`, model)
 }
 
 // Helper functions
+
+func parseJSONObjectForStructuredFormat(content, format string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	if err := json.Unmarshal([]byte(content), &result); err != nil {
+		return nil, fmt.Errorf("%s validation expects JSON object data, not source code: %w", format, err)
+	}
+	if result == nil {
+		return nil, fmt.Errorf("%s validation expects JSON object data", format)
+	}
+	return result, nil
+}
 
 func generateSchemaExample(schema *Schema) map[string]interface{} {
 	if len(schema.Examples) > 0 {
