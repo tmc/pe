@@ -71,21 +71,22 @@ func TestNewPlaygroundServer(t *testing.T) {
 	}
 }
 
-func TestPlaygroundUnimplementedHandlers(t *testing.T) {
+func TestUnimplementedEndpointsFailClosed(t *testing.T) {
 	server := NewPlaygroundServer()
 	server.setupRoutes()
 
 	tests := []struct {
-		name   string
-		method string
-		path   string
-		body   string
+		name     string
+		method   string
+		path     string
+		body     string
+		wantBody string
 	}{
-		{name: "compare", method: http.MethodPost, path: "/api/compare"},
-		{name: "security", method: http.MethodPost, path: "/api/security"},
-		{name: "components", method: http.MethodGet, path: "/api/components"},
-		{name: "history", method: http.MethodGet, path: "/api/history"},
-		{name: "bertscore", method: http.MethodPost, path: "/api/metrics", body: `{"generated":"a","reference":"b","metrics":["bertscore"]}`},
+		{name: "compare", method: http.MethodPost, path: "/api/compare", wantBody: "comparison is not yet implemented"},
+		{name: "security", method: http.MethodPost, path: "/api/security", wantBody: "security testing is not yet implemented"},
+		{name: "components", method: http.MethodGet, path: "/api/components", wantBody: "component library is not yet implemented"},
+		{name: "history", method: http.MethodGet, path: "/api/history", wantBody: "prompt history is not yet implemented"},
+		{name: "bertscore", method: http.MethodPost, path: "/api/metrics", body: `{"generated":"a","reference":"b","metrics":["bertscore"]}`, wantBody: "bertscore is not yet implemented"},
 	}
 
 	for _, tt := range tests {
@@ -95,6 +96,9 @@ func TestPlaygroundUnimplementedHandlers(t *testing.T) {
 			server.router.ServeHTTP(rec, req)
 			if rec.Code != http.StatusNotImplemented {
 				t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+			}
+			if !strings.Contains(rec.Body.String(), tt.wantBody) {
+				t.Fatalf("body = %q, want %q", rec.Body.String(), tt.wantBody)
 			}
 		})
 	}

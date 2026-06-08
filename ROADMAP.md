@@ -1186,6 +1186,9 @@ not-implemented error with matching documentation.
    and `ROADMAP.md` synchronized for each classified command.
 3. Add tests for not-implemented command surfaces so future changes cannot
    regress into fake success.
+   DONE current pass: add fail-closed regression guards for unsupported
+   promptfoo assertions, TypeScript/Pydantic parser and validator adapters, and
+   playground not-implemented endpoints.
 4. DONE current pass: remove dormant `pe exp` and `pe test` placeholders from
    the registered command surface until implementation work starts.
 

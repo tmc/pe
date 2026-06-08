@@ -125,6 +125,68 @@ func TestAssertionEvaluatorCoversAllAssertionTypes(t *testing.T) {
 	}
 }
 
+func TestUnimplementedAssertionsFailClosed(t *testing.T) {
+	evaluator := NewAssertionEvaluator(nil)
+
+	tests := []struct {
+		name string
+		eval func() *AssertionResult
+	}{
+		{
+			name: "toxicity",
+			eval: func() *AssertionResult {
+				return evaluator.evaluateToxicity(context.Background(), Assertion{Type: AssertionToxicity}, "answer")
+			},
+		},
+		{
+			name: "coherence",
+			eval: func() *AssertionResult {
+				return evaluator.evaluateCoherence(context.Background(), Assertion{Type: AssertionCoherence}, "answer")
+			},
+		},
+		{
+			name: "factuality",
+			eval: func() *AssertionResult {
+				return evaluator.evaluateFactuality(context.Background(), Assertion{Type: AssertionFactuality}, "answer")
+			},
+		},
+		{
+			name: "classify",
+			eval: func() *AssertionResult {
+				return evaluator.evaluateClassify(context.Background(), Assertion{Type: AssertionClassify}, "answer")
+			},
+		},
+		{
+			name: "similarity",
+			eval: func() *AssertionResult {
+				return evaluator.evaluateSimilarity(context.Background(), Assertion{Type: AssertionSimilarity}, "answer")
+			},
+		},
+		{
+			name: "sql",
+			eval: func() *AssertionResult {
+				return evaluator.evaluateSQL(Assertion{Type: AssertionSQL}, "select 1")
+			},
+		},
+		{
+			name: "structure",
+			eval: func() *AssertionResult {
+				return evaluator.evaluateStructure(Assertion{Type: AssertionStructure}, "answer")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.eval()
+			require.NotNil(t, result)
+			assert.False(t, result.Passed)
+			assert.Equal(t, 0.0, result.Score)
+			assert.Contains(t, result.Message, "not yet implemented")
+		})
+	}
+}
+
 func TestAssertionEvaluatorLLMJudgeUsesProviderOverride(t *testing.T) {
 	const providerName = "assertiontestjudge"
 

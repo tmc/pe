@@ -469,6 +469,64 @@ func TestPydanticPluginFormat(t *testing.T) {
 	}
 }
 
+func TestUnimplementedParsersFailClosed(t *testing.T) {
+	schema := &Schema{
+		Name: "test",
+		Type: "object",
+		Properties: map[string]*Property{
+			"name": {Type: "string"},
+		},
+		Required: []string{"name"},
+	}
+
+	tests := []struct {
+		name     string
+		parse    func() (map[string]interface{}, error)
+		validate func() error
+	}{
+		{
+			name: "typescript",
+			parse: func() (map[string]interface{}, error) {
+				return (&TypeScriptPlugin{}).Parse(`const value = { name: "test" }`)
+			},
+			validate: func() error {
+				return (&TypeScriptPlugin{}).Validate(`const value = { name: "test" }`, schema)
+			},
+		},
+		{
+			name: "pydantic",
+			parse: func() (map[string]interface{}, error) {
+				return (&PydanticPlugin{}).Parse(`{"name": "test"}`)
+			},
+			validate: func() error {
+				return (&PydanticPlugin{}).Validate(`{"name": "test"}`, schema)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name+"/parse", func(t *testing.T) {
+			result, err := tt.parse()
+			if err == nil {
+				t.Fatalf("Parse() = %#v, want error", result)
+			}
+			if !strings.Contains(strings.ToLower(err.Error()), "not implemented") {
+				t.Fatalf("Parse() error = %q, want not implemented", err)
+			}
+		})
+
+		t.Run(tt.name+"/validate", func(t *testing.T) {
+			err := tt.validate()
+			if err == nil {
+				t.Fatal("Validate() returned nil, want error")
+			}
+			if !strings.Contains(strings.ToLower(err.Error()), "not implemented") {
+				t.Fatalf("Validate() error = %q, want not implemented", err)
+			}
+		})
+	}
+}
+
 func TestJSONSchemaPluginFormat(t *testing.T) {
 	schema := &Schema{
 		Name:        "test",
