@@ -23,8 +23,8 @@ exists prompt_optimized.txt
 pe experimental semantic gaso --system system.yaml --objective "latency under 100ms with 95% accuracy"
 stdout 'GASO: Graph-based Agentic System Optimization'
 stdout 'Building computational graph'
-stdout 'Nodes: 1, Edges: 0'
-stdout 'Optimizing component: '
+stdout 'Nodes: 4, Edges: 3'
+stdout 'Optimizing component: analyzer'
 stdout 'System-wide improvement: 0%'
 stdout 'Pareto optimal solution found'
 exists system_optimized.yaml

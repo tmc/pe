@@ -263,18 +263,41 @@ func TestSemanticHelpersAndOutput(t *testing.T) {
 	}
 	yamlSystem := filepath.Join(tmpDir, "system.yaml")
 	if err := os.WriteFile(yamlSystem, []byte(`components:
-analyzer:
-  type: prompt
-  prompt: "Analyze"
-validator:
-  type: checker
-  prompt: "Validate"
+  analyzer:
+    type: prompt
+    prompt: "Analyze"
+  validator:
+    type: checker
+    prompt: "Validate"
 `), 0644); err != nil {
 		t.Fatal(err)
 	}
 	system, err = loadSystemDefinition(yamlSystem)
-	if err != nil || len(system.Components) == 0 {
+	if err != nil || len(system.Components) != 2 {
 		t.Fatalf("yaml system = %#v err=%v", system, err)
+	}
+	if system.Components[0].ID != "analyzer" || system.Components[1].ID != "validator" {
+		t.Fatalf("yaml component ids = %#v, want analyzer and validator", system.Components)
+	}
+
+	inputYAML := filepath.Join(tmpDir, "input-system.yaml")
+	if err := os.WriteFile(inputYAML, []byte(`components:
+  input:
+    type: interface
+    prompt: "Receive input"
+  analyzer:
+    type: processor
+    prompt: "Analyze"
+    inputs: [input]
+`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	system, err = loadSystemDefinition(inputYAML)
+	if err != nil || len(system.Components) != 2 || len(system.Dependencies) != 1 {
+		t.Fatalf("input yaml system = %#v err=%v", system, err)
+	}
+	if system.Dependencies[0].From != "input" || system.Dependencies[0].To != "analyzer" {
+		t.Fatalf("input dependency = %#v, want input -> analyzer", system.Dependencies[0])
 	}
 
 	semantic := &metaprompt.SemanticResult{InitialScore: 0.1, FinalScore: 0.9, OptimizedPrompt: "better", Iterations: 2, Converged: true}

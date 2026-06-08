@@ -1300,6 +1300,10 @@ keeping provider dependencies behind small interfaces.
    upfront cycle and graph validation, bounded worker execution, input-order
    results, and dependency-failure skips. Remaining work: wire it into concrete
    semantic optimization graph execution.
+   DONE current pass: wire GASO component gradient application through the
+   local DAG scheduler so declared component dependencies control optimization
+   order, dependency cycles fail before provider calls, and failed parents
+   prevent child optimization.
 5. Add static visualization for semantic/GASO graph structures through a
    local-only endpoint or generated HTML artifact.
 

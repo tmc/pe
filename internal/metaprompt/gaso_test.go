@@ -1,8 +1,13 @@
 package metaprompt
 
 import (
+	"context"
+	"errors"
 	"math"
+	"strings"
 	"testing"
+
+	"github.com/tmc/pe/internal/llm"
 )
 
 func TestNewGASOOptimizer(t *testing.T) {
@@ -199,6 +204,130 @@ func TestFormatAllDependencies(t *testing.T) {
 
 	if len(result) == 0 {
 		t.Error("formatAllDependencies returned empty string")
+	}
+}
+
+type gasoOrderProvider struct {
+	calls []string
+	fail  string
+}
+
+func (p *gasoOrderProvider) Generate(ctx context.Context, prompt string, options llm.GenerateOptions) (*llm.GenerateResponse, error) {
+	switch {
+	case strings.Contains(prompt, "Current Content: Parent"):
+		p.calls = append(p.calls, "parent")
+		if p.fail == "parent" {
+			return nil, errors.New("parent failed")
+		}
+		return &llm.GenerateResponse{Text: "optimized parent"}, nil
+	case strings.Contains(prompt, "Current Content: Child"):
+		p.calls = append(p.calls, "child")
+		if p.fail == "child" {
+			return nil, errors.New("child failed")
+		}
+		return &llm.GenerateResponse{Text: "optimized child"}, nil
+	default:
+		p.calls = append(p.calls, "other")
+		return &llm.GenerateResponse{Text: "optimized other"}, nil
+	}
+}
+
+func TestApplySystemGradientsUsesDAGOrder(t *testing.T) {
+	provider := &gasoOrderProvider{}
+	optimizer := NewGASOOptimizer(provider)
+	system := &SystemDefinition{
+		Components: []SystemComponent{
+			{ID: "child", Type: "prompt", Content: "Child"},
+			{ID: "parent", Type: "prompt", Content: "Parent"},
+		},
+		Dependencies: []ComponentDependency{
+			{From: "parent", To: "child", Type: "input"},
+		},
+	}
+	gradients := []SystemGradient{
+		{
+			ComponentID: "child",
+			Gradient:    SemanticGradient{Component: "child", Direction: "improve", Reasoning: "needs parent"},
+			Priority:    1.0,
+		},
+		{
+			ComponentID: "parent",
+			Gradient:    SemanticGradient{Component: "parent", Direction: "improve", Reasoning: "source"},
+			Priority:    0.1,
+		},
+	}
+
+	optimized, changes, err := optimizer.applySystemGradients(context.Background(), system, gradients, GASOConfig{})
+	if err != nil {
+		t.Fatalf("applySystemGradients: %v", err)
+	}
+	if got, want := strings.Join(provider.calls, ","), "parent,child"; got != want {
+		t.Fatalf("provider calls = %s, want %s", got, want)
+	}
+	if optimized.Components[0].Content != "optimized child" {
+		t.Fatalf("child content = %q, want optimized child", optimized.Components[0].Content)
+	}
+	if system.Components[0].Content != "Child" {
+		t.Fatalf("input system was mutated: %q", system.Components[0].Content)
+	}
+	if len(changes) != 2 {
+		t.Fatalf("changes = %d, want 2", len(changes))
+	}
+}
+
+func TestApplySystemGradientsSkipsDependentsAfterParentFailure(t *testing.T) {
+	provider := &gasoOrderProvider{fail: "parent"}
+	optimizer := NewGASOOptimizer(provider)
+	system := &SystemDefinition{
+		Components: []SystemComponent{
+			{ID: "parent", Type: "prompt", Content: "Parent"},
+			{ID: "child", Type: "prompt", Content: "Child"},
+		},
+		Dependencies: []ComponentDependency{
+			{From: "parent", To: "child", Type: "input"},
+		},
+	}
+	gradients := []SystemGradient{
+		{ComponentID: "parent", Gradient: SemanticGradient{Component: "parent", Direction: "improve"}},
+		{ComponentID: "child", Gradient: SemanticGradient{Component: "child", Direction: "improve"}},
+	}
+
+	optimized, changes, err := optimizer.applySystemGradients(context.Background(), system, gradients, GASOConfig{})
+	if err == nil || !strings.Contains(err.Error(), "parent failed") {
+		t.Fatalf("applySystemGradients error = %v, want parent failure", err)
+	}
+	if optimized != nil || changes != nil {
+		t.Fatalf("optimized=%v changes=%v, want nil results", optimized, changes)
+	}
+	if got, want := strings.Join(provider.calls, ","), "parent"; got != want {
+		t.Fatalf("provider calls = %s, want %s", got, want)
+	}
+}
+
+func TestApplySystemGradientsRejectsDependencyCycles(t *testing.T) {
+	provider := &gasoOrderProvider{}
+	optimizer := NewGASOOptimizer(provider)
+	system := &SystemDefinition{
+		Components: []SystemComponent{
+			{ID: "a", Type: "prompt", Content: "Parent"},
+			{ID: "b", Type: "prompt", Content: "Child"},
+		},
+		Dependencies: []ComponentDependency{
+			{From: "a", To: "b", Type: "input"},
+			{From: "b", To: "a", Type: "input"},
+		},
+	}
+	gradients := []SystemGradient{
+		{ComponentID: "a", Gradient: SemanticGradient{Component: "a", Direction: "improve"}},
+		{ComponentID: "b", Gradient: SemanticGradient{Component: "b", Direction: "improve"}},
+	}
+
+	_, _, err := optimizer.applySystemGradients(context.Background(), system, gradients, GASOConfig{})
+	if err == nil || !strings.Contains(err.Error(), "cycle") {
+		t.Fatalf("applySystemGradients error = %v, want cycle error", err)
+	}
+	if len(provider.calls) != 0 {
+		t.Fatalf("provider calls = %v, want none", provider.calls)
 	}
 }
 

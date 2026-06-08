@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tmc/pe/internal/distributed"
 	"github.com/tmc/pe/internal/llm"
 )
 
@@ -373,42 +374,78 @@ Response format:
 // applySystemGradients applies gradients to optimize the entire system
 func (gaso *GASOOptimizer) applySystemGradients(ctx context.Context, system *SystemDefinition, gradients []SystemGradient, config GASOConfig) (*SystemDefinition, []ComponentChange, error) {
 	optimizedSystem := *system // Copy system
-	changes := make([]ComponentChange, 0)
+	optimizedSystem.Components = append([]SystemComponent(nil), system.Components...)
 
 	// Sort gradients by priority (highest first)
 	sort.Slice(gradients, func(i, j int) bool {
 		return gradients[i].Priority > gradients[j].Priority
 	})
 
-	// Apply gradients to components
+	gradientByComponent := make(map[string]SystemGradient, len(gradients))
 	for _, sysGrad := range gradients {
-		// Find component
-		for i, component := range optimizedSystem.Components {
-			if component.ID == sysGrad.ComponentID {
-				// Apply gradient to component
-				optimizedContent, err := gaso.applyComponentGradient(ctx, component, sysGrad.Gradient)
-				if err != nil {
-					return nil, nil, fmt.Errorf("failed to apply gradient to component %s: %v", component.ID, err)
-				}
-
-				// Record change
-				change := ComponentChange{
-					ComponentID: component.ID,
-					ChangeType:  "content_optimization",
-					OldValue:    component.Content,
-					NewValue:    optimizedContent,
-					Impact:      sysGrad.Priority,
-				}
-				changes = append(changes, change)
-
-				// Update component
-				optimizedSystem.Components[i].Content = optimizedContent
-				break
-			}
+		if _, ok := gradientByComponent[sysGrad.ComponentID]; !ok {
+			gradientByComponent[sysGrad.ComponentID] = sysGrad
 		}
 	}
 
+	tasks := make([]distributed.DAGTask[*ComponentChange], 0, len(optimizedSystem.Components))
+	for _, component := range optimizedSystem.Components {
+		component := component
+		gradient, hasGradient := gradientByComponent[component.ID]
+		task := distributed.DAGTask[*ComponentChange]{
+			Task: distributed.Task[*ComponentChange]{
+				ID: component.ID,
+				Run: func(ctx context.Context) (*ComponentChange, error) {
+					if !hasGradient {
+						return nil, nil
+					}
+					optimizedContent, err := gaso.applyComponentGradient(ctx, component, gradient.Gradient)
+					if err != nil {
+						return nil, fmt.Errorf("failed to apply gradient to component %s: %w", component.ID, err)
+					}
+					return &ComponentChange{
+						ComponentID: component.ID,
+						ChangeType:  "content_optimization",
+						OldValue:    component.Content,
+						NewValue:    optimizedContent,
+						Impact:      gradient.Priority,
+					}, nil
+				},
+			},
+			After: componentParents(component.ID, system.Dependencies),
+		}
+		tasks = append(tasks, task)
+	}
+
+	results, err := distributed.RunDAGLocal(ctx, 1, tasks)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to apply system gradients: %w", err)
+	}
+
+	changes := make([]ComponentChange, 0, len(results))
+	for i, result := range results {
+		if result.Value == nil {
+			continue
+		}
+		optimizedSystem.Components[i].Content = result.Value.NewValue
+		changes = append(changes, *result.Value)
+	}
+
 	return &optimizedSystem, changes, nil
+}
+
+func componentParents(componentID string, dependencies []ComponentDependency) []string {
+	var parents []string
+	seen := make(map[string]bool)
+	for _, dep := range dependencies {
+		if dep.To != componentID || seen[dep.From] {
+			continue
+		}
+		parents = append(parents, dep.From)
+		seen[dep.From] = true
+	}
+	sort.Strings(parents)
+	return parents
 }
 
 // applyComponentGradient applies a semantic gradient to a specific component

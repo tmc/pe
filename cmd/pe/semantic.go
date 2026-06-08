@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/inference"
 	"github.com/tmc/pe/internal/metaprompt"
+	"sigs.k8s.io/yaml"
 )
 
 // semanticCmd implements semantic backpropagation and gradient descent for GASO
@@ -473,75 +475,8 @@ func loadSystemDefinition(systemFile string) (*metaprompt.SystemDefinition, erro
 
 	// Try to parse as YAML first (YAML is a superset of JSON)
 	if strings.HasSuffix(systemFile, ".yaml") || strings.HasSuffix(systemFile, ".yml") {
-		// Parse YAML format
-		// For now, we'll parse the specific format from the test
-		lines := strings.Split(string(data), "\n")
-		systemDef.Components = []metaprompt.SystemComponent{}
-
-		var currentComponent *metaprompt.SystemComponent
-		var inComponents bool
-
-		for _, line := range lines {
-			trimmed := strings.TrimSpace(line)
-			if trimmed == "components:" {
-				inComponents = true
-				continue
-			}
-
-			if inComponents {
-				if strings.HasPrefix(trimmed, "- name:") || (currentComponent == nil && strings.Contains(trimmed, ":")) {
-					// Start of a new component
-					if currentComponent != nil {
-						systemDef.Components = append(systemDef.Components, *currentComponent)
-					}
-					currentComponent = &metaprompt.SystemComponent{
-						Parameters: make(map[string]interface{}),
-					}
-				}
-
-				if currentComponent != nil {
-					if strings.Contains(trimmed, ":") && !strings.HasPrefix(trimmed, "-") {
-						parts := strings.SplitN(trimmed, ":", 2)
-						key := strings.TrimSpace(parts[0])
-						value := strings.TrimSpace(parts[1])
-
-						switch key {
-						case "type":
-							currentComponent.Type = value
-						case "prompt":
-							currentComponent.Content = strings.Trim(value, "\"")
-						case "inputs":
-							// Parse inputs array
-							currentComponent.Parameters["inputs"] = strings.Trim(value, "[]")
-						default:
-							// Set ID from the key name
-							if currentComponent.ID == "" && !strings.HasPrefix(line, " ") {
-								currentComponent.ID = key
-								currentComponent.Name = key
-								// Parse the rest on next iterations
-							}
-						}
-					}
-				}
-			}
-		}
-
-		if currentComponent != nil {
-			systemDef.Components = append(systemDef.Components, *currentComponent)
-		}
-
-		// If no components found, try alternative parsing
-		if len(systemDef.Components) == 0 {
-			// Try to parse as JSON
-			if err := json.Unmarshal(data, &systemDef); err != nil {
-				// Create a default system with basic components
-				systemDef.Components = []metaprompt.SystemComponent{
-					{ID: "input", Name: "input", Type: "interface", Content: "Receive and validate input"},
-					{ID: "analyzer", Name: "analyzer", Type: "processor", Content: "Analyze data for patterns"},
-					{ID: "validator", Name: "validator", Type: "checker", Content: "Validate analysis results"},
-					{ID: "output", Name: "output", Type: "interface", Content: "Format and return results"},
-				}
-			}
+		if err := parseYAMLSystemDefinition(data, &systemDef); err != nil {
+			return nil, err
 		}
 	} else {
 		// Parse as JSON
@@ -551,6 +486,146 @@ func loadSystemDefinition(systemFile string) (*metaprompt.SystemDefinition, erro
 	}
 
 	return &systemDef, nil
+}
+
+func parseYAMLSystemDefinition(data []byte, systemDef *metaprompt.SystemDefinition) error {
+	var raw map[string]interface{}
+	if err := yaml.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("failed to parse system definition: %v", err)
+	}
+
+	if nested, ok := asMap(raw["system"]); ok {
+		raw = nested
+	}
+
+	systemDef.Name = stringField(raw, "name")
+	systemDef.Description = stringField(raw, "description")
+	components, dependencies, err := parseYAMLComponents(raw["components"])
+	if err != nil {
+		return err
+	}
+	systemDef.Components = components
+	systemDef.Dependencies = dependencies
+	return nil
+}
+
+func parseYAMLComponents(value interface{}) ([]metaprompt.SystemComponent, []metaprompt.ComponentDependency, error) {
+	switch components := value.(type) {
+	case map[string]interface{}:
+		keys := make([]string, 0, len(components))
+		for key := range components {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+
+		var result []metaprompt.SystemComponent
+		var deps []metaprompt.ComponentDependency
+		for _, id := range keys {
+			props, _ := asMap(components[id])
+			component := yamlComponentFromMap(id, props)
+			result = append(result, component)
+			deps = append(deps, yamlInputDependencies(component.ID, props)...)
+		}
+		return result, deps, nil
+	case []interface{}:
+		var result []metaprompt.SystemComponent
+		var deps []metaprompt.ComponentDependency
+		for i, item := range components {
+			props, ok := asMap(item)
+			if !ok {
+				return nil, nil, fmt.Errorf("component %d is not an object", i)
+			}
+			id := stringField(props, "id")
+			if id == "" {
+				id = stringField(props, "name")
+			}
+			if id == "" {
+				id = fmt.Sprintf("component_%d", i+1)
+			}
+			component := yamlComponentFromMap(id, props)
+			result = append(result, component)
+			deps = append(deps, yamlInputDependencies(component.ID, props)...)
+		}
+		return result, deps, nil
+	case nil:
+		return nil, nil, fmt.Errorf("system definition has no components")
+	default:
+		return nil, nil, fmt.Errorf("system components must be a map or list")
+	}
+}
+
+func yamlComponentFromMap(id string, props map[string]interface{}) metaprompt.SystemComponent {
+	name := stringField(props, "name")
+	if name == "" {
+		name = id
+	}
+	componentType := stringField(props, "type")
+	content := stringField(props, "content")
+	if content == "" {
+		content = stringField(props, "prompt")
+	}
+
+	return metaprompt.SystemComponent{
+		ID:         id,
+		Name:       name,
+		Type:       componentType,
+		Content:    content,
+		Parameters: props,
+	}
+}
+
+func yamlInputDependencies(componentID string, props map[string]interface{}) []metaprompt.ComponentDependency {
+	inputs := stringSliceField(props, "inputs")
+	deps := make([]metaprompt.ComponentDependency, 0, len(inputs))
+	for _, input := range inputs {
+		deps = append(deps, metaprompt.ComponentDependency{
+			From: input,
+			To:   componentID,
+			Type: "input",
+		})
+	}
+	return deps
+}
+
+func asMap(value interface{}) (map[string]interface{}, bool) {
+	m, ok := value.(map[string]interface{})
+	return m, ok
+}
+
+func stringField(m map[string]interface{}, key string) string {
+	value, _ := m[key].(string)
+	return value
+}
+
+func stringSliceField(m map[string]interface{}, key string) []string {
+	switch value := m[key].(type) {
+	case []interface{}:
+		result := make([]string, 0, len(value))
+		for _, item := range value {
+			if s, ok := item.(string); ok && s != "" {
+				result = append(result, s)
+			}
+		}
+		return result
+	case []string:
+		return append([]string(nil), value...)
+	case string:
+		value = strings.Trim(value, "[]")
+		if strings.TrimSpace(value) == "" {
+			return nil
+		}
+		parts := strings.Split(value, ",")
+		result := make([]string, 0, len(parts))
+		for _, part := range parts {
+			part = strings.Trim(strings.TrimSpace(part), `"'`)
+			if part != "" {
+				result = append(result, part)
+			}
+		}
+		return result
+	default:
+		return nil
+	}
 }
 
 func outputSemanticResult(result *metaprompt.SemanticResult, outputFile, format string) error {
