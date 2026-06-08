@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html"
 	"os"
 	"sort"
 	"strings"
@@ -13,6 +14,36 @@ import (
 	"github.com/tmc/pe/internal/metaprompt"
 	"sigs.k8s.io/yaml"
 )
+
+type semanticFlowResult struct {
+	System      string             `json:"system" yaml:"system"`
+	Description string             `json:"description,omitempty" yaml:"description,omitempty"`
+	NodeCount   int                `json:"node_count" yaml:"node_count"`
+	EdgeCount   int                `json:"edge_count" yaml:"edge_count"`
+	Nodes       []semanticFlowNode `json:"nodes" yaml:"nodes"`
+	Edges       []semanticFlowEdge `json:"edges" yaml:"edges"`
+	Sources     []string           `json:"sources" yaml:"sources"`
+	Sinks       []string           `json:"sinks" yaml:"sinks"`
+	Isolated    []string           `json:"isolated,omitempty" yaml:"isolated,omitempty"`
+	Warnings    []string           `json:"warnings,omitempty" yaml:"warnings,omitempty"`
+}
+
+type semanticFlowNode struct {
+	ID         string  `json:"id" yaml:"id"`
+	Name       string  `json:"name" yaml:"name"`
+	Type       string  `json:"type" yaml:"type"`
+	InDegree   int     `json:"in_degree" yaml:"in_degree"`
+	OutDegree  int     `json:"out_degree" yaml:"out_degree"`
+	Centrality float64 `json:"centrality" yaml:"centrality"`
+}
+
+type semanticFlowEdge struct {
+	From        string  `json:"from" yaml:"from"`
+	To          string  `json:"to" yaml:"to"`
+	Type        string  `json:"type" yaml:"type"`
+	Weight      float64 `json:"weight,omitempty" yaml:"weight,omitempty"`
+	Description string  `json:"description,omitempty" yaml:"description,omitempty"`
+}
 
 // semanticCmd implements semantic backpropagation and gradient descent for GASO
 func semanticCmd() *cobra.Command {
@@ -723,8 +754,26 @@ func semanticFlowCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load system definition: %v", err)
 			}
-			_ = systemDef
-			return fmt.Errorf("semantic flow analysis is not yet implemented")
+			flow, err := analyzeSemanticFlow(systemDef)
+			if err != nil {
+				return err
+			}
+			output, err := formatSemanticFlow(flow, format)
+			if err != nil {
+				return err
+			}
+			if outputFile != "" {
+				if err := os.WriteFile(outputFile, []byte(output), 0644); err != nil {
+					return fmt.Errorf("write semantic flow output: %w", err)
+				}
+				fmt.Printf("Semantic flow written to %s\n", outputFile)
+				return nil
+			}
+			fmt.Print(output)
+			if !strings.HasSuffix(output, "\n") {
+				fmt.Println()
+			}
+			return nil
 		},
 	}
 
@@ -735,6 +784,217 @@ func semanticFlowCmd() *cobra.Command {
 	cmd.MarkFlagRequired("system")
 
 	return cmd
+}
+
+func analyzeSemanticFlow(system *metaprompt.SystemDefinition) (*semanticFlowResult, error) {
+	if system == nil {
+		return nil, fmt.Errorf("system definition is required")
+	}
+	if len(system.Components) == 0 {
+		return nil, fmt.Errorf("system definition has no components")
+	}
+	name := system.Name
+	if name == "" {
+		name = "system"
+	}
+
+	byID := make(map[string]metaprompt.SystemComponent, len(system.Components))
+	inDegree := make(map[string]int, len(system.Components))
+	outDegree := make(map[string]int, len(system.Components))
+	warnings := []string{}
+	for i, component := range system.Components {
+		id := component.ID
+		if id == "" {
+			id = component.Name
+		}
+		if id == "" {
+			id = fmt.Sprintf("component_%d", i+1)
+		}
+		component.ID = id
+		if component.Name == "" {
+			component.Name = id
+		}
+		byID[id] = component
+		inDegree[id] = 0
+		outDegree[id] = 0
+	}
+
+	edges := make([]semanticFlowEdge, 0, len(system.Dependencies))
+	for _, dep := range system.Dependencies {
+		from := strings.TrimSpace(dep.From)
+		to := strings.TrimSpace(dep.To)
+		if from == "" || to == "" {
+			warnings = append(warnings, "ignored dependency with empty endpoint")
+			continue
+		}
+		if _, ok := byID[from]; !ok {
+			warnings = append(warnings, fmt.Sprintf("dependency references missing source %q", from))
+			continue
+		}
+		if _, ok := byID[to]; !ok {
+			warnings = append(warnings, fmt.Sprintf("dependency references missing target %q", to))
+			continue
+		}
+		depType := dep.Type
+		if depType == "" {
+			depType = "data"
+		}
+		weight := dep.Weight
+		if weight == 0 {
+			weight = 1
+		}
+		outDegree[from]++
+		inDegree[to]++
+		edges = append(edges, semanticFlowEdge{
+			From:        from,
+			To:          to,
+			Type:        depType,
+			Weight:      weight,
+			Description: dep.Description,
+		})
+	}
+	sort.Slice(edges, func(i, j int) bool {
+		if edges[i].From == edges[j].From {
+			return edges[i].To < edges[j].To
+		}
+		return edges[i].From < edges[j].From
+	})
+
+	ids := make([]string, 0, len(byID))
+	for id := range byID {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+
+	nodes := make([]semanticFlowNode, 0, len(ids))
+	var sources, sinks, isolated []string
+	normalizer := float64(semanticMax(1, len(system.Components)-1))
+	for _, id := range ids {
+		component := byID[id]
+		in := inDegree[id]
+		out := outDegree[id]
+		if in == 0 {
+			sources = append(sources, id)
+		}
+		if out == 0 {
+			sinks = append(sinks, id)
+		}
+		if in == 0 && out == 0 {
+			isolated = append(isolated, id)
+		}
+		nodes = append(nodes, semanticFlowNode{
+			ID:         id,
+			Name:       component.Name,
+			Type:       component.Type,
+			InDegree:   in,
+			OutDegree:  out,
+			Centrality: float64(in+out) / normalizer,
+		})
+	}
+
+	return &semanticFlowResult{
+		System:      name,
+		Description: system.Description,
+		NodeCount:   len(nodes),
+		EdgeCount:   len(edges),
+		Nodes:       nodes,
+		Edges:       edges,
+		Sources:     sources,
+		Sinks:       sinks,
+		Isolated:    isolated,
+		Warnings:    warnings,
+	}, nil
+}
+
+func formatSemanticFlow(flow *semanticFlowResult, format string) (string, error) {
+	switch format {
+	case "", "json":
+		data, err := json.MarshalIndent(flow, "", "  ")
+		if err != nil {
+			return "", fmt.Errorf("marshal semantic flow: %w", err)
+		}
+		return string(data) + "\n", nil
+	case "yaml":
+		data, err := yaml.Marshal(flow)
+		if err != nil {
+			return "", fmt.Errorf("marshal semantic flow: %w", err)
+		}
+		return string(data), nil
+	case "text", "table":
+		var b strings.Builder
+		fmt.Fprintf(&b, "Semantic Flow: %s\n", flow.System)
+		fmt.Fprintf(&b, "Nodes: %d, Edges: %d\n", flow.NodeCount, flow.EdgeCount)
+		fmt.Fprintf(&b, "Sources: %s\n", strings.Join(flow.Sources, ", "))
+		fmt.Fprintf(&b, "Sinks: %s\n", strings.Join(flow.Sinks, ", "))
+		for _, edge := range flow.Edges {
+			fmt.Fprintf(&b, "%s -> %s (%s)\n", edge.From, edge.To, edge.Type)
+		}
+		for _, warning := range flow.Warnings {
+			fmt.Fprintf(&b, "Warning: %s\n", warning)
+		}
+		return b.String(), nil
+	case "html":
+		return renderSemanticFlowHTML(flow), nil
+	default:
+		return "", fmt.Errorf("unsupported semantic flow format: %s", format)
+	}
+}
+
+func renderSemanticFlowHTML(flow *semanticFlowResult) string {
+	var b strings.Builder
+	b.WriteString("<!doctype html>\n<html><head><meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Semantic Flow</title>\n")
+	b.WriteString("<style>body{font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;margin:32px;color:#1f2937}svg{width:100%;max-width:960px;height:360px;border:1px solid #d1d5db}circle{fill:#eef2ff;stroke:#4f46e5;stroke-width:2}line{stroke:#6b7280;stroke-width:2;marker-end:url(#arrow)}text{font-size:13px}.edge-label{fill:#4b5563;font-size:12px}</style>\n")
+	b.WriteString("</head><body>\n")
+	fmt.Fprintf(&b, "<h1>%s</h1>\n", html.EscapeString(flow.System))
+	fmt.Fprintf(&b, "<p>Nodes: %d, Edges: %d</p>\n", flow.NodeCount, flow.EdgeCount)
+	b.WriteString("<svg viewBox=\"0 0 960 360\" role=\"img\" aria-label=\"Semantic flow graph\">\n")
+	b.WriteString("<defs><marker id=\"arrow\" markerWidth=\"10\" markerHeight=\"10\" refX=\"8\" refY=\"3\" orient=\"auto\"><path d=\"M0,0 L0,6 L9,3 z\" fill=\"#6b7280\"/></marker></defs>\n")
+	positions := semanticFlowPositions(flow.Nodes)
+	for _, edge := range flow.Edges {
+		from := positions[edge.From]
+		to := positions[edge.To]
+		fmt.Fprintf(&b, "<line x1=\"%d\" y1=\"%d\" x2=\"%d\" y2=\"%d\"></line>\n", from.x, from.y, to.x, to.y)
+		fmt.Fprintf(&b, "<text class=\"edge-label\" x=\"%d\" y=\"%d\">%s</text>\n", (from.x+to.x)/2, (from.y+to.y)/2-8, html.EscapeString(edge.Type))
+	}
+	for _, node := range flow.Nodes {
+		pos := positions[node.ID]
+		fmt.Fprintf(&b, "<circle cx=\"%d\" cy=\"%d\" r=\"34\"></circle>\n", pos.x, pos.y)
+		fmt.Fprintf(&b, "<text x=\"%d\" y=\"%d\" text-anchor=\"middle\">%s</text>\n", pos.x, pos.y+4, html.EscapeString(node.ID))
+	}
+	b.WriteString("</svg>\n<h2>Edges</h2>\n<ul>\n")
+	for _, edge := range flow.Edges {
+		fmt.Fprintf(&b, "<li>%s -> %s (%s)</li>\n", html.EscapeString(edge.From), html.EscapeString(edge.To), html.EscapeString(edge.Type))
+	}
+	b.WriteString("</ul>\n</body></html>\n")
+	return b.String()
+}
+
+type semanticPoint struct {
+	x int
+	y int
+}
+
+func semanticFlowPositions(nodes []semanticFlowNode) map[string]semanticPoint {
+	positions := make(map[string]semanticPoint, len(nodes))
+	if len(nodes) == 0 {
+		return positions
+	}
+	step := 760
+	if len(nodes) > 1 {
+		step = 760 / (len(nodes) - 1)
+	}
+	for i, node := range nodes {
+		positions[node.ID] = semanticPoint{x: 100 + i*step, y: 180}
+	}
+	return positions
+}
+
+func semanticMax(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 // semanticGradientsCmd visualizes semantic gradients

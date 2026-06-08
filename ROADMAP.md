@@ -1442,6 +1442,9 @@ keeping provider dependencies behind small interfaces.
    prevent child optimization.
 5. Add static visualization for semantic/GASO graph structures through a
    local-only endpoint or generated HTML artifact.
+   DONE current pass: `pe experimental semantic flow` now performs local graph
+   analysis over system components and dependencies, emits JSON/YAML/text, and
+   can render a static HTML/SVG graph artifact without provider calls.
 
 Verification:
 - Fake-provider tests for candidate generation.

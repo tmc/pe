@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -352,7 +353,7 @@ func TestSemanticLocalSubcommands(t *testing.T) {
 	defer os.Chdir(oldDir)
 
 	systemFile := filepath.Join(tmpDir, "system.json")
-	if err := os.WriteFile(systemFile, []byte(`{"components":[{"id":"input","name":"input","type":"interface","content":"in"},{"id":"analyzer","name":"analyzer","type":"prompt","content":"analyze"},{"id":"output","name":"output","type":"interface","content":"out"}]}`), 0644); err != nil {
+	if err := os.WriteFile(systemFile, []byte(`{"components":[{"id":"input","name":"input","type":"interface","content":"in"},{"id":"analyzer","name":"analyzer","type":"prompt","content":"analyze"},{"id":"output","name":"output","type":"interface","content":"out"}],"dependencies":[{"from":"input","to":"analyzer","type":"data"},{"from":"analyzer","to":"output","type":"control"}]}`), 0644); err != nil {
 		t.Fatal(err)
 	}
 	promptFile := filepath.Join(tmpDir, "prompt.txt")
@@ -370,8 +371,28 @@ func TestSemanticLocalSubcommands(t *testing.T) {
 
 	flow := semanticFlowCmd()
 	flow.Flags().Set("system", systemFile)
-	if err := flow.RunE(flow, nil); err == nil || !strings.Contains(err.Error(), "semantic flow analysis is not yet implemented") {
+	flowOut := filepath.Join(tmpDir, "flow.json")
+	flow.Flags().Set("output", flowOut)
+	if err := flow.RunE(flow, nil); err != nil {
 		t.Fatalf("flow error = %v", err)
+	}
+	var flowResult semanticFlowResult
+	flowData, err := os.ReadFile(flowOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(flowData, &flowResult); err != nil {
+		t.Fatal(err)
+	}
+	if flowResult.NodeCount != 3 || flowResult.EdgeCount != 2 || len(flowResult.Sources) != 1 || flowResult.Sources[0] != "input" {
+		t.Fatalf("flow result = %#v", flowResult)
+	}
+	htmlOut, err := formatSemanticFlow(&flowResult, "html")
+	if err != nil {
+		t.Fatalf("html flow: %v", err)
+	}
+	if !strings.Contains(htmlOut, "<svg") || !strings.Contains(htmlOut, "input -> analyzer") {
+		t.Fatalf("html flow = %q", htmlOut)
 	}
 	gradients := semanticGradientsCmd()
 	gradients.Flags().Set("prompt-file", promptFile)
