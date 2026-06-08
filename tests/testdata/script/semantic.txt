@@ -66,9 +66,10 @@ stdout 'Semantic Dependency Analysis: system'
 stdout 'Nodes: 4, Edges: 3'
 stdout 'Cycles: none'
 
-# Benchmark against baselines is explicit about unsupported behavior
-! pe experimental semantic benchmark --prompt prompt.txt --baselines gpt4,claude,textgrad
-stderr 'semantic optimization benchmarking is not yet implemented'
+# Benchmark against baselines produces a local readiness report
+pe experimental semantic benchmark --prompt prompt.txt --baselines gpt4,claude,textgrad --format text
+stdout 'Semantic Benchmark'
+stdout 'Best Baseline:'
 
 -- prompt.txt --
 Analyze the provided code for bugs.

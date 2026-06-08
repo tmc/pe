@@ -164,7 +164,7 @@ func TestSemanticAnalyzeCmd_FlagParsing(t *testing.T) {
 func TestSemanticBenchmarkCmd_FlagParsing(t *testing.T) {
 	cmd := semanticBenchmarkCmd()
 
-	flags := []string{"prompt", "prompt-file", "baselines"}
+	flags := []string{"prompt", "prompt-file", "baselines", "output", "format"}
 	for _, name := range flags {
 		if cmd.Flags().Lookup(name) == nil {
 			t.Errorf("Expected flag %q to exist", name)
@@ -447,8 +447,21 @@ func TestSemanticLocalSubcommands(t *testing.T) {
 	benchmark := semanticBenchmarkCmd()
 	benchmark.Flags().Set("prompt-file", promptFile)
 	benchmark.Flags().Set("baselines", "gpt4, claude, missing")
-	if err := benchmark.RunE(benchmark, nil); err == nil || !strings.Contains(err.Error(), "semantic optimization benchmarking is not yet implemented") {
+	benchmarkOut := filepath.Join(tmpDir, "benchmark.json")
+	benchmark.Flags().Set("output", benchmarkOut)
+	if err := benchmark.RunE(benchmark, nil); err != nil {
 		t.Fatalf("benchmark error = %v", err)
+	}
+	var benchmarkReport semanticBenchmarkReport
+	benchmarkData, err := os.ReadFile(benchmarkOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(benchmarkData, &benchmarkReport); err != nil {
+		t.Fatal(err)
+	}
+	if len(benchmarkReport.Baselines) != 3 || benchmarkReport.BestBaseline == "" {
+		t.Fatalf("benchmark = %#v", benchmarkReport)
 	}
 
 	badFlow := semanticFlowCmd()
@@ -543,5 +556,25 @@ func TestAnalyzeSemanticDrift(t *testing.T) {
 	}
 	if _, err := formatSemanticDrift(report, "bad"); err == nil {
 		t.Fatal("bad drift format succeeded")
+	}
+}
+
+func TestBenchmarkSemanticPrompt(t *testing.T) {
+	report := benchmarkSemanticPrompt("Summarize incidents as JSON. You must include severity and owner.", "gpt4,textgrad,local")
+	if report.PromptTokens == 0 || len(report.Baselines) != 3 || report.Baselines[0].Rank != 1 {
+		t.Fatalf("report = %#v", report)
+	}
+	if report.Metrics["format"] <= report.Metrics["structure"] {
+		t.Fatalf("metrics = %#v", report.Metrics)
+	}
+	text, err := formatSemanticBenchmark(report, "text")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(text, "Semantic Benchmark") {
+		t.Fatalf("text = %q", text)
+	}
+	if _, err := formatSemanticBenchmark(report, "bad"); err == nil {
+		t.Fatal("bad benchmark format succeeded")
 	}
 }

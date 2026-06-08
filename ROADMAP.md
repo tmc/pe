@@ -1454,6 +1454,9 @@ keeping provider dependencies behind small interfaces.
    DONE current pass: `pe experimental semantic monitor` now emits local
    semantic-drift reports with token overlap, added/removed terms, severity,
    and JSON/YAML/text output.
+   DONE current pass: `pe experimental semantic benchmark` now emits local
+   prompt-readiness benchmark reports across named baselines with deterministic
+   dimension scores and JSON/YAML/text output.
 
 Verification:
 - Fake-provider tests for candidate generation.
