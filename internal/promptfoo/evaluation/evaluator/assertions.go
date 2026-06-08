@@ -822,35 +822,104 @@ func (ae *AssertionEvaluator) evaluateClassify(ctx context.Context, assertion As
 }
 
 func (ae *AssertionEvaluator) evaluateSimilarity(ctx context.Context, assertion Assertion, output string) *AssertionResult {
-	// NOTE: Similarity scoring pending implementation
-	// Will use embedding-based similarity in future release
+	reference, ok := assertion.Value.(string)
+	if !ok || strings.TrimSpace(reference) == "" {
+		return &AssertionResult{
+			Type:    assertion.Type,
+			Passed:  false,
+			Score:   0.0,
+			Message: "Similarity assertion requires non-empty string value",
+		}
+	}
+
+	score := lexicalSimilarity(reference, output)
+	threshold := 0.8
+	if assertion.Threshold != nil {
+		threshold = *assertion.Threshold
+	}
+	passed := score >= threshold
+
 	return &AssertionResult{
-		Type:    assertion.Type,
-		Passed:  false,
-		Score:   0.0,
-		Message: "Similarity evaluation not yet implemented (coming in future release)",
+		Type:     assertion.Type,
+		Passed:   passed,
+		Score:    score,
+		Expected: reference,
+		Actual:   output,
+		Message:  fmt.Sprintf("Lexical similarity score: %.2f", score),
+		Metadata: map[string]interface{}{
+			"method":    "token_jaccard",
+			"threshold": threshold,
+		},
 	}
 }
 
 func (ae *AssertionEvaluator) evaluateSQL(assertion Assertion, output string) *AssertionResult {
-	// NOTE: SQL validation pending implementation
-	// Will validate SQL syntax and structure in future release
+	normalized := strings.TrimSpace(output)
+	if normalized == "" {
+		return &AssertionResult{
+			Type:    assertion.Type,
+			Passed:  false,
+			Score:   0.0,
+			Message: "SQL output is empty",
+		}
+	}
+	if err := validateSQLShape(normalized); err != nil {
+		return &AssertionResult{
+			Type:    assertion.Type,
+			Passed:  false,
+			Score:   0.0,
+			Actual:  output,
+			Message: fmt.Sprintf("Invalid SQL shape: %v", err),
+		}
+	}
+
 	return &AssertionResult{
 		Type:    assertion.Type,
-		Passed:  false,
-		Score:   0.0,
-		Message: "SQL evaluation not yet implemented (coming in future release)",
+		Passed:  true,
+		Score:   1.0,
+		Actual:  output,
+		Message: "SQL shape is valid",
+		Metadata: map[string]interface{}{
+			"method": "local_shape_check",
+		},
 	}
 }
 
 func (ae *AssertionEvaluator) evaluateStructure(assertion Assertion, output string) *AssertionResult {
-	// NOTE: Structure validation pending implementation
-	// Will validate document structure in future release
+	required := requiredStructureMarkers(assertion)
+	if len(required) == 0 {
+		return &AssertionResult{
+			Type:    assertion.Type,
+			Passed:  false,
+			Score:   0.0,
+			Message: "Structure assertion requires required markers in value or config.required",
+		}
+	}
+
+	lowerOutput := strings.ToLower(output)
+	missing := make([]string, 0)
+	for _, marker := range required {
+		if !strings.Contains(lowerOutput, strings.ToLower(marker)) {
+			missing = append(missing, marker)
+		}
+	}
+	score := 1.0
+	if len(required) > 0 {
+		score = float64(len(required)-len(missing)) / float64(len(required))
+	}
+	passed := len(missing) == 0
+
 	return &AssertionResult{
-		Type:    assertion.Type,
-		Passed:  false,
-		Score:   0.0,
-		Message: "Structure evaluation not yet implemented (coming in future release)",
+		Type:     assertion.Type,
+		Passed:   passed,
+		Score:    score,
+		Expected: required,
+		Actual:   output,
+		Message:  fmt.Sprintf("Structure markers matched: %d/%d", len(required)-len(missing), len(required)),
+		Metadata: map[string]interface{}{
+			"missing": missing,
+			"method":  "required_marker_contains",
+		},
 	}
 }
 
@@ -861,6 +930,119 @@ func (ae *AssertionEvaluator) evaluateStructuredOutput(assertion Assertion, outp
 		result.Message = "Valid structured output"
 	}
 	return result
+}
+
+func lexicalSimilarity(reference, output string) float64 {
+	refTokens := tokenSet(reference)
+	outTokens := tokenSet(output)
+	if len(refTokens) == 0 && len(outTokens) == 0 {
+		return 1
+	}
+	if len(refTokens) == 0 || len(outTokens) == 0 {
+		return 0
+	}
+	intersection := 0
+	for token := range refTokens {
+		if outTokens[token] {
+			intersection++
+		}
+	}
+	union := len(refTokens) + len(outTokens) - intersection
+	if union == 0 {
+		return 0
+	}
+	return float64(intersection) / float64(union)
+}
+
+func tokenSet(text string) map[string]bool {
+	words := regexp.MustCompile(`[A-Za-z0-9_]+`).FindAllString(strings.ToLower(text), -1)
+	tokens := make(map[string]bool, len(words))
+	for _, word := range words {
+		tokens[word] = true
+	}
+	return tokens
+}
+
+func validateSQLShape(query string) error {
+	if strings.Contains(query, "\x00") {
+		return fmt.Errorf("contains null byte")
+	}
+	fields := strings.Fields(strings.ToLower(strings.TrimSuffix(query, ";")))
+	if len(fields) == 0 {
+		return fmt.Errorf("empty query")
+	}
+	switch fields[0] {
+	case "select", "with", "insert", "update", "delete", "create", "alter", "drop":
+	default:
+		return fmt.Errorf("unsupported starting keyword %q", fields[0])
+	}
+	if !balancedDelimiters(query, '(', ')') {
+		return fmt.Errorf("unbalanced parentheses")
+	}
+	if strings.Count(query, "'")%2 != 0 {
+		return fmt.Errorf("unbalanced single quotes")
+	}
+	if strings.Count(query, `"`)%2 != 0 {
+		return fmt.Errorf("unbalanced double quotes")
+	}
+	return nil
+}
+
+func balancedDelimiters(text string, open, close rune) bool {
+	depth := 0
+	for _, r := range text {
+		switch r {
+		case open:
+			depth++
+		case close:
+			depth--
+			if depth < 0 {
+				return false
+			}
+		}
+	}
+	return depth == 0
+}
+
+func requiredStructureMarkers(assertion Assertion) []string {
+	var markers []string
+	add := func(value string) {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			markers = append(markers, value)
+		}
+	}
+	switch value := assertion.Value.(type) {
+	case string:
+		add(value)
+	case []string:
+		for _, item := range value {
+			add(item)
+		}
+	case []interface{}:
+		for _, item := range value {
+			if s, ok := item.(string); ok {
+				add(s)
+			}
+		}
+	}
+	if raw, ok := assertion.Config["required"]; ok {
+		switch value := raw.(type) {
+		case string:
+			add(value)
+		case []string:
+			for _, item := range value {
+				add(item)
+			}
+		case []interface{}:
+			for _, item := range value {
+				if s, ok := item.(string); ok {
+					add(s)
+				}
+			}
+		}
+	}
+	return markers
 }
 
 func (ae *AssertionEvaluator) evaluatePassAtN(ctx context.Context, assertion Assertion, output string, metadata map[string]interface{}) *AssertionResult {

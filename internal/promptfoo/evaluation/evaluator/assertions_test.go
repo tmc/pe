@@ -103,14 +103,14 @@ func TestAssertionEvaluatorCoversAllAssertionTypes(t *testing.T) {
 		{"factuality", Assertion{Type: AssertionFactuality}, "answer", nil},
 		{"llm judge", Assertion{Type: AssertionLLMJudge, Value: "be correct", Threshold: &threshold}, "answer", nil},
 		{"classify", Assertion{Type: AssertionClassify}, "answer", nil},
-		{"similarity", Assertion{Type: AssertionSimilarity}, "answer", nil},
+		{"similarity", Assertion{Type: AssertionSimilarity, Value: "answer"}, "answer", nil},
 		{"latency", Assertion{Type: AssertionLatency, Max: &max}, "answer", map[string]interface{}{"latency": 10 * time.Millisecond}},
 		{"cost", Assertion{Type: AssertionCost, Max: &max}, "answer", map[string]interface{}{"cost": 0.01}},
 		{"tokens", Assertion{Type: AssertionTokens, Max: &max}, "answer", map[string]interface{}{"tokens": 1}},
 		{"json", Assertion{Type: AssertionJSON}, `{"answer":true}`, nil},
 		{"sql", Assertion{Type: AssertionSQL}, "select 1", nil},
 		{"code", Assertion{Type: AssertionCode, Threshold: &threshold, Config: map[string]interface{}{"language": "go"}}, "package main", nil},
-		{"structure", Assertion{Type: AssertionStructure}, "answer", nil},
+		{"structure", Assertion{Type: AssertionStructure, Value: []interface{}{"answer"}}, "answer", nil},
 		{"pass at n", Assertion{Type: AssertionPassAtN, Threshold: &threshold, Config: map[string]interface{}{"n": float64(2)}}, "answer", map[string]interface{}{"samples": []string{"answer", "other"}}},
 		{"structured output", Assertion{Type: AssertionStructuredOutput}, `{"answer":true}`, nil},
 	}
@@ -156,24 +156,6 @@ func TestUnimplementedAssertionsFailClosed(t *testing.T) {
 				return evaluator.evaluateClassify(context.Background(), Assertion{Type: AssertionClassify}, "answer")
 			},
 		},
-		{
-			name: "similarity",
-			eval: func() *AssertionResult {
-				return evaluator.evaluateSimilarity(context.Background(), Assertion{Type: AssertionSimilarity}, "answer")
-			},
-		},
-		{
-			name: "sql",
-			eval: func() *AssertionResult {
-				return evaluator.evaluateSQL(Assertion{Type: AssertionSQL}, "select 1")
-			},
-		},
-		{
-			name: "structure",
-			eval: func() *AssertionResult {
-				return evaluator.evaluateStructure(Assertion{Type: AssertionStructure}, "answer")
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -185,6 +167,75 @@ func TestUnimplementedAssertionsFailClosed(t *testing.T) {
 			assert.Contains(t, result.Message, "not yet implemented")
 		})
 	}
+}
+
+func TestAssertionEvaluatorSimilarityLocalBaseline(t *testing.T) {
+	evaluator := NewAssertionEvaluator(nil)
+	threshold := 0.5
+	result, err := evaluator.EvaluateAssertion(context.Background(), Assertion{
+		Type:      AssertionSimilarity,
+		Value:     "the quick brown fox",
+		Threshold: &threshold,
+	}, "quick brown fox jumps", nil)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.True(t, result.Passed)
+	assert.InDelta(t, 0.6, result.Score, 0.0001)
+	assert.Equal(t, "token_jaccard", result.Metadata["method"])
+
+	result, err = evaluator.EvaluateAssertion(context.Background(), Assertion{
+		Type:  AssertionSimilarity,
+		Value: "",
+	}, "output", nil)
+	require.NoError(t, err)
+	assert.False(t, result.Passed)
+	assert.Contains(t, result.Message, "requires non-empty string value")
+}
+
+func TestAssertionEvaluatorSQLLocalShape(t *testing.T) {
+	evaluator := NewAssertionEvaluator(nil)
+	result, err := evaluator.EvaluateAssertion(context.Background(), Assertion{
+		Type: AssertionSQL,
+	}, "select name from users where id = 1", nil)
+	require.NoError(t, err)
+	assert.True(t, result.Passed)
+	assert.Equal(t, 1.0, result.Score)
+
+	result, err = evaluator.EvaluateAssertion(context.Background(), Assertion{
+		Type: AssertionSQL,
+	}, "select (name from users", nil)
+	require.NoError(t, err)
+	assert.False(t, result.Passed)
+	assert.Contains(t, result.Message, "unbalanced parentheses")
+}
+
+func TestAssertionEvaluatorStructureMarkers(t *testing.T) {
+	evaluator := NewAssertionEvaluator(nil)
+	result, err := evaluator.EvaluateAssertion(context.Background(), Assertion{
+		Type:  AssertionStructure,
+		Value: []interface{}{"Summary", "Details"},
+	}, "Summary\n\nDetails\n\nDone", nil)
+	require.NoError(t, err)
+	assert.True(t, result.Passed)
+	assert.Equal(t, 1.0, result.Score)
+
+	result, err = evaluator.EvaluateAssertion(context.Background(), Assertion{
+		Type: AssertionStructure,
+		Config: map[string]interface{}{
+			"required": []interface{}{"Summary", "Risks"},
+		},
+	}, "Summary only", nil)
+	require.NoError(t, err)
+	assert.False(t, result.Passed)
+	assert.InDelta(t, 0.5, result.Score, 0.0001)
+	assert.Equal(t, []string{"Risks"}, result.Metadata["missing"])
+
+	result, err = evaluator.EvaluateAssertion(context.Background(), Assertion{
+		Type: AssertionStructure,
+	}, "anything", nil)
+	require.NoError(t, err)
+	assert.False(t, result.Passed)
+	assert.Contains(t, result.Message, "requires required markers")
 }
 
 func TestAssertionEvaluatorLLMJudgeUsesProviderOverride(t *testing.T) {

@@ -1223,8 +1223,9 @@ Current known explicit gaps:
 - playground compare, security, components, history, and BERTScore endpoints
 - TypeScript and Pydantic source/runtime validation beyond local JSON-object
   data validation
-- advanced promptfoo assertions for toxicity, coherence, factuality,
-  classification, similarity, SQL, and structure
+- advanced promptfoo assertions for toxicity, coherence, factuality, and
+  classification; provider-backed semantic similarity, SQL parsing, and rich
+  structure validation remain future work beyond current local baselines
 - data-poisoning and supply-chain security analyses, currently fail-closed
 
 ### Milestone 2: Build, Test, Metrics, and Structured Validation
@@ -1350,10 +1351,16 @@ honest scoring semantics and failure modes.
 
 1. Implement similarity scoring with a local deterministic baseline first, then
    add optional embedding/provider-backed variants.
+   DONE current pass: add local token-Jaccard similarity assertions with
+   threshold support and explicit method metadata.
 2. Implement coherence and factuality checks behind explicit data/model
    dependencies; avoid presenting heuristic scores as ground truth.
 3. Implement toxicity/classification/SQL/structure assertions with clear
    provider requirements or local validators.
+   DONE current pass: add local SQL shape assertions for recognized starting
+   keywords, null bytes, balanced parentheses, and balanced quotes; add local
+   structure assertions that check required output markers from `value` or
+   `config.required`.
 4. Replace fail-closed data-poisoning and supply-chain placeholders with
    concrete local checks, then optional remote or model-assisted analysis.
 5. Add benchmark fixtures and calibration docs for false positives, false
