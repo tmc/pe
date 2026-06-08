@@ -152,17 +152,21 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	// Handle multiple targets
 	if len(buildTargets) > 0 {
 		fmt.Println("Building for multiple targets")
+		targetPrompts := make(map[string]string)
 		for _, target := range buildTargets {
 			targetPrompt, err := optimizeForProvider(prompt, target)
 			if err != nil {
 				return err
 			}
+			targetPrompts[target] = targetPrompt
+		}
+		for _, target := range buildTargets {
 			targetDir := filepath.Join("builds", target)
 			if err := os.MkdirAll(targetDir, 0755); err != nil {
 				return err
 			}
 			targetFile := filepath.Join(targetDir, "prompt.txt")
-			if err := os.WriteFile(targetFile, []byte(targetPrompt), 0644); err != nil {
+			if err := os.WriteFile(targetFile, []byte(targetPrompts[target]), 0644); err != nil {
 				return err
 			}
 		}

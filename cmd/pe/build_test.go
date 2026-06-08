@@ -667,6 +667,76 @@ func TestBuildCmd_MultipleTargets(t *testing.T) {
 	}
 }
 
+func TestBuildCmd_UnsupportedTargetFailsClosed(t *testing.T) {
+	tmpDir := t.TempDir()
+	promptFile := filepath.Join(tmpDir, "prompt.txt")
+	if err := os.WriteFile(promptFile, []byte("You are helpful."), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	oldDir, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldDir)
+
+	buildOutput = ""
+	buildWithMetadata = false
+	buildTarget = ""
+	buildTargets = nil
+	buildMinify = false
+	buildValidate = false
+	buildBundle = false
+	buildCompress = false
+
+	cmd := buildCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{promptFile, "--target", "google"})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), `provider-specific formatting for "google" is not yet implemented`) {
+		t.Fatalf("build target error = %v", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(tmpDir, "prompt_build.txt")); !os.IsNotExist(statErr) {
+		t.Fatalf("unsupported target wrote output: %v", statErr)
+	}
+}
+
+func TestBuildCmd_MultipleTargetsFailBeforeWriting(t *testing.T) {
+	tmpDir := t.TempDir()
+	promptFile := filepath.Join(tmpDir, "prompt.txt")
+	if err := os.WriteFile(promptFile, []byte("You are helpful."), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	oldDir, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldDir)
+
+	buildOutput = ""
+	buildWithMetadata = false
+	buildTarget = ""
+	buildTargets = nil
+	buildMinify = false
+	buildValidate = false
+	buildBundle = false
+	buildCompress = false
+
+	cmd := buildCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{promptFile, "--targets", "openai,google"})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), `provider-specific formatting for "google" is not yet implemented`) {
+		t.Fatalf("multi-target error = %v", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(tmpDir, "builds", "openai", "prompt.txt")); !os.IsNotExist(statErr) {
+		t.Fatalf("multi-target failure wrote partial output: %v", statErr)
+	}
+}
+
 func TestBuildCmd_Bundle(t *testing.T) {
 	oldTestMode := os.Getenv("PE_TEST_MODE")
 	os.Setenv("PE_TEST_MODE", "true")

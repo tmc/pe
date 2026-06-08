@@ -76,6 +76,12 @@ stdout 'Building for multiple targets'
 exists builds/openai/prompt.txt
 exists builds/anthropic/prompt.txt
 
+# Unsupported target fails closed without partial multi-target output
+rm -rf builds
+! pe build config.yaml --targets openai,google
+stderr 'provider-specific formatting for "google" is not yet implemented'
+! exists builds/openai/prompt.txt
+
 # Build with environment-specific configs
 env PE_ENV=production
 pe build config.yaml

@@ -1186,7 +1186,6 @@ not-implemented error with matching documentation.
    `pe experimental`, or be removed until implementation work starts.
 
 Current known explicit gaps:
-- unsupported provider build formatting targets such as `google`
 - `pe test generate-tests`, `pe test ab-test`, and `pe test cross-validate`
 - statistical significance, t-test, group comparison, and metrics-analysis
   paths
@@ -1208,8 +1207,9 @@ the current command surface.
 
 1. DONE current pass: Implement `pe build --validate` as a local validation
    pass over prompt/config syntax, front matter, and declared inputs.
-2. Add provider formatting only where PE can prove the format locally; keep
-   unsupported providers as explicit errors.
+2. DONE current pass: Add provider formatting only where PE can prove the
+   format locally; unsupported providers return explicit errors before
+   multi-target builds write partial artifacts.
 3. Implement statistical test primitives behind `pe test` and metrics packages:
    t-test, A/B test, cross-validation summaries, group comparison, confidence
    intervals, and multiple-comparison caveats.
