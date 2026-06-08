@@ -135,6 +135,13 @@ JSON and YAML validation are local. TypeScript and Pydantic formatter plugins
 can generate schema shapes and validate JSON object data against PE schemas, but
 they do not execute TypeScript or Python runtimes or parse source files.
 
+### Security Analysis
+OWASP-oriented security checks include local response-pattern analyses for
+prompt injection, insecure output handling, sensitive disclosure, data
+poisoning, supply-chain indicators, denial of service, plugin design,
+excessive agency, overreliance, and model theft. Remote provenance checks,
+model-assisted adjudication, and calibration benchmarks remain future work.
+
 ## Not Implemented ❌
 
 ### Planned Features

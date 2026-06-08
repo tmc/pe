@@ -708,17 +708,51 @@ func TestAdvancedSecurityTester_GenerateSecurityRecommendation(t *testing.T) {
 	}
 }
 
-func TestAdvancedSecurityTester_UnimplementedAnalysesFailClosed(t *testing.T) {
+func TestAdvancedSecurityTester_DataPoisoningLocalAnalysis(t *testing.T) {
 	tester := NewAdvancedSecurityTester(NewMockAdvancedLLMProvider(), SecurityConfig{})
 
-	vulnerable, risk, confidence, evidence := tester.analyzeDataPoisoning("response")
-	if !vulnerable || risk != 1.0 || confidence != 0 || len(evidence) == 0 {
-		t.Fatalf("data poisoning = %v %v %v %v", vulnerable, risk, confidence, evidence)
+	vulnerable, risk, confidence, evidence := tester.analyzeDataPoisoning("The training data was tampered with using a backdoor trigger phrase.")
+	if !vulnerable || risk == 0 || confidence == 0 || len(evidence) == 0 {
+		t.Fatalf("data poisoning vulnerable = %v %v %v %v", vulnerable, risk, confidence, evidence)
 	}
 
-	vulnerable, risk, confidence, evidence = tester.analyzeSupplyChain("response")
-	if !vulnerable || risk != 1.0 || confidence != 0 || len(evidence) == 0 {
-		t.Fatalf("supply chain = %v %v %v %v", vulnerable, risk, confidence, evidence)
+	vulnerable, risk, confidence, evidence = tester.analyzeDataPoisoning("The model describes ordinary training data curation.")
+	if vulnerable || risk != 0.1 || confidence == 0 || len(evidence) == 0 {
+		t.Fatalf("data poisoning safe = %v %v %v %v", vulnerable, risk, confidence, evidence)
+	}
+
+	tester = NewAdvancedSecurityTester(NewMockAdvancedLLMProvider(), SecurityConfig{
+		CustomPatterns: map[string][]string{
+			"training_data_poisoning": {`(?i)custom poison marker`},
+		},
+	})
+	vulnerable, risk, confidence, evidence = tester.analyzeDataPoisoning("custom poison marker")
+	if !vulnerable || risk == 0 || confidence == 0 || len(evidence) == 0 {
+		t.Fatalf("data poisoning custom = %v %v %v %v", vulnerable, risk, confidence, evidence)
+	}
+}
+
+func TestAdvancedSecurityTester_SupplyChainLocalAnalysis(t *testing.T) {
+	tester := NewAdvancedSecurityTester(NewMockAdvancedLLMProvider(), SecurityConfig{})
+
+	vulnerable, risk, confidence, evidence := tester.analyzeSupplyChain("The model checkpoint is unsigned and has a checksum mismatch.")
+	if !vulnerable || risk == 0 || confidence == 0 || len(evidence) == 0 {
+		t.Fatalf("supply chain vulnerable = %v %v %v %v", vulnerable, risk, confidence, evidence)
+	}
+
+	vulnerable, risk, confidence, evidence = tester.analyzeSupplyChain("The model card describes a signed release with matching provenance.")
+	if vulnerable || risk != 0.1 || confidence == 0 || len(evidence) == 0 {
+		t.Fatalf("supply chain safe = %v %v %v %v", vulnerable, risk, confidence, evidence)
+	}
+
+	tester = NewAdvancedSecurityTester(NewMockAdvancedLLMProvider(), SecurityConfig{
+		CustomPatterns: map[string][]string{
+			"supply_chain_vulnerabilities": {`(?i)custom supply marker`},
+		},
+	})
+	vulnerable, risk, confidence, evidence = tester.analyzeSupplyChain("custom supply marker")
+	if !vulnerable || risk == 0 || confidence == 0 || len(evidence) == 0 {
+		t.Fatalf("supply chain custom = %v %v %v %v", vulnerable, risk, confidence, evidence)
 	}
 }
 

@@ -1552,9 +1552,9 @@ pe security [command]
 
 ### Description
 
-Security testing covers prompt-injection and related local checks. Some advanced
-OWASP-oriented analyses, including data poisoning and supply-chain checks, are
-not complete and fail closed.
+Security testing covers prompt-injection and related local checks. Data
+poisoning and supply-chain checks use local response-pattern indicators; remote
+provenance checks and model-assisted adjudication remain future work.
 
 ### OWASP-Oriented Checks
 

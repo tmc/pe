@@ -1233,7 +1233,8 @@ Current known explicit gaps:
   factuality, and classification; provider-backed semantic similarity, SQL
   parsing, and rich structure validation remain future work beyond current
   local baselines
-- data-poisoning and supply-chain security analyses, currently fail-closed
+- richer data-poisoning and supply-chain security analyses beyond current
+  local response-pattern checks
 
 ### Milestone 2: Build, Test, Metrics, and Structured Validation
 
@@ -1372,6 +1373,9 @@ honest scoring semantics and failure modes.
    classification assertions with explicit method metadata.
 4. Replace fail-closed data-poisoning and supply-chain placeholders with
    concrete local checks, then optional remote or model-assisted analysis.
+   DONE current pass: add local response-pattern checks for data-poisoning and
+   supply-chain indicators with custom pattern support and safe no-evidence
+   results.
 5. Add benchmark fixtures and calibration docs for false positives, false
    negatives, and unsupported environments.
 

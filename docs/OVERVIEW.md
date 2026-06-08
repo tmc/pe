@@ -148,7 +148,8 @@ Testing and validation:
 - **Property-based Testing**: Automated test generation
 - **Regression Testing**: Detect performance degradation
 - **Statistical Analysis**: Advanced metrics (BLEU, ROUGE, BERTScore, G-Eval)
-- **Security Testing**: OWASP-oriented checks; incomplete analyses fail closed
+- **Security Testing**: OWASP-oriented local checks; remote provenance and
+  model-assisted adjudication remain future work
 
 ### Infrastructure (Mixed Maturity)
 Infrastructure:
