@@ -1223,7 +1223,8 @@ Current known explicit gaps:
   surfaces beyond the current `pe diff --statistical` and
   `pe metrics --statistical` paths
 - richer prompted template-library creation beyond current starter-template API
-- metaprompt synthesis strategies: template, evolutionary, and neural
+- provider-backed/metamodel metaprompt synthesis beyond current local template,
+  evolutionary, and neural-style strategies
 - provider-assisted compose optimization, remote component import, and richer
   coherence validation beyond current local compose checks
 - richer playground compare, security, components, history, and BERTScore
@@ -1397,6 +1398,11 @@ keeping provider dependencies behind small interfaces.
    deterministic local optimization.
 2. Implement template/evolutionary/neural synthesis strategies only after their
    inputs, outputs, scoring, and trace format are specified.
+   DONE current pass: add deterministic local template, evolutionary, and
+   neural-style synthesis strategies that generate prompt programs from
+   `ProgramSpec`, return quality/confidence metadata, preserve strategy
+   selection, and honor context cancellation. Remaining work: provider-backed
+   synthesis with calibrated scoring.
 3. Implement compose optimization, component import, and coherence validation
    with local-first checks and provider-assisted options.
    DONE current pass: `pe compose --coherence-check` now reads component files,

@@ -60,6 +60,8 @@ is the source of truth for planned work and release-blocking follow-ups.
 - `pe semantic` - Semantic backpropagation
 - `pe evolve` - Evolutionary optimization
 - `pe compose` - Component composition with local coherence checks
+- Local metaprompt program synthesis strategies for template, evolutionary, and
+  neural-style prompt programs
 
 ### Local Workflow Prototypes
 - `pe exp distributed` - Bounded local task scheduler from JSON task files

@@ -432,8 +432,14 @@ func TestPromptComposerEnhancedPaths(t *testing.T) {
 		ComposeConfig:    ComposeConfig{Style: "structured"},
 		ProgramSynthesis: true,
 	})
-	if err == nil || synthesized != nil || !strings.Contains(err.Error(), "not yet implemented") {
+	if err != nil {
 		t.Fatalf("synthesized = %#v err=%v", synthesized, err)
+	}
+	if synthesized.Style != "synthesized" || !strings.Contains(synthesized.ComposedPrompt, "Prompt Program") {
+		t.Fatalf("synthesized = %#v", synthesized)
+	}
+	if synthesized.Metadata["synthesis_strategy"] != "template" {
+		t.Fatalf("synthesis metadata = %#v", synthesized.Metadata)
 	}
 }
 
@@ -510,8 +516,25 @@ func TestComposerSynthesisQualityAndOptimization(t *testing.T) {
 		t.Fatalf("neural strategy = %q", got)
 	}
 	result, err := ps.SynthesizePrompt(context.Background(), spec)
-	if err == nil || result != nil || !strings.Contains(err.Error(), "not yet implemented") {
+	if err != nil {
 		t.Fatalf("synthesis = %#v err=%v", result, err)
+	}
+	if result.Strategy != "neural" || result.Program == "" || result.QualityScore <= 0 {
+		t.Fatalf("synthesis = %#v", result)
+	}
+	spec.Examples = nil
+	spec.Quality.RequireOptimization = true
+	result, err = ps.SynthesizePrompt(context.Background(), spec)
+	if err != nil {
+		t.Fatalf("evolutionary synthesis = %#v err=%v", result, err)
+	}
+	if result.Strategy != "evolutionary" || result.Iterations != 3 {
+		t.Fatalf("evolutionary synthesis = %#v", result)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if result, err := ps.SynthesizePrompt(ctx, ProgramSpec{Task: "task"}); err == nil || result != nil {
+		t.Fatalf("cancelled synthesis = %#v err=%v", result, err)
 	}
 
 	qgm := NewQualityGateManager()
