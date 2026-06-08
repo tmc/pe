@@ -2,8 +2,11 @@ package metrics
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/promptfoo"
@@ -118,6 +121,132 @@ func TestMetricEvaluatorLLMAndPassAtN(t *testing.T) {
 	if !withTests.Pass || withTests.Score != 1 {
 		t.Fatalf("pass@n tests = %#v", withTests)
 	}
+}
+
+func TestMetricEvaluatorScriptMetric(t *testing.T) {
+	evaluator := NewMetricEvaluator(nil, nil)
+	script := writeMetricScript(t, `#!/bin/sh
+printf '%s\n' '{"score":0.8,"pass":true,"reason":"helper ok","details":{"source":"helper"}}'
+`)
+
+	result, err := evaluator.evaluateMetric(context.Background(), MetricConfig{
+		Name:   "external-score",
+		Type:   MetricTypeScript,
+		Script: script,
+	}, "prompt", "response", map[string]interface{}{"unused": true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.Pass || result.Score != 0.8 || result.Reason != "helper ok" {
+		t.Fatalf("result = %#v", result)
+	}
+	if result.Details["source"] != "helper" {
+		t.Fatalf("details = %#v", result.Details)
+	}
+}
+
+func TestMetricEvaluatorScriptMetricErrors(t *testing.T) {
+	evaluator := NewMetricEvaluator(nil, nil)
+	tests := []struct {
+		name   string
+		config MetricConfig
+		want   string
+	}{
+		{
+			name:   "empty executable",
+			config: MetricConfig{Name: "empty", Type: MetricTypeScript},
+			want:   `script metric "empty" has empty executable`,
+		},
+		{
+			name:   "missing executable",
+			config: MetricConfig{Name: "missing", Type: MetricTypeScript, Script: "definitely-not-a-pe-test-helper"},
+			want:   "execute script metric",
+		},
+		{
+			name: "non-zero with stderr",
+			config: MetricConfig{
+				Name: "stderr",
+				Type: MetricTypeScript,
+				Script: writeMetricScript(t, `#!/bin/sh
+echo 'helper stderr' >&2
+exit 2
+`),
+			},
+			want: "helper stderr",
+		},
+		{
+			name: "malformed json",
+			config: MetricConfig{
+				Name: "malformed",
+				Type: MetricTypeScript,
+				Script: writeMetricScript(t, `#!/bin/sh
+printf '{not-json'
+`),
+			},
+			want: "parse script metric output",
+		},
+		{
+			name: "missing score",
+			config: MetricConfig{
+				Name: "missing-score",
+				Type: MetricTypeScript,
+				Script: writeMetricScript(t, `#!/bin/sh
+printf '%s\n' '{"pass":true,"reason":"missing score"}'
+`),
+			},
+			want: "missing finite score",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := runScriptMetricTest(evaluator, tt.config)
+			if err == nil {
+				t.Fatal("script metric succeeded")
+			}
+			if !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("error = %v, want %q", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestMetricEvaluatorScriptMetricCancellation(t *testing.T) {
+	evaluator := NewMetricEvaluator(nil, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond)
+	defer cancel()
+	script := writeMetricScript(t, `#!/bin/sh
+sleep 1
+`)
+
+	err := runScriptMetricTest(evaluator, MetricConfig{
+		Name:   "sleep",
+		Type:   MetricTypeScript,
+		Script: script,
+	}, ctx)
+	if err == nil {
+		t.Fatal("script metric succeeded")
+	}
+	if !strings.Contains(err.Error(), "execute script metric") {
+		t.Fatalf("error = %v, want execute script metric", err)
+	}
+}
+
+func runScriptMetricTest(evaluator *MetricEvaluator, config MetricConfig, contexts ...context.Context) error {
+	ctx := context.Background()
+	if len(contexts) > 0 {
+		ctx = contexts[0]
+	}
+	_, err := evaluator.evaluateMetric(ctx, config, "prompt", "response", nil)
+	return err
+}
+
+func writeMetricScript(t *testing.T, body string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "metric.sh")
+	if err := os.WriteFile(path, []byte(body), 0755); err != nil {
+		t.Fatal(err)
+	}
+	return path
 }
 
 type jsonJudgeProvider struct{}

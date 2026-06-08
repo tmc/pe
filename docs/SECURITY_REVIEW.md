@@ -89,6 +89,10 @@ GOTOOLCHAIN=go1.25.9 go test ./internal/providers -run 'TestGenericCLIProvider' 
   `TestGenericCLIProvider_CommandTemplateQuotesPrompt`. Promptfoo viewer
   delegation is covered by `TestRunPromptfooViewUsesExplicitArgv` and default
   local behavior is covered by `TestViewCmd_MissingEvalDoesNotRunPromptfoo`.
+  Script metrics execute configured paths directly with prompt and response as
+  separate argv entries; `TestMetricEvaluatorScriptMetricErrors` and
+  `TestMetricEvaluatorScriptMetricCancellation` cover missing executable,
+  stderr/non-zero exits, malformed output, missing fields, and cancellation.
 - G304 triage: config expansion, Starlark `load_tests`, module cache paths, and
   module publish prompt paths now have containment checks. Unsigned manifests
   and cache objects reject path escapes, unsafe keys, and symlinks. Broad CLI

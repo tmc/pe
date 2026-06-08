@@ -1285,6 +1285,11 @@ Goal: make every external process boundary deliberate, documented, and tested.
    require explicit configuration, timeouts, argument separation, no shell
    interpolation, and tests for missing executable, timeout, stderr, and
    non-zero exit handling.
+   DONE current pass: script metrics remain explicit executable-path hooks,
+   run as direct argv with prompt and response as separate arguments, and fail
+   closed for empty or missing executables, context cancellation, non-zero
+   exits with stderr, malformed JSON output, missing fields, and non-finite
+   scores. Python metric output now uses the same validated result parser.
 4. Keep provider CLI adapters as provider execution, not promptfoo
    compatibility. They must validate executable names, avoid shell expansion,
    use timeouts, and document that they run local tools.

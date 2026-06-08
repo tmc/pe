@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -473,51 +474,76 @@ func (m *MetricEvaluator) evaluatePythonMetric(ctx context.Context, config Metri
 	cmd := exec.CommandContext(ctx, "python3", "-c", config.Script)
 	cmd.Stdin = strings.NewReader(string(inputJSON))
 
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 	output, err := cmd.Output()
 	if err != nil {
-		return MetricResult{}, fmt.Errorf("error executing Python script: %v", err)
+		return MetricResult{}, metricCommandError("execute python metric", err, stderr.String())
 	}
 
-	// Parse result
-	var result map[string]interface{}
-	if err := json.Unmarshal(output, &result); err != nil {
-		return MetricResult{}, fmt.Errorf("error parsing Python script output: %v", err)
-	}
-
-	return MetricResult{
-		Name:    config.Name,
-		Score:   result["score"].(float64),
-		Pass:    result["pass"].(bool),
-		Reason:  result["reason"].(string),
-		Latency: time.Since(start),
-		Details: result["details"].(map[string]interface{}),
-	}, nil
+	return parseExternalMetricResult(config.Name, output, time.Since(start), "python metric")
 }
 
 // evaluateScriptMetric evaluates using external script
 func (m *MetricEvaluator) evaluateScriptMetric(ctx context.Context, config MetricConfig, prompt, response string, metadata map[string]interface{}) (MetricResult, error) {
 	start := time.Now()
+	if config.Script == "" {
+		return MetricResult{}, fmt.Errorf("script metric %q has empty executable", config.Name)
+	}
 
 	// Execute script with arguments
 	cmd := exec.CommandContext(ctx, config.Script, prompt, response)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 	output, err := cmd.Output()
 	if err != nil {
-		return MetricResult{}, fmt.Errorf("error executing script: %v", err)
+		return MetricResult{}, metricCommandError("execute script metric", err, stderr.String())
 	}
 
-	// Parse result (expecting JSON output)
+	return parseExternalMetricResult(config.Name, output, time.Since(start), "script metric")
+}
+
+func metricCommandError(action string, err error, stderr string) error {
+	stderr = strings.TrimSpace(stderr)
+	if stderr != "" {
+		return fmt.Errorf("%s: %w: %s", action, err, stderr)
+	}
+	return fmt.Errorf("%s: %w", action, err)
+}
+
+func parseExternalMetricResult(name string, output []byte, latency time.Duration, source string) (MetricResult, error) {
 	var result map[string]interface{}
 	if err := json.Unmarshal(output, &result); err != nil {
-		return MetricResult{}, fmt.Errorf("error parsing script output: %v", err)
+		return MetricResult{}, fmt.Errorf("parse %s output: %w", source, err)
 	}
 
+	score, ok := result["score"].(float64)
+	if !ok || math.IsNaN(score) || math.IsInf(score, 0) {
+		return MetricResult{}, fmt.Errorf("parse %s output: missing finite score", source)
+	}
+	pass, ok := result["pass"].(bool)
+	if !ok {
+		return MetricResult{}, fmt.Errorf("parse %s output: missing pass", source)
+	}
+	reason, ok := result["reason"].(string)
+	if !ok {
+		return MetricResult{}, fmt.Errorf("parse %s output: missing reason", source)
+	}
+	details := map[string]interface{}{}
+	if rawDetails, ok := result["details"]; ok {
+		parsedDetails, ok := rawDetails.(map[string]interface{})
+		if !ok {
+			return MetricResult{}, fmt.Errorf("parse %s output: details is not an object", source)
+		}
+		details = parsedDetails
+	}
 	return MetricResult{
-		Name:    config.Name,
-		Score:   result["score"].(float64),
-		Pass:    result["pass"].(bool),
-		Reason:  result["reason"].(string),
-		Latency: time.Since(start),
-		Details: result["details"].(map[string]interface{}),
+		Name:    name,
+		Score:   score,
+		Pass:    pass,
+		Reason:  reason,
+		Latency: latency,
+		Details: details,
 	}, nil
 }
 
