@@ -305,18 +305,32 @@ func TestMetricsCalculationOutputAndSimpleMode(t *testing.T) {
 		t.Fatal("missing samples succeeded")
 	}
 
-	stats, err := performStatisticalAnalysis("abc", "de", 0.95, 10)
-	if err == nil || stats != nil || !strings.Contains(err.Error(), "not yet implemented") {
+	stats, err := performStatisticalAnalysis("1 2 3 4", "2 3 4 5", 0.95, 10)
+	if err != nil {
 		t.Fatalf("stats = %#v err=%v", stats, err)
 	}
+	if stats.Group1Summary.Count != 4 || stats.Group2Summary.Count != 4 {
+		t.Fatalf("stats counts = %d/%d, want 4/4", stats.Group1Summary.Count, stats.Group2Summary.Count)
+	}
+	if _, err := performStatisticalAnalysis("1", "2 3", 0.95, 10); err == nil || !strings.Contains(err.Error(), "at least 2 samples") {
+		t.Fatalf("insufficient samples error = %v", err)
+	}
+	if _, err := performStatisticalAnalysis("1 bad 3", "2 3 4", 0.95, 10); err == nil || !strings.Contains(err.Error(), "parse generated sample") {
+		t.Fatalf("malformed samples error = %v", err)
+	}
+	if _, err := performStatisticalAnalysis(`[1,2,3]`, `[2,3,4]`, 0.95, 10); err != nil {
+		t.Fatalf("json statistical samples: %v", err)
+	}
 	full := &MetricsResult{
-		BLEU:      &BLEUScore{Score: 0.5, BP: 1},
-		ROUGE:     &ROUGEScore{ROUGE1: 0.5, ROUGE2: 0.4, ROUGEL: 0.6, ROUGEW: 0.3},
-		METEOR:    &METEORScore{Score: 0.7},
-		BERTScore: &BERTScoreResult{Precision: 0.8, Recall: 0.7, F1: 0.75, ConfidenceInterval: [2]float64{0.7, 0.8}},
-		GEval:     &GEvalResult{Scores: map[string]float64{"accuracy": 0.8}, OverallScore: 0.8, Reasoning: "ok"},
-		UniEval:   &UniEvalResult{Dimensions: map[string]float64{"coherence": 0.9}, OverallScore: 0.9},
-		PassAtN:   &PassAtNScore{N: 2, PassRate: 0.5, NumSamples: 2, NumPassed: 1, PassedRates: map[int]float64{1: 0.5}},
+		BLEU:       &BLEUScore{Score: 0.5, BP: 1},
+		ROUGE:      &ROUGEScore{ROUGE1: 0.5, ROUGE2: 0.4, ROUGEL: 0.6, ROUGEW: 0.3},
+		METEOR:     &METEORScore{Score: 0.7},
+		BERTScore:  &BERTScoreResult{Precision: 0.8, Recall: 0.7, F1: 0.75, ConfidenceInterval: [2]float64{0.7, 0.8}},
+		GEval:      &GEvalResult{Scores: map[string]float64{"accuracy": 0.8}, OverallScore: 0.8, Reasoning: "ok"},
+		UniEval:    &UniEvalResult{Dimensions: map[string]float64{"coherence": 0.9}, OverallScore: 0.9},
+		PassAtN:    &PassAtNScore{N: 2, PassRate: 0.5, NumSamples: 2, NumPassed: 1, PassedRates: map[int]float64{1: 0.5}},
+		Statistics: stats,
+		Caveat:     statisticalCaveat,
 	}
 	for _, format := range []string{"table", "json", "yaml", "csv"} {
 		outFile := filepath.Join(t.TempDir(), "metrics."+format)
@@ -327,10 +341,10 @@ func TestMetricsCalculationOutputAndSimpleMode(t *testing.T) {
 			t.Fatalf("output file %s len=%d err=%v", format, len(data), err)
 		}
 	}
-	if table := formatMetricsTable(full); !strings.Contains(table, "BLEU Score") || !strings.Contains(table, "Pass@N") {
+	if table := formatMetricsTable(full); !strings.Contains(table, "BLEU Score") || !strings.Contains(table, "Pass@N") || !strings.Contains(table, statisticalCaveat) {
 		t.Fatalf("table = %s", table)
 	}
-	if csv := formatMetricsCSV(full); !strings.Contains(csv, "Metric,Score") || !strings.Contains(csv, "Pass@2") {
+	if csv := formatMetricsCSV(full); !strings.Contains(csv, "Metric,Score") || !strings.Contains(csv, "Pass@2") || !strings.Contains(csv, "StatisticsPValue") {
 		t.Fatalf("csv = %s", csv)
 	}
 	promptFile := filepath.Join(t.TempDir(), "prompt.txt")

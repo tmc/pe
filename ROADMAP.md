@@ -1225,6 +1225,10 @@ the current command surface.
     for pass-rate, score, and latency significance on saved evaluation results.
     The output includes a multiple-comparison caveat and does not alter diff
     gate behavior.
+3b. DONE current pass: Wire `pe metrics --statistical` to the local statistical
+    analyzer for strict numeric group comparison from text or JSON-array
+    inputs, with confidence intervals, p-values, effect sizes, finite structured
+    output, and the multiple-comparison caveat.
 4. Implement automatic test generation only after the input/output contract is
    narrow enough to test deterministically with a mock provider.
 5. Implement TypeScript and Pydantic validation through isolated adapters with

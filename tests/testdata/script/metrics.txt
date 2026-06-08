@@ -35,8 +35,19 @@ exists report.json
 # Skip batch evaluation for now
 # pe experimental metrics --batch --inputs batch.jsonl
 
-# Skip statistical comparison for now
-# pe experimental metrics --compare baseline.json improved.json --significance
+# Statistical comparison from numeric distributions
+pe experimental metrics --statistical --generated-file improved-scores.txt --reference-file baseline-scores.txt
+stdout 'Statistical Analysis:'
+stdout 'Generated Sample Size: 8'
+stdout 'P-Value:'
+stdout 'Comparing multiple metrics increases the risk of false positives'
+
+pe experimental metrics --statistical --generated '[0.81,0.82,0.84]' --reference '[0.72,0.74,0.76]' --format json
+stdout '"statistics"'
+stdout '"caveat": "Comparing multiple metrics increases the risk of false positives"'
+
+! pe experimental metrics --statistical --generated '0.9' --reference '0.8 0.7'
+stderr 'at least 2 samples'
 
 # Skip custom metrics for now
 # pe experimental metrics --custom custom-metric.js --generated output.txt
@@ -81,6 +92,26 @@ Long article about AI and its impact on society...
 
 -- improved.json --
 {"scores": [0.81, 0.82, 0.84, 0.79, 0.83, 0.82, 0.85, 0.80]}
+
+-- baseline-scores.txt --
+0.72
+0.74
+0.76
+0.73
+0.78
+0.75
+0.77
+0.74
+
+-- improved-scores.txt --
+0.81
+0.82
+0.84
+0.79
+0.83
+0.82
+0.85
+0.80
 
 -- custom-metric.js --
 function evaluate(generated, reference) {

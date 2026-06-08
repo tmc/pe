@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -21,6 +23,7 @@ type MetricsResult struct {
 	UniEval    *UniEvalResult            `json:"uni_eval,omitempty"`
 	PassAtN    *PassAtNScore             `json:"pass_at_n,omitempty"`
 	Statistics *metrics.ComparisonResult `json:"statistics,omitempty"`
+	Caveat     string                    `json:"caveat,omitempty"`
 }
 
 // BLEUScore represents BLEU metric result
@@ -92,6 +95,7 @@ func metricsCmd() *cobra.Command {
 		outputFile    string
 		format        string
 		statistical   bool
+		allMetrics    bool
 		confidence    float64
 		bootstrap     int
 		provider      string
@@ -156,7 +160,7 @@ Statistical Analysis:
 			}
 
 			// Validate inputs
-			if len(metricTypes) == 0 && !cmd.Flags().Changed("all") {
+			if len(metricTypes) == 0 && !allMetrics && !statistical {
 				return fmt.Errorf("must specify --type or --all")
 			}
 
@@ -167,7 +171,7 @@ Statistical Analysis:
 			}
 
 			// Handle --all flag
-			if all, _ := cmd.Flags().GetBool("all"); all {
+			if allMetrics {
 				metricTypes = []string{"bleu", "rouge", "meteor", "bertscore", "g-eval", "uni-eval", "pass-at-n"}
 			}
 
@@ -184,6 +188,7 @@ Statistical Analysis:
 					return err
 				}
 				result.Statistics = stats
+				result.Caveat = statisticalCaveat
 			}
 
 			// Output results
@@ -192,7 +197,7 @@ Statistical Analysis:
 	}
 
 	cmd.Flags().StringSliceVarP(&metricTypes, "type", "t", []string{}, "Metric types to calculate (bleu,rouge,meteor,bertscore,g-eval,uni-eval)")
-	cmd.Flags().BoolVar(&statistical, "all", false, "Calculate all available metrics")
+	cmd.Flags().BoolVar(&allMetrics, "all", false, "Calculate all available metrics")
 	cmd.Flags().StringVarP(&generatedText, "generated", "g", "", "Generated text to evaluate")
 	cmd.Flags().StringVarP(&referenceText, "reference", "r", "", "Reference text for comparison")
 	cmd.Flags().StringVar(&generatedFile, "generated-file", "", "File containing generated text")
@@ -213,6 +218,8 @@ Statistical Analysis:
 
 	return cmd
 }
+
+const statisticalCaveat = "Comparing multiple metrics increases the risk of false positives"
 
 // loadTextData loads text from either direct input or files
 func loadTextData(generatedText, referenceText, generatedFile, referenceFile string) (string, string, error) {
@@ -464,7 +471,120 @@ func min(a, b int) int {
 
 // performStatisticalAnalysis conducts comprehensive statistical analysis
 func performStatisticalAnalysis(generated, reference string, confidence float64, bootstrap int) (*metrics.ComparisonResult, error) {
-	return nil, fmt.Errorf("statistical metrics analysis is not yet implemented")
+	generatedSamples, err := parseStatisticalSamples("generated", generated)
+	if err != nil {
+		return nil, err
+	}
+	referenceSamples, err := parseStatisticalSamples("reference", reference)
+	if err != nil {
+		return nil, err
+	}
+	if len(generatedSamples) < 2 || len(referenceSamples) < 2 {
+		return nil, fmt.Errorf("statistical analysis requires at least 2 samples per group")
+	}
+
+	analyzer := metrics.NewStatisticalAnalyzer(confidence, 2)
+	result, err := analyzer.CompareGroups(generatedSamples, referenceSamples)
+	if err != nil {
+		return nil, fmt.Errorf("statistical analysis: %w", err)
+	}
+	sanitizeComparisonResult(result)
+	return result, nil
+}
+
+func sanitizeComparisonResult(result *metrics.ComparisonResult) {
+	sanitizeSummary(&result.Group1Summary)
+	sanitizeSummary(&result.Group2Summary)
+	sanitizeTest(&result.TTest)
+	sanitizeTest(&result.MannWhitneyU)
+	sanitizeTest(&result.KolmogorovSmirnov)
+	result.EffectSize.CohensD = finiteFloat(result.EffectSize.CohensD)
+	result.EffectSize.GlassesD = finiteFloat(result.EffectSize.GlassesD)
+	result.EffectSize.HedgesG = finiteFloat(result.EffectSize.HedgesG)
+	result.EffectSize.CliffsDelta = finiteFloat(result.EffectSize.CliffsDelta)
+}
+
+func sanitizeSummary(summary *metrics.StatisticalSummary) {
+	summary.Mean = finiteFloat(summary.Mean)
+	summary.Median = finiteFloat(summary.Median)
+	for i := range summary.Mode {
+		summary.Mode[i] = finiteFloat(summary.Mode[i])
+	}
+	summary.StandardDeviation = finiteFloat(summary.StandardDeviation)
+	summary.Variance = finiteFloat(summary.Variance)
+	summary.Skewness = finiteFloat(summary.Skewness)
+	summary.Kurtosis = finiteFloat(summary.Kurtosis)
+	summary.Min = finiteFloat(summary.Min)
+	summary.Max = finiteFloat(summary.Max)
+	summary.Range = finiteFloat(summary.Range)
+	summary.Q1 = finiteFloat(summary.Q1)
+	summary.Q3 = finiteFloat(summary.Q3)
+	summary.IQR = finiteFloat(summary.IQR)
+	for key, value := range summary.Percentiles {
+		summary.Percentiles[key] = finiteFloat(value)
+	}
+	sanitizeConfidenceInterval(&summary.ConfidenceInterval)
+	summary.Distribution.Normality = finiteFloat(summary.Distribution.Normality)
+	summary.Distribution.ShapiroWilk = finiteFloat(summary.Distribution.ShapiroWilk)
+	for i := range summary.Outliers {
+		summary.Outliers[i] = finiteFloat(summary.Outliers[i])
+	}
+}
+
+func sanitizeTest(test *metrics.HypothesisTestResult) {
+	test.Statistic = finiteFloat(test.Statistic)
+	test.PValue = finiteFloat(test.PValue)
+	test.CriticalValue = finiteFloat(test.CriticalValue)
+	test.EffectSize = finiteFloat(test.EffectSize)
+	test.PowerAnalysis = finiteFloat(test.PowerAnalysis)
+}
+
+func sanitizeConfidenceInterval(ci *metrics.ConfidenceInterval) {
+	ci.Level = finiteFloat(ci.Level)
+	ci.LowerBound = finiteFloat(ci.LowerBound)
+	ci.UpperBound = finiteFloat(ci.UpperBound)
+	ci.MarginOfError = finiteFloat(ci.MarginOfError)
+}
+
+func finiteFloat(value float64) float64 {
+	if math.IsNaN(value) || math.IsInf(value, 0) {
+		return 0
+	}
+	return value
+}
+
+func parseStatisticalSamples(name, input string) ([]float64, error) {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return nil, fmt.Errorf("%s samples are required for statistical analysis", name)
+	}
+
+	if strings.HasPrefix(input, "[") {
+		var samples []float64
+		if err := json.Unmarshal([]byte(input), &samples); err != nil {
+			return nil, fmt.Errorf("parse %s samples: %w", name, err)
+		}
+		for i, sample := range samples {
+			if math.IsNaN(sample) || math.IsInf(sample, 0) {
+				return nil, fmt.Errorf("%s sample %d is not finite", name, i+1)
+			}
+		}
+		return samples, nil
+	}
+
+	fields := strings.Fields(input)
+	samples := make([]float64, 0, len(fields))
+	for i, field := range fields {
+		sample, err := strconv.ParseFloat(field, 64)
+		if err != nil {
+			return nil, fmt.Errorf("parse %s sample %d %q: %w", name, i+1, field, err)
+		}
+		if math.IsNaN(sample) || math.IsInf(sample, 0) {
+			return nil, fmt.Errorf("%s sample %d is not finite", name, i+1)
+		}
+		samples = append(samples, sample)
+	}
+	return samples, nil
 }
 
 // outputMetricsResult formats and outputs the metrics results
@@ -572,13 +692,24 @@ func formatMetricsTable(result *MetricsResult) string {
 
 	if result.Statistics != nil {
 		sb.WriteString("Statistical Analysis:\n")
-		sb.WriteString(fmt.Sprintf("  Sample Size: %d\n", result.Statistics.Group1Summary.Count))
-		sb.WriteString(fmt.Sprintf("  Mean: %.4f\n", result.Statistics.Group1Summary.Mean))
-		sb.WriteString(fmt.Sprintf("  Std Dev: %.4f\n", result.Statistics.Group1Summary.StandardDeviation))
-		sb.WriteString(fmt.Sprintf("  95%% CI: [%.4f, %.4f]\n",
+		sb.WriteString(fmt.Sprintf("  Generated Sample Size: %d\n", result.Statistics.Group1Summary.Count))
+		sb.WriteString(fmt.Sprintf("  Generated Mean: %.4f\n", result.Statistics.Group1Summary.Mean))
+		sb.WriteString(fmt.Sprintf("  Generated Std Dev: %.4f\n", result.Statistics.Group1Summary.StandardDeviation))
+		sb.WriteString(fmt.Sprintf("  Generated 95%% CI: [%.4f, %.4f]\n",
 			result.Statistics.Group1Summary.ConfidenceInterval.LowerBound,
 			result.Statistics.Group1Summary.ConfidenceInterval.UpperBound))
+		sb.WriteString(fmt.Sprintf("  Reference Sample Size: %d\n", result.Statistics.Group2Summary.Count))
+		sb.WriteString(fmt.Sprintf("  Reference Mean: %.4f\n", result.Statistics.Group2Summary.Mean))
 		sb.WriteString(fmt.Sprintf("  P-Value: %.4f\n", result.Statistics.TTest.PValue))
+		sb.WriteString(fmt.Sprintf("  Effect Size: %.4f (%s)\n",
+			result.Statistics.EffectSize.CohensD,
+			result.Statistics.EffectSize.Interpretation))
+		if result.Statistics.Recommendation != "" {
+			sb.WriteString(fmt.Sprintf("  Recommendation: %s\n", result.Statistics.Recommendation))
+		}
+		if result.Caveat != "" {
+			sb.WriteString(fmt.Sprintf("  Caveat: %s\n", result.Caveat))
+		}
 		sb.WriteString("\n")
 	}
 
@@ -616,6 +747,18 @@ func formatMetricsCSV(result *MetricsResult) string {
 		sb.WriteString(fmt.Sprintf("Pass@%d,%.4f,samples=%d passed=%d\n",
 			result.PassAtN.N, result.PassAtN.PassRate,
 			result.PassAtN.NumSamples, result.PassAtN.NumPassed))
+	}
+
+	if result.Statistics != nil {
+		sb.WriteString(fmt.Sprintf("StatisticsMeanGenerated,%.4f,count=%d\n",
+			result.Statistics.Group1Summary.Mean, result.Statistics.Group1Summary.Count))
+		sb.WriteString(fmt.Sprintf("StatisticsMeanReference,%.4f,count=%d\n",
+			result.Statistics.Group2Summary.Mean, result.Statistics.Group2Summary.Count))
+		sb.WriteString(fmt.Sprintf("StatisticsPValue,%.4f,test=%s\n",
+			result.Statistics.TTest.PValue, result.Statistics.TTest.TestName))
+		if result.Caveat != "" {
+			sb.WriteString(fmt.Sprintf("Caveat,,%s\n", result.Caveat))
+		}
 	}
 
 	return sb.String()
