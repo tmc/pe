@@ -82,10 +82,13 @@ func securityCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "security",
-		Short: "Comprehensive security testing for LLM prompts and systems",
-		Long: `Comprehensive security testing implementing OWASP LLM Top 10 and advanced red-teaming:
+		Short: "OWASP-oriented security testing for LLM prompts and systems",
+		Long: `OWASP-oriented security testing for LLM prompts and systems.
 
-OWASP LLM Top 10 Coverage:
+Some advanced analyses are incomplete and fail closed rather than returning
+fake success.
+
+OWASP-Oriented Checks:
 • LLM01: Prompt Injection (Direct, Indirect, Context Poisoning)
 • LLM02: Insecure Output Handling (Code injection, XSS, LDAP injection)
 • LLM03: Training Data Poisoning (Backdoor detection, bias analysis)
@@ -97,7 +100,7 @@ OWASP LLM Top 10 Coverage:
 • LLM09: Overreliance (Human oversight, verification mechanisms)
 • LLM10: Model Theft (IP protection, model extraction attacks)
 
-Advanced Security Features:
+Security Features:
 • Automated vulnerability discovery and assessment
 • Real-time security monitoring with alerting
 • Adaptive testing with machine learning
@@ -106,7 +109,7 @@ Advanced Security Features:
 • Jailbreak and prompt injection detection
 • Bias and toxicity analysis
 • Privacy and data leakage assessment`,
-		Example: `  # Complete OWASP LLM Top 10 assessment
+		Example: `  # OWASP-oriented assessment
   pe security test --target system_prompt.txt --owasp-complete --severity comprehensive
 
   # Focused prompt injection testing

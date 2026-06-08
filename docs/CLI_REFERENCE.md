@@ -1275,8 +1275,8 @@ pe mod get github.com/user/prompt-templates
 # Search for modules
 pe mod search "code review"
 
-# Publish your module
-pe mod publish
+# Publishing is registered for future registry backends.
+# Current registry backends return an explicit error.
 
 # Download all dependencies
 pe mod download
@@ -1568,7 +1568,8 @@ pe test generate config.yaml --count 100
 
 ## security
 
-Comprehensive security testing implementing OWASP LLM Top 10.
+OWASP-oriented security testing with incomplete analyses reported explicitly or
+failed closed.
 
 ### Synopsis
 
@@ -1578,9 +1579,11 @@ pe security [command]
 
 ### Description
 
-Advanced security testing covering OWASP LLM Top 10, automated vulnerability discovery, prompt injection detection, bias analysis, and privacy assessment.
+Security testing covers prompt-injection and related local checks. Some advanced
+OWASP-oriented analyses, including data poisoning and supply-chain checks, are
+not complete and fail closed.
 
-### OWASP LLM Top 10 Coverage
+### OWASP-Oriented Checks
 
 - **LLM01**: Prompt Injection (Direct, Indirect, Context Poisoning)
 - **LLM02**: Insecure Output Handling (Code injection, XSS, LDAP injection)
@@ -1604,7 +1607,7 @@ pe security report        Generate compliance reports
 ### Examples
 
 ```bash
-# Complete OWASP LLM Top 10 assessment
+# OWASP-oriented assessment
 pe security test --target system_prompt.txt --owasp-complete
 
 # Focused prompt injection testing

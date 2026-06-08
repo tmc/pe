@@ -796,7 +796,9 @@ Current status:
   supported registry configuration, failure modes, and tidy/vendor limits.
 
 Tasks:
-1. Validate the implemented module commands against a real or fixture registry.
+1. DONE current pass: Validate the implemented module commands against a real
+   or fixture registry for `pe mod download` success, missing module failure,
+   version mismatch failure, and canonical cache layout.
 2. DONE current pass: Document `pe mod tidy` / `pe mod vendor` current behavior
    and add a focused vendor cache-miss validation.
 3. Add integrity verification, version upgrade, and dependency graph behavior.
@@ -1029,13 +1031,14 @@ integrity and failure semantics.
 Current status:
 - Module commands and registry code exist.
 - `pe mod tidy --json --write` is implemented for local dependency hygiene.
-- Remote registry behavior still needs fixture-backed validation.
+- Remote registry behavior has initial fixture-backed validation; live registry
+  validation is still pending.
 
 Tasks:
-1. Add a fixture-backed remote registry test path before relying on live
-   services.
-2. Verify `pe mod download` extracts exactly the expected files and rejects
-   path escapes.
+1. DONE current pass: Add a fixture-backed remote registry test path before
+   relying on live services.
+2. DONE current pass: Verify `pe mod download` extracts exactly the expected
+   files and rejects path escapes.
 3. Define integrity checks for downloaded modules.
 4. DONE current pass: Document supported registry configuration and failure
    modes.
@@ -1150,6 +1153,12 @@ Goal: ship the current stable core without claiming unfinished behavior.
 3. Validate the remote registry read path with fixtures: `pe mod download`,
    `pe mod list`, and `pe mod search` should have deterministic success and
    failure tests that do not depend on live services.
+   DONE current pass: `internal/module` has `httptest` coverage for HTTP
+   list/get/search/download, token use, error statuses, and traversal
+   rejection; `cmd/pe` now verifies `pe mod download` fails closed for missing
+   modules and version mismatches, and caches successful downloads under the
+   canonical `.pe/cache/modules/<module>@<version>` layout used by `vendor` and
+   `verify`.
 4. Run the Ollama example against a real local daemon and record model/version
    notes, error modes, and privacy caveats.
 5. Keep promptfoo shell-out behavior explicitly opt-in; do not add implicit

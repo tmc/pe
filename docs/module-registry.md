@@ -116,6 +116,11 @@ roots.
 
 ## Tidy and Vendor
 
+`pe mod download` reads required modules from `pe.mod`, resolves them through
+the selected registry, and writes successful downloads to
+`.pe/cache/modules/<module>@<version>`. Missing modules and registry version
+mismatches fail the command; PE does not create placeholder cache entries.
+
 `pe mod tidy` scans prompt and configuration files for `pe://` module
 references. Without `--write`, it reports missing and unused requirements
 without changing `pe.mod`. With `--write`, it removes unused requirements and

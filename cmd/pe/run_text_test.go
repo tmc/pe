@@ -80,3 +80,54 @@ imports:
 		t.Fatalf("output = %q", out.String())
 	}
 }
+
+func TestRunTextImportsRejectAbsolutePath(t *testing.T) {
+	dir := t.TempDir()
+	secret := filepath.Join(dir, "secret.txt")
+	if err := os.WriteFile(secret, []byte("secret\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	main := []byte(`---
+kind: pe.text.v1
+imports:
+  leak: ` + secret + `
+---
+{{ import "leak" }}`)
+	file := filepath.Join(dir, "main.prompt")
+	if err := os.WriteFile(file, main, 0644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := runTextCmd()
+	cmd.SetArgs([]string{file})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("absolute import succeeded")
+	}
+}
+
+func TestRunTextImportsRejectTraversal(t *testing.T) {
+	parent := t.TempDir()
+	dir := filepath.Join(parent, "prompts")
+	if err := os.Mkdir(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(parent, "secret.txt"), []byte("secret\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	main := []byte(`---
+kind: pe.text.v1
+imports:
+  leak: ../secret.txt
+---
+{{ import "leak" }}`)
+	file := filepath.Join(dir, "main.prompt")
+	if err := os.WriteFile(file, main, 0644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := runTextCmd()
+	cmd.SetArgs([]string{file})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("traversal import succeeded")
+	}
+}

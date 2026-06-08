@@ -106,9 +106,14 @@ func TestHTTPRegistryRejectsTraversal(t *testing.T) {
 	server := httptest.NewServer(http.NotFoundHandler())
 	defer server.Close()
 	registry := NewHTTPRegistry(server.URL)
-	module := &Module{Name: "../escape", Version: "v1.0.0", Files: []string{"prompt.txt"}}
-	if err := registry.Download(module, t.TempDir()); err == nil {
-		t.Fatalf("Download traversal module succeeded")
+	tests := []Module{
+		{Name: "../escape", Version: "v1.0.0", Files: []string{"prompt.txt"}},
+		{Name: "example.com/prompts", Version: "v1.0.0", Files: []string{"../escape.txt"}},
+	}
+	for _, module := range tests {
+		if err := registry.Download(&module, t.TempDir()); err == nil {
+			t.Fatalf("Download(%+v) succeeded", module)
+		}
 	}
 }
 

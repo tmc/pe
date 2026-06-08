@@ -26,7 +26,8 @@ PE includes local prompt optimization experiments:
 - **Unix Pipeline Philosophy**: generated CLI commands for streaming prompt processing
 - **Performance**: Native Go implementation with comprehensive benchmarking
 - **Module Management**: Core module system (mod init/tidy/vendor) - registry features in development
-- **Security Testing**: Full OWASP LLM Top 10 coverage via integrated security module
+- **Security Testing**: OWASP-oriented checks with incomplete analyses reported
+  explicitly or failed closed
 - **Local Scheduling**: Bounded local task and consensus prototypes under `pe exp`
 - **Local Attestation**: Unsigned SHA-256 manifest prototype exposed under `pe exp attest`
 
@@ -138,7 +139,7 @@ Run `pe --help` for the generated command list. The current top-level surface in
 - `pe test` - Run prompt tests and generate test suites.
 - `pe benchmark` - Benchmark prompts, providers, and configurations.
 - `pe vet` - Validate prompt files and run their evals.
-- `pe build` - Build optimized prompts for production.
+- `pe build` - Write prompts, metadata, and optional bundles.
 - `pe version` - Print the PE version.
 
 ### Prompt and Configuration Commands

@@ -19,11 +19,13 @@ import (
 
 var buildCmd = &cobra.Command{
 	Use:   "build [config/prompt]",
-	Short: "Build optimized prompts for production",
-	Long: `Build optimized prompts for production deployment.
+	Short: "Write prompts, metadata, and bundles",
+	Long: `Write prompts, metadata, and optional bundles for deployment.
 
-The build command analyzes and optimizes prompts for specific providers,
-validates quality, and packages them for deployment.`,
+The build command reads a prompt or config, applies supported provider
+formatting, writes output files, and can package a directory into a bundle.
+Validation and some provider-specific formatting paths return explicit
+not-implemented errors.`,
 	Example: `  # Build from config
   pe build config.yaml
   
@@ -33,7 +35,7 @@ validates quality, and packages them for deployment.`,
   # Build for specific provider
   pe build config.yaml --target anthropic
   
-  # Build with validation
+  # Validation currently returns an explicit not-implemented error
   pe build config.yaml --validate`,
 	Args: cobra.ExactArgs(1),
 	RunE: runBuild,

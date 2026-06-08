@@ -77,12 +77,18 @@ func readExecTextImports(name string, file *exectext.File) (map[string]string, e
 	if name == "-" || len(file.Meta.Imports) == 0 {
 		return nil, nil
 	}
-	base := filepath.Dir(name)
+	base, err := filepath.Abs(filepath.Dir(name))
+	if err != nil {
+		return nil, fmt.Errorf("resolving executable text directory: %w", err)
+	}
 	imports := make(map[string]string)
 	for alias, rel := range file.Meta.Imports {
-		path := rel
-		if !filepath.IsAbs(path) {
-			path = filepath.Join(base, rel)
+		if rel == "" || filepath.IsAbs(rel) {
+			return nil, fmt.Errorf("import %s escapes executable text directory", alias)
+		}
+		path, err := containedFilePath(base, rel)
+		if err != nil {
+			return nil, fmt.Errorf("import %s escapes executable text directory: %w", alias, err)
 		}
 		data, err := os.ReadFile(path)
 		if err != nil {

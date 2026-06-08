@@ -450,37 +450,64 @@ func runModDownload(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("Downloading modules...")
 
-	// Download each required module
+	registry := module.DefaultRegistry()
+
+	// Download each required module.
 	for _, req := range file.Require {
 		fmt.Printf("Downloading %s@%s...\n", req.Mod, req.Version)
 
-		// Create module directory
-		modDir := filepath.Join(modulesDir, string(req.Mod)+"@"+req.Version)
-		if err := os.MkdirAll(modDir, 0755); err != nil {
-			return fmt.Errorf("creating module directory: %w", err)
-		}
-
-		// Download from registry
-		registry := module.DefaultRegistry()
 		mod, err := registry.Get(string(req.Mod))
 		if err != nil {
-			// Try without version if not found
-			fmt.Printf("Warning: %s - using placeholder\n", err)
-			placeholder := fmt.Sprintf("# Module %s@%s\n# Downloaded on %s\n",
-				req.Mod, req.Version, time.Now().Format(time.RFC3339))
-			if err := os.WriteFile(filepath.Join(modDir, "module.info"), []byte(placeholder), 0644); err != nil {
-				return fmt.Errorf("writing module info: %w", err)
-			}
-			continue
+			return fmt.Errorf("getting module %s: %w", req.Mod, err)
+		}
+		if mod.Version != req.Version {
+			return fmt.Errorf("getting module %s: registry returned version %s, want %s", req.Mod, mod.Version, req.Version)
 		}
 
-		// Download the module files
-		if err := registry.Download(mod, filepath.Join(".pe", "cache")); err != nil {
+		if err := downloadRequiredModule(registry, mod, modulesDir); err != nil {
 			return fmt.Errorf("downloading module %s: %w", req.Mod, err)
 		}
 	}
 
 	fmt.Printf("Downloaded %d modules\n", len(file.Require))
+	return nil
+}
+
+func downloadRequiredModule(registry module.Registry, mod *module.Module, modulesDir string) error {
+	tmp, err := os.MkdirTemp("", "pe-mod-download-*")
+	if err != nil {
+		return fmt.Errorf("creating temp download directory: %w", err)
+	}
+	defer os.RemoveAll(tmp)
+
+	if err := registry.Download(mod, tmp); err != nil {
+		return err
+	}
+
+	srcDir, err := containedFilePath(tmp, filepath.FromSlash(mod.Name), mod.Version)
+	if err != nil {
+		return err
+	}
+	destDir, err := containedFilePath(modulesDir, filepath.FromSlash(mod.Name+"@"+mod.Version))
+	if err != nil {
+		return err
+	}
+	legacyDir, err := containedFilePath(filepath.Dir(modulesDir), filepath.FromSlash(mod.Name), mod.Version)
+	if err != nil {
+		return err
+	}
+	if err := os.RemoveAll(destDir); err != nil {
+		return fmt.Errorf("clearing module cache: %w", err)
+	}
+	if err := copyModuleDir(srcDir, destDir); err != nil {
+		return fmt.Errorf("caching module files: %w", err)
+	}
+	if err := os.RemoveAll(legacyDir); err != nil {
+		return fmt.Errorf("clearing resolver module cache: %w", err)
+	}
+	if err := copyModuleDir(srcDir, legacyDir); err != nil {
+		return fmt.Errorf("caching resolver module files: %w", err)
+	}
 	return nil
 }
 
@@ -1271,7 +1298,7 @@ func vetExecutableTextFile(modFile *pemod.File, name string) error {
 	if err := text.Validate(); err != nil {
 		return fmt.Errorf("validating executable text %s: %w", name, err)
 	}
-	if modFile.Policy != nil && modFile.Policy.RequireTypedIO && text.Meta.Kind != "" && len(text.Meta.Inputs) == 0 {
+	if modFile.Policy != nil && modFile.Policy.RequireTypedIO && len(text.Meta.Inputs) == 0 {
 		return fmt.Errorf("%s: policy requires typed inputs", name)
 	}
 	for dim, vals := range text.Meta.Safety {

@@ -477,6 +477,127 @@ func TestModDownloadCmd_NoPeMod(t *testing.T) {
 	}
 }
 
+func TestModDownloadCmd_DownloadsToCanonicalCache(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	registryDir := filepath.Join(tmpDir, "registry")
+	sourceDir := filepath.Join(tmpDir, "source")
+	if err := os.MkdirAll(sourceDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sourceDir, "prompt.pe"), []byte("hello\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	mod := &module.Module{
+		Name:    "example.com/mod",
+		Version: "v1.0.0",
+		Files:   []string{"prompt.pe"},
+	}
+	if err := module.NewLocalRegistry(registryDir).Publish(mod, sourceDir); err != nil {
+		t.Fatalf("Publish: %v", err)
+	}
+
+	t.Setenv("PE_REGISTRY_TYPE", "local")
+	t.Setenv("PE_REGISTRY_DIR", registryDir)
+	if err := os.WriteFile("pe.mod", []byte(`module example.com/app
+
+pe 1
+
+require example.com/mod v1.0.0
+`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := runModDownload(modDownloadCmd, nil); err != nil {
+		t.Fatalf("runModDownload: %v", err)
+	}
+	got, err := os.ReadFile(filepath.Join(".pe", "cache", "modules", "example.com", "mod@v1.0.0", "prompt.pe"))
+	if err != nil {
+		t.Fatalf("read cached prompt: %v", err)
+	}
+	if string(got) != "hello\n" {
+		t.Fatalf("cached prompt = %q", got)
+	}
+	if _, err := os.Stat(filepath.Join(".pe", "cache", "modules", "example.com", "mod@v1.0.0", "module.json")); err != nil {
+		t.Fatalf("missing cached module metadata: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(".pe", "cache", "example.com", "mod", "v1.0.0", "module.json")); err != nil {
+		t.Fatalf("missing resolver cache metadata: %v", err)
+	}
+}
+
+func TestModDownloadCmd_FailsOnMissingModule(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	t.Setenv("PE_REGISTRY_TYPE", "local")
+	t.Setenv("PE_REGISTRY_DIR", filepath.Join(tmpDir, "registry"))
+	if err := os.MkdirAll(filepath.Join(tmpDir, "registry"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("pe.mod", []byte(`module example.com/app
+
+pe 1
+
+require example.com/missing v1.0.0
+`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := runModDownload(modDownloadCmd, nil)
+	if err == nil || !strings.Contains(err.Error(), "getting module example.com/missing") {
+		t.Fatalf("runModDownload error = %v, want missing module error", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(".pe", "cache", "modules", "example.com", "missing@v1.0.0", "module.info")); !os.IsNotExist(statErr) {
+		t.Fatalf("placeholder module.info exists or stat failed differently: %v", statErr)
+	}
+}
+
+func TestModDownloadCmd_FailsOnVersionMismatch(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	registryDir := filepath.Join(tmpDir, "registry")
+	sourceDir := filepath.Join(tmpDir, "source")
+	if err := os.MkdirAll(sourceDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sourceDir, "prompt.pe"), []byte("hello\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	mod := &module.Module{
+		Name:    "example.com/mod",
+		Version: "v1.0.0",
+		Files:   []string{"prompt.pe"},
+	}
+	if err := module.NewLocalRegistry(registryDir).Publish(mod, sourceDir); err != nil {
+		t.Fatalf("Publish: %v", err)
+	}
+
+	t.Setenv("PE_REGISTRY_TYPE", "local")
+	t.Setenv("PE_REGISTRY_DIR", registryDir)
+	if err := os.WriteFile("pe.mod", []byte(`module example.com/app
+
+pe 1
+
+require example.com/mod v1.2.0
+`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := runModDownload(modDownloadCmd, nil)
+	if err == nil || !strings.Contains(err.Error(), "registry returned version v1.0.0, want v1.2.0") {
+		t.Fatalf("runModDownload error = %v, want version mismatch", err)
+	}
+}
+
 func TestModVerifyCmd_VerifiesChecksums(t *testing.T) {
 	tmpDir := t.TempDir()
 	oldWd, _ := os.Getwd()
@@ -842,6 +963,34 @@ Review {{ .topic }}.
 	cmd := &cobra.Command{}
 	if err := runModVet(cmd, []string{"review.prompt"}); err != nil {
 		t.Fatalf("mod vet failed: %v", err)
+	}
+}
+
+func TestRunModVetRequireTypedIORejectsPlainText(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	mod := `module example.com/prompts
+
+pe 1
+
+policy {
+    composition strict
+    require-typed-io true
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(mod), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("plain.prompt", []byte("plain text prompt\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := &cobra.Command{}
+	err := runModVet(cmd, []string{"plain.prompt"})
+	if err == nil || !strings.Contains(err.Error(), "policy requires typed inputs") {
+		t.Fatalf("runModVet error = %v, want typed inputs error", err)
 	}
 }
 
