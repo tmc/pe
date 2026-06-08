@@ -123,14 +123,12 @@ pe ask "prompt" --provider cgpt  # Uses cgpt CLI
 
 ### Advanced Assertions
 Basic assertions work. Local deterministic baselines now cover lexical
-similarity, SQL shape checks, and required structure markers. These remain
-incomplete:
-- toxicity detection
+similarity, SQL shape checks, required structure markers, toxicity term
+matching, and keyword classification. These remain incomplete:
 - coherence scoring
 - factuality checking
-- classification
-- provider-backed semantic similarity, SQL parsing, and rich structure
-  validation
+- provider-backed semantic similarity, toxicity, and classification
+- SQL parsing and rich structure validation
 
 ### Structured Validation
 JSON and YAML validation are local. TypeScript and Pydantic formatter plugins

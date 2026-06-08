@@ -911,19 +911,25 @@ From README - marked as 'In Development':
 - coherence measurement
 - factuality checking
 - similarity scoring
+- classification
 
 Current:
 - Basic assertions work (contains, equals, regex, etc.)
 - Pass@N and structured output implemented
 - LLM rubric assertions work
+- Local deterministic baselines cover token-Jaccard similarity, SQL shape,
+  required structure markers, toxicity term matching, and keyword
+  classification.
 
 Implementation notes:
-- May require external models/APIs for toxicity
+- Rich toxicity and classification may require external models/APIs
 - Coherence could use perplexity scoring
 - Factuality needs knowledge base integration
-- Similarity can use embeddings
+- Similarity can use embeddings after the local baseline
+- SQL and structure assertions need parser/schema-backed variants for richer
+  guarantees
 
-Location: internal/promptfoo/evaluation/metrics/
+Location: internal/promptfoo/evaluation/evaluator/
 
 
 #### Wire interactive REPL mode
@@ -1223,9 +1229,10 @@ Current known explicit gaps:
 - playground compare, security, components, history, and BERTScore endpoints
 - TypeScript and Pydantic source/runtime validation beyond local JSON-object
   data validation
-- advanced promptfoo assertions for toxicity, coherence, factuality, and
-  classification; provider-backed semantic similarity, SQL parsing, and rich
-  structure validation remain future work beyond current local baselines
+- advanced/provider-backed promptfoo assertions for toxicity, coherence,
+  factuality, and classification; provider-backed semantic similarity, SQL
+  parsing, and rich structure validation remain future work beyond current
+  local baselines
 - data-poisoning and supply-chain security analyses, currently fail-closed
 
 ### Milestone 2: Build, Test, Metrics, and Structured Validation
@@ -1361,6 +1368,8 @@ honest scoring semantics and failure modes.
    keywords, null bytes, balanced parentheses, and balanced quotes; add local
    structure assertions that check required output markers from `value` or
    `config.required`.
+   DONE current pass: add local toxicity term matching and keyword
+   classification assertions with explicit method metadata.
 4. Replace fail-closed data-poisoning and supply-chain placeholders with
    concrete local checks, then optional remote or model-assisted analysis.
 5. Add benchmark fixtures and calibration docs for false positives, false

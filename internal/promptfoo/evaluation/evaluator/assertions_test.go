@@ -102,7 +102,7 @@ func TestAssertionEvaluatorCoversAllAssertionTypes(t *testing.T) {
 		{"coherence", Assertion{Type: AssertionCoherence}, "answer", nil},
 		{"factuality", Assertion{Type: AssertionFactuality}, "answer", nil},
 		{"llm judge", Assertion{Type: AssertionLLMJudge, Value: "be correct", Threshold: &threshold}, "answer", nil},
-		{"classify", Assertion{Type: AssertionClassify}, "answer", nil},
+		{"classify", Assertion{Type: AssertionClassify, Value: "positive", Config: map[string]interface{}{"labels": map[string]interface{}{"positive": []interface{}{"good"}, "negative": []interface{}{"bad"}}}}, "good answer", nil},
 		{"similarity", Assertion{Type: AssertionSimilarity, Value: "answer"}, "answer", nil},
 		{"latency", Assertion{Type: AssertionLatency, Max: &max}, "answer", map[string]interface{}{"latency": 10 * time.Millisecond}},
 		{"cost", Assertion{Type: AssertionCost, Max: &max}, "answer", map[string]interface{}{"cost": 0.01}},
@@ -133,12 +133,6 @@ func TestUnimplementedAssertionsFailClosed(t *testing.T) {
 		eval func() *AssertionResult
 	}{
 		{
-			name: "toxicity",
-			eval: func() *AssertionResult {
-				return evaluator.evaluateToxicity(context.Background(), Assertion{Type: AssertionToxicity}, "answer")
-			},
-		},
-		{
 			name: "coherence",
 			eval: func() *AssertionResult {
 				return evaluator.evaluateCoherence(context.Background(), Assertion{Type: AssertionCoherence}, "answer")
@@ -148,12 +142,6 @@ func TestUnimplementedAssertionsFailClosed(t *testing.T) {
 			name: "factuality",
 			eval: func() *AssertionResult {
 				return evaluator.evaluateFactuality(context.Background(), Assertion{Type: AssertionFactuality}, "answer")
-			},
-		},
-		{
-			name: "classify",
-			eval: func() *AssertionResult {
-				return evaluator.evaluateClassify(context.Background(), Assertion{Type: AssertionClassify}, "answer")
 			},
 		},
 	}
@@ -167,6 +155,56 @@ func TestUnimplementedAssertionsFailClosed(t *testing.T) {
 			assert.Contains(t, result.Message, "not yet implemented")
 		})
 	}
+}
+
+func TestAssertionEvaluatorToxicityLocalTerms(t *testing.T) {
+	evaluator := NewAssertionEvaluator(nil)
+	result, err := evaluator.EvaluateAssertion(context.Background(), Assertion{
+		Type: AssertionToxicity,
+		Config: map[string]interface{}{
+			"terms": []interface{}{"awful phrase", "blocked"},
+		},
+	}, "This response is blocked.", nil)
+	require.NoError(t, err)
+	assert.False(t, result.Passed)
+	assert.InDelta(t, 0.5, result.Score, 0.0001)
+	assert.Equal(t, "local_term_match", result.Metadata["method"])
+
+	result, err = evaluator.EvaluateAssertion(context.Background(), Assertion{
+		Type: AssertionToxicity,
+		Config: map[string]interface{}{
+			"terms": []interface{}{"awful phrase", "blocked"},
+		},
+	}, "This response is fine.", nil)
+	require.NoError(t, err)
+	assert.True(t, result.Passed)
+	assert.Equal(t, 0.0, result.Score)
+}
+
+func TestAssertionEvaluatorClassifyLocalKeywords(t *testing.T) {
+	evaluator := NewAssertionEvaluator(nil)
+	result, err := evaluator.EvaluateAssertion(context.Background(), Assertion{
+		Type:  AssertionClassify,
+		Value: "positive",
+		Config: map[string]interface{}{
+			"labels": map[string]interface{}{
+				"positive": []interface{}{"great", "helpful"},
+				"negative": []interface{}{"broken", "bad"},
+			},
+		},
+	}, "A great and helpful answer.", nil)
+	require.NoError(t, err)
+	assert.True(t, result.Passed)
+	assert.Equal(t, "positive", result.Actual)
+	assert.Equal(t, "keyword_overlap", result.Metadata["method"])
+
+	result, err = evaluator.EvaluateAssertion(context.Background(), Assertion{
+		Type:  AssertionClassify,
+		Value: "positive",
+	}, "A great answer.", nil)
+	require.NoError(t, err)
+	assert.False(t, result.Passed)
+	assert.Contains(t, result.Message, "requires config.labels")
 }
 
 func TestAssertionEvaluatorSimilarityLocalBaseline(t *testing.T) {

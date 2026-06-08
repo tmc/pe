@@ -778,13 +778,29 @@ FEEDBACK: [brief analysis]`, language, output)
 // Placeholder implementations for remaining assertion types
 
 func (ae *AssertionEvaluator) evaluateToxicity(ctx context.Context, assertion Assertion, output string) *AssertionResult {
-	// NOTE: Toxicity detection pending implementation
-	// Will integrate with toxicity detection service in future release
+	terms := toxicityTerms(assertion)
+	matches := matchingTerms(output, terms)
+	score := 0.0
+	if len(terms) > 0 {
+		score = float64(len(matches)) / float64(len(terms))
+	}
+	threshold := 0.0
+	if assertion.Threshold != nil {
+		threshold = *assertion.Threshold
+	}
+	passed := score <= threshold
+
 	return &AssertionResult{
 		Type:    assertion.Type,
-		Passed:  false,
-		Score:   0.0,
-		Message: "Toxicity evaluation not yet implemented (coming in future release)",
+		Passed:  passed,
+		Score:   score,
+		Actual:  matches,
+		Message: fmt.Sprintf("Local toxicity term score: %.2f", score),
+		Metadata: map[string]interface{}{
+			"method":    "local_term_match",
+			"threshold": threshold,
+			"matched":   matches,
+		},
 	}
 }
 
@@ -811,13 +827,40 @@ func (ae *AssertionEvaluator) evaluateFactuality(ctx context.Context, assertion 
 }
 
 func (ae *AssertionEvaluator) evaluateClassify(ctx context.Context, assertion Assertion, output string) *AssertionResult {
-	// NOTE: Classification pending implementation
-	// Will use LLM-based classification in future release
+	expected, ok := assertion.Value.(string)
+	if !ok || strings.TrimSpace(expected) == "" {
+		return &AssertionResult{
+			Type:    assertion.Type,
+			Passed:  false,
+			Score:   0.0,
+			Message: "Classification assertion requires expected label string value",
+		}
+	}
+	labels := classificationLabels(assertion)
+	if len(labels) == 0 {
+		return &AssertionResult{
+			Type:     assertion.Type,
+			Passed:   false,
+			Score:    0.0,
+			Expected: expected,
+			Message:  "Classification assertion requires config.labels keyword map",
+		}
+	}
+
+	actual, score, scores := classifyByKeywords(output, labels)
+	passed := strings.EqualFold(actual, expected)
+
 	return &AssertionResult{
-		Type:    assertion.Type,
-		Passed:  false,
-		Score:   0.0,
-		Message: "Classification evaluation not yet implemented (coming in future release)",
+		Type:     assertion.Type,
+		Passed:   passed,
+		Score:    score,
+		Expected: expected,
+		Actual:   actual,
+		Message:  fmt.Sprintf("Local classification: %s", actual),
+		Metadata: map[string]interface{}{
+			"method": "keyword_overlap",
+			"scores": scores,
+		},
 	}
 }
 
@@ -1043,6 +1086,111 @@ func requiredStructureMarkers(assertion Assertion) []string {
 		}
 	}
 	return markers
+}
+
+func toxicityTerms(assertion Assertion) []string {
+	terms := []string{
+		"hate",
+		"idiot",
+		"stupid",
+		"worthless",
+		"kill yourself",
+	}
+	if raw, ok := assertion.Config["terms"]; ok {
+		custom := stringList(raw)
+		if len(custom) > 0 {
+			terms = custom
+		}
+	}
+	return terms
+}
+
+func matchingTerms(output string, terms []string) []string {
+	lower := strings.ToLower(output)
+	matches := make([]string, 0)
+	for _, term := range terms {
+		term = strings.TrimSpace(strings.ToLower(term))
+		if term != "" && strings.Contains(lower, term) {
+			matches = append(matches, term)
+		}
+	}
+	return matches
+}
+
+func classificationLabels(assertion Assertion) map[string][]string {
+	raw, ok := assertion.Config["labels"]
+	if !ok {
+		return nil
+	}
+	labels := make(map[string][]string)
+	switch value := raw.(type) {
+	case map[string][]string:
+		for label, keywords := range value {
+			labels[label] = keywords
+		}
+	case map[string]interface{}:
+		for label, keywords := range value {
+			labels[label] = stringList(keywords)
+		}
+	}
+	for label, keywords := range labels {
+		if strings.TrimSpace(label) == "" || len(keywords) == 0 {
+			delete(labels, label)
+		}
+	}
+	return labels
+}
+
+func classifyByKeywords(output string, labels map[string][]string) (string, float64, map[string]float64) {
+	outputTokens := tokenSet(output)
+	scores := make(map[string]float64, len(labels))
+	bestLabel := ""
+	bestScore := -1.0
+	for label, keywords := range labels {
+		if len(keywords) == 0 {
+			continue
+		}
+		matches := 0
+		for _, keyword := range keywords {
+			for token := range tokenSet(keyword) {
+				if outputTokens[token] {
+					matches++
+				}
+			}
+		}
+		score := float64(matches) / float64(len(keywords))
+		scores[label] = score
+		if score > bestScore || (score == bestScore && (bestLabel == "" || label < bestLabel)) {
+			bestLabel = label
+			bestScore = score
+		}
+	}
+	if bestScore < 0 {
+		bestScore = 0
+	}
+	return bestLabel, bestScore, scores
+}
+
+func stringList(raw interface{}) []string {
+	switch value := raw.(type) {
+	case []string:
+		return append([]string(nil), value...)
+	case []interface{}:
+		result := make([]string, 0, len(value))
+		for _, item := range value {
+			if s, ok := item.(string); ok && strings.TrimSpace(s) != "" {
+				result = append(result, s)
+			}
+		}
+		return result
+	case string:
+		if strings.TrimSpace(value) == "" {
+			return nil
+		}
+		return []string{value}
+	default:
+		return nil
+	}
 }
 
 func (ae *AssertionEvaluator) evaluatePassAtN(ctx context.Context, assertion Assertion, output string, metadata map[string]interface{}) *AssertionResult {
