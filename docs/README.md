@@ -36,6 +36,8 @@ source of truth for coverage numbers.
 - [PLUGINS.md](PLUGINS.md) - plugin system.
 - [PROMPTFOO_INTEGRATION.md](PROMPTFOO_INTEGRATION.md) - promptfoo-compatible
   evaluation configuration.
+- [EXTERNAL_EXECUTION_POLICY.md](EXTERNAL_EXECUTION_POLICY.md) - allowed
+  subprocess boundaries and required coverage.
 - [SECURITY_REVIEW.md](SECURITY_REVIEW.md) - release security review notes.
 - [SECURITY_AUDIT_2026-05-05.md](SECURITY_AUDIT_2026-05-05.md) - scoped
   security audit for recent config, security, compatibility, and performance work.

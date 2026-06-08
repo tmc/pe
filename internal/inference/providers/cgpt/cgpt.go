@@ -89,6 +89,9 @@ func (p *Provider) Complete(ctx context.Context, req inference.Request) (*infere
 	if os.Getenv("PE_TEST_MODE") == "true" || os.Getenv("PE_MOCK_PROVIDER") == "true" {
 		return p.mockResponse(req), nil
 	}
+	if err := p.validateExecution(); err != nil {
+		return nil, err
+	}
 
 	args := p.buildArgs(req)
 
@@ -125,6 +128,9 @@ func (p *Provider) Stream(ctx context.Context, req inference.Request) (<-chan in
 	// Check for test mode
 	if os.Getenv("PE_TEST_MODE") == "true" || os.Getenv("PE_MOCK_PROVIDER") == "true" {
 		return p.mockStream(ctx, req), nil
+	}
+	if err := p.validateExecution(); err != nil {
+		return nil, err
 	}
 
 	args := p.buildArgs(req)
@@ -226,6 +232,19 @@ func (p *Provider) Models(ctx context.Context) ([]string, error) {
 // Close cleans up any resources.
 func (p *Provider) Close() error {
 	// Nothing to clean up for CLI-based provider
+	return nil
+}
+
+func (p *Provider) validateExecution() error {
+	if p.useGoTool || p.useGoRun {
+		return nil
+	}
+	if p.binaryPath == "" {
+		return fmt.Errorf("cgpt binary path is empty")
+	}
+	if strings.ContainsAny(p.binaryPath, "\x00\r\n") {
+		return fmt.Errorf("invalid cgpt binary path: %q", p.binaryPath)
+	}
 	return nil
 }
 

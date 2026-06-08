@@ -99,6 +99,9 @@ GOTOOLCHAIN=go1.25.9 go test ./internal/providers -run 'TestGenericCLIProvider' 
   Plugin execution is explicit and direct-argv; `TestManager_Execute_PassesArgsWithoutShell`
   and `TestManager_Execute_ContextCancellation` cover shell-looking arguments
   and cancellation.
+  The inference cgpt provider rejects empty and control-character-bearing
+  configured binary paths before execution; `TestProvider_InvalidBinaryPath`
+  covers both complete and stream paths.
 - G304 triage: config expansion, Starlark `load_tests`, module cache paths, and
   module publish prompt paths now have containment checks. Unsigned manifests
   and cache objects reject path escapes, unsafe keys, and symlinks. Broad CLI

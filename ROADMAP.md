@@ -1275,6 +1275,9 @@ Goal: make every external process boundary deliberate, documented, and tested.
 1. Inventory all runtime `exec.Command` and `exec.CommandContext` paths and
    classify them as build/test-only, plugin execution, provider execution,
    platform opener, promptfoo compatibility, metric script hook, or removable.
+   DONE current pass: `docs/EXTERNAL_EXECUTION_POLICY.md` records the current
+   inventory command, runtime categories, build/test-only category, policy, and
+   coverage anchors.
 2. Keep direct promptfoo CLI delegation behind explicit user intent. The current
    acceptable shape is an option like `pe view --promptfoo`, where the help text
    names the delegation and tests prove the default path stays local.

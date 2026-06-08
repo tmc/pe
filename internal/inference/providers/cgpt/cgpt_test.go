@@ -20,7 +20,7 @@ func TestProvider_Models(t *testing.T) {
 	p := New()
 	models, err := p.Models(context.Background())
 	require.NoError(t, err)
-	
+
 	// Check for expected models
 	expectedModels := []string{
 		"claude-sonnet-4-20250514",
@@ -29,7 +29,7 @@ func TestProvider_Models(t *testing.T) {
 		"claude-3-7-sonnet-20250219",
 		"gemini-2.0-flash",
 	}
-	
+
 	for _, expected := range expectedModels {
 		assert.Contains(t, models, expected)
 	}
@@ -37,7 +37,7 @@ func TestProvider_Models(t *testing.T) {
 
 func TestProvider_BuildArgs(t *testing.T) {
 	p := New()
-	
+
 	tests := []struct {
 		name string
 		req  inference.Request
@@ -108,7 +108,7 @@ func TestProvider_BuildArgs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			args := p.buildArgs(tt.req)
 			argsStr := strings.Join(args, " ")
-			
+
 			// Check key expectations based on request
 			if tt.req.Model != "" {
 				assert.Contains(t, argsStr, "--model "+tt.req.Model)
@@ -133,7 +133,7 @@ func TestProvider_BuildArgs(t *testing.T) {
 			if tt.req.Prompt != "" {
 				assert.Contains(t, argsStr, "--input "+tt.req.Prompt)
 			}
-			
+
 			// Check backend detection
 			if strings.HasPrefix(tt.req.Model, "gpt-") {
 				assert.Contains(t, argsStr, "--backend openai")
@@ -142,7 +142,7 @@ func TestProvider_BuildArgs(t *testing.T) {
 			} else if strings.HasPrefix(tt.req.Model, "gemini-") {
 				assert.Contains(t, argsStr, "--backend googleai")
 			}
-			
+
 			// Check options
 			if tt.req.Options != nil {
 				if v, ok := tt.req.Options["verbose"].(bool); ok && v {
@@ -166,18 +166,18 @@ func TestProvider_Complete_MockMode(t *testing.T) {
 	// Set test mode
 	os.Setenv("PE_TEST_MODE", "true")
 	defer os.Unsetenv("PE_TEST_MODE")
-	
+
 	p := New()
-	
+
 	req := inference.Request{
 		Model:  "gpt-4",
 		Prompt: "What is 2+2?",
 	}
-	
+
 	resp, err := p.Complete(context.Background(), req)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
-	
+
 	assert.Equal(t, "4", resp.Content)
 	assert.Equal(t, "gpt-4", resp.Model)
 	assert.Equal(t, 5, resp.TokensUsed.TotalTokens)
@@ -189,18 +189,18 @@ func TestProvider_Stream_MockMode(t *testing.T) {
 	// Set test mode
 	os.Setenv("PE_TEST_MODE", "true")
 	defer os.Unsetenv("PE_TEST_MODE")
-	
+
 	p := New()
-	
+
 	req := inference.Request{
 		Model:  "gpt-4",
 		Prompt: "Count to 5",
 	}
-	
+
 	chunks, err := p.Stream(context.Background(), req)
 	require.NoError(t, err)
 	require.NotNil(t, chunks)
-	
+
 	var receivedChunks []inference.StreamChunk
 	for chunk := range chunks {
 		if chunk.Error != nil {
@@ -211,7 +211,7 @@ func TestProvider_Stream_MockMode(t *testing.T) {
 			break
 		}
 	}
-	
+
 	// Should receive multiple chunks plus done signal
 	assert.True(t, len(receivedChunks) > 1)
 	assert.True(t, receivedChunks[len(receivedChunks)-1].Done)
@@ -221,9 +221,9 @@ func TestProvider_MockResponse_VariousPrompts(t *testing.T) {
 	// Set test mode
 	os.Setenv("PE_TEST_MODE", "true")
 	defer os.Unsetenv("PE_TEST_MODE")
-	
+
 	p := New()
-	
+
 	tests := []struct {
 		name     string
 		prompt   string
@@ -245,14 +245,14 @@ func TestProvider_MockResponse_VariousPrompts(t *testing.T) {
 			expected: "A pointer is a variable that stores the memory address of another variable.",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := inference.Request{
 				Model:  "gpt-4",
 				Prompt: tt.prompt,
 			}
-			
+
 			resp, err := p.Complete(context.Background(), req)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, resp.Content)
@@ -264,19 +264,19 @@ func TestProvider_MockResponse_WithPrefillAndStopSequences(t *testing.T) {
 	// Set test mode
 	os.Setenv("PE_TEST_MODE", "true")
 	defer os.Unsetenv("PE_TEST_MODE")
-	
+
 	p := New()
-	
+
 	req := inference.Request{
 		Model:         "claude-3-sonnet",
 		Prompt:        "Count to 10",
 		Prefill:       "Sure! ",
 		StopSequences: []string{"5"},
 	}
-	
+
 	resp, err := p.Complete(context.Background(), req)
 	require.NoError(t, err)
-	
+
 	// Should include prefill and be truncated by stop sequence
 	assert.Contains(t, resp.Content, "Sure!")
 	// Should be truncated before reaching the stop sequence
@@ -285,10 +285,10 @@ func TestProvider_MockResponse_WithPrefillAndStopSequences(t *testing.T) {
 
 func TestProvider_ParseJSONResponse(t *testing.T) {
 	jsonContent := `{"response": "test", "tokens": 10, "model": "gpt-4"}`
-	
+
 	result, err := ParseJSONResponse(jsonContent)
 	require.NoError(t, err)
-	
+
 	assert.Equal(t, "test", result["response"])
 	assert.Equal(t, float64(10), result["tokens"])
 	assert.Equal(t, "gpt-4", result["model"])
@@ -296,7 +296,7 @@ func TestProvider_ParseJSONResponse(t *testing.T) {
 
 func TestProvider_ParseJSONResponse_Invalid(t *testing.T) {
 	invalidJSON := `{"response": "test", "incomplete"`
-	
+
 	_, err := ParseJSONResponse(invalidJSON)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse JSON response")
@@ -314,12 +314,26 @@ func TestNewWithBinary(t *testing.T) {
 	assert.False(t, p.useGoRun)
 }
 
+func TestProvider_InvalidBinaryPath(t *testing.T) {
+	t.Setenv("PE_TEST_MODE", "")
+	t.Setenv("PE_MOCK_PROVIDER", "")
+	p := NewWithBinary("bad\ncgpt")
+
+	_, err := p.Complete(context.Background(), inference.Request{Prompt: "hello"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid cgpt binary path")
+
+	_, err = p.Stream(context.Background(), inference.Request{Prompt: "hello"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid cgpt binary path")
+}
+
 func TestProvider_Factory(t *testing.T) {
 	// Test default factory
 	provider, err := inference.NewProvider("cgpt", nil)
 	require.NoError(t, err)
 	assert.Equal(t, "cgpt", provider.Name())
-	
+
 	// Test factory with binary config
 	config := map[string]interface{}{
 		"binary": "/custom/cgpt",
