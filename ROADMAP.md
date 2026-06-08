@@ -1445,6 +1445,9 @@ keeping provider dependencies behind small interfaces.
    DONE current pass: `pe experimental semantic flow` now performs local graph
    analysis over system components and dependencies, emits JSON/YAML/text, and
    can render a static HTML/SVG graph artifact without provider calls.
+   DONE current pass: `pe experimental semantic analyze --dependencies` now
+   emits local JSON/YAML/text dependency reports with source/sink/isolation,
+   centrality, warnings, and cycle detection.
 
 Verification:
 - Fake-provider tests for candidate generation.

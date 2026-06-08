@@ -58,9 +58,11 @@ stdout 'Converged at iteration 1'
 ! pe experimental semantic monitor --baseline baseline.txt --current current.txt
 stderr 'semantic drift monitoring is not yet implemented'
 
-# Component interdependency analysis is explicit about unsupported behavior
-! pe experimental semantic analyze --system system.yaml --dependencies
-stderr 'semantic dependency analysis is not yet implemented'
+# Component interdependency analysis produces a local dependency report
+pe experimental semantic analyze --system system.yaml --dependencies --format text
+stdout 'Semantic Dependency Analysis: system'
+stdout 'Nodes: 4, Edges: 3'
+stdout 'Cycles: none'
 
 # Benchmark against baselines is explicit about unsupported behavior
 ! pe experimental semantic benchmark --prompt prompt.txt --baselines gpt4,claude,textgrad

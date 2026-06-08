@@ -153,7 +153,7 @@ func TestSemanticMonitorCmd_FlagParsing(t *testing.T) {
 func TestSemanticAnalyzeCmd_FlagParsing(t *testing.T) {
 	cmd := semanticAnalyzeCmd()
 
-	flags := []string{"system", "dependencies"}
+	flags := []string{"system", "dependencies", "output", "format"}
 	for _, name := range flags {
 		if cmd.Flags().Lookup(name) == nil {
 			t.Errorf("Expected flag %q to exist", name)
@@ -409,8 +409,18 @@ func TestSemanticLocalSubcommands(t *testing.T) {
 	analyze := semanticAnalyzeCmd()
 	analyze.Flags().Set("system", systemFile)
 	analyze.Flags().Set("dependencies", "true")
-	if err := analyze.RunE(analyze, nil); err == nil || !strings.Contains(err.Error(), "semantic dependency analysis is not yet implemented") {
+	analyzeOut := filepath.Join(tmpDir, "analysis.yaml")
+	analyze.Flags().Set("output", analyzeOut)
+	analyze.Flags().Set("format", "yaml")
+	if err := analyze.RunE(analyze, nil); err != nil {
 		t.Fatalf("analyze error = %v", err)
+	}
+	analyzeData, err := os.ReadFile(analyzeOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(analyzeData), "edge_count: 2") || !strings.Contains(string(analyzeData), "dependencies:") {
+		t.Fatalf("analysis output = %q", analyzeData)
 	}
 	benchmark := semanticBenchmarkCmd()
 	benchmark.Flags().Set("prompt-file", promptFile)
@@ -442,5 +452,34 @@ func TestSemanticLocalSubcommands(t *testing.T) {
 	badBenchmark := semanticBenchmarkCmd()
 	if err := badBenchmark.RunE(badBenchmark, nil); err == nil {
 		t.Fatal("bad benchmark succeeded")
+	}
+}
+
+func TestAnalyzeSemanticDependenciesDetectsCycles(t *testing.T) {
+	report, err := analyzeSemanticDependencies(&metaprompt.SystemDefinition{
+		Components: []metaprompt.SystemComponent{
+			{ID: "a", Name: "a"},
+			{ID: "b", Name: "b"},
+		},
+		Dependencies: []metaprompt.ComponentDependency{
+			{From: "a", To: "b"},
+			{From: "b", To: "a"},
+		},
+	}, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Cycles) != 1 || strings.Join(report.Cycles[0], " -> ") != "a -> b -> a" {
+		t.Fatalf("cycles = %#v", report.Cycles)
+	}
+	if len(report.Dependencies) != 2 {
+		t.Fatalf("dependencies = %#v", report.Dependencies)
+	}
+	text, err := formatSemanticDependencies(report, "text")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(text, "Cycle: a -> b -> a") {
+		t.Fatalf("text = %q", text)
 	}
 }

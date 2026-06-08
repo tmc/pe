@@ -45,6 +45,19 @@ type semanticFlowEdge struct {
 	Description string  `json:"description,omitempty" yaml:"description,omitempty"`
 }
 
+type semanticDependencyReport struct {
+	System        string             `json:"system" yaml:"system"`
+	NodeCount     int                `json:"node_count" yaml:"node_count"`
+	EdgeCount     int                `json:"edge_count" yaml:"edge_count"`
+	Sources       []string           `json:"sources" yaml:"sources"`
+	Sinks         []string           `json:"sinks" yaml:"sinks"`
+	Isolated      []string           `json:"isolated,omitempty" yaml:"isolated,omitempty"`
+	Cycles        [][]string         `json:"cycles,omitempty" yaml:"cycles,omitempty"`
+	Warnings      []string           `json:"warnings,omitempty" yaml:"warnings,omitempty"`
+	Dependencies  []semanticFlowEdge `json:"dependencies,omitempty" yaml:"dependencies,omitempty"`
+	ComponentRank []semanticFlowNode `json:"component_rank" yaml:"component_rank"`
+}
+
 // semanticCmd implements semantic backpropagation and gradient descent for GASO
 func semanticCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -1069,6 +1082,8 @@ func semanticAnalyzeCmd() *cobra.Command {
 	var (
 		systemFile   string
 		dependencies bool
+		outputFile   string
+		format       string
 	)
 
 	cmd := &cobra.Command{
@@ -1076,21 +1091,166 @@ func semanticAnalyzeCmd() *cobra.Command {
 		Short: "Analyze semantic structure and dependencies",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Load system
-			_, err := loadSystemDefinition(systemFile)
+			system, err := loadSystemDefinition(systemFile)
 			if err != nil {
 				return fmt.Errorf("failed to load system: %v", err)
 			}
-			_ = dependencies
-			return fmt.Errorf("semantic dependency analysis is not yet implemented")
+			report, err := analyzeSemanticDependencies(system, dependencies)
+			if err != nil {
+				return err
+			}
+			output, err := formatSemanticDependencies(report, format)
+			if err != nil {
+				return err
+			}
+			if outputFile != "" {
+				if err := os.WriteFile(outputFile, []byte(output), 0644); err != nil {
+					return fmt.Errorf("write semantic analysis output: %w", err)
+				}
+				fmt.Printf("Semantic analysis written to %s\n", outputFile)
+				return nil
+			}
+			fmt.Print(output)
+			if !strings.HasSuffix(output, "\n") {
+				fmt.Println()
+			}
+			return nil
 		},
 	}
 
 	cmd.Flags().StringVarP(&systemFile, "system", "s", "", "System definition file")
 	cmd.Flags().BoolVar(&dependencies, "dependencies", false, "Analyze dependencies")
+	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file")
+	cmd.Flags().StringVarP(&format, "format", "f", "json", "Output format (json, yaml, text)")
 
 	cmd.MarkFlagRequired("system")
 
 	return cmd
+}
+
+func analyzeSemanticDependencies(system *metaprompt.SystemDefinition, includeEdges bool) (*semanticDependencyReport, error) {
+	flow, err := analyzeSemanticFlow(system)
+	if err != nil {
+		return nil, err
+	}
+	nodes := append([]semanticFlowNode(nil), flow.Nodes...)
+	sort.Slice(nodes, func(i, j int) bool {
+		left := nodes[i].InDegree + nodes[i].OutDegree
+		right := nodes[j].InDegree + nodes[j].OutDegree
+		if left == right {
+			return nodes[i].ID < nodes[j].ID
+		}
+		return left > right
+	})
+	report := &semanticDependencyReport{
+		System:        flow.System,
+		NodeCount:     flow.NodeCount,
+		EdgeCount:     flow.EdgeCount,
+		Sources:       flow.Sources,
+		Sinks:         flow.Sinks,
+		Isolated:      flow.Isolated,
+		Cycles:        semanticDependencyCycles(flow),
+		Warnings:      flow.Warnings,
+		ComponentRank: nodes,
+	}
+	if includeEdges {
+		report.Dependencies = flow.Edges
+	}
+	return report, nil
+}
+
+func semanticDependencyCycles(flow *semanticFlowResult) [][]string {
+	graph := make(map[string][]string, len(flow.Nodes))
+	for _, node := range flow.Nodes {
+		graph[node.ID] = nil
+	}
+	for _, edge := range flow.Edges {
+		graph[edge.From] = append(graph[edge.From], edge.To)
+	}
+	for id := range graph {
+		sort.Strings(graph[id])
+	}
+
+	const (
+		unseen = 0
+		active = 1
+		done   = 2
+	)
+	state := make(map[string]int, len(graph))
+	var stack []string
+	var cycles [][]string
+	var visit func(string)
+	visit = func(id string) {
+		state[id] = active
+		stack = append(stack, id)
+		for _, next := range graph[id] {
+			switch state[next] {
+			case unseen:
+				visit(next)
+			case active:
+				for i, value := range stack {
+					if value == next {
+						cycle := append([]string(nil), stack[i:]...)
+						cycle = append(cycle, next)
+						cycles = append(cycles, cycle)
+						break
+					}
+				}
+			}
+		}
+		stack = stack[:len(stack)-1]
+		state[id] = done
+	}
+	ids := make([]string, 0, len(graph))
+	for id := range graph {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		if state[id] == unseen {
+			visit(id)
+		}
+	}
+	return cycles
+}
+
+func formatSemanticDependencies(report *semanticDependencyReport, format string) (string, error) {
+	switch format {
+	case "", "json":
+		data, err := json.MarshalIndent(report, "", "  ")
+		if err != nil {
+			return "", fmt.Errorf("marshal semantic dependency analysis: %w", err)
+		}
+		return string(data) + "\n", nil
+	case "yaml":
+		data, err := yaml.Marshal(report)
+		if err != nil {
+			return "", fmt.Errorf("marshal semantic dependency analysis: %w", err)
+		}
+		return string(data), nil
+	case "text", "table":
+		var b strings.Builder
+		fmt.Fprintf(&b, "Semantic Dependency Analysis: %s\n", report.System)
+		fmt.Fprintf(&b, "Nodes: %d, Edges: %d\n", report.NodeCount, report.EdgeCount)
+		fmt.Fprintf(&b, "Sources: %s\n", strings.Join(report.Sources, ", "))
+		fmt.Fprintf(&b, "Sinks: %s\n", strings.Join(report.Sinks, ", "))
+		if len(report.Cycles) == 0 {
+			b.WriteString("Cycles: none\n")
+		} else {
+			for _, cycle := range report.Cycles {
+				fmt.Fprintf(&b, "Cycle: %s\n", strings.Join(cycle, " -> "))
+			}
+		}
+		for _, node := range report.ComponentRank {
+			fmt.Fprintf(&b, "%s: in=%d out=%d centrality=%.2f\n", node.ID, node.InDegree, node.OutDegree, node.Centrality)
+		}
+		for _, warning := range report.Warnings {
+			fmt.Fprintf(&b, "Warning: %s\n", warning)
+		}
+		return b.String(), nil
+	default:
+		return "", fmt.Errorf("unsupported semantic analysis format: %s", format)
+	}
 }
 
 // semanticBenchmarkCmd benchmarks semantic optimization
