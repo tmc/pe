@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestNewManager(t *testing.T) {
@@ -169,6 +170,53 @@ func TestManager_Execute_NotFound(t *testing.T) {
 	}
 }
 
+func TestManager_Execute_PassesArgsWithoutShell(t *testing.T) {
+	m := NewManager()
+	tmpDir := t.TempDir()
+	argsFile := filepath.Join(tmpDir, "args")
+	marker := filepath.Join(tmpDir, "marker")
+	pluginPath := filepath.Join(tmpDir, "pe-argv")
+	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > " + shellQuote(argsFile) + "\n"
+	if err := os.WriteFile(pluginPath, []byte(script), 0755); err != nil {
+		t.Fatalf("failed to create plugin: %v", err)
+	}
+
+	m.plugins["argv"] = &Plugin{Name: "argv", Path: pluginPath}
+	arg := "hello $(touch " + marker + ")"
+	if err := m.Execute(context.Background(), "argv", []string{arg, "two words"}); err != nil {
+		t.Fatalf("Execute failed: %v", err)
+	}
+
+	data, err := os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatalf("ReadFile(args): %v", err)
+	}
+	if got, want := string(data), arg+"\ntwo words\n"; got != want {
+		t.Fatalf("args = %q, want %q", got, want)
+	}
+	if _, err := os.Stat(marker); !os.IsNotExist(err) {
+		t.Fatal("plugin argument was interpreted by a shell before execution")
+	}
+}
+
+func TestManager_Execute_ContextCancellation(t *testing.T) {
+	m := NewManager()
+	tmpDir := t.TempDir()
+	pluginPath := filepath.Join(tmpDir, "pe-sleep")
+	script := "#!/bin/sh\nsleep 1\n"
+	if err := os.WriteFile(pluginPath, []byte(script), 0755); err != nil {
+		t.Fatalf("failed to create plugin: %v", err)
+	}
+	m.plugins["sleep"] = &Plugin{Name: "sleep", Path: pluginPath}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond)
+	defer cancel()
+	err := m.Execute(ctx, "sleep", nil)
+	if err == nil {
+		t.Fatal("Execute succeeded after context cancellation")
+	}
+}
+
 func TestPlugin_Struct(t *testing.T) {
 	p := Plugin{
 		Name:        "test",
@@ -217,6 +265,10 @@ func TestCommand_Struct(t *testing.T) {
 	if len(cmd.Flags) != 1 {
 		t.Error("Flags length mismatch")
 	}
+}
+
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'"
 }
 
 func TestFlag_Struct(t *testing.T) {

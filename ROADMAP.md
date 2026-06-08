@@ -1296,6 +1296,9 @@ Goal: make every external process boundary deliberate, documented, and tested.
    DONE current pass: `GenericCLIProvider` validates rendered executable names
    before lookup, keeps prompt data in argv or stdin instead of shell
    expansion, and uses direct executable stubs in structured-output tests.
+   DONE current pass: plugin execution runs discovered plugin paths with direct
+   argv, preserves shell-looking arguments as data, and respects context
+   cancellation.
 5. Remove any promptfoo shell-out that is merely a convenience wrapper and can
    be replaced with local Go behavior.
 6. Document the policy in release-facing docs only after tests cover every

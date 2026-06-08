@@ -96,6 +96,9 @@ GOTOOLCHAIN=go1.25.9 go test ./internal/providers -run 'TestGenericCLIProvider' 
   Generic CLI providers validate rendered executable names before PATH lookup,
   preserve prompt text as argv or stdin, and cover invalid executable names
   plus direct-argv structured output in `TestGenericCLIProvider_*`.
+  Plugin execution is explicit and direct-argv; `TestManager_Execute_PassesArgsWithoutShell`
+  and `TestManager_Execute_ContextCancellation` cover shell-looking arguments
+  and cancellation.
 - G304 triage: config expansion, Starlark `load_tests`, module cache paths, and
   module publish prompt paths now have containment checks. Unsigned manifests
   and cache objects reject path escapes, unsafe keys, and symlinks. Broad CLI
