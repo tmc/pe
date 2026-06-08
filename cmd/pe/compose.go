@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/metaprompt"
+	"sigs.k8s.io/yaml"
 )
 
 // ComposeConfig represents configuration for prompt composition
@@ -742,19 +743,39 @@ func runSynthesize(cmd *cobra.Command, args []string) error {
 	fmt.Println(strings.Repeat("=", 60))
 
 	// Format output
-	switch outputFormat {
-	case "json":
-		data, _ := json.MarshalIndent(result, "", "  ")
-		fmt.Printf("\n📝 JSON Output:\n%s\n", string(data))
-	case "yaml":
-		// Would need yaml package for this
-		fmt.Printf("\n📝 YAML output not implemented yet\n")
+	if outputFormat != "text" {
+		formatted, err := formatSynthesisResult(result, outputFormat)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("\n📝 %s Output:\n%s\n", strings.ToUpper(outputFormat), formatted)
 	}
 
 	fmt.Printf("\n✅ Synthesis completed successfully!\n")
 	fmt.Printf("💡 Tip: Use --trace for detailed synthesis information\n")
 
 	return nil
+}
+
+func formatSynthesisResult(result *metaprompt.SynthesisResult, format string) (string, error) {
+	switch format {
+	case "json":
+		data, err := json.MarshalIndent(result, "", "  ")
+		if err != nil {
+			return "", fmt.Errorf("marshal synthesis result: %w", err)
+		}
+		return string(data), nil
+	case "yaml":
+		data, err := yaml.Marshal(result)
+		if err != nil {
+			return "", fmt.Errorf("marshal synthesis result: %w", err)
+		}
+		return string(data), nil
+	case "text", "":
+		return result.Program, nil
+	default:
+		return "", fmt.Errorf("unsupported synthesis output format: %s", format)
+	}
 }
 
 // generateExampleInputs creates example inputs for the synthesis task

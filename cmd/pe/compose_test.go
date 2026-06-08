@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/tmc/pe/internal/metaprompt"
 )
 
 func TestInferComponentType(t *testing.T) {
@@ -796,6 +798,42 @@ func TestComposeConfigAndRunPaths(t *testing.T) {
 	badCmd.Flags().Set("config", badConfig)
 	if _, err := loadComposeConfig(badCmd, nil); err == nil {
 		t.Fatal("bad config succeeded")
+	}
+}
+
+func TestFormatSynthesisResult(t *testing.T) {
+	result := &metaprompt.SynthesisResult{
+		Program:      "Prompt Program\n\nTask:\nSummarize",
+		Strategy:     "template",
+		Confidence:   0.72,
+		QualityScore: 0.8,
+		Metadata: map[string]interface{}{
+			"method": "local_template_synthesis",
+		},
+	}
+	jsonOut, err := formatSynthesisResult(result, "json")
+	if err != nil {
+		t.Fatalf("json format: %v", err)
+	}
+	if !strings.Contains(jsonOut, `"strategy": "template"`) {
+		t.Fatalf("json output = %q", jsonOut)
+	}
+	yamlOut, err := formatSynthesisResult(result, "yaml")
+	if err != nil {
+		t.Fatalf("yaml format: %v", err)
+	}
+	if !strings.Contains(yamlOut, "strategy: template") || strings.Contains(yamlOut, "not implemented") {
+		t.Fatalf("yaml output = %q", yamlOut)
+	}
+	textOut, err := formatSynthesisResult(result, "text")
+	if err != nil {
+		t.Fatalf("text format: %v", err)
+	}
+	if textOut != result.Program {
+		t.Fatalf("text output = %q", textOut)
+	}
+	if _, err := formatSynthesisResult(result, "xml"); err == nil {
+		t.Fatal("unsupported format succeeded")
 	}
 }
 

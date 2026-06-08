@@ -1408,6 +1408,9 @@ keeping provider dependencies behind small interfaces.
    `ProgramSpec`, return quality/confidence metadata, preserve strategy
    selection, and honor context cancellation. Remaining work: provider-backed
    synthesis with calibrated scoring.
+   DONE current pass: `pe synthesize --output-format yaml` now emits real YAML
+   for synthesis results instead of a placeholder message, with explicit errors
+   for unsupported synthesis output formats.
 3. Implement compose optimization, component import, and coherence validation
    with local-first checks and provider-assisted options.
    DONE current pass: `pe compose --coherence-check` now reads component files,
