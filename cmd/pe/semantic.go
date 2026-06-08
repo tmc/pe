@@ -75,6 +75,19 @@ type semanticLocalGradient struct {
 	Suggestions []string `json:"suggestions,omitempty" yaml:"suggestions,omitempty"`
 }
 
+type semanticDriftReport struct {
+	BaselineTokens int      `json:"baseline_tokens" yaml:"baseline_tokens"`
+	CurrentTokens  int      `json:"current_tokens" yaml:"current_tokens"`
+	BaselineLines  int      `json:"baseline_lines" yaml:"baseline_lines"`
+	CurrentLines   int      `json:"current_lines" yaml:"current_lines"`
+	Similarity     float64  `json:"similarity" yaml:"similarity"`
+	DriftScore     float64  `json:"drift_score" yaml:"drift_score"`
+	Severity       string   `json:"severity" yaml:"severity"`
+	AddedTerms     []string `json:"added_terms,omitempty" yaml:"added_terms,omitempty"`
+	RemovedTerms   []string `json:"removed_terms,omitempty" yaml:"removed_terms,omitempty"`
+	Warnings       []string `json:"warnings,omitempty" yaml:"warnings,omitempty"`
+}
+
 // semanticCmd implements semantic backpropagation and gradient descent for GASO
 func semanticCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -1228,6 +1241,8 @@ func semanticMonitorCmd() *cobra.Command {
 	var (
 		baselineFile string
 		currentFile  string
+		outputFile   string
+		format       string
 	)
 
 	cmd := &cobra.Command{
@@ -1235,27 +1250,150 @@ func semanticMonitorCmd() *cobra.Command {
 		Short: "Monitor semantic drift between prompts",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Read baseline
-			_, err := os.ReadFile(baselineFile)
+			baseline, err := os.ReadFile(baselineFile)
 			if err != nil {
 				return fmt.Errorf("failed to read baseline: %v", err)
 			}
 
 			// Read current
-			_, err = os.ReadFile(currentFile)
+			current, err := os.ReadFile(currentFile)
 			if err != nil {
 				return fmt.Errorf("failed to read current: %v", err)
 			}
-			return fmt.Errorf("semantic drift monitoring is not yet implemented")
+			report := analyzeSemanticDrift(string(baseline), string(current))
+			output, err := formatSemanticDrift(report, format)
+			if err != nil {
+				return err
+			}
+			if outputFile != "" {
+				if err := os.WriteFile(outputFile, []byte(output), 0644); err != nil {
+					return fmt.Errorf("write semantic drift output: %w", err)
+				}
+				fmt.Printf("Semantic drift written to %s\n", outputFile)
+				return nil
+			}
+			fmt.Print(output)
+			if !strings.HasSuffix(output, "\n") {
+				fmt.Println()
+			}
+			return nil
 		},
 	}
 
 	cmd.Flags().StringVar(&baselineFile, "baseline", "", "Baseline prompt file")
 	cmd.Flags().StringVar(&currentFile, "current", "", "Current prompt file")
+	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file")
+	cmd.Flags().StringVarP(&format, "format", "f", "json", "Output format (json, yaml, text)")
 
 	cmd.MarkFlagRequired("baseline")
 	cmd.MarkFlagRequired("current")
 
 	return cmd
+}
+
+func analyzeSemanticDrift(baseline, current string) *semanticDriftReport {
+	baseTokens := normalizedTermSet(baseline)
+	currentTokens := normalizedTermSet(current)
+	added := setDifference(currentTokens, baseTokens)
+	removed := setDifference(baseTokens, currentTokens)
+	intersection := 0
+	for term := range baseTokens {
+		if _, ok := currentTokens[term]; ok {
+			intersection++
+		}
+	}
+	union := len(baseTokens) + len(currentTokens) - intersection
+	similarity := 1.0
+	if union > 0 {
+		similarity = float64(intersection) / float64(union)
+	}
+	drift := 1 - similarity
+	severity := "low"
+	switch {
+	case drift >= 0.65:
+		severity = "high"
+	case drift >= 0.35:
+		severity = "medium"
+	}
+	warnings := []string{}
+	if len(baseTokens) == 0 {
+		warnings = append(warnings, "baseline prompt has no comparable terms")
+	}
+	if len(currentTokens) == 0 {
+		warnings = append(warnings, "current prompt has no comparable terms")
+	}
+	return &semanticDriftReport{
+		BaselineTokens: len(strings.Fields(strings.TrimSpace(baseline))),
+		CurrentTokens:  len(strings.Fields(strings.TrimSpace(current))),
+		BaselineLines:  len(nonEmptyLines(baseline)),
+		CurrentLines:   len(nonEmptyLines(current)),
+		Similarity:     similarity,
+		DriftScore:     drift,
+		Severity:       severity,
+		AddedTerms:     added,
+		RemovedTerms:   removed,
+		Warnings:       warnings,
+	}
+}
+
+func normalizedTermSet(text string) map[string]struct{} {
+	terms := make(map[string]struct{})
+	for _, token := range strings.Fields(strings.ToLower(text)) {
+		token = strings.Trim(token, ".,:;!?()[]{}\"'`")
+		if len(token) < 3 {
+			continue
+		}
+		terms[token] = struct{}{}
+	}
+	return terms
+}
+
+func setDifference(left, right map[string]struct{}) []string {
+	var out []string
+	for term := range left {
+		if _, ok := right[term]; !ok {
+			out = append(out, term)
+		}
+	}
+	sort.Strings(out)
+	if len(out) > 12 {
+		out = out[:12]
+	}
+	return out
+}
+
+func formatSemanticDrift(report *semanticDriftReport, format string) (string, error) {
+	switch format {
+	case "", "json":
+		data, err := json.MarshalIndent(report, "", "  ")
+		if err != nil {
+			return "", fmt.Errorf("marshal semantic drift: %w", err)
+		}
+		return string(data) + "\n", nil
+	case "yaml":
+		data, err := yaml.Marshal(report)
+		if err != nil {
+			return "", fmt.Errorf("marshal semantic drift: %w", err)
+		}
+		return string(data), nil
+	case "text", "table":
+		var b strings.Builder
+		fmt.Fprintf(&b, "Semantic Drift\n")
+		fmt.Fprintf(&b, "Similarity: %.2f\n", report.Similarity)
+		fmt.Fprintf(&b, "Drift Score: %.2f (%s)\n", report.DriftScore, report.Severity)
+		if len(report.AddedTerms) > 0 {
+			fmt.Fprintf(&b, "Added: %s\n", strings.Join(report.AddedTerms, ", "))
+		}
+		if len(report.RemovedTerms) > 0 {
+			fmt.Fprintf(&b, "Removed: %s\n", strings.Join(report.RemovedTerms, ", "))
+		}
+		for _, warning := range report.Warnings {
+			fmt.Fprintf(&b, "Warning: %s\n", warning)
+		}
+		return b.String(), nil
+	default:
+		return "", fmt.Errorf("unsupported semantic drift format: %s", format)
+	}
 }
 
 // semanticAnalyzeCmd analyzes system dependencies

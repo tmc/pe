@@ -142,7 +142,7 @@ func TestSemanticGradientsCmd_FlagParsing(t *testing.T) {
 func TestSemanticMonitorCmd_FlagParsing(t *testing.T) {
 	cmd := semanticMonitorCmd()
 
-	flags := []string{"baseline", "current"}
+	flags := []string{"baseline", "current", "output", "format"}
 	for _, name := range flags {
 		if cmd.Flags().Lookup(name) == nil {
 			t.Errorf("Expected flag %q to exist", name)
@@ -412,8 +412,21 @@ func TestSemanticLocalSubcommands(t *testing.T) {
 	monitor := semanticMonitorCmd()
 	monitor.Flags().Set("baseline", baselineFile)
 	monitor.Flags().Set("current", currentFile)
-	if err := monitor.RunE(monitor, nil); err == nil || !strings.Contains(err.Error(), "semantic drift monitoring is not yet implemented") {
+	monitorOut := filepath.Join(tmpDir, "drift.json")
+	monitor.Flags().Set("output", monitorOut)
+	if err := monitor.RunE(monitor, nil); err != nil {
 		t.Fatalf("monitor error = %v", err)
+	}
+	var drift semanticDriftReport
+	driftData, err := os.ReadFile(monitorOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(driftData, &drift); err != nil {
+		t.Fatal(err)
+	}
+	if drift.DriftScore <= 0 || drift.Severity == "" {
+		t.Fatalf("drift = %#v", drift)
 	}
 	analyze := semanticAnalyzeCmd()
 	analyze.Flags().Set("system", systemFile)
@@ -510,5 +523,25 @@ func TestAnalyzeLocalSemanticGradients(t *testing.T) {
 	}
 	if _, err := formatSemanticGradients(report, "bad"); err == nil {
 		t.Fatal("bad format succeeded")
+	}
+}
+
+func TestAnalyzeSemanticDrift(t *testing.T) {
+	report := analyzeSemanticDrift("Summarize incidents as bullet points", "Summarize incidents as JSON with severity")
+	if report.Similarity <= 0 || report.DriftScore <= 0 {
+		t.Fatalf("report = %#v", report)
+	}
+	if !containsString(report.AddedTerms, "json") || !containsString(report.RemovedTerms, "bullet") {
+		t.Fatalf("terms = added %#v removed %#v", report.AddedTerms, report.RemovedTerms)
+	}
+	text, err := formatSemanticDrift(report, "text")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(text, "Semantic Drift") {
+		t.Fatalf("text = %q", text)
+	}
+	if _, err := formatSemanticDrift(report, "bad"); err == nil {
+		t.Fatal("bad drift format succeeded")
 	}
 }

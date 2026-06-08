@@ -55,9 +55,10 @@ stdout 'Semantic Gradient Descent'
 stdout 'Step 1: Loss = 0.15'
 stdout 'Converged at iteration 1'
 
-# Semantic drift detection is explicit about unsupported behavior
-! pe experimental semantic monitor --baseline baseline.txt --current current.txt
-stderr 'semantic drift monitoring is not yet implemented'
+# Semantic drift detection produces a local drift report
+pe experimental semantic monitor --baseline baseline.txt --current current.txt --format text
+stdout 'Semantic Drift'
+stdout 'Drift Score:'
 
 # Component interdependency analysis produces a local dependency report
 pe experimental semantic analyze --system system.yaml --dependencies --format text

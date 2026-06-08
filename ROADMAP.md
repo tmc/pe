@@ -1451,6 +1451,9 @@ keeping provider dependencies behind small interfaces.
    DONE current pass: `pe experimental semantic gradients` now emits local
    prompt-improvement gradient signals and optional static HTML visualization
    without provider calls.
+   DONE current pass: `pe experimental semantic monitor` now emits local
+   semantic-drift reports with token overlap, added/removed terms, severity,
+   and JSON/YAML/text output.
 
 Verification:
 - Fake-provider tests for candidate generation.
