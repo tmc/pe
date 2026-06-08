@@ -492,7 +492,38 @@ func validateComponentDependencies(components []PromptComponent) error {
 }
 
 func validateCoherence(ctx context.Context, prompt string) (float64, error) {
-	return 0, fmt.Errorf("coherence validation is not yet implemented")
+	if ctx != nil {
+		select {
+		case <-ctx.Done():
+			return 0, ctx.Err()
+		default:
+		}
+	}
+	sections := promptSections(prompt)
+	if len(sections) == 0 {
+		return 0, fmt.Errorf("coherence validation requires non-empty prompt")
+	}
+	if len(sections) == 1 {
+		return calculateSimpleCoherence(sections), nil
+	}
+	semanticScore := calculateSimpleCoherence(sections)
+	styleScore := calculateStyleConsistency(sections)
+	return (semanticScore + styleScore) / 2, nil
+}
+
+func promptSections(prompt string) []string {
+	parts := strings.Split(prompt, "\n\n")
+	sections := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			sections = append(sections, part)
+		}
+	}
+	if len(sections) == 0 && strings.TrimSpace(prompt) != "" {
+		sections = []string{strings.TrimSpace(prompt)}
+	}
+	return sections
 }
 
 func outputComposeResult(cmd *cobra.Command, result *ComposeResult) error {

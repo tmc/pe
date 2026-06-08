@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -791,6 +792,39 @@ func TestComposeConfigAndRunPaths(t *testing.T) {
 	badCmd.Flags().Set("config", badConfig)
 	if _, err := loadComposeConfig(badCmd, nil); err == nil {
 		t.Fatal("bad config succeeded")
+	}
+}
+
+func TestComposeCoherenceValidation(t *testing.T) {
+	score, err := validateCoherence(context.Background(), "Context:\nAnalyze customer churn.\n\nInstructions:\nTherefore summarize drivers clearly.")
+	if err != nil {
+		t.Fatalf("validateCoherence err = %v", err)
+	}
+	if score <= 0 {
+		t.Fatalf("score = %v", score)
+	}
+	if _, err := validateCoherence(context.Background(), "   "); err == nil {
+		t.Fatal("empty coherence validation succeeded")
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := validateCoherence(ctx, "prompt"); err == nil {
+		t.Fatal("cancelled coherence validation succeeded")
+	}
+
+	tmpDir := t.TempDir()
+	contextFile := filepath.Join(tmpDir, "context.txt")
+	instructionFile := filepath.Join(tmpDir, "instruction.txt")
+	if err := os.WriteFile(contextFile, []byte("Analyze the customer text."), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(instructionFile, []byte("Therefore summarize the customer sentiment."), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := newComposeCmd()
+	cmd.Flags().Set("coherence", "true")
+	if err := runCompose(cmd, []string{contextFile, instructionFile}); err != nil {
+		t.Fatal(err)
 	}
 }
 

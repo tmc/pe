@@ -2315,6 +2315,7 @@ pe compose [component files...] [flags]
     --style string       Composition style (default, cot, few-shot, structured, conversational, dspy)
     --output string      Output file for composed prompt
     --validate           Validate component compatibility
+    --coherence          Add local coherence score to composed output
     --coherence-check    Report local semantic-overlap and style-consistency scores
     --optimize           Apply TextGrad optimization after composition
 ```
@@ -2324,6 +2325,7 @@ pe compose [component files...] [flags]
 ```bash
 pe compose context.txt instruction.txt examples.txt --style cot
 pe compose components/ --style few-shot --validate --output prompt.txt
+pe compose context.txt instruction.txt --coherence
 pe compose context.txt instruction.txt --coherence-check
 ```
 

@@ -1224,8 +1224,8 @@ Current known explicit gaps:
   `pe metrics --statistical` paths
 - richer prompted template-library creation beyond current starter-template API
 - metaprompt synthesis strategies: template, evolutionary, and neural
-- compose optimization, component import, and richer coherence validation beyond
-  the current local `--coherence-check`
+- compose optimization, component import, and richer/provider-assisted
+  coherence validation beyond current local compose checks
 - richer playground compare, security, components, history, and BERTScore
   behavior beyond current local JSON endpoints
 - TypeScript and Pydantic source/runtime validation beyond local JSON-object
@@ -1403,6 +1403,11 @@ keeping provider dependencies behind small interfaces.
    rejects missing or empty components, and reports deterministic local
    semantic-overlap and style-consistency scores. Remaining work: provider-
    assisted coherence validation, optimization, and remote component import.
+   DONE current pass: `pe compose --coherence` now validates the composed
+   prompt locally with the same semantic-overlap and style-consistency scoring,
+   including empty-prompt and context-cancellation errors. Remaining work:
+   provider-assisted coherence validation, optimization, and remote component
+   import.
 4. Add DAG scheduling for semantic optimization graphs with deterministic
    topological execution, cancellation, and cycle errors.
    DONE current pass: add the local generic DAG scheduler primitive with
