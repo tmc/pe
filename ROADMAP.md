@@ -1543,6 +1543,10 @@ integrity semantics.
    import-write guard while terminal composition output remains read-only.
    Remaining work: runtime enforcement for other tool classes and remaining
    write surfaces.
+   DONE current pass: `pe profile` output directories, trace files, metrics
+   files, and report files now enforce `tools deny write`, while status and
+   terminal reports remain read-only. Remaining work: runtime enforcement for
+   other tool classes and remaining write surfaces.
 6. Sign attest manifests with an Ed25519 envelope while preserving unsigned
    local integrity workflows.
    DONE current pass: `pe exp attest keygen`, `sign`, and `verify-signed`

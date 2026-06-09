@@ -1,6 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -187,6 +191,133 @@ func TestMetricsStartCmd_FlagDefaults(t *testing.T) {
 	}
 	if interval != "10s" {
 		t.Errorf("Expected default interval '10s', got %s", interval)
+	}
+}
+
+func TestProfileStartDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	writeProfileDenyWritePeMod(t)
+	cmd := profileStartCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	err := runProfileStart(cmd, []string{"cpu"}, "profiles", "")
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("runProfileStart error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("profiles"); !os.IsNotExist(err) {
+		t.Fatalf("profiles stat error = %v, want not exist", err)
+	}
+}
+
+func TestProfileReportOutputDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	writeProfileDenyWritePeMod(t)
+	cmd := profileReportCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	err := runProfileReport(cmd, "report.json", "json")
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("runProfileReport error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("report.json"); !os.IsNotExist(err) {
+		t.Fatalf("report.json stat error = %v, want not exist", err)
+	}
+}
+
+func TestProfileReportStdoutAllowedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	writeProfileDenyWritePeMod(t)
+	cmd := profileReportCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	if err := runProfileReport(cmd, "", "json"); err != nil {
+		t.Fatalf("runProfileReport stdout: %v", err)
+	}
+	if !strings.Contains(out.String(), "timestamp") {
+		t.Fatalf("stdout = %q, want report JSON", out.String())
+	}
+}
+
+func TestTraceAndMetricsStartDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	writeProfileDenyWritePeMod(t)
+	cmd := profileCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	if err := runTraceStart(cmd, "traces.jsonl"); err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("runTraceStart error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("traces.jsonl"); !os.IsNotExist(err) {
+		t.Fatalf("traces.jsonl stat error = %v, want not exist", err)
+	}
+	if err := runMetricsStart(cmd, "metrics.jsonl", "10s"); err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("runMetricsStart error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("metrics.jsonl"); !os.IsNotExist(err) {
+		t.Fatalf("metrics.jsonl stat error = %v, want not exist", err)
+	}
+}
+
+func TestTraceAndMetricsReportOutputDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	writeProfileDenyWritePeMod(t)
+	traceFile := filepath.Join(tmpDir, "trace-input.jsonl")
+	if err := os.WriteFile(traceFile, nil, 0644); err != nil {
+		t.Fatalf("writing trace input: %v", err)
+	}
+	cmd := profileCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	if err := runTraceReport(cmd, traceFile, "trace-report.json", "json"); err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("runTraceReport error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("trace-report.json"); !os.IsNotExist(err) {
+		t.Fatalf("trace-report.json stat error = %v, want not exist", err)
+	}
+	if err := runMetricsReport(cmd, "metrics-report.json", "json"); err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("runMetricsReport error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("metrics-report.json"); !os.IsNotExist(err) {
+		t.Fatalf("metrics-report.json stat error = %v, want not exist", err)
+	}
+}
+
+func writeProfileDenyWritePeMod(t *testing.T) {
+	t.Helper()
+	if err := os.WriteFile("pe.mod", []byte(`module example.com/app
+
+pe 1
+
+capability {
+    tools deny write
+}
+`), 0644); err != nil {
+		t.Fatalf("writing pe.mod: %v", err)
 	}
 }
 

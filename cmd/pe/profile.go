@@ -240,6 +240,10 @@ func metricsReportCmd() *cobra.Command {
 // Implementation functions
 
 func runProfileStart(cmd *cobra.Command, profileTypes []string, outputDir, durationStr string) error {
+	if err := enforceRuntimeToolPolicy("write"); err != nil {
+		return err
+	}
+
 	profiler := observability.GetGlobalProfiler()
 	profiler.Enable()
 
@@ -357,7 +361,7 @@ func runProfileReport(cmd *cobra.Command, outputFile, format string) error {
 		}
 
 		if outputFile != "" {
-			return os.WriteFile(outputFile, data, 0644)
+			return writeProfileOutput(outputFile, data)
 		}
 
 		fmt.Fprintln(cmd.OutOrStdout(), string(data))
@@ -397,7 +401,7 @@ Active Profiles: %v
 		)
 
 		if outputFile != "" {
-			return os.WriteFile(outputFile, []byte(output), 0644)
+			return writeProfileOutput(outputFile, []byte(output))
 		}
 
 		fmt.Fprint(cmd.OutOrStdout(), output)
@@ -410,6 +414,10 @@ Active Profiles: %v
 }
 
 func runTraceStart(cmd *cobra.Command, outputFile string) error {
+	if err := enforceRuntimeToolPolicy("write"); err != nil {
+		return err
+	}
+
 	writer, err := observability.NewFileTraceWriter(outputFile)
 	if err != nil {
 		return fmt.Errorf("failed to create trace writer: %v", err)
@@ -467,7 +475,7 @@ func runTraceReport(cmd *cobra.Command, traceFile, outputFile, format string) er
 	}
 
 	if outputFile != "" {
-		return os.WriteFile(outputFile, buf.Bytes(), 0644)
+		return writeProfileOutput(outputFile, buf.Bytes())
 	}
 
 	_, err = io.Copy(cmd.OutOrStdout(), &buf)
@@ -478,6 +486,10 @@ func runMetricsStart(cmd *cobra.Command, outputFile, intervalStr string) error {
 	interval, err := time.ParseDuration(intervalStr)
 	if err != nil {
 		return fmt.Errorf("invalid interval: %v", err)
+	}
+
+	if err := enforceRuntimeToolPolicy("write"); err != nil {
+		return err
 	}
 
 	writer, err := observability.NewJSONMetricsWriter(outputFile)
@@ -517,7 +529,7 @@ func runMetricsReport(cmd *cobra.Command, outputFile, format string) error {
 		}
 
 		if outputFile != "" {
-			return os.WriteFile(outputFile, data, 0644)
+			return writeProfileOutput(outputFile, data)
 		}
 
 		fmt.Fprintln(cmd.OutOrStdout(), string(data))
@@ -553,7 +565,7 @@ Counters:
 		}
 
 		if outputFile != "" {
-			return os.WriteFile(outputFile, []byte(output), 0644)
+			return writeProfileOutput(outputFile, []byte(output))
 		}
 
 		fmt.Fprint(cmd.OutOrStdout(), output)
@@ -563,4 +575,11 @@ Counters:
 	}
 
 	return nil
+}
+
+func writeProfileOutput(path string, data []byte) error {
+	if err := enforceRuntimeToolPolicy("write"); err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0644)
 }

@@ -137,6 +137,8 @@ is the source of truth for planned work and release-blocking follow-ups.
 - `pe exp consensus --output` and `pe exp optimize --output` honor
   `tools deny write` before writing result files; stdout output remains
   read-only.
+- `pe profile` output directories, trace files, metrics files, and report files
+  honor `tools deny write`; status and terminal reports remain read-only.
 
 ## Important Implementation Details
 

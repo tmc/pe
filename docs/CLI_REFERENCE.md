@@ -1758,6 +1758,9 @@ pe profile [command]
 
 Provides CPU profiling, memory profiling, distributed tracing, and metrics collection to analyze performance and identify bottlenecks.
 
+Profile output directories, trace files, metrics files, and report output files
+honor `tools deny write`; status and terminal reports remain read-only.
+
 ### Subcommands
 
 #### profile start
