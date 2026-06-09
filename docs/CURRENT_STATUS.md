@@ -113,6 +113,7 @@ is the source of truth for planned work and release-blocking follow-ups.
   commands remain allowed.
 - `pe fmt --write` honors `tools deny write`; stdout formatting and `--check`
   remain read-only.
+- `pe init` honors `tools deny write` before creating `.pe/` project files.
 
 ## Important Implementation Details
 

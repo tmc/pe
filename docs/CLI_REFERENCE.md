@@ -885,6 +885,9 @@ pe init [flags]
 
 Creates `.pe/` project files, similar to `git init`.
 
+If `pe.mod` denies the `write` tool capability, `pe init` fails before
+creating `.pe/` or `.peignore`.
+
 ### Flags
 
 ```bash

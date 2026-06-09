@@ -25,6 +25,10 @@ similar to 'git init' or 'go mod init'.`,
 				return fmt.Errorf("already initialized")
 			}
 
+			if err := enforceRuntimeToolPolicy("write"); err != nil {
+				return err
+			}
+
 			// Create .pe directory structure
 			dirs := []string{
 				".pe",
