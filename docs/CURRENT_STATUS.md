@@ -93,6 +93,8 @@ is the source of truth for planned work and release-blocking follow-ups.
   stdout output remains read-only.
 - `pe benchmark -o` honors `tools deny write`; stdout and Go benchmark output
   remain read-only.
+- `pe metrics -o` honors `tools deny write`; stdout metrics output remains
+  read-only.
 
 ## Important Implementation Details
 

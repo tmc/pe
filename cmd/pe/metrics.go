@@ -609,6 +609,9 @@ func outputMetricsResult(result *MetricsResult, outputFile, format string) error
 	}
 
 	if outputFile != "" {
+		if err := enforceRuntimeToolPolicy("write"); err != nil {
+			return err
+		}
 		if err := os.WriteFile(outputFile, output, 0644); err != nil {
 			return err
 		}

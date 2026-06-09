@@ -362,6 +362,56 @@ func TestMetricsCalculationOutputAndSimpleMode(t *testing.T) {
 	}
 }
 
+func TestOutputMetricsResultDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte(metricsPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+	result := &MetricsResult{BLEU: &BLEUScore{Score: 0.75, BP: 1}}
+
+	err := outputMetricsResult(result, "metrics.json", "json")
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("metrics output error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("metrics.json"); !os.IsNotExist(err) {
+		t.Fatalf("metrics wrote output despite write policy: %v", err)
+	}
+}
+
+func TestOutputMetricsResultStdoutAllowedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte(metricsPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+	result := &MetricsResult{BLEU: &BLEUScore{Score: 0.75, BP: 1}}
+
+	if err := outputMetricsResult(result, "", "table"); err != nil {
+		t.Fatalf("metrics stdout: %v", err)
+	}
+	if _, err := os.Stat("metrics.json"); !os.IsNotExist(err) {
+		t.Fatalf("metrics created unexpected file: %v", err)
+	}
+}
+
+func metricsPolicyTestModule() string {
+	return `module example.com/prompts
+
+pe 1
+
+capability {
+    tools deny write
+}
+`
+}
+
 func TestBERTScoreResultStruct(t *testing.T) {
 	result := BERTScoreResult{
 		Precision:          0.85,
