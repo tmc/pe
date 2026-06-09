@@ -209,20 +209,11 @@ func verifyCachedManifest(cacheDir, root, key string) error {
 	if got := contentKey(canonical); got != strings.ToLower(key) {
 		return fmt.Errorf("cached manifest hash mismatch: got %s", got)
 	}
-	tmp, err := os.CreateTemp("", "pe-cache-manifest-*.json")
-	if err != nil {
-		return fmt.Errorf("create manifest temp file: %w", err)
+	var manifest unsignedFileManifest
+	if err := json.Unmarshal(canonical, &manifest); err != nil {
+		return fmt.Errorf("parse cached manifest: %w", err)
 	}
-	tmpName := tmp.Name()
-	defer os.Remove(tmpName)
-	if _, err := tmp.Write(canonical); err != nil {
-		tmp.Close()
-		return fmt.Errorf("write manifest temp file: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("close manifest temp file: %w", err)
-	}
-	return verifyUnsignedManifestFile(root, tmpName)
+	return verifyUnsignedManifest(root, &manifest)
 }
 
 func canonicalUnsignedManifestJSON(data []byte) ([]byte, error) {
@@ -260,6 +251,9 @@ func putCacheFile(cacheDir, path string) (string, error) {
 }
 
 func writeCacheObject(objectPath string, data []byte) error {
+	if err := enforceRuntimeToolPolicy("write"); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(filepath.Dir(objectPath), 0755); err != nil {
 		return fmt.Errorf("create cache directory: %w", err)
 	}

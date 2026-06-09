@@ -68,6 +68,8 @@ is the source of truth for planned work and release-blocking follow-ups.
 - `pe exp consensus` - Weighted local vote aggregation
 - `pe exp attest` - Unsigned local SHA-256 manifest generation and verification
 - `pe exp cache` - Local content-addressed cache helpers
+- `pe exp cache put` and `pe exp cache manifest put` honor `tools deny write`;
+  key, get, verify, and manifest verify remain read-only.
 - `pe serve` - Localhost-first HTTP API command
 - `pe playground` - Local web UI with local compare, metrics, security,
   component, and in-memory history endpoints

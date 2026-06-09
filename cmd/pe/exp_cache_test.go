@@ -149,6 +149,30 @@ func TestExpCacheCommands(t *testing.T) {
 	}
 }
 
+func TestExpCachePutDeniedByPolicy(t *testing.T) {
+	dir := t.TempDir()
+	cacheDir := filepath.Join(dir, "cache")
+	input := filepath.Join(dir, "input.txt")
+	writeAttestFile(t, input, "cache me")
+	writeCacheDenyWritePeMod(t, dir)
+
+	putCmd := newExpCacheCmd()
+	var out bytes.Buffer
+	putCmd.SetOut(&out)
+	putCmd.SetErr(&out)
+	putCmd.SetArgs([]string{"put", "--cache-dir", cacheDir, input})
+	err := putCmd.Execute()
+	if err == nil {
+		t.Fatal("cache put succeeded, want write policy error")
+	}
+	if !strings.Contains(err.Error(), "tool write is denied by pe.mod") {
+		t.Fatalf("cache put error = %v, want write policy error", err)
+	}
+	if _, err := os.Stat(cacheDir); !os.IsNotExist(err) {
+		t.Fatalf("cache dir exists despite write policy: %v", err)
+	}
+}
+
 func TestCacheManifestWorkflowDetectsTamper(t *testing.T) {
 	dir := t.TempDir()
 	cacheDir := filepath.Join(dir, "cache")
@@ -190,6 +214,43 @@ func TestCacheManifestWorkflowDetectsTamper(t *testing.T) {
 	writeAttestFile(t, objectPath, strings.Replace(string(manifestData), "prompt.txt", "other.txt", 1))
 	if err := verifyCachedManifest(cacheDir, root, key); err == nil {
 		t.Fatal("verify cached manifest accepted tampered manifest object")
+	}
+}
+
+func TestExpCacheManifestPutDeniedByPolicy(t *testing.T) {
+	dir := t.TempDir()
+	cacheDir := filepath.Join(dir, "cache")
+	root := filepath.Join(dir, "root")
+	if err := os.Mkdir(root, 0755); err != nil {
+		t.Fatal(err)
+	}
+	writeAttestFile(t, filepath.Join(root, "prompt.txt"), "hello")
+	manifest, err := buildUnsignedManifest(root, []string{"prompt.txt"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifestData, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifestPath := filepath.Join(dir, "manifest.json")
+	writeAttestFile(t, manifestPath, string(manifestData))
+	writeCacheDenyWritePeMod(t, dir)
+
+	putCmd := newExpCacheCmd()
+	var out bytes.Buffer
+	putCmd.SetOut(&out)
+	putCmd.SetErr(&out)
+	putCmd.SetArgs([]string{"manifest", "put", "--cache-dir", cacheDir, manifestPath})
+	err = putCmd.Execute()
+	if err == nil {
+		t.Fatal("cache manifest put succeeded, want write policy error")
+	}
+	if !strings.Contains(err.Error(), "tool write is denied by pe.mod") {
+		t.Fatalf("cache manifest put error = %v, want write policy error", err)
+	}
+	if _, err := os.Stat(cacheDir); !os.IsNotExist(err) {
+		t.Fatalf("cache dir exists despite write policy: %v", err)
 	}
 }
 
@@ -244,6 +305,34 @@ func TestCacheManifestRejectsUnsafePaths(t *testing.T) {
 	}
 	if err := verifyCachedManifest(cacheDir, root, linkKey); err == nil {
 		t.Fatal("verify cached manifest accepted symlink path")
+	}
+}
+
+func writeCacheDenyWritePeMod(t *testing.T, dir string) {
+	t.Helper()
+
+	oldDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldDir); err != nil {
+			t.Fatalf("restore cwd: %v", err)
+		}
+	})
+
+	if err := os.WriteFile(filepath.Join(dir, "pe.mod"), []byte(`module example.com/cache-deny
+
+pe 1
+
+capability {
+    tools deny write
+}
+`), 0644); err != nil {
+		t.Fatal(err)
 	}
 }
 

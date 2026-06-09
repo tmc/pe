@@ -1722,6 +1722,8 @@ pe exp cache [command]
 
 `pe exp cache` stores and verifies content by SHA-256 digest. The cache is
 local only and unsigned; it does not prove identity, origin, or freshness.
+Cache writes from `put` and `manifest put` honor `tools deny write`; key, get,
+verify, and manifest verify remain read-only.
 
 ### Commands
 
