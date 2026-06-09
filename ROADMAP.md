@@ -1167,10 +1167,11 @@ sequenced plan. It is intentionally broader than the v0.5 release checklist:
 v0.5 should ship only after the P1 release gates are closed; later milestones
 can graduate selected experimental and aspirational surfaces into stable APIs.
 
-The cleanup branch for this work is `docs/archive-old-docs-cleanup`. Use that
-branch to archive old docs, tombstone stale implementation notes, and keep
-release-facing documentation honest before promoting changes back to the
-release branch. Do not use `.beads` for tracking this work.
+The `docs/archive-old-docs-cleanup` cleanup branch has been merged into `exp`
+and deleted; track this work directly on `exp`. Archive old docs, tombstone
+stale implementation notes, and keep release-facing documentation honest before
+promoting changes back to the release branch. Do not use `.beads` for tracking
+this work.
 
 Each implementation slice should follow the same loop:
 
