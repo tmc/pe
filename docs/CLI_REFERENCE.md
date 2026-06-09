@@ -2266,7 +2266,7 @@ Inspired by `go mod edit`, provides a programmatic interface for editing prompt 
     --fmt                        Format the prompt file
 -h, --help                       help for edit
     --json                       Output the prompt in JSON format
-    --module string              Add module dependency to go.mod
+    --module string              Add module dependency to pe.mod
     --prepend-prompt string      Prepend text to the main prompt
     --print                      Print the result instead of writing to file
     --remove-default string      Remove a default by key
@@ -2279,6 +2279,9 @@ Inspired by `go mod edit`, provides a programmatic interface for editing prompt 
     --set-system-prompt string   Set the system prompt
     --variant-cmd string         Commands for the variant (use with --add-variant)
 ```
+
+File edits and `--module` dependency edits honor `tools deny write`; `--print`
+and `--json` remain read-only.
 
 ### Examples
 

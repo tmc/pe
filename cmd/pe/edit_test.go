@@ -93,6 +93,49 @@ func TestRunEdit_SetPrompt(t *testing.T) {
 	editSetPrompt = ""
 }
 
+func TestRunEdit_WriteDeniedByPolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	const original = "Original prompt"
+	if err := os.WriteFile("test.prompt", []byte(original), 0644); err != nil {
+		t.Fatalf("writing prompt: %v", err)
+	}
+	if err := os.WriteFile("pe.mod", []byte(`module example.com/app
+
+pe 1
+
+capability {
+    tools deny write
+}
+`), 0644); err != nil {
+		t.Fatalf("writing pe.mod: %v", err)
+	}
+
+	editSetPrompt = "New prompt content"
+	editPrint = false
+	editJSON = false
+	editFmt = false
+	defer func() { editSetPrompt = "" }()
+
+	err := runEdit(editCmd, []string{"test.prompt"})
+	if err == nil {
+		t.Fatal("runEdit succeeded, want write policy error")
+	}
+	if !strings.Contains(err.Error(), "tool write is denied by pe.mod") {
+		t.Fatalf("runEdit error = %v, want write policy error", err)
+	}
+	content, err := os.ReadFile("test.prompt")
+	if err != nil {
+		t.Fatalf("reading prompt: %v", err)
+	}
+	if string(content) != original {
+		t.Fatalf("prompt changed after denied edit: %q", content)
+	}
+}
+
 func TestRunEdit_JSONOutput(t *testing.T) {
 	tmpDir := t.TempDir()
 	promptFile := filepath.Join(tmpDir, "test.prompt")
@@ -219,6 +262,40 @@ go 1.21
 
 	if !strings.Contains(string(content), "example.com/prompts") {
 		t.Error("Expected module in pe.mod")
+	}
+}
+
+func TestAddModuleDependency_DeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	origDir, _ := os.Getwd()
+	defer os.Chdir(origDir)
+	os.Chdir(tmpDir)
+
+	const original = `module test.example/prompts
+
+pe 1
+
+capability {
+    tools deny write
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(original), 0644); err != nil {
+		t.Fatalf("writing pe.mod: %v", err)
+	}
+
+	err := addModuleDependency("example.com/prompts@v1.0.0")
+	if err == nil {
+		t.Fatal("addModuleDependency succeeded, want write policy error")
+	}
+	if !strings.Contains(err.Error(), "tool write is denied by pe.mod") {
+		t.Fatalf("addModuleDependency error = %v, want write policy error", err)
+	}
+	content, err := os.ReadFile("pe.mod")
+	if err != nil {
+		t.Fatalf("reading pe.mod: %v", err)
+	}
+	if string(content) != original {
+		t.Fatalf("pe.mod changed after denied dependency edit:\n%s", content)
 	}
 }
 

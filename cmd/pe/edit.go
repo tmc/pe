@@ -86,7 +86,7 @@ func init() {
 	editCmd.Flags().BoolVar(&editJSON, "json", false, "Output the prompt in JSON format")
 	editCmd.Flags().BoolVar(&editPrint, "print", false, "Print the result instead of writing to file")
 	editCmd.Flags().BoolVar(&editFmt, "fmt", false, "Format the prompt file")
-	editCmd.Flags().StringVar(&editModule, "module", "", "Add module dependency to go.mod")
+	editCmd.Flags().StringVar(&editModule, "module", "", "Add module dependency to pe.mod")
 }
 
 func runEdit(cmd *cobra.Command, args []string) error {
@@ -247,6 +247,9 @@ func runEdit(cmd *cobra.Command, args []string) error {
 	}
 
 	// Write back to file
+	if err := enforceRuntimeToolPolicyIfValid("write"); err != nil {
+		return err
+	}
 	return os.WriteFile(filename, []byte(output), 0644)
 }
 
@@ -365,5 +368,8 @@ func addModuleDependency(module string) error {
 	}
 
 	// Write back
+	if err := enforceRuntimeToolPolicyIfValid("write"); err != nil {
+		return err
+	}
 	return os.WriteFile("pe.mod", []byte(content), 0644)
 }

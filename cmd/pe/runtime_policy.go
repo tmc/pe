@@ -35,3 +35,26 @@ func enforceRuntimeToolPolicy(tool string) error {
 	}
 	return nil
 }
+
+func enforceRuntimeToolPolicyIfValid(tool string) error {
+	data, err := os.ReadFile("pe.mod")
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("reading pe.mod policy: %w", err)
+	}
+	file, err := pemod.Parse(strings.NewReader(string(data)))
+	if err != nil {
+		return nil
+	}
+	if file.Capability == nil {
+		return nil
+	}
+	for _, deny := range file.Capability.Tools.Deny {
+		if deny == tool {
+			return fmt.Errorf("tool %s is denied by pe.mod", tool)
+		}
+	}
+	return nil
+}

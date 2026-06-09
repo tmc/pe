@@ -123,6 +123,8 @@ is the source of truth for planned work and release-blocking follow-ups.
   `vendor/` dependency tree.
 - `pe mod upgrade` honors `tools deny write` before rewriting `pe.mod` for
   newer dependency versions.
+- `pe edit` file edits and `--module` dependency edits honor `tools deny write`;
+  `--print` and `--json` output remain read-only.
 
 ## Important Implementation Details
 

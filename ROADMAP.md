@@ -1516,6 +1516,10 @@ integrity semantics.
    DONE current pass: `pe mod upgrade` now enforces `tools deny write` before
    rewriting `pe.mod` for newer dependency versions. Remaining work: runtime
    enforcement for other tool classes and remaining write surfaces.
+   DONE current pass: `pe edit` file edits and `--module` dependency edits
+   now enforce `tools deny write`, while `--print` and `--json` remain
+   read-only. Remaining work: runtime enforcement for other tool classes and
+   remaining write surfaces.
 6. Sign attest manifests with an Ed25519 envelope while preserving unsigned
    local integrity workflows.
    DONE current pass: `pe exp attest keygen`, `sign`, and `verify-signed`
