@@ -1435,6 +1435,10 @@ integrity semantics.
    `pe.mod` files so dependencies cannot request provider/tool/data/prompt
    classes or network placement denied by the parent module. Remaining work:
    runtime enforcement at provider/tool/file/network decision points.
+   DONE current pass: `pe run` now enforces `pe.mod` provider denials for exact
+   provider names and known provider classes such as `remote` before provider
+   construction. Remaining work: runtime enforcement for tool, file-write,
+   network, and broader placement decision points.
 6. Sign attest manifests with an Ed25519 envelope while preserving unsigned
    local integrity workflows.
    DONE current pass: `pe exp attest keygen`, `sign`, and `verify-signed`

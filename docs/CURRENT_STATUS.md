@@ -83,6 +83,8 @@ is the source of truth for planned work and release-blocking follow-ups.
   requirements for executable text files. Strict composition also checks cached
   dependency `pe.mod` files so dependencies cannot request capabilities or
   network placement denied by the parent module.
+- `pe run` enforces `pe.mod` provider denials for exact provider names and known
+  provider classes such as `remote` before provider construction.
 
 ## Important Implementation Details
 

@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/inference"
 	"github.com/tmc/pe/internal/inference/providers/cgpt"
+	"github.com/tmc/pe/internal/pemod"
 	"github.com/tmc/pe/internal/prompt"
 )
 
@@ -24,14 +25,7 @@ func runCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [prompt or file]",
 		Short: "Execute a prompt immediately (like go run)",
-		Long: `Execute a prompt immediately, similar to 'go run' for Go programs.
-
-Examples:
-  pe run "What is 2+2?"
-  pe run prompt.txt
-  pe run "Hello {{.name}}" --var name=World
-  cat data.txt | pe run -`,
-		Args: cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Read the prompt
 			input := args[0]
@@ -73,6 +67,9 @@ Examples:
 			}
 
 			// Execute the prompt
+			if err := enforceRuntimeProviderPolicy(provider); err != nil {
+				return err
+			}
 			client := inference.NewClient()
 			client.Register("cgpt", cgpt.New())
 
@@ -159,4 +156,62 @@ func registerLLMProviderSpec(client *inference.Client, spec string) error {
 		return err
 	}
 	return nil
+}
+
+func enforceRuntimeProviderPolicy(provider string) error {
+	data, err := os.ReadFile("pe.mod")
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("reading pe.mod policy: %w", err)
+	}
+	file, err := pemod.Parse(strings.NewReader(string(data)))
+	if err != nil {
+		return fmt.Errorf("parsing pe.mod policy: %w", err)
+	}
+	if file.Capability == nil {
+		return nil
+	}
+	base := providerBaseName(provider)
+	if base == "" {
+		base = "cgpt"
+	}
+	for _, deny := range file.Capability.Providers.Deny {
+		if deny == base {
+			return fmt.Errorf("provider %s is denied by pe.mod", base)
+		}
+		if deny == "remote" && isRemoteProvider(base) {
+			return fmt.Errorf("provider %s is denied by pe.mod remote provider policy", base)
+		}
+		if deny == "local" && isLocalProvider(base) {
+			return fmt.Errorf("provider %s is denied by pe.mod local provider policy", base)
+		}
+	}
+	return nil
+}
+
+func providerBaseName(provider string) string {
+	if i := strings.Index(provider, ":"); i >= 0 {
+		return provider[:i]
+	}
+	return provider
+}
+
+func isRemoteProvider(provider string) bool {
+	switch provider {
+	case "openai", "anthropic":
+		return true
+	default:
+		return false
+	}
+}
+
+func isLocalProvider(provider string) bool {
+	switch provider {
+	case "cgpt", "mock", "ollama":
+		return true
+	default:
+		return false
+	}
 }

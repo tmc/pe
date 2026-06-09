@@ -280,6 +280,101 @@ func TestRunCmd_Providers(t *testing.T) {
 	}
 }
 
+func TestRunCmdProviderPolicyDeniesRemote(t *testing.T) {
+	t.Setenv("PE_TEST_MODE", "true")
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	mod := `module example.com/prompts
+
+pe 1
+
+capability {
+    providers deny remote
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(mod), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := runCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"Test prompt", "--provider", "openai:gpt-4o-mini"})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "remote provider policy") {
+		t.Fatalf("run error = %v, want remote provider policy denial", err)
+	}
+}
+
+func TestRunCmdProviderPolicyDeniesExactProvider(t *testing.T) {
+	t.Setenv("PE_TEST_MODE", "true")
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	mod := `module example.com/prompts
+
+pe 1
+
+capability {
+    providers deny mock
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(mod), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := runCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"Test prompt", "--provider", "mock"})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "provider mock is denied") {
+		t.Fatalf("run error = %v, want exact provider denial", err)
+	}
+}
+
+func TestRunCmdProviderPolicyAllowsMock(t *testing.T) {
+	t.Setenv("PE_TEST_MODE", "true")
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	mod := `module example.com/prompts
+
+pe 1
+
+capability {
+    providers deny remote
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(mod), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := runCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"Test prompt", "--provider", "mock"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Mock response") {
+		t.Fatalf("output = %q, want mock response", buf.String())
+	}
+}
+
 func TestRunCmd_StreamFlag(t *testing.T) {
 	// Set test mode
 	oldTestMode := os.Getenv("PE_TEST_MODE")

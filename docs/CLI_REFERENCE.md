@@ -130,6 +130,10 @@ pe run [prompt or file] [flags]
 
 The `run` command executes prompts directly without needing a configuration file. It's designed for quick testing and iteration, similar to `go run` for Go programs. Supports both direct prompt strings and prompt files.
 
+If `pe.mod` exists in the current directory, `pe run` enforces provider
+denials before creating a provider. Exact provider denials and known provider
+classes such as `remote` are rejected at runtime.
+
 ### Arguments
 
 - `prompt or file`: Either a prompt string or path to a file containing the prompt
