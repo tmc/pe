@@ -566,6 +566,9 @@ func outputComposeResult(cmd *cobra.Command, result *ComposeResult) error {
 
 	if outputFile != "" {
 		// Save composed prompt to file (not JSON)
+		if err := enforceRuntimeToolPolicy("write"); err != nil {
+			return err
+		}
 		return os.WriteFile(outputFile, []byte(result.ComposedPrompt), 0644)
 	}
 
@@ -585,6 +588,10 @@ func outputComposeResult(cmd *cobra.Command, result *ComposeResult) error {
 }
 
 func initComponentLibrary() error {
+	if err := enforceRuntimeToolPolicy("write"); err != nil {
+		return err
+	}
+
 	// Create component library structure
 	dirs := []string{
 		"components/context",
@@ -813,6 +820,10 @@ func addComponentToLibrary(componentPath, category string) error {
 	// Determine category if not specified
 	if category == "" {
 		category = inferCategory(componentPath)
+	}
+
+	if err := enforceRuntimeToolPolicy("write"); err != nil {
+		return err
 	}
 
 	// Create category directory if it doesn't exist

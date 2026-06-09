@@ -2414,8 +2414,9 @@ pe compose [component files...] [flags]
     --optimize           Apply local composition polish after composition
 ```
 
-`pe compose --import` writes component files under `components/`. If `pe.mod`
-denies the `write` tool capability, imports fail before writing files.
+`pe compose --output`, `--library-init`, `--add-component`, and `--import`
+honor `tools deny write` before writing files. Default terminal composition
+output remains read-only.
 
 ### Examples
 

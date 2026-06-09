@@ -666,6 +666,40 @@ func TestComposeCmd_WithOutput(t *testing.T) {
 	// We just verify the command executes without error.
 }
 
+func TestComposeOutputDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldDir, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldDir)
+
+	writeComposeDenyWritePeMod(t)
+	cmd := newComposeCmd()
+	cmd.Flags().Set("output", "out.txt")
+	err := outputComposeResult(cmd, &ComposeResult{ComposedPrompt: "hello"})
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("outputComposeResult error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("out.txt"); !os.IsNotExist(err) {
+		t.Fatalf("out.txt stat error = %v, want not exist", err)
+	}
+}
+
+func TestComposeLibraryInitDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldDir, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldDir)
+
+	writeComposeDenyWritePeMod(t)
+	err := initComponentLibrary()
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("initComponentLibrary error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("components"); !os.IsNotExist(err) {
+		t.Fatalf("components stat error = %v, want not exist", err)
+	}
+}
+
 func TestComposeCmd_CoherenceCheck(t *testing.T) {
 	oldTestMode := os.Getenv("PE_TEST_MODE")
 	os.Setenv("PE_TEST_MODE", "true")
@@ -998,17 +1032,7 @@ func TestComposeImportDeniedByWritePolicy(t *testing.T) {
 	os.Chdir(tmpDir)
 	defer os.Chdir(oldDir)
 
-	mod := `module example.com/prompts
-
-pe 1
-
-capability {
-    tools deny write
-}
-`
-	if err := os.WriteFile("pe.mod", []byte(mod), 0644); err != nil {
-		t.Fatal(err)
-	}
+	writeComposeDenyWritePeMod(t)
 	source := filepath.Join(tmpDir, "import.txt")
 	if err := os.WriteFile(source, []byte("Imported component"), 0644); err != nil {
 		t.Fatal(err)
@@ -1019,6 +1043,41 @@ capability {
 	}
 	if _, err := os.Stat(filepath.Join("components", filepath.Base(tmpDir), "import.txt")); !os.IsNotExist(err) {
 		t.Fatalf("component was written despite write policy: %v", err)
+	}
+}
+
+func TestComposeAddComponentDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldDir, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldDir)
+
+	writeComposeDenyWritePeMod(t)
+	source := filepath.Join(tmpDir, "constraint.txt")
+	if err := os.WriteFile(source, []byte("Stay concise."), 0644); err != nil {
+		t.Fatal(err)
+	}
+	err := addComponentToLibrary(source, "constraints")
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("addComponentToLibrary error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat(filepath.Join("components", "constraints", "constraint.txt")); !os.IsNotExist(err) {
+		t.Fatalf("component stat error = %v, want not exist", err)
+	}
+}
+
+func writeComposeDenyWritePeMod(t *testing.T) {
+	t.Helper()
+	mod := `module example.com/prompts
+
+pe 1
+
+capability {
+    tools deny write
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(mod), 0644); err != nil {
+		t.Fatal(err)
 	}
 }
 

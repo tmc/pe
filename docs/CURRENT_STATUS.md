@@ -86,7 +86,8 @@ is the source of truth for planned work and release-blocking follow-ups.
 - `pe run` enforces `pe.mod` provider denials for exact provider names and known
   provider classes such as `remote` before provider construction. Placement
   policy also blocks known remote providers when `network false` is set.
-- Component import writes honor `tools deny write` in `pe.mod`.
+- Compose output, component library, and import writes honor `tools deny write`
+  in `pe.mod`; terminal composition output remains read-only.
 - `pe build` artifact writes honor `tools deny write`; `pe build --validate`
   remains read-only.
 - `pe eval -o` and `pe eval --save-db` honor `tools deny write`; default eval
