@@ -1010,19 +1010,26 @@ cache workflows.
 Current status:
 - `pe exp attest manifest` and `pe exp attest verify` are implemented for
   deterministic local SHA-256 manifests.
-- Help text correctly says these manifests are unsigned and local-only: they
-  detect content changes but do not prove identity, origin, or freshness.
+- `pe exp attest keygen`, `pe exp attest sign`, and
+  `pe exp attest verify-signed` are implemented for Ed25519 signed manifest
+  envelopes while preserving unsigned manifest workflows.
+- Help text and docs distinguish unsigned local integrity manifests from signed
+  envelopes: signed envelopes bind the manifest to a public key, but do not by
+  themselves prove key ownership, freshness, or remote origin.
 
 Tasks:
-1. Define a signed manifest envelope that preserves the existing unsigned
+1. DONE current pass: Define a signed manifest envelope that preserves the existing unsigned
    manifest payload.
-2. Start with Ed25519 from the standard library.
-3. Add explicit key-generation, signing, verification, and failure-mode docs.
-4. Keep unsigned manifests available for local integrity workflows.
+2. DONE current pass: Start with Ed25519 from the standard library.
+3. DONE current pass: Add explicit key-generation, signing, verification, and
+   failure-mode docs.
+4. DONE current pass: Keep unsigned manifests available for local integrity
+   workflows.
 
 Verification:
 - `go run ./cmd/pe exp attest --help`
-- `rg 'unsignedManifestType|ed25519|signature' cmd/pe`
+- `go test ./cmd/pe -run 'TestUnsignedManifest|TestExpAttest|TestSignedManifest'`
+- `rg 'unsignedManifestType|signedManifestType|ed25519|signature' cmd/pe`
 
 
 #### Build remote registry download path
@@ -1418,6 +1425,10 @@ integrity semantics.
    validation, then runtime enforcement for provider/tool/file/network access.
 6. Sign attest manifests with an Ed25519 envelope while preserving unsigned
    local integrity workflows.
+   DONE current pass: `pe exp attest keygen`, `sign`, and `verify-signed`
+   produce and verify Ed25519 signed manifest envelopes that preserve the
+   unsigned manifest payload; tests cover wrong key, tampered payload, missing
+   signature, changed local files, and CLI round trips.
 
 Verification:
 - `go test ./cmd/pe ./internal/module ./internal/pemod`

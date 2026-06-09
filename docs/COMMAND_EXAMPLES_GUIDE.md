@@ -369,7 +369,7 @@ pe view --file results.json --port 8081
 
 ## 🔐 Security and Attestation
 
-### `pe exp attest` - Unsigned Local Manifests
+### `pe exp attest` - Local Manifests
 
 ```bash
 # Create a deterministic unsigned manifest
@@ -377,6 +377,13 @@ pe exp attest manifest prompts/ > manifest.json
 
 # Verify files against the manifest
 pe exp attest verify manifest.json
+
+# Create an Ed25519 signed envelope for the manifest
+pe exp attest keygen > attest-key.json
+pe exp attest sign --private-key "$(jq -r .private_key attest-key.json)" manifest.json > signed-manifest.json
+
+# Verify the signature and local files
+pe exp attest verify-signed --public-key "$(jq -r .public_key attest-key.json)" signed-manifest.json
 ```
 
 ### `pe exp cache` - Local Content Cache

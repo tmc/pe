@@ -1603,7 +1603,7 @@ pe security test --target config.yaml --comprehensive
 
 ## attest
 
-Create and verify deterministic SHA-256 manifests for local files.
+Create, sign, and verify deterministic SHA-256 manifests for local files.
 
 ### Synopsis
 
@@ -1613,15 +1613,20 @@ pe exp attest [command]
 
 ### Description
 
-`pe exp attest` writes and verifies unsigned local manifests. These manifests
-detect file content changes, missing files, and manifest tampering, but they do
-not prove identity, origin, or freshness.
+`pe exp attest` writes and verifies unsigned local manifests. It can also wrap
+an unsigned manifest in an Ed25519 signed envelope. Unsigned manifests detect
+file content changes, missing files, and manifest tampering. Signed envelopes
+bind the manifest payload to a public key, but do not by themselves prove key
+ownership, origin, or freshness.
 
 ### Commands
 
 ```bash
 pe exp attest manifest [file-or-dir...] [--root .]
 pe exp attest verify <manifest.json> [--root .]
+pe exp attest keygen
+pe exp attest sign <manifest.json> --private-key <hex>
+pe exp attest verify-signed <signed-manifest.json> [--root .] [--public-key <hex>]
 ```
 
 ### Examples
@@ -1629,6 +1634,9 @@ pe exp attest verify <manifest.json> [--root .]
 ```bash
 pe exp attest manifest prompts/ > manifest.json
 pe exp attest verify manifest.json
+pe exp attest keygen > attest-key.json
+pe exp attest sign --private-key "$(jq -r .private_key attest-key.json)" manifest.json > signed-manifest.json
+pe exp attest verify-signed --public-key "$(jq -r .public_key attest-key.json)" signed-manifest.json
 ```
 
 ---
