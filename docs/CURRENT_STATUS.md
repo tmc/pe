@@ -121,6 +121,8 @@ is the source of truth for planned work and release-blocking follow-ups.
   default tidy reporting remains read-only.
 - `pe mod vendor` honors `tools deny write` before creating or rewriting the
   `vendor/` dependency tree.
+- `pe mod upgrade` honors `tools deny write` before rewriting `pe.mod` for
+  newer dependency versions.
 
 ## Important Implementation Details
 

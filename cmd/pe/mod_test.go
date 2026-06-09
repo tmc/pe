@@ -873,6 +873,54 @@ func TestModUpgradeCmd_UpdatesRequirements(t *testing.T) {
 	}
 }
 
+func TestModUpgradeCmd_DeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	t.Setenv("PE_REGISTRY_TYPE", "local")
+	t.Setenv("PE_REGISTRY_DIR", filepath.Join(tmpDir, "registry"))
+	registry := module.NewLocalRegistry(filepath.Join(tmpDir, "registry"))
+	if err := registry.Publish(&module.Module{Name: "example.com/mod", Version: "v1.2.0"}, t.TempDir()); err != nil {
+		t.Fatalf("Publish: %v", err)
+	}
+	const original = `module example.com/app
+
+pe 1
+
+require example.com/mod v1.0.0
+
+capability {
+    tools deny write
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(original), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+	err := runModUpgrade(cmd, nil)
+	if err == nil {
+		t.Fatal("runModUpgrade succeeded, want write policy error")
+	}
+	if !strings.Contains(err.Error(), "tool write is denied by pe.mod") {
+		t.Fatalf("runModUpgrade error = %v, want write policy error", err)
+	}
+	if out.String() != "" {
+		t.Fatalf("runModUpgrade output = %q, want none", out.String())
+	}
+	got, err := os.ReadFile("pe.mod")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != original {
+		t.Fatalf("pe.mod changed after denied upgrade:\n%s", got)
+	}
+}
+
 func TestModUpgradeCmd_RejectsUnrequiredModule(t *testing.T) {
 	tmpDir := t.TempDir()
 	oldWd, _ := os.Getwd()

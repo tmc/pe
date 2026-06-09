@@ -1272,6 +1272,16 @@ pe mod vendor
 Honors `tools deny write` before creating or rewriting the `vendor/`
 dependency tree.
 
+#### mod upgrade
+
+Upgrade required modules to the latest registry versions.
+
+```bash
+pe mod upgrade [module...]
+```
+
+Honors `tools deny write` before rewriting `pe.mod`.
+
 #### mod search
 
 Search for modules in the registry.

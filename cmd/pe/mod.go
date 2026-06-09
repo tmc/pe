@@ -1161,6 +1161,9 @@ func runModUpgrade(cmd *cobra.Command, args []string) error {
 			fmt.Fprintf(out, "%s %s is current\n", name, req.Version)
 			continue
 		}
+		if err := enforceRuntimeToolPolicy("write"); err != nil {
+			return err
+		}
 		old := req.Version
 		req.Version = latest.Version
 		changed = true
