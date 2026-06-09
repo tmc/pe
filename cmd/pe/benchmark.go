@@ -256,6 +256,9 @@ func runBenchmark(cmd *cobra.Command, configFile, outputFile, outputFormat strin
 
 	// Write to output file or stdout
 	if outputFile != "" {
+		if err := enforceRuntimeToolPolicy("write"); err != nil {
+			return err
+		}
 		err = os.WriteFile(outputFile, output, 0644)
 		if err != nil {
 			return fmt.Errorf("error writing output file: %v", err)

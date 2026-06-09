@@ -467,6 +467,9 @@ pe benchmark [config_file] [flags]
 
 Runs multiple iterations of evaluations to measure performance characteristics like latency, cost, and quality metrics.
 
+If `pe.mod` denies the `write` tool capability, `pe benchmark -o` fails
+before writing the result file. Stdout and `--go-bench` output remain read-only.
+
 ### Arguments
 
 - `config_file`: Configuration file for benchmarking

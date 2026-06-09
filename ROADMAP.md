@@ -1454,6 +1454,10 @@ integrity semantics.
    `tools deny write` before writing result files or promptfoo eval storage,
    while default stdout evaluation remains read-only. Remaining work: runtime
    enforcement for other tool classes and remaining write surfaces.
+   DONE current pass: `pe benchmark -o` now enforces `tools deny write` before
+   writing result files, while stdout and Go benchmark output remain read-only.
+   Remaining work: runtime enforcement for other tool classes and remaining
+   write surfaces.
 6. Sign attest manifests with an Ed25519 envelope while preserving unsigned
    local integrity workflows.
    DONE current pass: `pe exp attest keygen`, `sign`, and `verify-signed`

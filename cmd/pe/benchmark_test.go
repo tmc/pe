@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -275,6 +276,96 @@ tests:
 			}
 		})
 	}
+}
+
+func TestBenchmarkCmd_OutputDeniedByWritePolicy(t *testing.T) {
+	oldTestMode := os.Getenv("PE_TEST_MODE")
+	os.Setenv("PE_TEST_MODE", "true")
+	defer os.Setenv("PE_TEST_MODE", oldTestMode)
+
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	configFile := "benchmark-config.yaml"
+	if err := os.WriteFile(configFile, []byte(benchmarkPolicyTestConfig()), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("pe.mod", []byte(benchmarkPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := benchmarkCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{configFile, "--iterations", "1", "--output", "benchmark.json"})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("benchmark error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("benchmark.json"); !os.IsNotExist(err) {
+		t.Fatalf("benchmark wrote output despite write policy: %v", err)
+	}
+}
+
+func TestBenchmarkCmd_StdoutAllowedByWritePolicy(t *testing.T) {
+	oldTestMode := os.Getenv("PE_TEST_MODE")
+	os.Setenv("PE_TEST_MODE", "true")
+	defer os.Setenv("PE_TEST_MODE", oldTestMode)
+
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	configFile := "benchmark-config.yaml"
+	if err := os.WriteFile(configFile, []byte(benchmarkPolicyTestConfig()), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("pe.mod", []byte(benchmarkPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := benchmarkCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{configFile, "--iterations", "1"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("benchmark stdout: %v", err)
+	}
+	if output := buf.String(); !strings.Contains(output, "Benchmark completed") {
+		t.Fatalf("benchmark stdout = %q, want completion output", output)
+	}
+}
+
+func benchmarkPolicyTestConfig() string {
+	return `description: "Benchmark write policy test"
+prompts:
+  - "Test prompt"
+providers:
+  - name: "mock"
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: "Mock"
+`
+}
+
+func benchmarkPolicyTestModule() string {
+	return `module example.com/prompts
+
+pe 1
+
+capability {
+    tools deny write
+}
+`
 }
 
 func TestBenchmarkCmd_ObjectProviderStructuredMetrics(t *testing.T) {

@@ -91,6 +91,8 @@ is the source of truth for planned work and release-blocking follow-ups.
   remains read-only.
 - `pe eval -o` and `pe eval --save-db` honor `tools deny write`; default eval
   stdout output remains read-only.
+- `pe benchmark -o` honors `tools deny write`; stdout and Go benchmark output
+  remain read-only.
 
 ## Important Implementation Details
 
