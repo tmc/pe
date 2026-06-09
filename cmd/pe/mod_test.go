@@ -106,6 +106,47 @@ func TestModInitCmd_ForceOverwrite(t *testing.T) {
 	}
 }
 
+func TestModInitCmd_ForceOverwriteDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	const original = `module existing
+
+pe 1
+
+capability {
+    tools deny write
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(original), 0644); err != nil {
+		t.Fatalf("writing pe.mod: %v", err)
+	}
+
+	modForce = true
+	defer func() { modForce = false }()
+
+	err := runModInit(modInitCmd, []string{"example.com/new-module"})
+	if err == nil {
+		t.Fatal("runModInit succeeded, want write policy error")
+	}
+	if !strings.Contains(err.Error(), "tool write is denied by pe.mod") {
+		t.Fatalf("runModInit error = %v, want write policy error", err)
+	}
+
+	data, err := os.ReadFile("pe.mod")
+	if err != nil {
+		t.Fatalf("reading pe.mod: %v", err)
+	}
+	if string(data) != original {
+		t.Fatalf("pe.mod changed after denied init:\n%s", data)
+	}
+	if _, err := os.Stat(".pe"); !os.IsNotExist(err) {
+		t.Fatalf(".pe stat error = %v, want not exist", err)
+	}
+}
+
 func TestModTidyCmd_NoPeMod(t *testing.T) {
 	tmpDir := t.TempDir()
 	oldWd, _ := os.Getwd()

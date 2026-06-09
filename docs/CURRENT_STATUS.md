@@ -114,6 +114,9 @@ is the source of truth for planned work and release-blocking follow-ups.
 - `pe fmt --write` honors `tools deny write`; stdout formatting and `--check`
   remain read-only.
 - `pe init` honors `tools deny write` before creating `.pe/` project files.
+- `pe mod init --force` honors an existing `pe.mod` `tools deny write` policy
+  before overwriting the module file; initial `pe mod init` has no module
+  policy file to consult.
 
 ## Important Implementation Details
 

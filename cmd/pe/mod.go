@@ -298,8 +298,13 @@ func runModInit(cmd *cobra.Command, args []string) error {
 	moduleName := args[0]
 
 	// Check if pe.mod already exists
-	if _, err := os.Stat("pe.mod"); err == nil && !modForce {
-		return fmt.Errorf("pe.mod already exists (use --force to overwrite)")
+	if _, err := os.Stat("pe.mod"); err == nil {
+		if !modForce {
+			return fmt.Errorf("pe.mod already exists (use --force to overwrite)")
+		}
+		if err := enforceModInitForceWritePolicy(); err != nil {
+			return err
+		}
 	}
 
 	// Create new pe.mod file
@@ -332,6 +337,26 @@ func runModInit(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Created pe.mod for module %s\n", moduleName)
 
+	return nil
+}
+
+func enforceModInitForceWritePolicy() error {
+	data, err := os.ReadFile("pe.mod")
+	if err != nil {
+		return fmt.Errorf("reading pe.mod policy: %w", err)
+	}
+	file, err := pemod.Parse(strings.NewReader(string(data)))
+	if err != nil {
+		return nil
+	}
+	if file.Capability == nil {
+		return nil
+	}
+	for _, deny := range file.Capability.Tools.Deny {
+		if deny == "write" {
+			return fmt.Errorf("tool write is denied by pe.mod")
+		}
+	}
 	return nil
 }
 

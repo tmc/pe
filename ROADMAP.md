@@ -1502,6 +1502,10 @@ integrity semantics.
    DONE current pass: `pe init` now enforces `tools deny write` before
    creating `.pe/` project directories or `.peignore`. Remaining work: runtime
    enforcement for other tool classes and remaining write surfaces.
+   DONE current pass: `pe mod init --force` now enforces an existing `pe.mod`
+   `tools deny write` policy before overwriting the module file. Initial
+   `pe mod init` has no module policy file to consult. Remaining work: runtime
+   enforcement for other tool classes and remaining write surfaces.
 6. Sign attest manifests with an Ed25519 envelope while preserving unsigned
    local integrity workflows.
    DONE current pass: `pe exp attest keygen`, `sign`, and `verify-signed`

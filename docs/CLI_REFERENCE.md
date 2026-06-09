@@ -1222,6 +1222,10 @@ Initialize a new prompt module.
 pe mod init [module_path]
 ```
 
+With `--force`, `pe mod init` honors an existing `pe.mod` `tools deny write`
+policy before overwriting the module file. Initial module creation has no
+module policy file to consult.
+
 #### mod publish
 
 Registered command for future registry publishing. Current registry backends do
