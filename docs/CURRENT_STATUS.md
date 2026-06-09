@@ -97,6 +97,8 @@ is the source of truth for planned work and release-blocking follow-ups.
   read-only.
 - `pe expand --output` honors `tools deny write`; stdout expanded JSON remains
   read-only.
+- `pe extract --output` honors `tools deny write`; stdout extracted content
+  remains read-only.
 
 ## Important Implementation Details
 

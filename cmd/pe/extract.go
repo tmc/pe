@@ -110,6 +110,9 @@ Can output in different formats and validate against schemas.`,
 
 			// Write to file or stdout
 			if output != "" {
+				if err := enforceRuntimeToolPolicy("write"); err != nil {
+					return err
+				}
 				if err := os.WriteFile(output, []byte(outputStr), 0644); err != nil {
 					return fmt.Errorf("error writing output file: %w", err)
 				}

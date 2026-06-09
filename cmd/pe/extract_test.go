@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"os"
 	"strings"
 	"testing"
 )
@@ -27,6 +29,75 @@ func TestExtractCmd_CommandStructure(t *testing.T) {
 	if cmd.Short == "" {
 		t.Error("Expected Short description to be set")
 	}
+}
+
+func TestExtractCmdOutputDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("input.txt", []byte("<answer>42</answer>"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("pe.mod", []byte(extractPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := extractCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"input.txt", "--tag", "answer", "--output", "answer.txt"})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("extract error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("answer.txt"); !os.IsNotExist(err) {
+		t.Fatalf("extract wrote output despite write policy: %v", err)
+	}
+}
+
+func TestExtractCmdStdoutAllowedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("input.txt", []byte("<answer>42</answer>"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("pe.mod", []byte(extractPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := extractCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"input.txt", "--tag", "answer"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("extract stdout: %v", err)
+	}
+	if got := buf.String(); got != "42\n" {
+		t.Fatalf("extract stdout = %q, want 42 newline", got)
+	}
+	if _, err := os.Stat("answer.txt"); !os.IsNotExist(err) {
+		t.Fatalf("extract created unexpected output: %v", err)
+	}
+}
+
+func extractPolicyTestModule() string {
+	return `module example.com/prompts
+
+pe 1
+
+capability {
+    tools deny write
+}
+`
 }
 
 func TestExtractTags_SimpleTag(t *testing.T) {

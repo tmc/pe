@@ -2018,6 +2018,9 @@ pe extract [flags]
 
 Supports extracting single or multiple tags, nested tags, and XPath-like selectors. Can output in different formats and validate against schemas.
 
+If `pe.mod` denies the `write` tool capability, `pe extract --output` fails
+before writing the extracted content. Default stdout output remains read-only.
+
 ### Flags
 
 ```bash
