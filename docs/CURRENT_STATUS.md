@@ -71,6 +71,8 @@ is the source of truth for planned work and release-blocking follow-ups.
 - `pe serve` - Localhost-first HTTP API command
 - `pe playground` - Local web UI with local compare, metrics, security,
   component, and in-memory history endpoints
+- `pe playground` component writes honor `tools deny write`; read-only
+  playground endpoints remain available.
 
 ### Executable Text
 - Plain text is valid executable text input.

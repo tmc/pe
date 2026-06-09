@@ -1694,6 +1694,8 @@ surface accidentally.
    BERTScore metric requests now return local JSON results instead of 501
    placeholders. Remaining work: persistent history, richer component-library
    workflows, provider-backed comparison, and calibrated semantic metrics.
+   DONE current pass: playground component POST writes now enforce
+   `tools deny write` before creating component directories or files.
 4. Expand examples for structured output, pass@N, security testing,
    distributed execution, attestation, Starlark extensions, advanced metrics,
    composition, and local providers.

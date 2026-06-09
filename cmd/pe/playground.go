@@ -860,6 +860,10 @@ func (ps *PlaygroundServer) handleComponents(w http.ResponseWriter, r *http.Requ
 			http.Error(w, "invalid component category", http.StatusBadRequest)
 			return
 		}
+		if err := enforceRuntimeToolPolicy("write"); err != nil {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
 		path := filepath.Join("components", category, filepath.Base(req.Name))
 		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

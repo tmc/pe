@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -155,6 +156,47 @@ func TestPlaygroundComponentRejectsPathEscape(t *testing.T) {
 	rec := playgroundRequest(server, http.MethodPost, "/api/components", `{"name":"x.txt","category":"../x","content":"x"}`)
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestPlaygroundComponentWriteDeniedByPolicy(t *testing.T) {
+	server := NewPlaygroundServer()
+	server.setupRoutes()
+
+	oldDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpDir := t.TempDir()
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldDir); err != nil {
+			t.Fatalf("restore cwd: %v", err)
+		}
+	})
+
+	if err := os.WriteFile(filepath.Join(tmpDir, "pe.mod"), []byte(`module example.com/playground-deny
+
+pe 1
+
+capability {
+    tools deny write
+}
+`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	rec := playgroundRequest(server, http.MethodPost, "/api/components", `{"name":"context.txt","category":"context","content":"You are precise."}`)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "tool write is denied by pe.mod") {
+		t.Fatalf("body = %s, want write policy error", rec.Body.String())
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "components")); !os.IsNotExist(err) {
+		t.Fatalf("component directory exists despite write policy: %v", err)
 	}
 }
 
