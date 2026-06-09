@@ -1269,6 +1269,9 @@ Copy dependencies to vendor directory.
 pe mod vendor
 ```
 
+Honors `tools deny write` before creating or rewriting the `vendor/`
+dependency tree.
+
 #### mod search
 
 Search for modules in the registry.

@@ -893,6 +893,9 @@ func runModVendor(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("parsing pe.mod: %w", err)
 	}
+	if err := enforceRuntimeToolPolicy("write"); err != nil {
+		return err
+	}
 
 	// Create vendor directory
 	vendorDir := "vendor"

@@ -531,6 +531,38 @@ func TestModVendorCmd_SkipsMissingCachedModule(t *testing.T) {
 	}
 }
 
+func TestModVendorCmd_DeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	const mod = `module example.com/app
+
+pe 1
+
+require example.com/mod v1.0.0
+
+capability {
+    tools deny write
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(mod), 0644); err != nil {
+		t.Fatalf("writing pe.mod: %v", err)
+	}
+
+	err := runModVendor(modVendorCmd, nil)
+	if err == nil {
+		t.Fatal("runModVendor succeeded, want write policy error")
+	}
+	if !strings.Contains(err.Error(), "tool write is denied by pe.mod") {
+		t.Fatalf("runModVendor error = %v, want write policy error", err)
+	}
+	if _, err := os.Stat("vendor"); !os.IsNotExist(err) {
+		t.Fatalf("vendor stat error = %v, want not exist", err)
+	}
+}
+
 func TestCopyModuleDirRejectsSymlink(t *testing.T) {
 	tmpDir := t.TempDir()
 	src := filepath.Join(tmpDir, "src")
