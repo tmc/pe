@@ -1351,6 +1351,10 @@ integrity semantics.
    missing version, malformed archive, checksum mismatch, and path traversal.
 4. Implement version upgrade and dependency graph behavior with predictable
    conflict reporting.
+   DONE current pass: module version conflict resolution now chooses the
+   highest declared version that satisfies all semver constraints and reports a
+   clear conflict when requirements cannot be satisfied, instead of taking a
+   lexicographic latest guess.
 5. Connect `pe.mod` capability, placement, and policy blocks to static
    validation, then runtime enforcement for provider/tool/file/network access.
 6. Sign attest manifests with an Ed25519 envelope while preserving unsigned

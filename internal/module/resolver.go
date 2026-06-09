@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -578,18 +579,67 @@ func ResolveVersionConflicts(modules []*Module) (map[string]string, error) {
 				resolved[name] = v
 			}
 		} else {
-			// Try to find compatible version
-			// For now, just take the latest version
-			// TODO: Implement proper version resolution
-			var latest string
+			constraints := make([]*VersionConstraint, 0, len(unique))
+			candidates := make([]string, 0, len(unique))
 			for v := range unique {
-				if latest == "" || v > latest {
-					latest = v
+				constraint, err := ParseVersionConstraint(v)
+				if err != nil {
+					return nil, fmt.Errorf("invalid version constraint %q for %s: %w", v, name, err)
+				}
+				constraints = append(constraints, constraint)
+				if constraint.Version != "" {
+					candidates = append(candidates, constraint.Version)
 				}
 			}
-			resolved[name] = latest
+			best, ok := highestCompatibleVersion(candidates, constraints)
+			if !ok {
+				return nil, fmt.Errorf("conflicting version requirements for %s: %s", name, strings.Join(sortedKeys(unique), ", "))
+			}
+			resolved[name] = best
 		}
 	}
 
 	return resolved, nil
+}
+
+func highestCompatibleVersion(candidates []string, constraints []*VersionConstraint) (string, bool) {
+	seen := make(map[string]bool)
+	var unique []string
+	for _, candidate := range candidates {
+		if candidate == "" || seen[candidate] {
+			continue
+		}
+		seen[candidate] = true
+		unique = append(unique, candidate)
+	}
+	sort.Slice(unique, func(i, j int) bool {
+		left, lerr := parseSemver(unique[i])
+		right, rerr := parseSemver(unique[j])
+		if lerr != nil || rerr != nil {
+			return unique[i] > unique[j]
+		}
+		return left.compare(right) > 0
+	})
+	for _, candidate := range unique {
+		matches := true
+		for _, constraint := range constraints {
+			if !constraint.Matches(candidate) {
+				matches = false
+				break
+			}
+		}
+		if matches {
+			return candidate, true
+		}
+	}
+	return "", false
+}
+
+func sortedKeys(values map[string]bool) []string {
+	keys := make([]string, 0, len(values))
+	for value := range values {
+		keys = append(keys, value)
+	}
+	sort.Strings(keys)
+	return keys
 }

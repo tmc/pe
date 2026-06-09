@@ -3,6 +3,7 @@ package module
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -454,13 +455,39 @@ func TestResolveVersionConflicts_Different(t *testing.T) {
 	}
 
 	resolved, err := ResolveVersionConflicts(modules)
+	if err == nil || !strings.Contains(err.Error(), "conflicting version requirements for shared") {
+		t.Fatalf("ResolveVersionConflicts = %#v err=%v, want conflict", resolved, err)
+	}
+}
+
+func TestResolveVersionConflicts_CompatibleConstraints(t *testing.T) {
+	modules := []*Module{
+		{
+			Name: "A",
+			Dependencies: map[string]string{
+				"shared": "^1.0.0",
+			},
+		},
+		{
+			Name: "B",
+			Dependencies: map[string]string{
+				"shared": "1.2.0",
+			},
+		},
+		{
+			Name: "C",
+			Dependencies: map[string]string{
+				"shared": ">=1.1.0",
+			},
+		},
+	}
+
+	resolved, err := ResolveVersionConflicts(modules)
 	if err != nil {
 		t.Fatalf("ResolveVersionConflicts failed: %v", err)
 	}
-
-	// Should pick the "latest" (lexicographically larger)
-	if resolved["shared"] != "2.0.0" {
-		t.Errorf("expected shared version 2.0.0, got %s", resolved["shared"])
+	if resolved["shared"] != "1.2.0" {
+		t.Fatalf("shared = %q, want 1.2.0", resolved["shared"])
 	}
 }
 
