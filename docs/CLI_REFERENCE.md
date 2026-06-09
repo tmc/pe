@@ -1510,6 +1510,10 @@ pe test [command]
 
 Comprehensive testing framework implementing property-based testing, regression detection, and systematic test suite creation.
 
+If `pe.mod` denies the `write` tool capability, `pe test --output` and
+`pe test create-suite --output` fail before writing files. Default terminal
+output remains read-only.
+
 ### Subcommands
 
 #### test create-suite

@@ -87,6 +87,56 @@ regression_tests:
 	}
 }
 
+func TestOutputTestResultsDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte(testPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := testCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+
+	err := outputTestResults(testPolicyResults(), "results.json", cmd)
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("test output error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("results.json"); !os.IsNotExist(err) {
+		t.Fatalf("test wrote output despite write policy: %v", err)
+	}
+}
+
+func TestOutputTestResultsStdoutAllowedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte(testPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := testCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+
+	if err := outputTestResults(testPolicyResults(), "", cmd); err != nil {
+		t.Fatalf("test stdout: %v", err)
+	}
+	if !strings.Contains(buf.String(), `"test_type": "property"`) {
+		t.Fatalf("test stdout = %q, want result JSON", buf.String())
+	}
+	if _, err := os.Stat("results.json"); !os.IsNotExist(err) {
+		t.Fatalf("test created unexpected output: %v", err)
+	}
+}
+
 func TestAdvancedTestSpecialCommandsAndGenerators(t *testing.T) {
 	if tests := generateSystematicTests([]string{"p1", "p2"}, []string{"contains", "length"}); len(tests) != 4 {
 		t.Fatalf("systematic tests = %#v", tests)
@@ -125,6 +175,86 @@ func TestAdvancedTestSubcommands(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreateSuiteOutputDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte(testPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := createTestSuiteCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{
+		"--name", "suite",
+		"--prompts", "p1,p2",
+		"--output", "suite.json",
+	})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("create-suite error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("suite.json"); !os.IsNotExist(err) {
+		t.Fatalf("create-suite wrote output despite write policy: %v", err)
+	}
+}
+
+func TestCreateSuiteStdoutAllowedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte(testPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := createTestSuiteCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{
+		"--name", "suite",
+		"--prompts", "p1,p2",
+	})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("create-suite stdout: %v", err)
+	}
+	if _, err := os.Stat("suite.json"); !os.IsNotExist(err) {
+		t.Fatalf("create-suite created unexpected output: %v", err)
+	}
+}
+
+func testPolicyResults() *TestResults {
+	return &TestResults{
+		Timestamp: time.Unix(0, 0),
+		Config:    "config.yaml",
+		TestType:  "property",
+		Summary: TestSummary{
+			TotalTests:  1,
+			PassedTests: 1,
+			SuccessRate: 100,
+		},
+	}
+}
+
+func testPolicyTestModule() string {
+	return `module example.com/prompts
+
+pe 1
+
+capability {
+    tools deny write
+}
+`
 }
 
 func TestAdvancedTestRemovedPlaceholders(t *testing.T) {

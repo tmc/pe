@@ -103,6 +103,8 @@ is the source of truth for planned work and release-blocking follow-ups.
   remains read-only.
 - Security report output files honor `tools deny write`; terminal security
   output remains read-only.
+- `pe test --output` and `pe test create-suite --output` honor `tools deny
+  write`; terminal test output remains read-only.
 
 ## Important Implementation Details
 

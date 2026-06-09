@@ -1478,6 +1478,11 @@ integrity semantics.
    `tools deny write` before writing, while terminal security output remains
    read-only. Remaining work: runtime enforcement for other tool classes and
    remaining write surfaces.
+   DONE current pass: `pe test --output` and
+   `pe test create-suite --output` now enforce `tools deny write` before
+   writing result or suite files, while terminal test output remains read-only.
+   Remaining work: runtime enforcement for other tool classes and remaining
+   write surfaces.
 6. Sign attest manifests with an Ed25519 envelope while preserving unsigned
    local integrity workflows.
    DONE current pass: `pe exp attest keygen`, `sign`, and `verify-signed`

@@ -438,6 +438,9 @@ func outputTestResults(results *TestResults, outputFile string, cmd *cobra.Comma
 	}
 
 	if outputFile != "" {
+		if err := enforceRuntimeToolPolicy("write"); err != nil {
+			return err
+		}
 		if err := os.WriteFile(outputFile, jsonData, 0644); err != nil {
 			return err
 		}
@@ -530,6 +533,9 @@ Features:
 
 			if outputFile != "" {
 				data, _ := json.MarshalIndent(testSuite, "", "  ")
+				if err := enforceRuntimeToolPolicy("write"); err != nil {
+					return err
+				}
 				return os.WriteFile(outputFile, data, 0644)
 			}
 
