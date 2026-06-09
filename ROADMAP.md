@@ -1534,6 +1534,10 @@ integrity semantics.
    DONE current pass: `pe plugin build` now enforces `tools deny write` before
    writing plugin artifacts. Remaining work: runtime enforcement for other tool
    classes and remaining write surfaces.
+   DONE current pass: `pe exp consensus --output` and
+   `pe exp optimize --output` now enforce `tools deny write` before writing
+   result files, while stdout output remains read-only. Remaining work:
+   runtime enforcement for other tool classes and remaining write surfaces.
 6. Sign attest manifests with an Ed25519 envelope while preserving unsigned
    local integrity workflows.
    DONE current pass: `pe exp attest keygen`, `sign`, and `verify-signed`

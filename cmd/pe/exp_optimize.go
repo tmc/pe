@@ -240,6 +240,9 @@ func applyExpOptimizeVariantScore(variant *expOptimizeVariant, scoreBySource, sc
 func writeExpOptimizeOutput(stdout io.Writer, path string, out *expOptimizeOutput) error {
 	var w io.Writer = stdout
 	if path != "" && path != "-" {
+		if err := enforceRuntimeToolPolicy("write"); err != nil {
+			return err
+		}
 		f, err := os.Create(path)
 		if err != nil {
 			return fmt.Errorf("create optimize output: %w", err)

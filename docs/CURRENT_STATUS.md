@@ -133,6 +133,9 @@ is the source of truth for planned work and release-blocking follow-ups.
 - Interactive REPL `:save` honors `tools deny write` before writing session
   files.
 - `pe plugin build` honors `tools deny write` before writing plugin artifacts.
+- `pe exp consensus --output` and `pe exp optimize --output` honor
+  `tools deny write` before writing result files; stdout output remains
+  read-only.
 
 ## Important Implementation Details
 

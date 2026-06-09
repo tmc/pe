@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"os"
 	"strings"
 	"testing"
 )
@@ -105,6 +106,31 @@ func TestExpConsensusRejectsOnlyProviderErrors(t *testing.T) {
 	}
 }
 
+func TestExpConsensusOutputDeniedByPolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	writeExpPolicyDenyWritePeMod(t)
+	cmd := expConsensusCmd()
+	cmd.SetIn(strings.NewReader(`{"votes":[{"provider":"a","output":"alpha","weight":1}]}`))
+	cmd.SetArgs([]string{"--output", "consensus.json"})
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("Execute succeeded, want write policy error")
+	}
+	if !strings.Contains(err.Error(), "tool write is denied by pe.mod") {
+		t.Fatalf("error = %v, want write policy error", err)
+	}
+	if _, err := os.Stat("consensus.json"); !os.IsNotExist(err) {
+		t.Fatalf("consensus.json stat error = %v, want not exist", err)
+	}
+}
+
 func runExpConsensusCommand(t *testing.T, input string) expConsensusOutput {
 	t.Helper()
 
@@ -122,4 +148,18 @@ func runExpConsensusCommand(t *testing.T, input string) expConsensusOutput {
 		t.Fatalf("unmarshal output: %v\n%s", err, out.String())
 	}
 	return got
+}
+
+func writeExpPolicyDenyWritePeMod(t *testing.T) {
+	t.Helper()
+	if err := os.WriteFile("pe.mod", []byte(`module example.com/app
+
+pe 1
+
+capability {
+    tools deny write
+}
+`), 0644); err != nil {
+		t.Fatalf("writing pe.mod: %v", err)
+	}
 }

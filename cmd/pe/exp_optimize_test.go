@@ -139,6 +139,40 @@ func TestExpOptimizeReadsAndWritesFiles(t *testing.T) {
 	}
 }
 
+func TestExpOptimizeOutputDeniedByPolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	writeExpPolicyDenyWritePeMod(t)
+	inputPath := filepath.Join(tmpDir, "input.json")
+	if err := os.WriteFile(inputPath, []byte(`{
+  "seed": {"source":"seed", "prompt":"base", "score":0.1},
+  "variants": [
+    {"source":"candidate", "prompt":"from file", "score":0.7}
+  ]
+}`), 0666); err != nil {
+		t.Fatalf("write input: %v", err)
+	}
+
+	cmd := expOptimizeCmd()
+	cmd.SetArgs([]string{"--input", inputPath, "--output", "output.json"})
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("Execute succeeded, want write policy error")
+	}
+	if !strings.Contains(err.Error(), "tool write is denied by pe.mod") {
+		t.Fatalf("error = %v, want write policy error", err)
+	}
+	if _, err := os.Stat("output.json"); !os.IsNotExist(err) {
+		t.Fatalf("output.json stat error = %v, want not exist", err)
+	}
+}
+
 func TestExpOptimizeScoresSelectsPromptfooVariant(t *testing.T) {
 	dir := t.TempDir()
 	scoresPath := filepath.Join(dir, "eval-results.json")

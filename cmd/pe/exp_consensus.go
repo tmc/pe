@@ -141,6 +141,9 @@ func runExpConsensus(in *expConsensusInput) (*expConsensusOutput, error) {
 func writeExpConsensusOutput(stdout io.Writer, path string, out *expConsensusOutput) error {
 	var w io.Writer = stdout
 	if path != "" && path != "-" {
+		if err := enforceRuntimeToolPolicy("write"); err != nil {
+			return err
+		}
 		f, err := os.Create(path)
 		if err != nil {
 			return fmt.Errorf("create consensus output: %w", err)

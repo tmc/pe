@@ -1974,6 +1974,8 @@ excluded; successful rows are passed to the local weighted majority aggregator.
 -o, --output string   output JSON file, or - for stdout (default "-")
 ```
 
+File output honors `tools deny write`; stdout output remains read-only.
+
 ### Examples
 
 ```bash
@@ -2494,6 +2496,8 @@ JSON from `results.prompts[].metrics.score`.
 pe exp optimize --input input.json --output result.json
 pe exp optimize --scores eval-results.json --max-rounds 3
 ```
+
+File output honors `tools deny write`; stdout output remains read-only.
 
 ---
 
