@@ -2,13 +2,17 @@
 package module
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -219,6 +223,10 @@ func (r *GitHubRegistry) Download(module *Module, destDir string) error {
 		return fmt.Errorf("failed to save module metadata: %w", err)
 	}
 
+	if err := verifyModuleChecksum(moduleDir, module); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -347,7 +355,10 @@ func (r *HTTPRegistry) Download(module *Module, destDir string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal module metadata: %w", err)
 	}
-	return os.WriteFile(filepath.Join(moduleDir, "module.json"), data, 0644)
+	if err := os.WriteFile(filepath.Join(moduleDir, "module.json"), data, 0644); err != nil {
+		return err
+	}
+	return verifyModuleChecksum(moduleDir, module)
 }
 
 // Publish returns an error because the HTTP registry is read-only.
@@ -534,7 +545,7 @@ func (r *LocalRegistry) Download(module *Module, destDir string) error {
 	}
 
 	// Copy all files
-	return filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -568,7 +579,10 @@ func (r *LocalRegistry) Download(module *Module, destDir string) error {
 
 		_, err = io.Copy(target, source)
 		return err
-	})
+	}); err != nil {
+		return err
+	}
+	return verifyModuleChecksum(targetDir, module)
 }
 
 // Publish adds a module to the local registry
@@ -624,6 +638,16 @@ func (r *LocalRegistry) Publish(module *Module, sourceDir string) error {
 		return fmt.Errorf("failed to copy module files: %w", err)
 	}
 
+	if module.Checksum == "" {
+		sum, err := DirectoryChecksum(targetDir)
+		if err != nil {
+			return fmt.Errorf("failed to compute module checksum: %w", err)
+		}
+		module.Checksum = sum
+	} else if err := verifyModuleChecksum(targetDir, module); err != nil {
+		return err
+	}
+
 	// Save module metadata
 	metadataPath := filepath.Join(targetDir, "module.json")
 	data, err := json.MarshalIndent(module, "", "  ")
@@ -636,6 +660,63 @@ func (r *LocalRegistry) Publish(module *Module, sourceDir string) error {
 	}
 
 	return nil
+}
+
+func verifyModuleChecksum(root string, module *Module) error {
+	if module.Checksum == "" {
+		return nil
+	}
+	sum, err := DirectoryChecksum(root)
+	if err != nil {
+		return fmt.Errorf("computing checksum for %s@%s: %w", module.Name, module.Version, err)
+	}
+	if sum != module.Checksum {
+		return fmt.Errorf("checksum mismatch for %s@%s", module.Name, module.Version)
+	}
+	return nil
+}
+
+// DirectoryChecksum returns the deterministic sha256 checksum for a module
+// directory. The checksum covers regular files except module.json, sorted by
+// slash-separated relative path, and refuses symlinks.
+func DirectoryChecksum(root string) (string, error) {
+	var names []string
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if path == root || entry.IsDir() {
+			return nil
+		}
+		if entry.Type()&os.ModeSymlink != 0 {
+			return fmt.Errorf("refusing symlink %s", path)
+		}
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		if filepath.ToSlash(rel) == "module.json" {
+			return nil
+		}
+		names = append(names, rel)
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	sort.Strings(names)
+	hash := sha256.New()
+	for _, name := range names {
+		data, err := os.ReadFile(filepath.Join(root, name))
+		if err != nil {
+			return "", err
+		}
+		hash.Write([]byte(filepath.ToSlash(name)))
+		hash.Write([]byte{0})
+		hash.Write(data)
+		hash.Write([]byte{0})
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
 // Search searches for modules in the local registry

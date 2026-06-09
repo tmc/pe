@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -969,7 +967,7 @@ func runModVerify(cmd *cobra.Command, args []string) error {
 		if meta.Checksum == "" {
 			return fmt.Errorf("verifying %s@%s: missing checksum", req.Mod, req.Version)
 		}
-		sum, err := moduleDirectoryChecksum(dir)
+		sum, err := module.DirectoryChecksum(dir)
 		if err != nil {
 			return fmt.Errorf("verifying %s@%s: %w", req.Mod, req.Version, err)
 		}
@@ -1020,46 +1018,6 @@ func readDownloadedModuleMetadata(dir string) (*module.Module, error) {
 		return nil, fmt.Errorf("parsing module.json: %w", err)
 	}
 	return &meta, nil
-}
-
-func moduleDirectoryChecksum(root string) (string, error) {
-	var names []string
-	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if path == root || entry.IsDir() {
-			return nil
-		}
-		if entry.Type()&os.ModeSymlink != 0 {
-			return fmt.Errorf("refusing symlink %s", path)
-		}
-		rel, err := filepath.Rel(root, path)
-		if err != nil {
-			return err
-		}
-		if filepath.ToSlash(rel) == "module.json" {
-			return nil
-		}
-		names = append(names, rel)
-		return nil
-	})
-	if err != nil {
-		return "", err
-	}
-	sort.Strings(names)
-	hash := sha256.New()
-	for _, name := range names {
-		data, err := os.ReadFile(filepath.Join(root, name))
-		if err != nil {
-			return "", err
-		}
-		hash.Write([]byte(filepath.ToSlash(name)))
-		hash.Write([]byte{0})
-		hash.Write(data)
-		hash.Write([]byte{0})
-	}
-	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
 func runModGraph(cmd *cobra.Command, args []string) error {

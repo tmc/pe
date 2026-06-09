@@ -612,7 +612,7 @@ func TestModVerifyCmd_VerifiesChecksums(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "prompt.pe"), []byte("hello\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	sum, err := moduleDirectoryChecksum(dir)
+	sum, err := module.DirectoryChecksum(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -644,7 +644,7 @@ func TestModVerifyCmd_DetectsTamper(t *testing.T) {
 	if err := os.WriteFile(name, []byte("hello\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	sum, err := moduleDirectoryChecksum(dir)
+	sum, err := module.DirectoryChecksum(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -680,9 +680,9 @@ func TestModuleDirectoryChecksumRejectsSymlink(t *testing.T) {
 	if err := os.Symlink("target", filepath.Join(tmpDir, "link")); err != nil {
 		t.Skipf("symlink not available: %v", err)
 	}
-	_, err := moduleDirectoryChecksum(tmpDir)
+	_, err := module.DirectoryChecksum(tmpDir)
 	if err == nil || !strings.Contains(err.Error(), "refusing symlink") {
-		t.Fatalf("moduleDirectoryChecksum error = %v, want symlink error", err)
+		t.Fatalf("DirectoryChecksum error = %v, want symlink error", err)
 	}
 }
 

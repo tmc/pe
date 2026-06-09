@@ -1,6 +1,6 @@
 # PE Roadmap
 
-Last updated: 2026-06-08
+Last updated: 2026-06-09
 
 This file is the source of truth for planned PE work. Beads is deprecated for this repository: do not create or update `.beads` issues for new work. Keep roadmap changes in tracked commits with the code or documentation they describe.
 
@@ -1145,6 +1145,12 @@ This section groups the remaining post-cleanup implementation work into a
 sequenced plan. It is intentionally broader than the v0.5 release checklist:
 v0.5 should ship only after the P1 release gates are closed; later milestones
 can graduate selected experimental and aspirational surfaces into stable APIs.
+
+The cleanup branch for this work is `docs/archive-old-docs-cleanup`. Use that
+branch to archive old docs, tombstone stale implementation notes, and keep
+release-facing documentation honest before promoting changes back to the
+release branch. Do not use `.beads` for tracking this work.
+
 Each implementation slice should follow the same loop:
 
 1. Sync the current checkout to the NotebookLM cleanup notebook.
@@ -1159,6 +1165,18 @@ Cleanup sessions should prefer removing stale claims, fake success, and
 unreviewed execution paths. Visionary sessions should produce design notes or
 roadmap entries until the API contract, dependencies, and test strategy are
 small enough to implement.
+
+Notebook session types:
+- Cleanup `generate-chat` sessions audit the current tree for stale docs,
+  phantom command claims, unsafe execution paths, release blockers, and old
+  TODO material that should be archived or converted into this roadmap.
+- Visionary `generate-chat` sessions explore future surfaces, but their output
+  lands first as `docs/future/` notes or roadmap entries. No visionary session
+  should create a stable command claim until a local implementation and tests
+  exist.
+- Post-change sessions review the exact diff from the current branch. Treat
+  notebook feedback as reviewer input, not authority; confirm paths, symbols,
+  command names, and test claims locally before acting.
 
 ### Milestone 0: v0.5 Release Closure
 
@@ -1188,6 +1206,11 @@ Goal: ship the current stable core without claiming unfinished behavior.
 5. Archive or tombstone old documentation on the cleanup branch before release:
    release-facing docs stay current, `docs/archive/` keeps historical material,
    and `docs/future/` keeps aspirational material with clear headers.
+   Archive targets include legacy root files such as `README.md.old`,
+   historical Claude-era notes, old status matrices, and future-facing
+   comparison/tutorial material that still reads like current product behavior.
+   When a document remains in place for compatibility, add an explicit
+   historical header instead of silently rewriting it into current status.
 6. Keep promptfoo shell-out behavior explicitly opt-in; do not add implicit
    CLI execution paths without a reviewed command contract and tests.
 
@@ -1291,6 +1314,13 @@ Verification:
 
 Goal: make every external process boundary deliberate, documented, and tested.
 
+Default stance: PE should implement promptfoo-compatible behavior locally in Go.
+Shelling out to the promptfoo CLI is out of scope for normal evaluation,
+conversion, assertion, optimization, and reporting paths. The only acceptable
+exception is explicit user delegation to the underlying promptfoo CLI for a
+feature that is clearly documented as promptfoo-owned, cannot yet be represented
+locally, and has a tested direct-argv boundary.
+
 1. Inventory all runtime `exec.Command` and `exec.CommandContext` paths and
    classify them as build/test-only, plugin execution, provider execution,
    platform opener, promptfoo compatibility, metric script hook, or removable.
@@ -1303,6 +1333,10 @@ Goal: make every external process boundary deliberate, documented, and tested.
    DONE current pass: `pe view --promptfoo` uses a tested direct argv boundary
    through `npx promptfoo view`, and default `pe view <evalId>` stays on the
    local viewer path when `--promptfoo` is absent.
+   Future promptfoo delegation, if any, must use the same shape: an explicit
+   flag or subcommand name, no shell interpolation, bounded execution where
+   possible, clear dependency errors when promptfoo is unavailable, and tests
+   proving the non-delegated path does not invoke promptfoo.
 3. Decide whether metric script hooks should remain supported. If they remain,
    require explicit configuration, timeouts, argument separation, no shell
    interpolation, and tests for missing executable, timeout, stderr, and
@@ -1325,6 +1359,9 @@ Goal: make every external process boundary deliberate, documented, and tested.
    be replaced with local Go behavior.
 6. Document the policy in release-facing docs only after tests cover every
    allowed external execution path.
+7. Keep `docs/EXTERNAL_EXECUTION_POLICY.md`, `docs/PROMPTFOO_INTEGRATION.md`,
+   `docs/API_REFERENCE.md`, and generated help synchronized whenever an
+   external execution boundary is added, removed, or reclassified.
 
 Verification:
 - `rg -n 'exec\\.Command|CommandContext' cmd internal plugins tests`
@@ -1332,6 +1369,13 @@ Verification:
 - Script tests proving defaults do not invoke promptfoo or arbitrary shells.
 - Manual smoke only for explicitly delegated promptfoo CLI behavior, because it
   depends on `npx` and the local promptfoo install.
+
+Exit criteria:
+- No implicit promptfoo CLI invocation remains.
+- All promptfoo-compatible import/export/convert/eval/assertion behavior either
+  runs locally or fails closed with a precise unsupported-feature error.
+- Explicit promptfoo CLI delegation remains available only where it is named in
+  the command contract and covered by tests.
 
 ### Milestone 3: Module Registry and Supply Chain
 
@@ -1347,8 +1391,16 @@ integrity semantics.
    behavior, and the broader publishing-service boundary decision.
 2. Define module archive format, path-cleaning rules, checksum recording, and
    extraction guarantees.
+   DONE current pass: local registry publishing records deterministic module
+   directory checksums, local/HTTP/GitHub downloads verify declared checksums
+   after extraction, and the CLI verifier uses the same checksum primitive.
+   Remaining work: archive format selection and archive extraction guarantees.
 3. Add fixture-backed HTTP and GitHub registry tests for list, search, download,
    missing version, malformed archive, checksum mismatch, and path traversal.
+   DONE current pass: HTTP and local registry tests now cover checksum mismatch
+   rejection, while existing fixture tests cover HTTP list/get/search/download
+   and traversal rejection. Remaining work: malformed archive and richer GitHub
+   fixture coverage.
 4. Implement version upgrade and dependency graph behavior with predictable
    conflict reporting.
    DONE current pass: module version conflict resolution now chooses the

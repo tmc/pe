@@ -48,12 +48,21 @@ func TestGitHubRegistryDownloadRejectsTraversal(t *testing.T) {
 }
 
 func TestHTTPRegistryListGetSearchDownload(t *testing.T) {
+	contentDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(contentDir, "prompt.txt"), []byte("hello"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	sum, err := DirectoryChecksum(contentDir)
+	if err != nil {
+		t.Fatal(err)
+	}
 	module := Module{
 		Name:        "example.com/prompts",
 		Version:     "v1.0.0",
 		Description: "useful prompts",
 		Tags:        []string{"chat"},
 		Files:       []string{"prompt.txt"},
+		Checksum:    sum,
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -99,6 +108,29 @@ func TestHTTPRegistryListGetSearchDownload(t *testing.T) {
 	}
 	if string(data) != "hello" {
 		t.Fatalf("downloaded file = %q", data)
+	}
+}
+
+func TestHTTPRegistryDownloadRejectsChecksumMismatch(t *testing.T) {
+	module := Module{
+		Name:     "example.com/prompts",
+		Version:  "v1.0.0",
+		Files:    []string{"prompt.txt"},
+		Checksum: "bad",
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/modules/example.com/prompts/v1.0.0/prompt.txt":
+			_, _ = w.Write([]byte("hello"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	err := NewHTTPRegistry(server.URL).Download(&module, t.TempDir())
+	if err == nil {
+		t.Fatal("Download accepted checksum mismatch")
 	}
 }
 
@@ -220,6 +252,9 @@ func TestLocalRegistryPublishListGetSearchDownload(t *testing.T) {
 	if err := registry.Publish(module, source); err != nil {
 		t.Fatalf("Publish: %v", err)
 	}
+	if module.Checksum == "" {
+		t.Fatal("Publish did not record checksum")
+	}
 	modules, err := registry.List()
 	if err != nil {
 		t.Fatalf("List: %v", err)
@@ -251,6 +286,32 @@ func TestLocalRegistryPublishListGetSearchDownload(t *testing.T) {
 	}
 	if string(data) != "hello" {
 		t.Fatalf("downloaded file = %q", data)
+	}
+}
+
+func TestLocalRegistryRejectsChecksumMismatch(t *testing.T) {
+	root := t.TempDir()
+	source := t.TempDir()
+	if err := os.WriteFile(filepath.Join(source, "prompt.txt"), []byte("hello"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	module := &Module{
+		Name:     "example.com/local",
+		Version:  "v1.2.3",
+		Files:    []string{"prompt.txt"},
+		Checksum: "bad",
+	}
+	registry := NewLocalRegistry(root)
+	if err := registry.Publish(module, source); err == nil {
+		t.Fatal("Publish accepted checksum mismatch")
+	}
+	module.Checksum = ""
+	if err := registry.Publish(module, source); err != nil {
+		t.Fatalf("Publish: %v", err)
+	}
+	module.Checksum = "bad"
+	if err := registry.Download(module, t.TempDir()); err == nil {
+		t.Fatal("Download accepted checksum mismatch")
 	}
 }
 
