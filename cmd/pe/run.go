@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/inference"
 	"github.com/tmc/pe/internal/inference/providers/cgpt"
-	"github.com/tmc/pe/internal/pemod"
 	"github.com/tmc/pe/internal/prompt"
 )
 
@@ -159,16 +158,12 @@ func registerLLMProviderSpec(client *inference.Client, spec string) error {
 }
 
 func enforceRuntimeProviderPolicy(provider string) error {
-	data, err := os.ReadFile("pe.mod")
-	if os.IsNotExist(err) {
+	file, ok, err := readRuntimePolicyFile()
+	if err != nil || !ok {
+		return err
+	}
+	if file.Capability == nil && file.Placement == nil {
 		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("reading pe.mod policy: %w", err)
-	}
-	file, err := pemod.Parse(strings.NewReader(string(data)))
-	if err != nil {
-		return fmt.Errorf("parsing pe.mod policy: %w", err)
 	}
 	base := providerBaseName(provider)
 	if base == "" {

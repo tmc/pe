@@ -86,6 +86,7 @@ is the source of truth for planned work and release-blocking follow-ups.
 - `pe run` enforces `pe.mod` provider denials for exact provider names and known
   provider classes such as `remote` before provider construction. Placement
   policy also blocks known remote providers when `network false` is set.
+- Component import writes honor `tools deny write` in `pe.mod`.
 
 ## Important Implementation Details
 

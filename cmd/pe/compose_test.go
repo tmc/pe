@@ -992,13 +992,43 @@ func TestComposeLibraryAndCoherenceHelpers(t *testing.T) {
 	})
 }
 
+func TestComposeImportDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldDir, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldDir)
+
+	mod := `module example.com/prompts
+
+pe 1
+
+capability {
+    tools deny write
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(mod), 0644); err != nil {
+		t.Fatal(err)
+	}
+	source := filepath.Join(tmpDir, "import.txt")
+	if err := os.WriteFile(source, []byte("Imported component"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	err := importComponents(source)
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("importComponents error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat(filepath.Join("components", filepath.Base(tmpDir), "import.txt")); !os.IsNotExist(err) {
+		t.Fatalf("component was written despite write policy: %v", err)
+	}
+}
+
 func TestComposeRunSpecialCases(t *testing.T) {
 	tmpDir := t.TempDir()
 	oldDir, _ := os.Getwd()
 	os.Chdir(tmpDir)
 	defer os.Chdir(oldDir)
 
-	if err := os.WriteFile("pe.mod", []byte("module example\n"), 0644); err != nil {
+	if err := os.WriteFile("pe.mod", []byte("module example\n\npe 1\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := runCompose(newComposeCmd(), nil); err != nil {

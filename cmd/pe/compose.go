@@ -993,6 +993,9 @@ func importComponentFile(source, dest string) error {
 }
 
 func writeImportedComponent(dest string, data []byte) error {
+	if err := enforceRuntimeToolPolicy("write"); err != nil {
+		return err
+	}
 	dest, err := cleanComponentImportPath(strings.TrimPrefix(dest, "components"+string(filepath.Separator)))
 	if err != nil {
 		return err

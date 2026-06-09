@@ -1443,6 +1443,9 @@ integrity semantics.
    known remote providers before provider construction. Remaining work:
    runtime enforcement for tool and file-write decision points, plus broader
    placement beyond provider/network classification.
+   DONE current pass: component imports now enforce `tools deny write` before
+   writing files under `components/`. Remaining work: runtime enforcement for
+   other tool classes and broader file-write surfaces.
 6. Sign attest manifests with an Ed25519 envelope while preserving unsigned
    local integrity workflows.
    DONE current pass: `pe exp attest keygen`, `sign`, and `verify-signed`
