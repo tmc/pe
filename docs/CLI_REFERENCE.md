@@ -1980,6 +1980,9 @@ pe doc --short
 
 Expand a configuration file by resolving file references and globs.
 
+If `pe.mod` denies the `write` tool capability, `pe expand --output` fails
+before writing the expanded JSON file. Default stdout output remains read-only.
+
 ### Synopsis
 
 ```bash

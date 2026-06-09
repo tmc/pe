@@ -34,6 +34,9 @@ func expandCmd() *cobra.Command {
 			}
 
 			if outputFile != "" {
+				if err := enforceRuntimeToolPolicy("write"); err != nil {
+					return err
+				}
 				return os.WriteFile(outputFile, output, 0644)
 			}
 

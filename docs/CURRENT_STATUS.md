@@ -95,6 +95,8 @@ is the source of truth for planned work and release-blocking follow-ups.
   remain read-only.
 - `pe metrics -o` honors `tools deny write`; stdout metrics output remains
   read-only.
+- `pe expand --output` honors `tools deny write`; stdout expanded JSON remains
+  read-only.
 
 ## Important Implementation Details
 

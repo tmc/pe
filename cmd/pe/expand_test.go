@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -201,6 +202,80 @@ tests: [tests.json]
 	if len(got.Tests) != 1 {
 		t.Errorf("Tests expanded incorrectly: %v", got.Tests)
 	}
+}
+
+func TestExpandCmdOutputDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("config.yaml", []byte(expandPolicyTestConfig()), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("pe.mod", []byte(expandPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := expandCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"config.yaml", "--output", "expanded.json"})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("expand error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("expanded.json"); !os.IsNotExist(err) {
+		t.Fatalf("expand wrote output despite write policy: %v", err)
+	}
+}
+
+func TestExpandCmdStdoutAllowedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("config.yaml", []byte(expandPolicyTestConfig()), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("pe.mod", []byte(expandPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := expandCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"config.yaml"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expand stdout: %v", err)
+	}
+	if _, err := os.Stat("expanded.json"); !os.IsNotExist(err) {
+		t.Fatalf("expand created unexpected output: %v", err)
+	}
+}
+
+func expandPolicyTestConfig() string {
+	return `description: Test Config
+prompts: ["hello"]
+providers: [mock]
+tests: []
+`
+}
+
+func expandPolicyTestModule() string {
+	return `module example.com/prompts
+
+pe 1
+
+capability {
+    tools deny write
+}
+`
 }
 
 func TestSafeConfigPathRejectsTraversal(t *testing.T) {
