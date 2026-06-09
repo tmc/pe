@@ -76,10 +76,16 @@ stdout 'Building for multiple targets'
 exists builds/openai/prompt.txt
 exists builds/anthropic/prompt.txt
 
+# Google target renders locally.
+pe build config.yaml --target google
+stdout 'Target provider: google'
+stdout 'Applying provider-specific formatting'
+exists prompt_build.txt
+
 # Unsupported target fails closed without partial multi-target output
 rm -rf builds
-! pe build config.yaml --targets openai,google
-stderr 'provider-specific formatting for "google" is not yet implemented'
+! pe build config.yaml --targets openai,unknown
+stderr 'provider-specific formatting for "unknown" is not yet implemented'
 ! exists builds/openai/prompt.txt
 
 # Build with environment-specific configs

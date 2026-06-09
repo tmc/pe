@@ -25,8 +25,7 @@ var buildCmd = &cobra.Command{
 
 The build command reads a prompt or config, applies supported provider
 formatting, writes output files, and can package a directory into a bundle.
-Some provider-specific formatting paths return explicit not-implemented
-errors.`,
+Unsupported provider-specific formatting paths return explicit errors.`,
 	Example: `  # Build from config
   pe build config.yaml
   
@@ -390,7 +389,7 @@ func optimizeForProvider(prompt string, provider string) (string, error) {
 	case "openai":
 		return prompt, nil
 	case "google":
-		return "", fmt.Errorf("provider-specific formatting for %q is not yet implemented", provider)
+		return fmt.Sprintf("User: %s\n\nModel: ", prompt), nil
 	default:
 		return "", fmt.Errorf("provider-specific formatting for %q is not yet implemented", provider)
 	}

@@ -32,7 +32,7 @@ func TestOptimizeForProvider(t *testing.T) {
 			name:     "google provider",
 			prompt:   "Hello, world!",
 			provider: "google",
-			wantErr:  true,
+			want:     "User: Hello, world!\n\nModel: ",
 		},
 		{
 			name:     "unknown provider",
@@ -667,7 +667,7 @@ func TestBuildCmd_MultipleTargets(t *testing.T) {
 	}
 }
 
-func TestBuildCmd_UnsupportedTargetFailsClosed(t *testing.T) {
+func TestBuildCmd_GoogleTarget(t *testing.T) {
 	tmpDir := t.TempDir()
 	promptFile := filepath.Join(tmpDir, "prompt.txt")
 	if err := os.WriteFile(promptFile, []byte("You are helpful."), 0644); err != nil {
@@ -694,15 +694,19 @@ func TestBuildCmd_UnsupportedTargetFailsClosed(t *testing.T) {
 	cmd.SetArgs([]string{promptFile, "--target", "google"})
 
 	err := cmd.Execute()
-	if err == nil || !strings.Contains(err.Error(), `provider-specific formatting for "google" is not yet implemented`) {
+	if err != nil {
 		t.Fatalf("build target error = %v", err)
 	}
-	if _, statErr := os.Stat(filepath.Join(tmpDir, "prompt_build.txt")); !os.IsNotExist(statErr) {
-		t.Fatalf("unsupported target wrote output: %v", statErr)
+	out, err := os.ReadFile(filepath.Join(tmpDir, "prompt_build.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(out), "User: You are helpful.") || !strings.Contains(string(out), "Model:") {
+		t.Fatalf("google output = %q", out)
 	}
 }
 
-func TestBuildCmd_MultipleTargetsFailBeforeWriting(t *testing.T) {
+func TestBuildCmd_MultipleTargetsIncludeGoogle(t *testing.T) {
 	tmpDir := t.TempDir()
 	promptFile := filepath.Join(tmpDir, "prompt.txt")
 	if err := os.WriteFile(promptFile, []byte("You are helpful."), 0644); err != nil {
@@ -729,11 +733,53 @@ func TestBuildCmd_MultipleTargetsFailBeforeWriting(t *testing.T) {
 	cmd.SetArgs([]string{promptFile, "--targets", "openai,google"})
 
 	err := cmd.Execute()
-	if err == nil || !strings.Contains(err.Error(), `provider-specific formatting for "google" is not yet implemented`) {
+	if err != nil {
 		t.Fatalf("multi-target error = %v", err)
 	}
-	if _, statErr := os.Stat(filepath.Join(tmpDir, "builds", "openai", "prompt.txt")); !os.IsNotExist(statErr) {
-		t.Fatalf("multi-target failure wrote partial output: %v", statErr)
+	if _, statErr := os.Stat(filepath.Join(tmpDir, "builds", "openai", "prompt.txt")); statErr != nil {
+		t.Fatalf("openai output missing: %v", statErr)
+	}
+	googleOut, err := os.ReadFile(filepath.Join(tmpDir, "builds", "google", "prompt.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(googleOut), "Model:") {
+		t.Fatalf("google output = %q", googleOut)
+	}
+}
+
+func TestBuildCmd_UnsupportedTargetFailsClosed(t *testing.T) {
+	tmpDir := t.TempDir()
+	promptFile := filepath.Join(tmpDir, "prompt.txt")
+	if err := os.WriteFile(promptFile, []byte("You are helpful."), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	oldDir, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldDir)
+
+	buildOutput = ""
+	buildWithMetadata = false
+	buildTarget = ""
+	buildTargets = nil
+	buildMinify = false
+	buildValidate = false
+	buildBundle = false
+	buildCompress = false
+
+	cmd := buildCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{promptFile, "--target", "unknown"})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), `provider-specific formatting for "unknown" is not yet implemented`) {
+		t.Fatalf("build target error = %v", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(tmpDir, "prompt_build.txt")); !os.IsNotExist(statErr) {
+		t.Fatalf("unsupported target wrote output: %v", statErr)
 	}
 }
 

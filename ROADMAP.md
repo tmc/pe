@@ -1248,6 +1248,9 @@ the current command surface.
 2. DONE current pass: Add provider formatting only where PE can prove the
    format locally; unsupported providers return explicit errors before
    multi-target builds write partial artifacts.
+   DONE current pass: add deterministic local Google build formatting alongside
+   OpenAI and Anthropic, while unknown providers still fail before multi-target
+   builds write partial artifacts.
 3. DONE current pass: Implement local statistical primitives in the metrics
    package: summary confidence intervals, Welch/paired t-test, two-proportion
    A/B test, Mann-Whitney U, Kolmogorov-Smirnov, group comparison, effect-size
