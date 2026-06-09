@@ -114,6 +114,27 @@ func TestPromptInitCmd_FileExists(t *testing.T) {
 	}
 }
 
+func TestPromptInitCmd_DeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	writeDenyWritePeMod(t)
+
+	cmd := promptInitCmd()
+	err := cmd.RunE(cmd, []string{"blocked"})
+	if err == nil {
+		t.Fatal("prompt init succeeded, want write policy error")
+	}
+	if !strings.Contains(err.Error(), "tool write is denied by pe.mod") {
+		t.Fatalf("prompt init error = %v, want write policy error", err)
+	}
+	if _, err := os.Stat("blocked.prompt"); !os.IsNotExist(err) {
+		t.Fatalf("blocked.prompt stat error = %v, want not exist", err)
+	}
+}
+
 func TestPromptInitCmd_Flags(t *testing.T) {
 	cmd := promptInitCmd()
 
@@ -278,6 +299,40 @@ unused: gone
 	}
 }
 
+func TestPromptEditCmd_DeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	writeDenyWritePeMod(t)
+	const original = `#!/usr/bin/env pe run --provider=cgpt
+Hello {{.name}}
+
+---defaults---
+name: World
+`
+	if err := os.WriteFile("edit.prompt", []byte(original), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := promptEditCmd()
+	cmd.Flags().Set("set-provider", "openai")
+	err := cmd.RunE(cmd, []string{"edit.prompt"})
+	if err == nil {
+		t.Fatal("prompt edit succeeded, want write policy error")
+	}
+	if !strings.Contains(err.Error(), "tool write is denied by pe.mod") {
+		t.Fatalf("prompt edit error = %v, want write policy error", err)
+	}
+	out, err := os.ReadFile("edit.prompt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(out) != original {
+		t.Fatalf("prompt changed after denied edit:\n%s", out)
+	}
+}
+
 func TestPromptInfoTidyHelpAndHelpers(t *testing.T) {
 	tmpDir := t.TempDir()
 	file := filepath.Join(tmpDir, "info.prompt")
@@ -360,5 +415,51 @@ fast:
 	}
 	if err := tidyPromptFile(filepath.Join(tmpDir, "missing.prompt"), false, true); err == nil {
 		t.Fatal("missing tidy succeeded")
+	}
+}
+
+func TestTidyPromptFile_RemoveUnusedDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	writeDenyWritePeMod(t)
+	const original = `Hello {{.NAME}}
+
+---defaults---
+NAME: World
+UNUSED: remove
+`
+	if err := os.WriteFile("tidy.prompt", []byte(original), 0644); err != nil {
+		t.Fatal(err)
+	}
+	err := tidyPromptFile("tidy.prompt", true, true)
+	if err == nil {
+		t.Fatal("tidyPromptFile succeeded, want write policy error")
+	}
+	if !strings.Contains(err.Error(), "tool write is denied by pe.mod") {
+		t.Fatalf("tidyPromptFile error = %v, want write policy error", err)
+	}
+	out, err := os.ReadFile("tidy.prompt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(out) != original {
+		t.Fatalf("prompt changed after denied tidy:\n%s", out)
+	}
+}
+
+func writeDenyWritePeMod(t *testing.T) {
+	t.Helper()
+	if err := os.WriteFile("pe.mod", []byte(`module example.com/app
+
+pe 1
+
+capability {
+    tools deny write
+}
+`), 0644); err != nil {
+		t.Fatalf("writing pe.mod: %v", err)
 	}
 }

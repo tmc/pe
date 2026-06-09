@@ -125,6 +125,9 @@ is the source of truth for planned work and release-blocking follow-ups.
   newer dependency versions.
 - `pe edit` file edits and `--module` dependency edits honor `tools deny write`;
   `--print` and `--json` output remain read-only.
+- `pe prompt init`, `pe prompt edit`, and `pe prompt tidy --remove-unused`
+  honor `tools deny write`; prompt info/help and validation-only tidy remain
+  read-only.
 
 ## Important Implementation Details
 

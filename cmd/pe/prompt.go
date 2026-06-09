@@ -124,6 +124,9 @@ Examples:
 			}
 
 			// Write the file
+			if err := enforceRuntimeToolPolicyIfValid("write"); err != nil {
+				return err
+			}
 			if err := os.WriteFile(filename, buf.Bytes(), 0755); err != nil {
 				return fmt.Errorf("writing file: %w", err)
 			}
@@ -283,6 +286,9 @@ Examples:
 
 			// Write the updated file
 			output := strings.Join(newLines, "\n")
+			if err := enforceRuntimeToolPolicyIfValid("write"); err != nil {
+				return err
+			}
 			if err := os.WriteFile(filename, []byte(output), 0755); err != nil {
 				return fmt.Errorf("writing file: %w", err)
 			}
@@ -300,10 +306,6 @@ Examples:
 
 	return cmd
 }
-
-
-
-
 
 // promptInfoCmd displays information about a prompt file
 func promptInfoCmd() *cobra.Command {
@@ -341,7 +343,7 @@ Examples:
 			} else {
 				fmt.Printf("File: %s\n", filename)
 				fmt.Printf("Executable: %v\n", info["executable"])
-				
+
 				if provider, ok := info["provider"].(string); ok && provider != "" {
 					fmt.Printf("Provider: %s\n", provider)
 				}
@@ -385,11 +387,11 @@ Examples:
 func analyzePromptFile(content string) map[string]interface{} {
 	info := make(map[string]interface{})
 	lines := strings.Split(content, "\n")
-	
+
 	// Check for shebang
 	if len(lines) > 0 && strings.HasPrefix(lines[0], "#!") {
 		info["executable"] = true
-		
+
 		// Extract provider from shebang
 		if strings.Contains(lines[0], "--provider=") {
 			parts := strings.Fields(lines[0])
@@ -415,7 +417,7 @@ func analyzePromptFile(content string) map[string]interface{} {
 			}
 		}
 	}
-	
+
 	var variables []string
 	for v := range varMap {
 		variables = append(variables, v)
@@ -527,7 +529,7 @@ func tidyPromptFile(filename string, removeUnused, validate bool) error {
 	}
 
 	lines := strings.Split(string(content), "\n")
-	
+
 	// Extract all variables used in the prompt
 	usedVars := make(map[string]bool)
 	for _, line := range lines {
@@ -549,6 +551,9 @@ func tidyPromptFile(filename string, removeUnused, validate bool) error {
 	// Remove unused defaults if requested
 	if removeUnused {
 		lines = removeUnusedDefaults(lines, usedVars)
+		if err := enforceRuntimeToolPolicyIfValid("write"); err != nil {
+			return err
+		}
 		if err := os.WriteFile(filename, []byte(strings.Join(lines, "\n")), 0755); err != nil {
 			return err
 		}
@@ -575,13 +580,13 @@ func trimEmptyLines(lines []string) []string {
 	for start < len(lines) && strings.TrimSpace(lines[start]) == "" {
 		start++
 	}
-	
+
 	// Trim trailing empty lines
 	end := len(lines)
 	for end > start && strings.TrimSpace(lines[end-1]) == "" {
 		end--
 	}
-	
+
 	return lines[start:end]
 }
 
@@ -611,32 +616,32 @@ func findVariables(text string) []string {
 func extractMainContent(lines []string) string {
 	var mainLines []string
 	inSection := false
-	
+
 	for i, line := range lines {
 		// Skip shebang
 		if i == 0 && strings.HasPrefix(line, "#!") {
 			continue
 		}
-		
+
 		// Check for section start
 		if strings.HasPrefix(line, "---") && strings.HasSuffix(line, "---") {
 			inSection = true
 			continue
 		}
-		
+
 		// Collect main content (before any section)
 		if !inSection {
 			mainLines = append(mainLines, line)
 		}
 	}
-	
+
 	return strings.Join(mainLines, "\n")
 }
 
 func removeUnusedDefaults(lines []string, usedVars map[string]bool) []string {
 	var result []string
 	inDefaults := false
-	
+
 	for _, line := range lines {
 		if strings.HasPrefix(line, "---defaults---") {
 			inDefaults = true
@@ -645,7 +650,7 @@ func removeUnusedDefaults(lines []string, usedVars map[string]bool) []string {
 		} else if inDefaults && strings.HasPrefix(line, "---") {
 			inDefaults = false
 		}
-		
+
 		if inDefaults && strings.Contains(line, ":") {
 			parts := strings.SplitN(line, ":", 2)
 			if len(parts) == 2 {
@@ -660,7 +665,7 @@ func removeUnusedDefaults(lines []string, usedVars map[string]bool) []string {
 			result = append(result, line)
 		}
 	}
-	
+
 	return result
 }
 
@@ -669,7 +674,7 @@ func promptHelpCmd() *cobra.Command {
 	var (
 		asScript bool
 	)
-	
+
 	cmd := &cobra.Command{
 		Use:   "help [file]",
 		Short: "Show usage information for a prompt file",
@@ -687,34 +692,34 @@ Examples:
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			filename := args[0]
-			
+
 			// Read the prompt file
 			content, err := os.ReadFile(filename)
 			if err != nil {
 				return fmt.Errorf("reading file: %w", err)
 			}
-			
+
 			// Parse sections
 			info := analyzePromptFile(string(content))
 			description := extractDescription(string(content))
 			defaults := extractDefaults(string(content))
 			vars := extractPromptVariables(string(content))
-			
+
 			// Display help
 			scriptName := filepath.Base(filename)
 			fmt.Printf("%s\n", scriptName)
-			
+
 			if description != "" {
 				fmt.Printf("\n%s\n", description)
 			}
-			
+
 			fmt.Printf("\nUsage:\n")
 			if asScript {
 				fmt.Printf("  %s", scriptName)
 			} else {
 				fmt.Printf("  pe run %s", filename)
 			}
-			
+
 			// Show variable flags
 			for _, v := range vars {
 				if def, hasDefault := defaults[v]; hasDefault {
@@ -725,35 +730,35 @@ Examples:
 				}
 			}
 			fmt.Printf("\n")
-			
+
 			// Show variables section
 			if len(vars) > 0 {
 				fmt.Printf("\nVariables:\n")
 				for _, v := range vars {
 					if def, hasDefault := defaults[v]; hasDefault {
-						fmt.Printf("  --%s string    %s (default: %s)\n", 
+						fmt.Printf("  --%s string    %s (default: %s)\n",
 							strings.ToLower(v), v, def)
 					} else {
-						fmt.Printf("  --%s string    %s (required)\n", 
+						fmt.Printf("  --%s string    %s (required)\n",
 							strings.ToLower(v), v)
 					}
 				}
 			}
-			
+
 			// Show system prompt if present
 			if system, ok := info["system"].(string); ok && system != "" {
-				fmt.Printf("\nSystem Prompt:\n  %s\n", 
+				fmt.Printf("\nSystem Prompt:\n  %s\n",
 					strings.ReplaceAll(system, "\n", "\n  "))
 			}
-			
+
 			// Examples
 			fmt.Printf("\nExamples:\n")
-			
+
 			// Basic example
 			if asScript {
 				fmt.Printf("  # Run with defaults\n")
 				fmt.Printf("  ./%s\n", scriptName)
-				
+
 				if len(vars) > 0 {
 					fmt.Printf("\n  # Override variables\n")
 					fmt.Printf("  ./%s", scriptName)
@@ -765,15 +770,15 @@ Examples:
 			} else {
 				fmt.Printf("  # Run with defaults\n")
 				fmt.Printf("  pe run %s\n", filename)
-				
+
 				if len(vars) > 0 {
-					fmt.Printf("\n  # Override variables\n") 
+					fmt.Printf("\n  # Override variables\n")
 					fmt.Printf("  pe run %s", filename)
 					for _, v := range vars {
 						fmt.Printf(" --var %s=\"value\"", v)
 					}
 					fmt.Printf("\n")
-					
+
 					fmt.Printf("\n  # Using direct flags (with custom parser)\n")
 					fmt.Printf("  pe run %s", filename)
 					for _, v := range vars {
@@ -782,14 +787,14 @@ Examples:
 					fmt.Printf("\n")
 				}
 			}
-			
+
 			return nil
 		},
 	}
-	
-	cmd.Flags().BoolVar(&asScript, "as-script", false, 
+
+	cmd.Flags().BoolVar(&asScript, "as-script", false,
 		"Show help as if running as standalone script")
-	
+
 	return cmd
 }
 
@@ -797,13 +802,13 @@ Examples:
 func extractDescription(content string) string {
 	lines := strings.Split(content, "\n")
 	var description []string
-	
+
 	for i, line := range lines {
 		// Skip shebang
 		if i == 0 && strings.HasPrefix(line, "#!") {
 			continue
 		}
-		
+
 		// Collect comment lines at the top as description
 		if strings.HasPrefix(line, "# ") {
 			description = append(description, strings.TrimPrefix(line, "# "))
@@ -812,7 +817,7 @@ func extractDescription(content string) string {
 			break
 		}
 	}
-	
+
 	return strings.Join(description, "\n")
 }
 
@@ -821,7 +826,7 @@ func extractDefaults(content string) map[string]string {
 	defaults := make(map[string]string)
 	lines := strings.Split(content, "\n")
 	inDefaults := false
-	
+
 	for _, line := range lines {
 		if strings.HasPrefix(line, "---defaults---") {
 			inDefaults = true
@@ -829,7 +834,7 @@ func extractDefaults(content string) map[string]string {
 		} else if inDefaults && strings.HasPrefix(line, "---") {
 			break
 		}
-		
+
 		if inDefaults && strings.Contains(line, ":") {
 			parts := strings.SplitN(line, ":", 2)
 			if len(parts) == 2 {
@@ -839,7 +844,7 @@ func extractDefaults(content string) map[string]string {
 			}
 		}
 	}
-	
+
 	return defaults
 }
 
@@ -849,25 +854,25 @@ func extractPromptVariables(content string) []string {
 	lines := strings.Split(content, "\n")
 	var mainContent []string
 	inSection := false
-	
+
 	for i, line := range lines {
 		// Skip shebang
 		if i == 0 && strings.HasPrefix(line, "#!") {
 			continue
 		}
-		
+
 		// Check for section start
 		if strings.HasPrefix(line, "---") && strings.HasSuffix(line, "---") {
 			inSection = true
 			continue
 		}
-		
+
 		// Collect main content (before any section)
 		if !inSection {
 			mainContent = append(mainContent, line)
 		}
 	}
-	
+
 	prompt := strings.Join(mainContent, "\n")
 	return findVariables(prompt)
 }

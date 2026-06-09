@@ -1520,6 +1520,10 @@ integrity semantics.
    now enforce `tools deny write`, while `--print` and `--json` remain
    read-only. Remaining work: runtime enforcement for other tool classes and
    remaining write surfaces.
+   DONE current pass: `pe prompt init`, `pe prompt edit`, and
+   `pe prompt tidy --remove-unused` now enforce `tools deny write`, while
+   prompt info/help and validation-only tidy remain read-only. Remaining work:
+   runtime enforcement for other tool classes and remaining write surfaces.
 6. Sign attest manifests with an Ed25519 envelope while preserving unsigned
    local integrity workflows.
    DONE current pass: `pe exp attest keygen`, `sign`, and `verify-signed`

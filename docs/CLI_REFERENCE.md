@@ -1846,6 +1846,8 @@ Initialize a new prompt file with shebang and structure.
 pe prompt init [filename] [flags]
 ```
 
+Honors `tools deny write` before creating or overwriting prompt files.
+
 #### prompt info
 
 Display information about a prompt file.
@@ -1870,6 +1872,8 @@ Edit prompt file defaults and metadata.
 pe prompt edit [filename] [flags]
 ```
 
+Honors `tools deny write` before rewriting prompt files.
+
 #### prompt tidy
 
 Clean up and validate prompt files.
@@ -1877,6 +1881,9 @@ Clean up and validate prompt files.
 ```bash
 pe prompt tidy [filename...]
 ```
+
+`--remove-unused` honors `tools deny write` before rewriting prompt files;
+validation-only tidy remains read-only.
 
 ### Examples
 
