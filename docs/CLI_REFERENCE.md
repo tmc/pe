@@ -2532,6 +2532,9 @@ pe optimize --prompt "Analyze sentiment" --method pe2 --iterations 5
 pe optimize complex-system.txt --method apex --output results.json
 ```
 
+Honors `tools deny write` before writing JSON results or the default optimized
+prompt file.
+
 ---
 
 ## evolve

@@ -1538,6 +1538,10 @@ integrity semantics.
    `pe exp optimize --output` now enforce `tools deny write` before writing
    result files, while stdout output remains read-only. Remaining work:
    runtime enforcement for other tool classes and remaining write surfaces.
+   DONE current pass: `pe optimize` now enforces `tools deny write` before
+   provider setup because successful runs write JSON results and the default
+   optimized prompt file. Remaining work: runtime enforcement for other tool
+   classes and remaining write surfaces.
    DONE current pass: `pe compose --output`, `--library-init`, and
    `--add-component` now enforce `tools deny write`, matching the existing
    import-write guard while terminal composition output remains read-only.

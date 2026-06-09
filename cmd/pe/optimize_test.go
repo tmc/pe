@@ -1,6 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -67,5 +71,49 @@ func TestOptimizeCmd_NoPromptError(t *testing.T) {
 	err := cmd.RunE(cmd, []string{})
 	if err == nil {
 		t.Error("Expected error when no prompt provided")
+	}
+}
+
+func TestOptimizeCmdWriteDeniedByPolicy(t *testing.T) {
+	dir := t.TempDir()
+	oldwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldwd); err != nil {
+			t.Fatalf("restore cwd: %v", err)
+		}
+	})
+
+	if err := os.WriteFile(filepath.Join(dir, "pe.mod"), []byte(`module example.com/optimize-deny
+
+pe 1
+
+capability {
+    tools deny write
+}
+`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := optimizeCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"--prompt", "Summarize"})
+
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatal("optimize succeeded, want write policy error")
+	}
+	if !strings.Contains(err.Error(), "tool write is denied by pe.mod") {
+		t.Fatalf("optimize error = %v, want write policy error", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "prompt_standard.txt")); !os.IsNotExist(err) {
+		t.Fatalf("optimize wrote default prompt despite write policy: %v", err)
 	}
 }

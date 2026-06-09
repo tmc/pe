@@ -64,6 +64,10 @@ method and provider.`,
 				return fmt.Errorf("initial prompt is required")
 			}
 
+			if err := enforceRuntimeToolPolicy("write"); err != nil {
+				return err
+			}
+
 			// Create provider through the inference migration path, adapting
 			// only at the metaprompt boundary.
 			providerSpec := commandProviderSpec(provider, model)
