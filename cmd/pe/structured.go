@@ -80,12 +80,7 @@ Available types:
 			return fmt.Errorf("failed to format schema: %w", err)
 		}
 
-		// Output
-		if structuredOutput != "" {
-			return os.WriteFile(structuredOutput, []byte(formatted), 0644)
-		}
-		fmt.Println(formatted)
-		return nil
+		return outputStructured(cmd, structuredOutput, formatted)
 	},
 }
 
@@ -127,12 +122,7 @@ Supported formats:
 			return fmt.Errorf("failed to format schema: %w", err)
 		}
 
-		// Output
-		if structuredOutput != "" {
-			return os.WriteFile(structuredOutput, []byte(formatted), 0644)
-		}
-		fmt.Println(formatted)
-		return nil
+		return outputStructured(cmd, structuredOutput, formatted)
 	},
 }
 
@@ -229,13 +219,19 @@ to create a complete prompt that will produce structured output.`,
 			return fmt.Errorf("failed to build prompt: %w", err)
 		}
 
-		// Output
-		if structuredOutput != "" {
-			return os.WriteFile(structuredOutput, []byte(prompt), 0644)
-		}
-		fmt.Println(prompt)
-		return nil
+		return outputStructured(cmd, structuredOutput, prompt)
 	},
+}
+
+func outputStructured(cmd *cobra.Command, outputFile, content string) error {
+	if outputFile != "" {
+		if err := enforceRuntimeToolPolicy("write"); err != nil {
+			return err
+		}
+		return os.WriteFile(outputFile, []byte(content), 0644)
+	}
+	fmt.Fprintln(cmd.OutOrStdout(), content)
+	return nil
 }
 
 // Add a subcommand for managing custom formatter plugins

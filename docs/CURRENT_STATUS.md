@@ -105,6 +105,8 @@ is the source of truth for planned work and release-blocking follow-ups.
   output remains read-only.
 - `pe test --output` and `pe test create-suite --output` honor `tools deny
   write`; terminal test output remains read-only.
+- `pe structured` file outputs honor `tools deny write`; terminal structured
+  output remains read-only.
 
 ## Important Implementation Details
 
