@@ -298,6 +298,66 @@ func TestSecurityHelpersAndOutput(t *testing.T) {
 	}
 }
 
+func TestOutputSecurityResultDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte(securityPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := outputSecurityResult(securityPolicyTestResult(), "security.json", "json")
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("security output error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("security.json"); !os.IsNotExist(err) {
+		t.Fatalf("security wrote output despite write policy: %v", err)
+	}
+}
+
+func TestOutputSecurityResultStdoutAllowedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte(securityPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := outputSecurityResult(securityPolicyTestResult(), "", "table"); err != nil {
+		t.Fatalf("security stdout: %v", err)
+	}
+	if _, err := os.Stat("security.json"); !os.IsNotExist(err) {
+		t.Fatalf("security created unexpected output: %v", err)
+	}
+}
+
+func securityPolicyTestResult() *SecurityTestResult {
+	return &SecurityTestResult{
+		TestID:      "sec-policy",
+		Target:      "prompt.txt",
+		Timestamp:   time.Unix(0, 0),
+		OverallRisk: "Low",
+		TotalTests:  1,
+		PassedTests: 1,
+		Categories:  map[string]*CategoryResult{},
+	}
+}
+
+func securityPolicyTestModule() string {
+	return `module example.com/prompts
+
+pe 1
+
+capability {
+    tools deny write
+}
+`
+}
+
 func securityTestContainsString(list []string, s string) bool {
 	for _, v := range list {
 		if v == s {

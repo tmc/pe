@@ -1474,6 +1474,10 @@ integrity semantics.
    before writing evolution result files, while terminal evolution output
    remains read-only. Remaining work: runtime enforcement for other tool
    classes and remaining write surfaces.
+   DONE current pass: security report output files now enforce
+   `tools deny write` before writing, while terminal security output remains
+   read-only. Remaining work: runtime enforcement for other tool classes and
+   remaining write surfaces.
 6. Sign attest manifests with an Ed25519 envelope while preserving unsigned
    local integrity workflows.
    DONE current pass: `pe exp attest keygen`, `sign`, and `verify-signed`

@@ -101,6 +101,8 @@ is the source of truth for planned work and release-blocking follow-ups.
   remains read-only.
 - `pe evolve --output` honors `tools deny write`; terminal evolution output
   remains read-only.
+- Security report output files honor `tools deny write`; terminal security
+  output remains read-only.
 
 ## Important Implementation Details
 

@@ -1574,6 +1574,9 @@ Security testing covers prompt-injection and related local checks. Data
 poisoning and supply-chain checks use local response-pattern indicators; remote
 provenance checks and model-assisted adjudication remain future work.
 
+If `pe.mod` denies the `write` tool capability, security report output files
+fail before writing. Default terminal output remains read-only.
+
 ### OWASP-Oriented Checks
 
 - **LLM01**: Prompt Injection (Direct, Indirect, Context Poisoning)
