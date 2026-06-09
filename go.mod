@@ -2,7 +2,7 @@ module github.com/tmc/pe
 
 go 1.24
 
-toolchain go1.24.13
+toolchain go1.26.4
 
 require (
 	github.com/fsnotify/fsnotify v1.9.0
