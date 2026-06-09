@@ -741,6 +741,9 @@ pe fmt [file...] [flags]
 
 Formats prompt files according to the selected style.
 
+If `pe.mod` denies the `write` tool capability, `pe fmt --write` fails before
+rewriting files. Stdout formatting and `--check` remain read-only.
+
 ### Arguments
 
 - `file...`: Prompt files to format

@@ -111,6 +111,8 @@ is the source of truth for planned work and release-blocking follow-ups.
   remains read-only.
 - Workspace writes to `pe.work` honor `tools deny write`; read-only workspace
   commands remain allowed.
+- `pe fmt --write` honors `tools deny write`; stdout formatting and `--check`
+  remain read-only.
 
 ## Important Implementation Details
 

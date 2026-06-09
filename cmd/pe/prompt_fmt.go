@@ -77,6 +77,9 @@ func formatPromptFile(file string, write, check bool, style string, fix bool) er
 
 	// Write formatted content
 	if write {
+		if err := enforceRuntimeToolPolicy("write"); err != nil {
+			return err
+		}
 		return os.WriteFile(file, []byte(formatted), 0644)
 	}
 
