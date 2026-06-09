@@ -134,6 +134,77 @@ func TestHTTPRegistryDownloadRejectsChecksumMismatch(t *testing.T) {
 	}
 }
 
+func TestHTTPRegistryDownloadTxtarArchive(t *testing.T) {
+	contentDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(contentDir, "prompt.txt"), []byte("hello\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	sum, err := DirectoryChecksum(contentDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	module := Module{
+		Name:     "example.com/prompts",
+		Version:  "v1.0.0",
+		Archive:  "module.txtar",
+		Checksum: sum,
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/modules/example.com/prompts/v1.0.0/module.txtar":
+			_, _ = w.Write([]byte("-- prompt.txt --\nhello\n"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	dest := t.TempDir()
+	if err := NewHTTPRegistry(server.URL).Download(&module, dest); err != nil {
+		t.Fatalf("Download: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(dest, module.Name, module.Version, "prompt.txt"))
+	if err != nil {
+		t.Fatalf("read extracted file: %v", err)
+	}
+	if string(data) != "hello\n" {
+		t.Fatalf("extracted file = %q", data)
+	}
+}
+
+func TestHTTPRegistryDownloadTxtarArchiveRejectsBadArchives(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+	}{
+		{name: "empty", body: "not a txtar archive\n"},
+		{name: "traversal", body: "-- ../escape.txt --\nno\n"},
+		{name: "absolute", body: "-- /escape.txt --\nno\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			module := Module{
+				Name:    "example.com/prompts",
+				Version: "v1.0.0",
+				Archive: "module.txtar",
+			}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/modules/example.com/prompts/v1.0.0/module.txtar":
+					_, _ = w.Write([]byte(tt.body))
+				default:
+					http.NotFound(w, r)
+				}
+			}))
+			defer server.Close()
+
+			if err := NewHTTPRegistry(server.URL).Download(&module, t.TempDir()); err == nil {
+				t.Fatal("Download accepted bad archive")
+			}
+		})
+	}
+}
+
 func TestHTTPRegistryRejectsTraversal(t *testing.T) {
 	server := httptest.NewServer(http.NotFoundHandler())
 	defer server.Close()

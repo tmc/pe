@@ -15,7 +15,11 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"golang.org/x/tools/txtar"
 )
+
+const maxModuleArchiveSize = 16 << 20
 
 // RegistryType defines the type of registry backend
 type RegistryType string
@@ -59,6 +63,7 @@ type Module struct {
 	Tags         []string          `json:"tags,omitempty"`
 	Dependencies map[string]string `json:"dependencies,omitempty"`
 	Files        []string          `json:"files,omitempty"`
+	Archive      string            `json:"archive,omitempty"`
 	Checksum     string            `json:"checksum,omitempty"`
 	PublishedAt  time.Time         `json:"published_at"`
 	UpdatedAt    time.Time         `json:"updated_at"`
@@ -198,17 +203,29 @@ func (r *GitHubRegistry) Download(module *Module, destDir string) error {
 		return fmt.Errorf("failed to create module directory: %w", err)
 	}
 
-	// Download module files
-	for _, file := range module.Files {
+	if module.Archive != "" {
 		url := fmt.Sprintf("https://github.com/%s/%s/releases/download/%s/%s",
-			r.owner, r.repo, module.Version, file)
-
-		destPath, err := containedPath(moduleDir, file)
+			r.owner, r.repo, module.Version, module.Archive)
+		data, err := r.downloadBytes(url)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to download archive %s: %w", module.Archive, err)
 		}
-		if err := r.downloadFile(url, destPath); err != nil {
-			return fmt.Errorf("failed to download %s: %w", file, err)
+		if err := extractModuleTxtar(data, moduleDir); err != nil {
+			return fmt.Errorf("failed to extract archive %s: %w", module.Archive, err)
+		}
+	} else {
+		// Download module files
+		for _, file := range module.Files {
+			url := fmt.Sprintf("https://github.com/%s/%s/releases/download/%s/%s",
+				r.owner, r.repo, module.Version, file)
+
+			destPath, err := containedPath(moduleDir, file)
+			if err != nil {
+				return err
+			}
+			if err := r.downloadFile(url, destPath); err != nil {
+				return fmt.Errorf("failed to download %s: %w", file, err)
+			}
 		}
 	}
 
@@ -281,6 +298,15 @@ func (r *GitHubRegistry) downloadFile(url, destPath string) error {
 	return err
 }
 
+func (r *GitHubRegistry) downloadBytes(url string) ([]byte, error) {
+	resp, err := r.do(http.MethodGet, url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return readModuleArchiveResponse(resp)
+}
+
 func (r *GitHubRegistry) do(method, url string) (*http.Response, error) {
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
@@ -341,14 +367,25 @@ func (r *HTTPRegistry) Download(module *Module, destDir string) error {
 	if err := os.MkdirAll(moduleDir, 0755); err != nil {
 		return fmt.Errorf("failed to create module directory: %w", err)
 	}
-	for _, file := range module.Files {
-		destPath, err := containedPath(moduleDir, file)
+	if module.Archive != "" {
+		urlPath := "/" + strings.TrimLeft(pathForModuleFile(module, module.Archive), "/")
+		data, err := r.downloadBytes(urlPath)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to download archive %s: %w", module.Archive, err)
 		}
-		urlPath := "/" + strings.TrimLeft(pathForModuleFile(module, file), "/")
-		if err := r.downloadFile(urlPath, destPath); err != nil {
-			return fmt.Errorf("failed to download %s: %w", file, err)
+		if err := extractModuleTxtar(data, moduleDir); err != nil {
+			return fmt.Errorf("failed to extract archive %s: %w", module.Archive, err)
+		}
+	} else {
+		for _, file := range module.Files {
+			destPath, err := containedPath(moduleDir, file)
+			if err != nil {
+				return err
+			}
+			urlPath := "/" + strings.TrimLeft(pathForModuleFile(module, file), "/")
+			if err := r.downloadFile(urlPath, destPath); err != nil {
+				return fmt.Errorf("failed to download %s: %w", file, err)
+			}
 		}
 	}
 	data, err := json.MarshalIndent(module, "", "  ")
@@ -406,6 +443,15 @@ func (r *HTTPRegistry) downloadFile(urlPath, destPath string) error {
 	defer out.Close()
 	_, err = io.Copy(out, resp.Body)
 	return err
+}
+
+func (r *HTTPRegistry) downloadBytes(urlPath string) ([]byte, error) {
+	resp, err := r.do(http.MethodGet, urlPath)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return readModuleArchiveResponse(resp)
 }
 
 func (r *HTTPRegistry) do(method, urlPath string) (*http.Response, error) {
@@ -672,6 +718,44 @@ func verifyModuleChecksum(root string, module *Module) error {
 	}
 	if sum != module.Checksum {
 		return fmt.Errorf("checksum mismatch for %s@%s", module.Name, module.Version)
+	}
+	return nil
+}
+
+func readModuleArchiveResponse(resp *http.Response) ([]byte, error) {
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("registry returned status %d", resp.StatusCode)
+	}
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxModuleArchiveSize+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(data) > maxModuleArchiveSize {
+		return nil, fmt.Errorf("module archive exceeds %d byte limit", maxModuleArchiveSize)
+	}
+	return data, nil
+}
+
+func extractModuleTxtar(data []byte, destDir string) error {
+	archive := txtar.Parse(data)
+	if len(archive.Files) == 0 {
+		return fmt.Errorf("module archive contains no files")
+	}
+	for _, file := range archive.Files {
+		name := filepath.Clean(file.Name)
+		if name == "." || strings.HasPrefix(name, "..") || filepath.IsAbs(name) {
+			return fmt.Errorf("invalid module archive path %q", file.Name)
+		}
+		destPath, err := containedPath(destDir, name)
+		if err != nil {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(destPath, file.Data, 0644); err != nil {
+			return err
+		}
 	}
 	return nil
 }

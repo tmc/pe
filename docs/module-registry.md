@@ -54,13 +54,16 @@ Each module version has a `module.json` file:
     "example.com/base": "^v1.0.0"
   },
   "files": ["review.pe"],
+  "archive": "module.txtar",
   "checksum": "sha256-hex"
 }
 ```
 
 `name` is a relative module path. `version` is semantic version text, normally
 with a `v` prefix. `files` are relative paths inside the module version
-directory. Paths must not be absolute and must not escape the module directory.
+directory. `archive`, when present, names a txtar archive for the module
+version; clients extract it instead of downloading entries from `files`. Paths
+must not be absolute and must not escape the module directory.
 
 ## HTTP Protocol
 
@@ -74,7 +77,11 @@ A static HTTP registry serves:
 
 `modules.json` is a JSON array of module metadata. Clients use it for list,
 search, upgrade, and metadata lookup. File downloads use the `files` list from
-metadata.
+metadata unless `archive` is set. Archive downloads use:
+
+```text
+/modules/<module>/<version>/<archive>
+```
 
 If `PE_REGISTRY_TOKEN` is set, the HTTP client sends it as:
 
@@ -86,8 +93,9 @@ Authorization: Bearer <token>
 
 The GitHub registry reads releases from `PE_REGISTRY_OWNER` and
 `PE_REGISTRY_REPO`. Releases expose a `module.json` asset and file assets for
-the module version. If `PE_REGISTRY_TOKEN` is set, it is used. Otherwise
-`GITHUB_TOKEN` is used when present.
+the module version. If metadata sets `archive`, the release exposes that txtar
+asset instead of individual file assets. If `PE_REGISTRY_TOKEN` is set, it is
+used. Otherwise `GITHUB_TOKEN` is used when present.
 
 ## Local Registry
 
@@ -145,6 +153,17 @@ version, module-wide invalidation, and full clearing.
 files and compares it with `module.json.checksum`. The digest excludes
 `module.json`, includes relative file names and file bytes, and rejects
 symlinks.
+
+Registry downloads verify the same checksum after files are copied or an
+archive is extracted. Local publishing records the checksum when metadata omits
+it and rejects caller-supplied checksums that do not match the module contents.
+
+## Archive Format
+
+Module archives are txtar files. Each txtar file entry is written under the
+module version directory. Empty archives, absolute paths, and `..` path escapes
+are rejected before metadata is saved or the checksum is accepted. Archive
+downloads are capped at 16 MiB.
 
 ## Signatures
 

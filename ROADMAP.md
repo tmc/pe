@@ -1394,13 +1394,20 @@ integrity semantics.
    DONE current pass: local registry publishing records deterministic module
    directory checksums, local/HTTP/GitHub downloads verify declared checksums
    after extraction, and the CLI verifier uses the same checksum primitive.
-   Remaining work: archive format selection and archive extraction guarantees.
+   DONE current pass: module metadata now supports `archive` as a txtar module
+   archive, HTTP/GitHub downloads extract txtar archives with path-containment
+   checks, empty/malformed archive rejection, 16 MiB archive limits, and
+   post-extraction checksum verification. `docs/module-registry.md` records the
+   current format. Remaining work: richer archive publishing ergonomics.
 3. Add fixture-backed HTTP and GitHub registry tests for list, search, download,
    missing version, malformed archive, checksum mismatch, and path traversal.
    DONE current pass: HTTP and local registry tests now cover checksum mismatch
    rejection, while existing fixture tests cover HTTP list/get/search/download
    and traversal rejection. Remaining work: malformed archive and richer GitHub
    fixture coverage.
+   DONE current pass: HTTP registry fixtures now cover txtar archive download,
+   empty/malformed archive rejection, and archive path traversal rejection.
+   Remaining work: richer GitHub fixture coverage.
 4. Implement version upgrade and dependency graph behavior with predictable
    conflict reporting.
    DONE current pass: module version conflict resolution now chooses the
