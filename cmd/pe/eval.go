@@ -89,6 +89,10 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 
 			// Write to output file or stdout
 			if outputFile != "" {
+				if err := enforceRuntimeToolPolicy("write"); err != nil {
+					return err
+				}
+
 				// Infer output format from file extension
 				outputFormat := ""
 				if strings.HasSuffix(outputFile, ".json") {
@@ -168,6 +172,10 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 
 			// Save to a file in the .promptfoo directory if requested
 			if saveToDb {
+				if err := enforceRuntimeToolPolicy("write"); err != nil {
+					return err
+				}
+
 				evalId := results.EvalID
 
 				// Create the .promptfoo directory in the user's home directory
@@ -216,4 +224,3 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 
 	return cmd
 }
-

@@ -191,6 +191,10 @@ pe eval [config_file] [flags]
 
 The `eval` command is the core of PE. It reads a configuration file, executes prompts against specified LLM providers, and evaluates the results against defined assertions.
 
+If `pe.mod` denies the `write` tool capability, `pe eval -o` and
+`pe eval --save-db` fail before writing files. Default stdout output remains
+read-only and is allowed.
+
 ### Arguments
 
 - `config_file`: Path to YAML/JSON configuration file (optional, defaults to `promptfooconfig.yaml`)

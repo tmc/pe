@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -235,6 +236,135 @@ tests:
 	if err != nil {
 		t.Errorf("Unexpected error: %v. Output: %s", err, output)
 	}
+}
+
+func TestEvalCmd_OutputDeniedByWritePolicy(t *testing.T) {
+	oldTestMode := os.Getenv("PE_TEST_MODE")
+	os.Setenv("PE_TEST_MODE", "true")
+	defer os.Setenv("PE_TEST_MODE", oldTestMode)
+
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	configFile := "eval-config.yaml"
+	if err := os.WriteFile(configFile, []byte(evalPolicyTestConfig()), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("pe.mod", []byte(evalPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := evalCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{configFile, "--output", "results.json"})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("eval error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("results.json"); !os.IsNotExist(err) {
+		t.Fatalf("eval wrote output despite write policy: %v", err)
+	}
+}
+
+func TestEvalCmd_SaveDBDeniedByWritePolicy(t *testing.T) {
+	oldTestMode := os.Getenv("PE_TEST_MODE")
+	os.Setenv("PE_TEST_MODE", "true")
+	defer os.Setenv("PE_TEST_MODE", oldTestMode)
+
+	tmpDir := t.TempDir()
+	homeDir := filepath.Join(tmpDir, "home")
+	if err := os.Mkdir(homeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HOME", homeDir)
+
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	configFile := "eval-config.yaml"
+	if err := os.WriteFile(configFile, []byte(evalPolicyTestConfig()), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("pe.mod", []byte(evalPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := evalCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{configFile, "--save-db"})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("eval error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat(filepath.Join(homeDir, ".promptfoo")); !os.IsNotExist(err) {
+		t.Fatalf("eval created promptfoo directory despite write policy: %v", err)
+	}
+}
+
+func TestEvalCmd_StdoutAllowedByWritePolicy(t *testing.T) {
+	oldTestMode := os.Getenv("PE_TEST_MODE")
+	os.Setenv("PE_TEST_MODE", "true")
+	defer os.Setenv("PE_TEST_MODE", oldTestMode)
+
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	configFile := "eval-config.yaml"
+	if err := os.WriteFile(configFile, []byte(evalPolicyTestConfig()), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("pe.mod", []byte(evalPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := evalCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{configFile})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("eval stdout: %v", err)
+	}
+	if output := buf.String(); output == "" {
+		t.Fatal("eval stdout output is empty")
+	}
+}
+
+func evalPolicyTestConfig() string {
+	return `description: "Write policy test"
+prompts:
+  - "Test prompt"
+providers:
+  - "mock"
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: "test"
+`
+}
+
+func evalPolicyTestModule() string {
+	return `module example.com/prompts
+
+pe 1
+
+capability {
+    tools deny write
+}
+`
 }
 
 func TestEvalCmd_Concurrency(t *testing.T) {
