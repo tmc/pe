@@ -107,6 +107,8 @@ is the source of truth for planned work and release-blocking follow-ups.
   write`; terminal test output remains read-only.
 - `pe structured` file outputs honor `tools deny write`; terminal structured
   output remains read-only.
+- Template file outputs honor `tools deny write`; terminal template output
+  remains read-only.
 
 ## Important Implementation Details
 

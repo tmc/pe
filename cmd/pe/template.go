@@ -310,7 +310,7 @@ func runTemplateApply(cmd *cobra.Command, name, varsFile, outputFile string, int
 	}
 
 	if outputFile != "" {
-		return os.WriteFile(outputFile, []byte(result), 0644)
+		return writeTemplateFile(outputFile, []byte(result))
 	}
 
 	fmt.Fprintln(cmd.OutOrStdout(), result)
@@ -353,7 +353,7 @@ func runTemplateCreate(cmd *cobra.Command, name, outputFile string, interactive 
 		if err != nil {
 			return err
 		}
-		return os.WriteFile(outputFile, data, 0644)
+		return writeTemplateFile(outputFile, data)
 	}
 
 	data, err = yaml.Marshal(template)
@@ -387,7 +387,7 @@ func runTemplateCreateNonInteractive(cmd *cobra.Command, name, outputFile, promp
 	ext := strings.ToLower(filepath.Ext(outputFile))
 	switch ext {
 	case ".prompt", ".txt", ".md":
-		if err := os.WriteFile(outputFile, []byte(prompt), 0644); err != nil {
+		if err := writeTemplateFile(outputFile, []byte(prompt)); err != nil {
 			return err
 		}
 	default:
@@ -404,7 +404,7 @@ func runTemplateCreateNonInteractive(cmd *cobra.Command, name, outputFile, promp
 		if err != nil {
 			return err
 		}
-		if err := os.WriteFile(outputFile, data, 0644); err != nil {
+		if err := writeTemplateFile(outputFile, data); err != nil {
 			return err
 		}
 	}
@@ -528,7 +528,7 @@ func runTemplateExport(cmd *cobra.Command, names []string, format, outputDir str
 		}
 
 		filename := filepath.Join(outputDir, name+ext)
-		if err := os.WriteFile(filename, data, 0644); err != nil {
+		if err := writeTemplateFile(filename, data); err != nil {
 			return fmt.Errorf("failed to write %s: %v", filename, err)
 		}
 
@@ -536,6 +536,13 @@ func runTemplateExport(cmd *cobra.Command, names []string, format, outputDir str
 	}
 
 	return nil
+}
+
+func writeTemplateFile(name string, data []byte) error {
+	if err := enforceRuntimeToolPolicy("write"); err != nil {
+		return err
+	}
+	return os.WriteFile(name, data, 0644)
 }
 
 func runTemplateImport(cmd *cobra.Command, files []string) error {

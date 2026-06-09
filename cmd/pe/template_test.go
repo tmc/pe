@@ -268,6 +268,79 @@ func TestTemplateApplyCreateValidateExportImport(t *testing.T) {
 	}
 }
 
+func TestWriteTemplateFileDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte(templatePolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := writeTemplateFile("template.prompt", []byte("Hello {{ .name }}"))
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("template write error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("template.prompt"); !os.IsNotExist(err) {
+		t.Fatalf("template wrote output despite write policy: %v", err)
+	}
+}
+
+func TestTemplateCreateDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte(templatePolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := templateTestCmd()
+	err := runTemplateCreate(cmd, "mine", "mine.prompt", false, "Hello {{ .name }}", "", "custom", nil)
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("template create error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("mine.prompt"); !os.IsNotExist(err) {
+		t.Fatalf("template create wrote output despite write policy: %v", err)
+	}
+}
+
+func TestTemplateApplyStdoutAllowedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte(templatePolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+	varsJSON := filepath.Join(tmpDir, "vars.json")
+	if err := os.WriteFile(varsJSON, []byte(`{"text":"Long article","max_points":3}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := templateTestCmd()
+	if err := runTemplateApply(cmd, "summarization", varsJSON, "", false); err != nil {
+		t.Fatalf("template apply stdout: %v", err)
+	}
+	if _, err := os.Stat("applied.txt"); !os.IsNotExist(err) {
+		t.Fatalf("template apply created unexpected output: %v", err)
+	}
+}
+
+func templatePolicyTestModule() string {
+	return `module example.com/prompts
+
+pe 1
+
+capability {
+    tools deny write
+}
+`
+}
+
 func TestTemplateInteractiveAndVariableCollection(t *testing.T) {
 	for _, tt := range []struct {
 		name  string

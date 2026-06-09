@@ -1323,6 +1323,9 @@ pe template [command]
 
 The `template` command manages structured, parameterized prompts for common use cases like summarization, code review, creative writing, and data analysis.
 
+If `pe.mod` denies the `write` tool capability, template file outputs fail
+before writing. Terminal template output remains read-only.
+
 ### Subcommands
 
 #### template list
