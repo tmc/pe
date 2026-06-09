@@ -1506,6 +1506,10 @@ integrity semantics.
    `tools deny write` policy before overwriting the module file. Initial
    `pe mod init` has no module policy file to consult. Remaining work: runtime
    enforcement for other tool classes and remaining write surfaces.
+   DONE current pass: `pe mod tidy --write` now enforces `tools deny write`
+   before rewriting `pe.mod`, while default tidy reporting remains read-only.
+   Remaining work: runtime enforcement for other tool classes and remaining
+   write surfaces.
 6. Sign attest manifests with an Ed25519 envelope while preserving unsigned
    local integrity workflows.
    DONE current pass: `pe exp attest keygen`, `sign`, and `verify-signed`

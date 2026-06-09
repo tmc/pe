@@ -621,6 +621,9 @@ func runModTidy(cmd *cobra.Command, args []string) error {
 	if !modTidyWrite {
 		return writeModTidyReport(out, report)
 	}
+	if err := enforceRuntimeToolPolicy("write"); err != nil {
+		return err
+	}
 
 	for _, mod := range unused {
 		file.RemoveRequire(mod)

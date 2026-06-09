@@ -117,6 +117,8 @@ is the source of truth for planned work and release-blocking follow-ups.
 - `pe mod init --force` honors an existing `pe.mod` `tools deny write` policy
   before overwriting the module file; initial `pe mod init` has no module
   policy file to consult.
+- `pe mod tidy --write` honors `tools deny write` before rewriting `pe.mod`;
+  default tidy reporting remains read-only.
 
 ## Important Implementation Details
 

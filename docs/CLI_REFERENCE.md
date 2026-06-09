@@ -1258,6 +1258,9 @@ Flags:
 -w, --write   Update pe.mod; add only refs with one explicit version
 ```
 
+`--write` honors `tools deny write` before rewriting `pe.mod`; default tidy
+reporting is read-only.
+
 #### mod vendor
 
 Copy dependencies to vendor directory.

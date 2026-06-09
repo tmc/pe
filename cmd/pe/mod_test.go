@@ -291,6 +291,51 @@ require (
 	}
 }
 
+func TestModTidyCmd_WriteDeniedByPolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+	oldWrite := modTidyWrite
+	modTidyWrite = true
+	defer func() { modTidyWrite = oldWrite }()
+
+	const original = `module example.com/app
+
+pe 1
+
+require github.com/example/remove v1.0.0
+
+capability {
+    tools deny write
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(original), 0644); err != nil {
+		t.Fatalf("writing pe.mod: %v", err)
+	}
+	if err := os.WriteFile("add.prompt", []byte("pe://github.com/example/add@v1.2.3/run\n"), 0644); err != nil {
+		t.Fatalf("writing add.prompt: %v", err)
+	}
+
+	var out bytes.Buffer
+	cmd := *modTidyCmd
+	cmd.SetOut(&out)
+	err := runModTidy(&cmd, nil)
+	if err == nil {
+		t.Fatal("runModTidy succeeded, want write policy error")
+	}
+	if !strings.Contains(err.Error(), "tool write is denied by pe.mod") {
+		t.Fatalf("runModTidy error = %v, want write policy error", err)
+	}
+	data, err := os.ReadFile("pe.mod")
+	if err != nil {
+		t.Fatalf("reading pe.mod: %v", err)
+	}
+	if string(data) != original {
+		t.Fatalf("pe.mod changed after denied tidy:\n%s", data)
+	}
+}
+
 func TestModTidyCmd_JSONReportsWriteDecisions(t *testing.T) {
 	tmpDir := t.TempDir()
 	oldWd, _ := os.Getwd()
