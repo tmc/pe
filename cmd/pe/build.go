@@ -21,11 +21,6 @@ import (
 var buildCmd = &cobra.Command{
 	Use:   "build [config/prompt]",
 	Short: "Write prompts, metadata, and bundles",
-	Long: `Write prompts, metadata, and optional bundles for deployment.
-
-The build command reads a prompt or config, applies supported provider
-formatting, writes output files, and can package a directory into a bundle.
-Unsupported provider-specific formatting paths return explicit errors.`,
 	Example: `  # Build from config
   pe build config.yaml
   
@@ -102,6 +97,9 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	if info.IsDir() && buildBundle {
+		if err := enforceRuntimeToolPolicy("write"); err != nil {
+			return err
+		}
 		return buildPromptBundle(input)
 	}
 
@@ -150,6 +148,9 @@ func runBuild(cmd *cobra.Command, args []string) error {
 
 	// Handle multiple targets
 	if len(buildTargets) > 0 {
+		if err := enforceRuntimeToolPolicy("write"); err != nil {
+			return err
+		}
 		fmt.Println("Building for multiple targets")
 		targetPrompts := make(map[string]string)
 		for _, target := range buildTargets {
@@ -208,6 +209,9 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Determine output file
+	if err := enforceRuntimeToolPolicy("write"); err != nil {
+		return err
+	}
 	outputFile := buildOutput
 	if outputFile == "" {
 		outputFile = "prompt_build.txt"

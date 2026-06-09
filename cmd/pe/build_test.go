@@ -433,6 +433,97 @@ imports:
 	}
 }
 
+func TestBuildCmdDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	promptFile := filepath.Join(tmpDir, "prompt.txt")
+	if err := os.WriteFile(promptFile, []byte("You are a helpful assistant."), 0644); err != nil {
+		t.Fatal(err)
+	}
+	mod := `module example.com/prompts
+
+pe 1
+
+capability {
+    tools deny write
+}
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "pe.mod"), []byte(mod), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	oldDir, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldDir)
+
+	buildOutput = ""
+	buildWithMetadata = false
+	buildTarget = ""
+	buildTargets = nil
+	buildMinify = false
+	buildValidate = false
+	buildBundle = false
+	buildCompress = false
+
+	cmd := buildCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{promptFile})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("build error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "prompt_build.txt")); !os.IsNotExist(err) {
+		t.Fatalf("build wrote output despite write policy: %v", err)
+	}
+}
+
+func TestBuildValidateAllowedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	promptFile := filepath.Join(tmpDir, "prompt.txt")
+	if err := os.WriteFile(promptFile, []byte("You are a helpful assistant."), 0644); err != nil {
+		t.Fatal(err)
+	}
+	mod := `module example.com/prompts
+
+pe 1
+
+capability {
+    tools deny write
+}
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "pe.mod"), []byte(mod), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	oldDir, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldDir)
+
+	buildOutput = ""
+	buildWithMetadata = false
+	buildTarget = ""
+	buildTargets = nil
+	buildMinify = false
+	buildValidate = false
+	buildBundle = false
+	buildCompress = false
+
+	cmd := buildCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{promptFile, "--validate"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("build validate: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "prompt_build.txt")); !os.IsNotExist(err) {
+		t.Fatalf("validate wrote output despite write policy: %v", err)
+	}
+}
+
 func TestBuildCmd_OutputFile(t *testing.T) {
 	oldTestMode := os.Getenv("PE_TEST_MODE")
 	os.Setenv("PE_TEST_MODE", "true")

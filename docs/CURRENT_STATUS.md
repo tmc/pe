@@ -87,6 +87,8 @@ is the source of truth for planned work and release-blocking follow-ups.
   provider classes such as `remote` before provider construction. Placement
   policy also blocks known remote providers when `network false` is set.
 - Component import writes honor `tools deny write` in `pe.mod`.
+- `pe build` artifact writes honor `tools deny write`; `pe build --validate`
+  remains read-only.
 
 ## Important Implementation Details
 

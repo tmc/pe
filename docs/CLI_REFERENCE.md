@@ -1440,6 +1440,9 @@ formatting, writes output files, and can package a directory into a bundle.
 Validation is local and deterministic. Some provider-specific formatting paths
 return explicit not-implemented errors.
 
+If `pe.mod` denies the `write` tool capability, build artifact writes fail.
+`pe build --validate` remains read-only and is allowed.
+
 ### Arguments
 
 - `config/prompt`: Configuration file or prompt to build
