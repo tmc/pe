@@ -132,6 +132,7 @@ is the source of truth for planned work and release-blocking follow-ups.
   Legacy promptfoo config fmt/init helpers also check the policy before writes.
 - Interactive REPL `:save` honors `tools deny write` before writing session
   files.
+- `pe plugin build` honors `tools deny write` before writing plugin artifacts.
 
 ## Important Implementation Details
 

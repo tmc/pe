@@ -1051,6 +1051,16 @@ Example:
 pe plugin run promptfoo import config.yaml
 ```
 
+#### plugin build
+
+Build the current plugin directory.
+
+```bash
+pe plugin build
+```
+
+Honors `tools deny write` before writing the plugin artifact.
+
 ### Plugin Discovery
 
 Plugins are automatically discovered as executables with the pattern `pe-*` in your PATH:

@@ -220,6 +220,9 @@ func pluginBuildCmd() *cobra.Command {
 			fmt.Fprintf(cmd.OutOrStdout(), "Built: %s.so\n", pluginName)
 
 			// Create empty .so file for test
+			if err := enforceRuntimeToolPolicyIfValid("write"); err != nil {
+				return err
+			}
 			if err := os.WriteFile(pluginName+".so", []byte{}, 0755); err != nil {
 				return err
 			}
