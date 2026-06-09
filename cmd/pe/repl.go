@@ -311,6 +311,10 @@ func (r *REPLSession) saveSession(filename string) {
 		return
 	}
 
+	if err := enforceRuntimeToolPolicy("write"); err != nil {
+		fmt.Fprintf(r.cmd.OutOrStderr(), "Error saving session: %v\n", err)
+		return
+	}
 	if err := os.WriteFile(filename, data, 0644); err != nil {
 		fmt.Fprintf(r.cmd.OutOrStderr(), "Error saving session: %v\n", err)
 		return

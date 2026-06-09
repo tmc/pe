@@ -353,6 +353,8 @@ Once in interactive mode, use these commands:
 :models                      List available models
 ```
 
+`:save` honors `tools deny write` before writing a session file.
+
 ---
 
 ## watch

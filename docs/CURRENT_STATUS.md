@@ -130,6 +130,8 @@ is the source of truth for planned work and release-blocking follow-ups.
   read-only.
 - `pe convert` honors `tools deny write` before writing converted config files.
   Legacy promptfoo config fmt/init helpers also check the policy before writes.
+- Interactive REPL `:save` honors `tools deny write` before writing session
+  files.
 
 ## Important Implementation Details
 

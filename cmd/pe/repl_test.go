@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"os"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -165,6 +166,45 @@ func TestREPLSession_handleCommand_quitSetsDone(t *testing.T) {
 	}
 	if got := stdout.String(); !bytes.Contains([]byte(got), []byte("Goodbye!")) {
 		t.Fatalf("stdout = %q, want goodbye message", got)
+	}
+}
+
+func TestREPLSession_SaveDeniedByPolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte(`module example.com/app
+
+pe 1
+
+capability {
+    tools deny write
+}
+`), 0644); err != nil {
+		t.Fatalf("writing pe.mod: %v", err)
+	}
+	if err := enforceRuntimeToolPolicy("write"); err == nil {
+		t.Fatal("enforceRuntimeToolPolicy succeeded, want write policy error")
+	}
+
+	cmd := &cobra.Command{}
+	var stdout, stderr bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	session := NewREPLSession(cmd, "openai:gpt-4", "", 0.7)
+	session.history = []string{"hello"}
+
+	if !session.handleCommand(":save session.yaml") {
+		t.Fatal("handleCommand(:save) = false, want true")
+	}
+	combined := append(stdout.Bytes(), stderr.Bytes()...)
+	if !bytes.Contains(combined, []byte("tool write is denied by pe.mod")) {
+		t.Fatalf("stdout = %q, stderr = %q, want write policy error", stdout.String(), stderr.String())
+	}
+	if _, err := os.Stat("session.yaml"); !os.IsNotExist(err) {
+		t.Fatalf("session.yaml stat error = %v, want not exist", err)
 	}
 }
 
