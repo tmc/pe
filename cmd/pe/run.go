@@ -170,23 +170,25 @@ func enforceRuntimeProviderPolicy(provider string) error {
 	if err != nil {
 		return fmt.Errorf("parsing pe.mod policy: %w", err)
 	}
-	if file.Capability == nil {
-		return nil
-	}
 	base := providerBaseName(provider)
 	if base == "" {
 		base = "cgpt"
 	}
-	for _, deny := range file.Capability.Providers.Deny {
-		if deny == base {
-			return fmt.Errorf("provider %s is denied by pe.mod", base)
+	if file.Capability != nil {
+		for _, deny := range file.Capability.Providers.Deny {
+			if deny == base {
+				return fmt.Errorf("provider %s is denied by pe.mod", base)
+			}
+			if deny == "remote" && isRemoteProvider(base) {
+				return fmt.Errorf("provider %s is denied by pe.mod remote provider policy", base)
+			}
+			if deny == "local" && isLocalProvider(base) {
+				return fmt.Errorf("provider %s is denied by pe.mod local provider policy", base)
+			}
 		}
-		if deny == "remote" && isRemoteProvider(base) {
-			return fmt.Errorf("provider %s is denied by pe.mod remote provider policy", base)
-		}
-		if deny == "local" && isLocalProvider(base) {
-			return fmt.Errorf("provider %s is denied by pe.mod local provider policy", base)
-		}
+	}
+	if file.Placement != nil && file.Placement.Network != nil && !*file.Placement.Network && isRemoteProvider(base) {
+		return fmt.Errorf("provider %s requires network access denied by pe.mod placement", base)
 	}
 	return nil
 }

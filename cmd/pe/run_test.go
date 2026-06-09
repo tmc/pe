@@ -375,6 +375,70 @@ capability {
 	}
 }
 
+func TestRunCmdPlacementNetworkDeniesRemoteProvider(t *testing.T) {
+	t.Setenv("PE_TEST_MODE", "true")
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	mod := `module example.com/prompts
+
+pe 1
+
+placement {
+    network false
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(mod), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := runCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"Test prompt", "--provider", "anthropic:claude-3-haiku"})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "network access denied") {
+		t.Fatalf("run error = %v, want network placement denial", err)
+	}
+}
+
+func TestRunCmdPlacementNetworkAllowsLocalProvider(t *testing.T) {
+	t.Setenv("PE_TEST_MODE", "true")
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	mod := `module example.com/prompts
+
+pe 1
+
+placement {
+    network false
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(mod), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := runCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"Test prompt", "--provider", "mock"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if !strings.Contains(buf.String(), "Mock response") {
+		t.Fatalf("output = %q, want mock response", buf.String())
+	}
+}
+
 func TestRunCmd_StreamFlag(t *testing.T) {
 	// Set test mode
 	oldTestMode := os.Getenv("PE_TEST_MODE")

@@ -132,7 +132,8 @@ The `run` command executes prompts directly without needing a configuration file
 
 If `pe.mod` exists in the current directory, `pe run` enforces provider
 denials before creating a provider. Exact provider denials and known provider
-classes such as `remote` are rejected at runtime.
+classes such as `remote` are rejected at runtime. `placement { network false }`
+also rejects known remote providers.
 
 ### Arguments
 
