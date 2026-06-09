@@ -205,13 +205,13 @@ func runVetPrompts(cmd *cobra.Command, args []string) error {
 		if vetProvider != "" {
 			evalPromptProvider = vetProvider
 		}
-		
+
 		// Run eval-prompt directly to avoid command recursion
 		err := runEvalPrompt(nil, []string{file})
-		
+
 		// Restore original provider
 		evalPromptProvider = oldProvider
-		
+
 		if err != nil {
 			if !vetQuiet {
 				fmt.Printf("FAIL: %v\n", err)
@@ -255,6 +255,9 @@ func runFmt(cmd *cobra.Command, args []string) error {
 		}
 
 		if writeFlag {
+			if err := enforceRuntimeToolPolicyIfValid("write"); err != nil {
+				return err
+			}
 			err = os.WriteFile(file, output, 0644)
 			if err != nil {
 				return fmt.Errorf("error writing file %s: %v", file, err)
@@ -337,6 +340,9 @@ func runInit(cmd *cobra.Command, args []string) error {
 	}
 
 	// Write the configuration to file
+	if err := enforceRuntimeToolPolicyIfValid("write"); err != nil {
+		return err
+	}
 	err = os.WriteFile(outputFile, output, 0644)
 	if err != nil {
 		return fmt.Errorf("error writing configuration to %s: %v", outputFile, err)
@@ -565,6 +571,9 @@ func runConvert(cmd *cobra.Command, args []string) error {
 	}
 
 	// Write to output file
+	if err := enforceRuntimeToolPolicyIfValid("write"); err != nil {
+		return err
+	}
 	err = os.WriteFile(outputFile, output, 0644)
 	if err != nil {
 		return fmt.Errorf("error writing output file %s: %v", outputFile, err)

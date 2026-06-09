@@ -128,6 +128,8 @@ is the source of truth for planned work and release-blocking follow-ups.
 - `pe prompt init`, `pe prompt edit`, and `pe prompt tidy --remove-unused`
   honor `tools deny write`; prompt info/help and validation-only tidy remain
   read-only.
+- `pe convert` honors `tools deny write` before writing converted config files.
+  Legacy promptfoo config fmt/init helpers also check the policy before writes.
 
 ## Important Implementation Details
 

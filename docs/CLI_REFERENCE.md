@@ -844,6 +844,7 @@ pe convert [input_file] [output_file] [flags]
 ### Description
 
 Converts configuration files between different formats while preserving structure and content.
+Honors `tools deny write` before writing the converted output file.
 
 ### Arguments
 
