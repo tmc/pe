@@ -99,6 +99,8 @@ is the source of truth for planned work and release-blocking follow-ups.
   read-only.
 - `pe extract --output` honors `tools deny write`; stdout extracted content
   remains read-only.
+- `pe evolve --output` honors `tools deny write`; terminal evolution output
+  remains read-only.
 
 ## Important Implementation Details
 

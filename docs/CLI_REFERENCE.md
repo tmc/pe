@@ -2471,6 +2471,10 @@ pe optimize complex-system.txt --method apex --output results.json
 
 Optimize prompts with evolutionary algorithms.
 
+If `pe.mod` denies the `write` tool capability, `pe evolve --output` fails
+before writing the evolution result JSON. Default terminal output remains
+read-only.
+
 ### Synopsis
 
 ```bash

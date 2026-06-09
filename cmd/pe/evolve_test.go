@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bytes"
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -110,3 +113,87 @@ func TestRunEvolve_FileNotFound(t *testing.T) {
 	}
 }
 
+func TestEvolveCmdOutputDeniedByWritePolicy(t *testing.T) {
+	oldTestMode := os.Getenv("PE_TEST_MODE")
+	os.Setenv("PE_TEST_MODE", "true")
+	defer os.Setenv("PE_TEST_MODE", oldTestMode)
+
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("prompt.txt", []byte("Summarize clearly."), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("pe.mod", []byte(evolvePolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := evolveCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{
+		"prompt.txt",
+		"--provider", "mock",
+		"--generations", "1",
+		"--population", "2",
+		"--output", "evolution.json",
+	})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("evolve error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("evolution.json"); !os.IsNotExist(err) {
+		t.Fatalf("evolve wrote output despite write policy: %v", err)
+	}
+}
+
+func TestEvolveCmdStdoutAllowedByWritePolicy(t *testing.T) {
+	oldTestMode := os.Getenv("PE_TEST_MODE")
+	os.Setenv("PE_TEST_MODE", "true")
+	defer os.Setenv("PE_TEST_MODE", oldTestMode)
+
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("prompt.txt", []byte("Summarize clearly."), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("pe.mod", []byte(evolvePolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := evolveCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{
+		"prompt.txt",
+		"--provider", "mock",
+		"--generations", "1",
+		"--population", "2",
+	})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("evolve stdout: %v", err)
+	}
+	if _, err := os.Stat("evolution.json"); !os.IsNotExist(err) {
+		t.Fatalf("evolve created unexpected output: %v", err)
+	}
+}
+
+func evolvePolicyTestModule() string {
+	return `module example.com/prompts
+
+pe 1
+
+capability {
+    tools deny write
+}
+`
+}

@@ -186,6 +186,9 @@ func runEvolve(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to marshal results: %w", err)
 		}
 
+		if err := enforceRuntimeToolPolicy("write"); err != nil {
+			return err
+		}
 		if err := os.WriteFile(evolveOutput, outputData, 0644); err != nil {
 			return fmt.Errorf("failed to write output file: %w", err)
 		}
