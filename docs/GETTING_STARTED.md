@@ -109,6 +109,8 @@ pe mod init github.com/myorg/prompts
 
 `pe.mod` can also carry capability and placement policy. Use `pe mod vet` to
 check the module contract and executable text metadata before running prompts.
+Strict module composition checks cached dependency policies against parent
+denials before runtime.
 
 ### Template Variables
 Use `{{.variable}}` syntax for dynamic content:

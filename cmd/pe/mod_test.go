@@ -1026,3 +1026,147 @@ Review.
 		t.Fatalf("mod vet error = %v", err)
 	}
 }
+
+func TestRunModVetStrictDependencyPolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	mod := `module example.com/prompts
+
+pe 1
+
+require example.com/base v1.0.0
+
+capability {
+    providers deny remote
+    tools deny shell
+}
+
+placement {
+    network false
+}
+
+policy {
+    composition strict
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(mod), 0644); err != nil {
+		t.Fatal(err)
+	}
+	depDir := filepath.Join(".pe", "cache", "modules", "example.com", "base@v1.0.0")
+	if err := os.MkdirAll(depDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	dep := `module example.com/base
+
+pe 1
+
+capability {
+    providers allow local
+    tools allow read
+}
+
+placement {
+    network false
+}
+`
+	if err := os.WriteFile(filepath.Join(depDir, "pe.mod"), []byte(dep), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := &cobra.Command{}
+	if err := runModVet(cmd, nil); err != nil {
+		t.Fatalf("runModVet: %v", err)
+	}
+}
+
+func TestRunModVetStrictDependencyDeniedProvider(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	mod := `module example.com/prompts
+
+pe 1
+
+require example.com/base v1.0.0
+
+capability {
+    providers deny remote
+}
+
+policy {
+    composition strict
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(mod), 0644); err != nil {
+		t.Fatal(err)
+	}
+	depDir := filepath.Join(".pe", "cache", "modules", "example.com", "base@v1.0.0")
+	if err := os.MkdirAll(depDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	dep := `module example.com/base
+
+pe 1
+
+capability {
+    providers allow remote
+}
+`
+	if err := os.WriteFile(filepath.Join(depDir, "pe.mod"), []byte(dep), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := &cobra.Command{}
+	err := runModVet(cmd, nil)
+	if err == nil || !strings.Contains(err.Error(), "dependency provider remote is denied") {
+		t.Fatalf("runModVet error = %v, want dependency provider denial", err)
+	}
+}
+
+func TestRunModVetStrictDependencyDeniedNetwork(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	mod := `module example.com/prompts
+
+pe 1
+
+require example.com/base v1.0.0
+
+placement {
+    network false
+}
+
+policy {
+    composition strict
+}
+`
+	if err := os.WriteFile("pe.mod", []byte(mod), 0644); err != nil {
+		t.Fatal(err)
+	}
+	depDir := filepath.Join(".pe", "cache", "modules", "example.com", "base@v1.0.0")
+	if err := os.MkdirAll(depDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	dep := `module example.com/base
+
+pe 1
+
+placement {
+    network true
+}
+`
+	if err := os.WriteFile(filepath.Join(depDir, "pe.mod"), []byte(dep), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := &cobra.Command{}
+	err := runModVet(cmd, nil)
+	if err == nil || !strings.Contains(err.Error(), "dependency network access is denied") {
+		t.Fatalf("runModVet error = %v, want dependency network denial", err)
+	}
+}

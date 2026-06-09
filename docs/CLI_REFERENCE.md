@@ -1256,6 +1256,9 @@ pe mod search [query]
 
 Validate `pe.mod` capability, placement, and policy blocks. With file
 arguments, also validate executable text metadata against the module policy.
+When `policy { composition strict }` is set, cached dependency `pe.mod` files
+are checked so dependencies cannot request providers, tools, data, prompts, or
+network placement denied by the parent module.
 
 ```bash
 pe mod vet [file...]

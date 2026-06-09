@@ -139,7 +139,10 @@ var modVetCmd = &cobra.Command{
 	Long: `Vet parses pe.mod and checks the static capability contract.
 
 With file arguments, vet also checks executable text front matter against
-module policy requirements such as typed inputs and reviewed imports.`,
+module policy requirements such as typed inputs and reviewed imports.
+
+With strict composition, vet also checks cached dependency pe.mod files against
+parent module denials.`,
 	RunE: runModVet,
 }
 
@@ -1240,7 +1243,113 @@ func vetCapabilityPolicy(file *pemod.File) error {
 	if file.Policy != nil && file.Policy.Composition != "" && file.Policy.Composition != "strict" {
 		return fmt.Errorf("unsupported policy composition %s", file.Policy.Composition)
 	}
+	if file.Policy != nil && file.Policy.Composition == "strict" {
+		if err := vetStrictDependencyPolicy(file); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func vetStrictDependencyPolicy(file *pemod.File) error {
+	for _, req := range file.Require {
+		dep, ok, err := readCachedDependencyMod(req)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			continue
+		}
+		if err := dependencyDeniedByModule(file, string(req.Mod), dep); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func readCachedDependencyMod(req pemod.Require) (*pemod.File, bool, error) {
+	paths := []string{
+		filepath.Join(".pe", "cache", "modules", filepath.FromSlash(string(req.Mod)+"@"+req.Version), "pe.mod"),
+		filepath.Join(".pe", "cache", filepath.FromSlash(string(req.Mod)), req.Version, "pe.mod"),
+		filepath.Join("vendor", filepath.FromSlash(string(req.Mod)), "pe.mod"),
+	}
+	for _, name := range paths {
+		data, err := os.ReadFile(name) // #nosec G304 -- paths are derived from pe.mod requirements and contained cache/vendor roots.
+		if err == nil {
+			file, err := pemod.Parse(strings.NewReader(string(data)))
+			if err != nil {
+				return nil, false, fmt.Errorf("parsing dependency policy %s: %w", name, err)
+			}
+			return file, true, nil
+		}
+		if !os.IsNotExist(err) {
+			return nil, false, fmt.Errorf("reading dependency policy %s: %w", name, err)
+		}
+	}
+	return nil, false, nil
+}
+
+func dependencyDeniedByModule(parent *pemod.File, depName string, dep *pemod.File) error {
+	if dep.Capability != nil {
+		checks := []struct {
+			dim    string
+			allow  []string
+			parent []string
+		}{
+			{dim: "data", allow: dep.Capability.Data.Allow, parent: capabilityDeny(parent, "data")},
+			{dim: "prompts", allow: dep.Capability.Prompts.Allow, parent: capabilityDeny(parent, "prompts")},
+			{dim: "providers", allow: dep.Capability.Providers.Allow, parent: capabilityDeny(parent, "providers")},
+			{dim: "tools", allow: dep.Capability.Tools.Allow, parent: capabilityDeny(parent, "tools")},
+		}
+		for _, check := range checks {
+			if v, ok := firstDeniedValue(check.allow, check.parent); ok {
+				return fmt.Errorf("%s: dependency %s %s is denied by pe.mod", depName, singularCapability(check.dim), v)
+			}
+		}
+	}
+	if parent.Placement != nil && parent.Placement.Network != nil && !*parent.Placement.Network &&
+		dep.Placement != nil && dep.Placement.Network != nil && *dep.Placement.Network {
+		return fmt.Errorf("%s: dependency network access is denied by pe.mod", depName)
+	}
+	return nil
+}
+
+func capabilityDeny(file *pemod.File, dim string) []string {
+	if file.Capability == nil {
+		return nil
+	}
+	switch dim {
+	case "data":
+		return file.Capability.Data.Deny
+	case "prompts":
+		return file.Capability.Prompts.Deny
+	case "providers":
+		return file.Capability.Providers.Deny
+	case "tools":
+		return file.Capability.Tools.Deny
+	default:
+		return nil
+	}
+}
+
+func firstDeniedValue(values, deny []string) (string, bool) {
+	denied := make(map[string]bool)
+	for _, v := range deny {
+		denied[v] = true
+	}
+	for _, v := range values {
+		if denied[v] {
+			return v, true
+		}
+	}
+	return "", false
+}
+
+func singularCapability(dim string) string {
+	if strings.HasSuffix(dim, "s") {
+		return strings.TrimSuffix(dim, "s")
+	}
+	return dim
 }
 
 func vetExecutableTextFile(modFile *pemod.File, name string) error {

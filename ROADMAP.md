@@ -734,7 +734,13 @@ This is not a v0.5 release blocker. v0.5 work is documentation only.
 
 Current status:
 - `internal/pemod` already models module identity, PE version, dependencies, replacements, trust, signing, registry, and security policy.
-- Current docs are registry/dependency-centric. They do not define capabilities, placement, data classes, prompt provenance, provider/tool allow-deny, typed IO requirements, or conservative dependency policy composition.
+- `internal/pemod` parses and formats `capability`, `placement`, and `policy`
+  blocks.
+- `pe mod vet` validates module policy shape, executable-text typed-input
+  requirements, executable-text denied provider/tool/data/prompt requests, and
+  strict cached dependency policy composition.
+- Remaining runtime work: enforce effective policy at provider, tool,
+  file-write, network, and placement decision points.
 
 Design direction:
 1. Keep `pe.mod` Go-like and module-scoped.
@@ -747,14 +753,16 @@ Initial artifact:
 - `docs/future/PEMOD_CAPABILITIES_DESIGN.md`
 
 Version plan:
-1. v0.5: docs only.
-2. v0.6: parser/schema support in `internal/pemod`.
-3. v0.6: static validation through `pe mod` / `pe vet`.
+1. DONE: v0.5: docs only.
+2. DONE: v0.6: parser/schema support in `internal/pemod`.
+3. DONE current pass: v0.6: static validation through `pe mod vet`, including
+   strict cached dependency policy composition.
 4. v0.7: runtime enforcement for providers, tools, file writes, network, and placement.
 
 Verification:
 - `test -f docs/future/PEMOD_CAPABILITIES_DESIGN.md`
 - `rg "capability|placement|policy|Conservative Composition" docs/future/PEMOD_CAPABILITIES_DESIGN.md`
+- `go test ./cmd/pe -run TestRunModVet -count=1`
 
 
 #### Review .gitignore for PE project
@@ -1423,6 +1431,10 @@ integrity semantics.
    lexicographic latest guess.
 5. Connect `pe.mod` capability, placement, and policy blocks to static
    validation, then runtime enforcement for provider/tool/file/network access.
+   DONE current pass: `pe mod vet` now checks strict cached dependency
+   `pe.mod` files so dependencies cannot request provider/tool/data/prompt
+   classes or network placement denied by the parent module. Remaining work:
+   runtime enforcement at provider/tool/file/network decision points.
 6. Sign attest manifests with an Ed25519 envelope while preserving unsigned
    local integrity workflows.
    DONE current pass: `pe exp attest keygen`, `sign`, and `verify-signed`

@@ -80,7 +80,9 @@ is the source of truth for planned work and release-blocking follow-ups.
 - `{{ import "name" }}` composes local front matter imports safely.
 - `pe.mod` now parses `capability`, `placement`, and `policy` blocks.
 - `pe mod vet` checks denied provider/tool/data/prompt policy and typed-input
-  requirements for executable text files.
+  requirements for executable text files. Strict composition also checks cached
+  dependency `pe.mod` files so dependencies cannot request capabilities or
+  network placement denied by the parent module.
 
 ## Important Implementation Details
 
