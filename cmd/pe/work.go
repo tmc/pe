@@ -120,7 +120,7 @@ func runWorkInit(cmd *cobra.Command, args []string) error {
 		content.WriteString(")\n")
 	}
 
-	if err := os.WriteFile("pe.work", []byte(content.String()), 0644); err != nil {
+	if err := writeWorkspaceFile([]byte(content.String())); err != nil {
 		return fmt.Errorf("failed to write pe.work: %w", err)
 	}
 
@@ -367,11 +367,18 @@ func saveWorkspace(ws *Workspace) error {
 		content.WriteString(")\n")
 	}
 
-	if err := os.WriteFile("pe.work", []byte(content.String()), 0644); err != nil {
+	if err := writeWorkspaceFile([]byte(content.String())); err != nil {
 		return fmt.Errorf("failed to write pe.work: %w", err)
 	}
 
 	return nil
+}
+
+func writeWorkspaceFile(data []byte) error {
+	if err := enforceRuntimeToolPolicy("write"); err != nil {
+		return err
+	}
+	return os.WriteFile("pe.work", data, 0644)
 }
 
 func containsString(slice []string, s string) bool {

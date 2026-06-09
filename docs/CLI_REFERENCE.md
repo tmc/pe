@@ -2780,6 +2780,9 @@ pe work [command]
 
 A `pe.work` file in the root of your workspace lets you develop multiple prompt modules together, similar to `go.work` files in Go.
 
+If `pe.mod` denies the `write` tool capability, workspace commands fail before
+writing `pe.work`. Read-only workspace commands remain allowed.
+
 ### Subcommands
 
 #### work init

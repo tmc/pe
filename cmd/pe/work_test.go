@@ -100,6 +100,25 @@ func TestRunWorkInit_AlreadyExists(t *testing.T) {
 	}
 }
 
+func TestRunWorkInitDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	origDir, _ := os.Getwd()
+	defer os.Chdir(origDir)
+	os.Chdir(tmpDir)
+
+	if err := os.WriteFile("pe.mod", []byte(workPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := runWorkInit(workInitCmd, []string{"./prompts"})
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("runWorkInit error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("pe.work"); !os.IsNotExist(err) {
+		t.Fatalf("work init wrote pe.work despite write policy: %v", err)
+	}
+}
+
 func TestRunWorkUse_NoWorkspace(t *testing.T) {
 	tmpDir := t.TempDir()
 	origDir, _ := os.Getwd()
@@ -354,6 +373,36 @@ func TestSaveWorkspace(t *testing.T) {
 	if len(loaded.Replace) != 1 || loaded.Replace[0].Old != "example.com/old" || loaded.Replace[0].New != "./local" {
 		t.Fatalf("loaded replace = %#v", loaded.Replace)
 	}
+}
+
+func TestSaveWorkspaceDeniedByWritePolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	origDir, _ := os.Getwd()
+	defer os.Chdir(origDir)
+	os.Chdir(tmpDir)
+
+	if err := os.WriteFile("pe.mod", []byte(workPolicyTestModule()), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := saveWorkspace(&Workspace{Version: "1", Use: []string{"./prompts"}})
+	if err == nil || !strings.Contains(err.Error(), "tool write is denied") {
+		t.Fatalf("saveWorkspace error = %v, want write policy denial", err)
+	}
+	if _, err := os.Stat("pe.work"); !os.IsNotExist(err) {
+		t.Fatalf("saveWorkspace wrote pe.work despite write policy: %v", err)
+	}
+}
+
+func workPolicyTestModule() string {
+	return `module example.com/prompts
+
+pe 1
+
+capability {
+    tools deny write
+}
+`
 }
 
 func TestContainsString(t *testing.T) {

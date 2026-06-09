@@ -109,6 +109,8 @@ is the source of truth for planned work and release-blocking follow-ups.
   output remains read-only.
 - Template file outputs honor `tools deny write`; terminal template output
   remains read-only.
+- Workspace writes to `pe.work` honor `tools deny write`; read-only workspace
+  commands remain allowed.
 
 ## Important Implementation Details
 
