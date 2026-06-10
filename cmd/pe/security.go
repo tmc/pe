@@ -333,7 +333,7 @@ func securityRedteamCmd() *cobra.Command {
 	cmd.Flags().StringVar(&intensity, "intensity", "moderate", "Red team intensity")
 	cmd.Flags().StringVar(&duration, "duration", "1h", "Assessment duration")
 	cmd.Flags().StringVar(&outputFile, "output", "", "Output file for results")
-	cmd.Flags().StringVar(&format, "format", "table", "Output format")
+	cmd.Flags().StringVar(&format, "format", "table", "Output format (table, json, sarif, html, pdf)")
 
 	return cmd
 }
@@ -580,6 +580,8 @@ func outputSecurityResult(result *SecurityTestResult, outputFile, format string)
 	switch strings.ToLower(format) {
 	case "json":
 		output, err = json.MarshalIndent(result, "", "  ")
+	case "sarif":
+		output, err = formatSecuritySARIF(result)
 	case "yaml":
 		// Would implement YAML output
 		output, err = json.MarshalIndent(result, "", "  ") // Fallback
