@@ -74,6 +74,18 @@ var assertionAlias = map[string]AssertionType{
 	// promptfoo also accepts the non-"openai" spelling of the function-call check.
 	"is-valid-function-call": AssertionIsValidFunctionCall,
 
+	// Deterministic agent tool-call / trajectory assertions (read _trajectory).
+	"tool-call-f1":               AssertionToolCallF1,
+	"trajectory:tool-used":       AssertionTrajToolUsed,
+	"trajectory:tool-sequence":   AssertionTrajToolSequence,
+	"trajectory:tool-args-match": AssertionTrajToolArgsMatch,
+	"trajectory:step-count":      AssertionTrajStepCount,
+
+	// Deterministic trace assertions (read _trace).
+	"trace-span-count":    AssertionTraceSpanCount,
+	"trace-span-duration": AssertionTraceSpanDuration,
+	"trace-error-spans":   AssertionTraceErrorSpans,
+
 	// promptfoo ids that pe spells differently.
 	"regex":         AssertionMatches,
 	"llm-rubric":    AssertionLLMJudge,

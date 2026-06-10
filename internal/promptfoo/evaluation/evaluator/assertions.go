@@ -95,6 +95,22 @@ const (
 	// Tool/function-call structural assertions.
 	AssertionIsValidFunctionCall AssertionType = "is-valid-openai-function-call"
 	AssertionIsValidToolsCall    AssertionType = "is-valid-openai-tools-call"
+
+	// Deterministic agent tool-call / trajectory assertions (read the recorded
+	// _trajectory var: a list of {name, arguments} tool-call steps).
+	AssertionToolCallF1        AssertionType = "tool-call-f1"
+	AssertionTrajToolUsed      AssertionType = "trajectory:tool-used"
+	AssertionTrajToolSequence  AssertionType = "trajectory:tool-sequence"
+	AssertionTrajToolArgsMatch AssertionType = "trajectory:tool-args-match"
+	AssertionTrajStepCount     AssertionType = "trajectory:step-count"
+	AssertionTrajGoalSuccess   AssertionType = "trajectory:goal-success"
+	AssertionSkillUsed         AssertionType = "skill-used"
+
+	// Deterministic trace assertions (read the recorded _trace var: a list of
+	// spans with {name, durationMs, error} fields).
+	AssertionTraceSpanCount    AssertionType = "trace-span-count"
+	AssertionTraceSpanDuration AssertionType = "trace-span-duration"
+	AssertionTraceErrorSpans   AssertionType = "trace-error-spans"
 )
 
 // Assertion represents a test assertion with its configuration
@@ -268,6 +284,22 @@ func (ae *AssertionEvaluator) EvaluateAssertion(ctx context.Context, assertion A
 		result = ae.evaluateIsValidFunctionCall(assertion, output)
 	case AssertionIsValidToolsCall:
 		result = ae.evaluateIsValidToolsCall(assertion, output)
+	case AssertionToolCallF1:
+		result = ae.evaluateToolCallF1(assertion, output, metadata)
+	case AssertionTrajToolUsed:
+		result = ae.evaluateTrajectoryToolUsed(assertion, output, metadata)
+	case AssertionTrajToolSequence:
+		result = ae.evaluateTrajectoryToolSequence(assertion, output, metadata)
+	case AssertionTrajToolArgsMatch:
+		result = ae.evaluateTrajectoryToolArgsMatch(assertion, output, metadata)
+	case AssertionTrajStepCount:
+		result = ae.evaluateTrajectoryStepCount(assertion, output, metadata)
+	case AssertionTraceSpanCount:
+		result = ae.evaluateTraceSpanCount(assertion, metadata)
+	case AssertionTraceSpanDuration:
+		result = ae.evaluateTraceSpanDuration(assertion, metadata)
+	case AssertionTraceErrorSpans:
+		result = ae.evaluateTraceErrorSpans(assertion, metadata)
 	default:
 		return nil, fmt.Errorf("unsupported assertion type: %s", assertion.Type)
 	}

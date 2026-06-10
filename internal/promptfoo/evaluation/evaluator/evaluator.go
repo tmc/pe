@@ -429,6 +429,15 @@ func evaluateOne(ctx context.Context, prompt string, provider *providers.Materia
 	if conv, ok := test.Vars["_conversation"]; ok {
 		assertMeta["_conversation"] = conv
 	}
+	// The agent's recorded tool-call trajectory (a list of {name, arguments}
+	// steps) is passed through for the tool-call/trajectory assertions. The
+	// _trace var (a list of spans) is passed through for the trace-* family.
+	if traj, ok := test.Vars["_trajectory"]; ok {
+		assertMeta["_trajectory"] = traj
+	}
+	if trace, ok := test.Vars["_trace"]; ok {
+		assertMeta["_trace"] = trace
+	}
 	// Surface the provider's finish reason (carried in response metadata) so the
 	// finish-reason assertion can compare against it.
 	if response.Metadata != nil {
