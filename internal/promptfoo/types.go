@@ -101,6 +101,36 @@ func mergeTestCases(base, override TestCase) TestCase {
 	return merged
 }
 
+// ApplyDefaults merges the config's defaultTest into each test: defaultTest
+// vars and options are the base (a test's own vars/options win per key), and
+// defaultTest asserts are prepended to the test's asserts unless the test sets
+// disableDefaultAsserts. Tests without a defaultTest are returned unchanged.
+func (c Config) ApplyDefaults(tests []TestCase) []TestCase {
+	if c.DefaultTest == nil {
+		return tests
+	}
+	base := TestCase{
+		Vars:    c.DefaultTest.Vars,
+		Options: c.DefaultTest.Options,
+	}
+	out := make([]TestCase, len(tests))
+	for i, t := range tests {
+		merged := mergeTestCases(base, t)
+		if !t.DisableDefaultAsserts {
+			// Default asserts run before the test's own asserts.
+			asserts := make([]Assertion, 0, len(c.DefaultTest.Assert)+len(t.Assert))
+			asserts = append(asserts, c.DefaultTest.Assert...)
+			asserts = append(asserts, t.Assert...)
+			merged.Assert = asserts
+		} else {
+			merged.Assert = append([]Assertion(nil), t.Assert...)
+		}
+		merged.DisableDefaultAsserts = t.DisableDefaultAsserts
+		out[i] = merged
+	}
+	return out
+}
+
 // ProviderConfig represents a provider configuration.
 // It accepts either a plain string, like "openai:gpt-4",
 // or an object with an id and per-provider config.
@@ -291,6 +321,10 @@ type TestCase struct {
 	Vars    map[string]interface{} `yaml:"vars" json:"vars"`
 	Assert  []Assertion            `yaml:"assert" json:"assert"`
 	Options map[string]interface{} `yaml:"options,omitempty" json:"options,omitempty"`
+	// DisableDefaultAsserts opts this test out of inheriting defaultTest.assert,
+	// matching promptfoo's per-test opt-out. defaultTest vars/options still
+	// apply (as in promptfoo).
+	DisableDefaultAsserts bool `yaml:"disableDefaultAsserts,omitempty" json:"disableDefaultAsserts,omitempty"`
 }
 
 // Assertion represents an assertion to validate provider output.
@@ -432,9 +466,12 @@ type Test struct {
 	Options map[string]interface{} `yaml:"options,omitempty" json:"options,omitempty"`
 }
 
-// TestDefaults represents default test configuration
+// TestDefaults represents promptfoo's defaultTest: baseline vars, asserts, and
+// options merged into every test case unless a test opts out.
 type TestDefaults struct {
-	Assert []Assertion `yaml:"assert,omitempty" json:"assert,omitempty"`
+	Vars    map[string]interface{} `yaml:"vars,omitempty" json:"vars,omitempty"`
+	Assert  []Assertion            `yaml:"assert,omitempty" json:"assert,omitempty"`
+	Options map[string]interface{} `yaml:"options,omitempty" json:"options,omitempty"`
 }
 
 // EvalResults represents evaluation results

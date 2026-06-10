@@ -55,6 +55,11 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 	if len(config.Scenarios) > 0 {
 		config.Tests = config.ExpandScenarios()
 	}
+	// Merge defaultTest into every test (including scenario-expanded ones), so
+	// baseline vars/asserts apply uniformly.
+	if config.DefaultTest != nil {
+		config.Tests = config.ApplyDefaults(config.Tests)
+	}
 
 	if showProgressBar {
 		fmt.Printf("Running %d evaluations with up to %d threads...\n\n",
