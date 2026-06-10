@@ -573,6 +573,18 @@ func checkAssertion(output string, assertType string, assertValue interface{}) b
 		return !strings.Contains(output, strValue)
 	case "icontains":
 		return strings.Contains(strings.ToLower(output), strings.ToLower(strValue))
+	case "contains-any":
+		return containsAny(output, toStringSlice(assertValue), false)
+	case "contains-all":
+		return containsAll(output, toStringSlice(assertValue), false)
+	case "icontains-any":
+		return containsAny(output, toStringSlice(assertValue), true)
+	case "icontains-all":
+		return containsAll(output, toStringSlice(assertValue), true)
+	case "not-contains-any":
+		return !containsAny(output, toStringSlice(assertValue), false)
+	case "not-contains-all":
+		return !containsAll(output, toStringSlice(assertValue), false)
 	case "starts-with":
 		return strings.HasPrefix(output, strValue)
 	case "ends-with":
@@ -583,6 +595,60 @@ func checkAssertion(output string, assertType string, assertValue interface{}) b
 	default:
 		return false
 	}
+}
+
+// toStringSlice coerces an assertion value to a slice of strings, accepting a
+// YAML/JSON array ([]interface{} or []string) or a single scalar.
+func toStringSlice(v interface{}) []string {
+	switch vv := v.(type) {
+	case []string:
+		return vv
+	case []interface{}:
+		out := make([]string, 0, len(vv))
+		for _, e := range vv {
+			out = append(out, fmt.Sprintf("%v", e))
+		}
+		return out
+	case nil:
+		return nil
+	default:
+		return []string{fmt.Sprintf("%v", vv)}
+	}
+}
+
+func containsAny(output string, needles []string, fold bool) bool {
+	hay := output
+	if fold {
+		hay = strings.ToLower(output)
+	}
+	for _, n := range needles {
+		if fold {
+			n = strings.ToLower(n)
+		}
+		if strings.Contains(hay, n) {
+			return true
+		}
+	}
+	return false
+}
+
+func containsAll(output string, needles []string, fold bool) bool {
+	if len(needles) == 0 {
+		return false
+	}
+	hay := output
+	if fold {
+		hay = strings.ToLower(output)
+	}
+	for _, n := range needles {
+		if fold {
+			n = strings.ToLower(n)
+		}
+		if !strings.Contains(hay, n) {
+			return false
+		}
+	}
+	return true
 }
 
 func generatePromptID(prompt, provider string) string {
