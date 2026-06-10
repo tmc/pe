@@ -25,6 +25,13 @@ const (
 	AssertionLength      AssertionType = "length"
 	AssertionNotContains AssertionType = "not-contains"
 
+	// Multi-needle substring assertions (value is a list).
+	AssertionContainsAny  AssertionType = "contains-any"
+	AssertionContainsAll  AssertionType = "contains-all"
+	AssertionIContains    AssertionType = "icontains"
+	AssertionIContainsAny AssertionType = "icontains-any"
+	AssertionIContainsAll AssertionType = "icontains-all"
+
 	// Quality-based assertions
 	AssertionReadability AssertionType = "readability"
 	AssertionSentiment   AssertionType = "sentiment"
@@ -143,6 +150,16 @@ func (ae *AssertionEvaluator) EvaluateAssertion(ctx context.Context, assertion A
 		result = ae.evaluateLength(assertion, output)
 	case AssertionNotContains:
 		result = ae.evaluateNotContains(assertion, output)
+	case AssertionContainsAny:
+		result = ae.evaluateContainsList(assertion, output, false, false)
+	case AssertionContainsAll:
+		result = ae.evaluateContainsList(assertion, output, true, false)
+	case AssertionIContains:
+		result = ae.evaluateIContains(assertion, output)
+	case AssertionIContainsAny:
+		result = ae.evaluateContainsList(assertion, output, false, true)
+	case AssertionIContainsAll:
+		result = ae.evaluateContainsList(assertion, output, true, true)
 	case AssertionReadability:
 		result = ae.evaluateReadability(assertion, output)
 	case AssertionSentiment:
@@ -393,6 +410,38 @@ func (ae *AssertionEvaluator) evaluateNotContains(assertion Assertion, output st
 		Actual:   contains,
 		Message:  fmt.Sprintf("Expected output to not contain '%s'", expectedStr),
 	}
+}
+
+// evaluateIContains is a case-insensitive single-needle substring check
+// (promptfoo's icontains).
+func (ae *AssertionEvaluator) evaluateIContains(assertion Assertion, output string) *AssertionResult {
+	needle, ok := assertion.Value.(string)
+	if !ok {
+		return failResult(assertion, "icontains assertion requires a string value")
+	}
+	passed := strings.Contains(strings.ToLower(output), strings.ToLower(needle))
+	return boolResult(assertion, passed, fmt.Sprintf("output %s %q (case-insensitive)", passOrNot(passed, "contains", "does not contain"), needle))
+}
+
+// evaluateContainsList backs contains-any/all and icontains-any/all: the value
+// is a list of needles, all reports whether every (vs any) needle is present,
+// and fold makes the match case-insensitive.
+func (ae *AssertionEvaluator) evaluateContainsList(assertion Assertion, output string, all, fold bool) *AssertionResult {
+	needles := toStringSlice(assertion.Value)
+	if len(needles) == 0 {
+		return failResult(assertion, fmt.Sprintf("%s assertion requires a non-empty list value", assertion.Type))
+	}
+	var passed bool
+	if all {
+		passed = containsAll(output, needles, fold)
+	} else {
+		passed = containsAny(output, needles, fold)
+	}
+	quantifier := "any of"
+	if all {
+		quantifier = "all of"
+	}
+	return boolResult(assertion, passed, fmt.Sprintf("output %s %s %v", passOrNot(passed, "contains", "does not contain"), quantifier, needles))
 }
 
 // Quality-based assertion implementations

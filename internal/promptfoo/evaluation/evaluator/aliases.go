@@ -15,6 +15,11 @@ var assertionAlias = map[string]AssertionType{
 	// Canonical ids map to themselves so normalize is the single entry point.
 	"contains":             AssertionContains,
 	"not-contains":         AssertionNotContains,
+	"contains-any":         AssertionContainsAny,
+	"contains-all":         AssertionContainsAll,
+	"icontains":            AssertionIContains,
+	"icontains-any":        AssertionIContainsAny,
+	"icontains-all":        AssertionIContainsAll,
 	"equals":               AssertionEquals,
 	"matches":              AssertionMatches,
 	"length":               AssertionLength,
