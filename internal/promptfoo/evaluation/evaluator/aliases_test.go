@@ -39,8 +39,10 @@ func TestNormalizeAssertionType(t *testing.T) {
 		{"  Regex  ", AssertionMatches, false, true},
 		{"IS-JSON", AssertionJSON, false, true},
 		{"llm_rubric", AssertionLLMJudge, false, true},
+		// model-graded RAG ids now resolve.
+		{"answer-relevance", AssertionAnswerRelevance, false, true},
+		{"context-faithfulness", AssertionContextFaithfulness, false, true},
 		// unknown ids report ok=false.
-		{"answer-relevance", "", false, false},
 		{"perplexity", "", false, false},
 		{"made-up", "", false, false},
 	}

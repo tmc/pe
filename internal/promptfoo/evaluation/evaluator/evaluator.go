@@ -374,7 +374,13 @@ func evaluateOne(ctx context.Context, prompt string, provider *providers.Materia
 	if !dryRun {
 		judgeProvider = provider.Executor
 	}
-	success, grading := evaluateAssertionsWithProvider(ctx, response.Output, test.Assert, judgeProvider)
+	// Make the rendered question and any context var available to model-graded
+	// assertions (answer-relevance, context-*).
+	assertMeta := map[string]interface{}{"input": processedPrompt}
+	if c, ok := test.Vars["context"]; ok {
+		assertMeta["context"] = fmt.Sprintf("%v", c)
+	}
+	success, grading := evaluateAssertionsWithMeta(ctx, response.Output, test.Assert, judgeProvider, assertMeta)
 	resultID := generateResultID(prompt, provider.Spec.ID, test.Vars)
 	latencyMs := latency.Milliseconds()
 	if response.LatencyMs > 0 {
@@ -438,6 +444,10 @@ func evaluateAssertions(output string, asserts []promptfoo.Assertion) (bool, pro
 }
 
 func evaluateAssertionsWithProvider(ctx context.Context, output string, asserts []promptfoo.Assertion, judgeProvider llm.Provider) (bool, promptfoo.GradingResult) {
+	return evaluateAssertionsWithMeta(ctx, output, asserts, judgeProvider, nil)
+}
+
+func evaluateAssertionsWithMeta(ctx context.Context, output string, asserts []promptfoo.Assertion, judgeProvider llm.Provider, meta map[string]interface{}) (bool, promptfoo.GradingResult) {
 	success := true
 	var componentResults []promptfoo.ComponentResult
 	totalScore := 0.0
@@ -445,7 +455,7 @@ func evaluateAssertionsWithProvider(ctx context.Context, output string, asserts 
 
 	namedScores := make(map[string]float64)
 	for _, assert := range asserts {
-		pass, score, reason := evaluateAssertion(ctx, output, assert, judgeProvider)
+		pass, score, reason := evaluateAssertion(ctx, output, assert, judgeProvider, meta)
 		totalScore += score
 
 		if pass {
@@ -497,7 +507,7 @@ func evaluateAssertionsWithProvider(ctx context.Context, output string, asserts 
 	}
 }
 
-func evaluateAssertion(ctx context.Context, output string, assert promptfoo.Assertion, judgeProvider llm.Provider) (bool, float64, string) {
+func evaluateAssertion(ctx context.Context, output string, assert promptfoo.Assertion, judgeProvider llm.Provider, meta map[string]interface{}) (bool, float64, string) {
 	// Resolve promptfoo/pe id divergences (regex->matches, llm-rubric->llm-judge,
 	// similar->similarity, not-* inversion) before dispatch so unmodified
 	// promptfoo configs run against pe's evaluator.
@@ -506,11 +516,11 @@ func evaluateAssertion(ctx context.Context, output string, assert promptfoo.Asse
 		canonAssert := promptfooAssertion(assert)
 		canonAssert.Type = canonical
 		evaluator := NewAssertionEvaluator(judgeProvider)
-		result, err := evaluator.EvaluateAssertion(ctx, canonAssert, output, nil)
+		result, err := evaluator.EvaluateAssertion(ctx, canonAssert, output, meta)
 		if err != nil {
 			// Model-graded assertions without a judge provider are a hard
 			// error; other evaluators degrade to the string-match fallback.
-			if canonical == AssertionLLMJudge || canonical == AssertionGEval {
+			if isModelGraded(canonical) {
 				return false, 0, err.Error()
 			}
 		} else {

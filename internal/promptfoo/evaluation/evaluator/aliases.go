@@ -13,29 +13,33 @@ import "strings"
 // ok=false and the caller can fall back or warn.
 var assertionAlias = map[string]AssertionType{
 	// Canonical ids map to themselves so normalize is the single entry point.
-	"contains":          AssertionContains,
-	"not-contains":      AssertionNotContains,
-	"equals":            AssertionEquals,
-	"matches":           AssertionMatches,
-	"length":            AssertionLength,
-	"readability":       AssertionReadability,
-	"sentiment":         AssertionSentiment,
-	"toxicity":          AssertionToxicity,
-	"coherence":         AssertionCoherence,
-	"factuality":        AssertionFactuality,
-	"llm-judge":         AssertionLLMJudge,
-	"classify":          AssertionClassify,
-	"similarity":        AssertionSimilarity,
-	"g-eval":            AssertionGEval,
-	"latency":           AssertionLatency,
-	"cost":              AssertionCost,
-	"tokens":            AssertionTokens,
-	"json":              AssertionJSON,
-	"sql":               AssertionSQL,
-	"code":              AssertionCode,
-	"structure":         AssertionStructure,
-	"pass-at-n":         AssertionPassAtN,
-	"structured-output": AssertionStructuredOutput,
+	"contains":             AssertionContains,
+	"not-contains":         AssertionNotContains,
+	"equals":               AssertionEquals,
+	"matches":              AssertionMatches,
+	"length":               AssertionLength,
+	"readability":          AssertionReadability,
+	"sentiment":            AssertionSentiment,
+	"toxicity":             AssertionToxicity,
+	"coherence":            AssertionCoherence,
+	"factuality":           AssertionFactuality,
+	"llm-judge":            AssertionLLMJudge,
+	"classify":             AssertionClassify,
+	"similarity":           AssertionSimilarity,
+	"g-eval":               AssertionGEval,
+	"answer-relevance":     AssertionAnswerRelevance,
+	"context-faithfulness": AssertionContextFaithfulness,
+	"context-recall":       AssertionContextRecall,
+	"context-relevance":    AssertionContextRelevance,
+	"latency":              AssertionLatency,
+	"cost":                 AssertionCost,
+	"tokens":               AssertionTokens,
+	"json":                 AssertionJSON,
+	"sql":                  AssertionSQL,
+	"code":                 AssertionCode,
+	"structure":            AssertionStructure,
+	"pass-at-n":            AssertionPassAtN,
+	"structured-output":    AssertionStructuredOutput,
 
 	// promptfoo ids that pe spells differently.
 	"regex":         AssertionMatches,
@@ -64,6 +68,19 @@ var assertionAlias = map[string]AssertionType{
 // family, e.g. "not-regex", "not-llm-rubric"); the caller inverts pass/score.
 // ok is false when no pe evaluator backs the id, so the caller can fall back
 // to the string-match path or surface an unsupported-assertion warning.
+// isModelGraded reports whether an assertion type is evaluated by a model
+// judge and therefore requires a judge provider. Such assertions error when no
+// provider is available rather than degrading to a string-match fallback.
+func isModelGraded(t AssertionType) bool {
+	switch t {
+	case AssertionLLMJudge, AssertionGEval, AssertionAnswerRelevance,
+		AssertionContextFaithfulness, AssertionContextRecall, AssertionContextRelevance:
+		return true
+	default:
+		return false
+	}
+}
+
 func normalizeAssertionType(id string) (canonical AssertionType, negate bool, ok bool) {
 	id = strings.TrimSpace(strings.ToLower(id))
 	// promptfoo accepts both "llm-rubric" and "llm_rubric"; normalize the

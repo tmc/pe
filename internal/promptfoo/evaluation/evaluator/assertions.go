@@ -38,6 +38,12 @@ const (
 	AssertionSimilarity AssertionType = "similarity"
 	AssertionGEval      AssertionType = "g-eval"
 
+	// Model-graded assertions that need the question or retrieval context.
+	AssertionAnswerRelevance     AssertionType = "answer-relevance"
+	AssertionContextFaithfulness AssertionType = "context-faithfulness"
+	AssertionContextRecall       AssertionType = "context-recall"
+	AssertionContextRelevance    AssertionType = "context-relevance"
+
 	// Performance assertions
 	AssertionLatency AssertionType = "latency"
 	AssertionCost    AssertionType = "cost"
@@ -134,6 +140,16 @@ func (ae *AssertionEvaluator) EvaluateAssertion(ctx context.Context, assertion A
 		}
 	case AssertionGEval:
 		result, err = ae.evaluateGEval(ctx, assertion, output)
+		if err != nil {
+			return nil, err
+		}
+	case AssertionAnswerRelevance:
+		result, err = ae.evaluateAnswerRelevance(ctx, assertion, output, metadata)
+		if err != nil {
+			return nil, err
+		}
+	case AssertionContextFaithfulness, AssertionContextRecall, AssertionContextRelevance:
+		result, err = ae.evaluateContextMetric(ctx, assertion, output, metadata)
 		if err != nil {
 			return nil, err
 		}
