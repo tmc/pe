@@ -63,6 +63,9 @@ const (
 	AssertionCost    AssertionType = "cost"
 	AssertionTokens  AssertionType = "tokens"
 
+	// Response-metadata assertion.
+	AssertionFinishReason AssertionType = "finish-reason"
+
 	// Advanced assertions
 	AssertionJSON             AssertionType = "json"
 	AssertionSQL              AssertionType = "sql"
@@ -217,6 +220,8 @@ func (ae *AssertionEvaluator) EvaluateAssertion(ctx context.Context, assertion A
 		result = ae.evaluateCost(assertion, metadata)
 	case AssertionTokens:
 		result = ae.evaluateTokens(assertion, metadata)
+	case AssertionFinishReason:
+		result = ae.evaluateFinishReason(assertion, metadata)
 	case AssertionJSON:
 		result = ae.evaluateJSON(assertion, output)
 	case AssertionSQL:
@@ -891,6 +896,30 @@ func (ae *AssertionEvaluator) evaluateTokens(assertion Assertion, metadata map[s
 		Score:   score,
 		Actual:  tokens,
 		Message: message,
+	}
+}
+
+// evaluateFinishReason compares the provider's finish reason (surfaced in
+// metadata["finishReason"]) against the expected value, mirroring promptfoo's
+// finish-reason assertion. The comparison is case-insensitive so "stop" matches
+// "STOP". It fails clearly when no finish reason is available.
+func (ae *AssertionEvaluator) evaluateFinishReason(assertion Assertion, metadata map[string]interface{}) *AssertionResult {
+	expected, ok := assertion.Value.(string)
+	if !ok || strings.TrimSpace(expected) == "" {
+		return failResult(assertion, "finish-reason assertion requires an expected reason string value")
+	}
+	actual := metaString(metadata, "finishReason")
+	if actual == "" {
+		return boolResult(assertion, false, "no finish reason available from the provider response")
+	}
+	passed := strings.EqualFold(strings.TrimSpace(actual), strings.TrimSpace(expected))
+	return &AssertionResult{
+		Type:     assertion.Type,
+		Passed:   passed,
+		Score:    boolScore(passed),
+		Expected: expected,
+		Actual:   actual,
+		Message:  fmt.Sprintf("finish reason %q (expected %q)", actual, expected),
 	}
 }
 

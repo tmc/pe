@@ -46,6 +46,7 @@ var assertionAlias = map[string]AssertionType{
 	"latency":                AssertionLatency,
 	"cost":                   AssertionCost,
 	"tokens":                 AssertionTokens,
+	"finish-reason":          AssertionFinishReason,
 	"json":                   AssertionJSON,
 	"sql":                    AssertionSQL,
 	"code":                   AssertionCode,
@@ -95,8 +96,6 @@ var assertionAlias = map[string]AssertionType{
 	//   - "perplexity" / "perplexity-score": need token logprobs, which pe's
 	//     ProviderResponse does not surface, so they cannot be computed
 	//     faithfully and are deferred.
-	//   - "finish-reason": pe's ProviderResponse carries no finish_reason; this
-	//     must be plumbed through the provider layer first.
 	//   - "meteor": promptfoo relies on WordNet synonym matching (the natural
 	//     npm package); a faithful port needs the WordNet data set, which would
 	//     violate pe's no-large-data-dependency policy, so it is deferred.

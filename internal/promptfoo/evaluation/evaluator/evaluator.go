@@ -429,6 +429,13 @@ func evaluateOne(ctx context.Context, prompt string, provider *providers.Materia
 	if conv, ok := test.Vars["_conversation"]; ok {
 		assertMeta["_conversation"] = conv
 	}
+	// Surface the provider's finish reason (carried in response metadata) so the
+	// finish-reason assertion can compare against it.
+	if response.Metadata != nil {
+		if fr, ok := response.Metadata["finishReason"]; ok {
+			assertMeta["finishReason"] = fr
+		}
+	}
 	success, grading := evaluateAssertionsWithMeta(ctx, response.Output, test.Assert, judgeProvider, assertMeta)
 	resultID := generateResultID(prompt, provider.Spec.ID, test.Vars)
 	latencyMs := latency.Milliseconds()

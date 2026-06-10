@@ -87,7 +87,18 @@ func (a *NativeProviderAdapter) EvaluatePrompt(ctx context.Context, prompt strin
 		return nil, err
 	}
 
-	// Convert to promptfoo response format
+	// Convert to promptfoo response format. The provider's finish reason is
+	// surfaced in metadata so the finish-reason assertion can read it (the
+	// ProviderResponse struct itself has no dedicated field).
+	metadata := resp.Metadata
+	if resp.FinishReason != "" {
+		if metadata == nil {
+			metadata = map[string]interface{}{}
+		}
+		if _, exists := metadata["finishReason"]; !exists {
+			metadata["finishReason"] = resp.FinishReason
+		}
+	}
 	return &promptfoo.ProviderResponse{
 		Output: resp.Text,
 		TokenUsage: &promptfoo.TokenUsage{
@@ -99,7 +110,7 @@ func (a *NativeProviderAdapter) EvaluatePrompt(ctx context.Context, prompt strin
 		Cost:      resp.Cost,
 		Cached:    false,
 		LatencyMs: resp.Latency.Milliseconds(),
-		Metadata:  resp.Metadata,
+		Metadata:  metadata,
 	}, nil
 }
 
