@@ -126,6 +126,56 @@ func TestEvaluateConversationRelevanceMultiTurn(t *testing.T) {
 	}
 }
 
+func TestEvaluateSkillUsed(t *testing.T) {
+	judge := &assertionJudgeTestProvider{response: "SCORE: 10\nREASONING: the agent invoked the search tool"}
+	ae := NewAssertionEvaluator(judge)
+	meta := sampleTrajectory(step("search", nil))
+	a := Assertion{Type: AssertionSkillUsed, Value: "web search"}
+	got, err := ae.EvaluateAssertion(context.Background(), a, "Here are the results.", meta)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !got.Passed {
+		t.Errorf("skill-used should pass at score 1.0 (%s)", got.Message)
+	}
+	// The trajectory should be summarized into the judge prompt.
+	if judge.lastPrompt == "" || !contains(judge.lastPrompt, "search") {
+		t.Errorf("expected trajectory tool name in judge prompt")
+	}
+}
+
+func TestEvaluateTrajectoryGoalSuccess(t *testing.T) {
+	judge := &assertionJudgeTestProvider{response: "SCORE: 2\nREASONING: the goal was not achieved"}
+	ae := NewAssertionEvaluator(judge)
+	a := Assertion{Type: AssertionTrajGoalSuccess, Value: "book a flight to Paris"}
+	got, err := ae.EvaluateAssertion(context.Background(), a, "I could not complete the booking.", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got.Passed { // 0.2 < default 0.7 threshold
+		t.Errorf("goal-success should fail at score 0.2 (%s)", got.Message)
+	}
+}
+
+func TestJudgeBackedAgentRequireProvider(t *testing.T) {
+	ae := NewAssertionEvaluator(nil)
+	for _, typ := range []AssertionType{AssertionSkillUsed, AssertionTrajGoalSuccess} {
+		a := Assertion{Type: typ, Value: "x"}
+		if _, err := ae.EvaluateAssertion(context.Background(), a, "out", nil); err == nil {
+			t.Errorf("%s should error without a judge provider", typ)
+		}
+	}
+}
+
+func contains(s, sub string) bool {
+	for i := 0; i+len(sub) <= len(s); i++ {
+		if s[i:i+len(sub)] == sub {
+			return true
+		}
+	}
+	return false
+}
+
 func TestModelGradedAliases(t *testing.T) {
 	ids := []struct {
 		id   string
@@ -134,6 +184,8 @@ func TestModelGradedAliases(t *testing.T) {
 		{"agent-rubric", AssertionAgentRubric},
 		{"search-rubric", AssertionSearchRubric},
 		{"conversation-relevance", AssertionConversationRelevance},
+		{"skill-used", AssertionSkillUsed},
+		{"trajectory:goal-success", AssertionTrajGoalSuccess},
 	}
 	for _, tc := range ids {
 		canonical, _, ok := normalizeAssertionType(tc.id)

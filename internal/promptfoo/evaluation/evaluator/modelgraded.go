@@ -51,6 +51,85 @@ REASONING: [brief explanation]`, rubric, output)
 	return ae.gradeWithJudge(ctx, assertion, judgePrompt, string(assertion.Type), map[string]interface{}{"rubric": rubric, "degraded": "tool-use not enforced"})
 }
 
+// evaluateSkillUsed asks the judge whether the agent used the required skill or
+// tool described in assertion.Value, given the output and (when available) the
+// recorded tool-call trajectory. promptfoo grades this with a model judge.
+func (ae *AssertionEvaluator) evaluateSkillUsed(ctx context.Context, assertion Assertion, output string, metadata map[string]interface{}) (*AssertionResult, error) {
+	criteria, ok := assertion.Value.(string)
+	if !ok || strings.TrimSpace(criteria) == "" {
+		return &AssertionResult{
+			Type:    assertion.Type,
+			Passed:  false,
+			Score:   0.0,
+			Message: "skill-used assertion requires the expected skill/tool as a string value",
+		}, nil
+	}
+	judgePrompt := fmt.Sprintf(`You are evaluating whether an AI agent used a required skill or tool.
+
+REQUIRED SKILL/TOOL:
+%s
+
+AGENT OUTPUT:
+%s
+%s
+TASK:
+Decide whether the agent actually used the required skill or tool. Score 10 if
+it clearly did, 0 if it clearly did not.
+
+FORMAT (exactly):
+SCORE: [0-10]
+REASONING: [brief explanation]`, criteria, output, trajectorySummary(metadata))
+
+	return ae.gradeWithJudge(ctx, assertion, judgePrompt, "skill-used", map[string]interface{}{"skill": criteria})
+}
+
+// evaluateTrajectoryGoalSuccess asks the judge whether the agent achieved the
+// goal in assertion.Value, given the output and the recorded trajectory.
+func (ae *AssertionEvaluator) evaluateTrajectoryGoalSuccess(ctx context.Context, assertion Assertion, output string, metadata map[string]interface{}) (*AssertionResult, error) {
+	goal, ok := assertion.Value.(string)
+	if !ok || strings.TrimSpace(goal) == "" {
+		return &AssertionResult{
+			Type:    assertion.Type,
+			Passed:  false,
+			Score:   0.0,
+			Message: "trajectory:goal-success requires the goal as a string value",
+		}, nil
+	}
+	judgePrompt := fmt.Sprintf(`You are evaluating whether an AI agent achieved its goal.
+
+GOAL:
+%s
+
+FINAL OUTPUT:
+%s
+%s
+TASK:
+Decide whether the agent achieved the goal. Score 10 for full success, 0 for
+failure, and partial credit in between.
+
+FORMAT (exactly):
+SCORE: [0-10]
+REASONING: [brief explanation]`, goal, output, trajectorySummary(metadata))
+
+	return ae.gradeWithJudge(ctx, assertion, judgePrompt, "trajectory:goal-success", map[string]interface{}{"goal": goal})
+}
+
+// trajectorySummary renders the recorded tool-call trajectory (if any) into a
+// block for inclusion in a judge prompt. It returns an empty string when no
+// trajectory is available.
+func trajectorySummary(metadata map[string]interface{}) string {
+	steps, ok := trajectorySteps("", metadata)
+	if !ok || len(steps) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("\nTOOL-CALL TRAJECTORY:\n")
+	for i, s := range steps {
+		fmt.Fprintf(&b, "%d. %s\n", i+1, s.Name)
+	}
+	return b.String()
+}
+
 // conversationMessage is a single {role, content} entry in the message list
 // submitted to the conversation-relevance judge.
 type conversationMessage struct {

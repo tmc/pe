@@ -300,6 +300,16 @@ func (ae *AssertionEvaluator) EvaluateAssertion(ctx context.Context, assertion A
 		result = ae.evaluateTraceSpanDuration(assertion, metadata)
 	case AssertionTraceErrorSpans:
 		result = ae.evaluateTraceErrorSpans(assertion, metadata)
+	case AssertionSkillUsed:
+		result, err = ae.evaluateSkillUsed(ctx, assertion, output, metadata)
+		if err != nil {
+			return nil, err
+		}
+	case AssertionTrajGoalSuccess:
+		result, err = ae.evaluateTrajectoryGoalSuccess(ctx, assertion, output, metadata)
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, fmt.Errorf("unsupported assertion type: %s", assertion.Type)
 	}

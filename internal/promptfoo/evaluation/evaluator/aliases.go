@@ -86,6 +86,10 @@ var assertionAlias = map[string]AssertionType{
 	"trace-span-duration": AssertionTraceSpanDuration,
 	"trace-error-spans":   AssertionTraceErrorSpans,
 
+	// Judge-backed agent assertions.
+	"skill-used":              AssertionSkillUsed,
+	"trajectory:goal-success": AssertionTrajGoalSuccess,
+
 	// promptfoo ids that pe spells differently.
 	"regex":         AssertionMatches,
 	"llm-rubric":    AssertionLLMJudge,
@@ -138,7 +142,8 @@ func isModelGraded(t AssertionType) bool {
 	switch t {
 	case AssertionLLMJudge, AssertionGEval, AssertionAnswerRelevance,
 		AssertionContextFaithfulness, AssertionContextRecall, AssertionContextRelevance,
-		AssertionAgentRubric, AssertionSearchRubric, AssertionConversationRelevance:
+		AssertionAgentRubric, AssertionSearchRubric, AssertionConversationRelevance,
+		AssertionSkillUsed, AssertionTrajGoalSuccess:
 		return true
 	default:
 		return false
