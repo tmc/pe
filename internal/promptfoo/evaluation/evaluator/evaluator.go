@@ -457,13 +457,29 @@ func evaluateAssertionsWithProvider(ctx context.Context, output string, asserts 
 }
 
 func evaluateAssertion(ctx context.Context, output string, assert promptfoo.Assertion, judgeProvider llm.Provider) (bool, float64, string) {
-	if assert.Type == string(AssertionLLMJudge) && judgeProvider != nil {
+	// Resolve promptfoo/pe id divergences (regex->matches, llm-rubric->llm-judge,
+	// similar->similarity, not-* inversion) before dispatch so unmodified
+	// promptfoo configs run against pe's evaluator.
+	canonical, negate, ok := normalizeAssertionType(assert.Type)
+	if ok {
+		canonAssert := promptfooAssertion(assert)
+		canonAssert.Type = canonical
 		evaluator := NewAssertionEvaluator(judgeProvider)
-		result, err := evaluator.EvaluateAssertion(ctx, promptfooAssertion(assert), output, nil)
+		result, err := evaluator.EvaluateAssertion(ctx, canonAssert, output, nil)
 		if err != nil {
-			return false, 0, err.Error()
+			// llm-judge without a judge provider is a hard error; other
+			// evaluators degrade to the string-match fallback below.
+			if canonical == AssertionLLMJudge {
+				return false, 0, err.Error()
+			}
+		} else {
+			pass, score := result.Passed, result.Score
+			if negate {
+				pass = !pass
+				score = 1 - score
+			}
+			return pass, score, result.Message
 		}
-		return result.Passed, result.Score, result.Message
 	}
 
 	pass := checkAssertion(output, assert.Type, assert.Value)
@@ -477,8 +493,12 @@ func promptfooAssertion(assert promptfoo.Assertion) Assertion {
 	if assert.Threshold != 0 {
 		threshold = &assert.Threshold
 	}
+	canonical, _, ok := normalizeAssertionType(assert.Type)
+	if !ok {
+		canonical = AssertionType(assert.Type)
+	}
 	return Assertion{
-		Type:      AssertionType(assert.Type),
+		Type:      canonical,
 		Value:     assert.Value,
 		Provider:  assert.Provider,
 		Threshold: threshold,
