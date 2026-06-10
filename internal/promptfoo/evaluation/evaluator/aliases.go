@@ -57,6 +57,8 @@ var assertionAlias = map[string]AssertionType{
 	// deterministic text-metric and structural assertions.
 	"levenshtein":                   AssertionLevenshtein,
 	"rouge-n":                       AssertionRougeN,
+	"rouge-l":                       AssertionRougeL,
+	"rouge-s":                       AssertionRougeS,
 	"bleu":                          AssertionBLEU,
 	"gleu":                          AssertionGLEU,
 	"word-count":                    AssertionWordCount,
@@ -99,8 +101,6 @@ var assertionAlias = map[string]AssertionType{
 	//   - "meteor": promptfoo relies on WordNet synonym matching (the natural
 	//     npm package); a faithful port needs the WordNet data set, which would
 	//     violate pe's no-large-data-dependency policy, so it is deferred.
-	//   - "rouge-l" / "rouge-s": LCS- and skip-bigram-based ROUGE variants that
-	//     pe does not implement (only rouge-n is supported).
 	//   - code execution ("javascript", "python", "ruby", "webhook"): blocked by
 	//     pe's no-external-execution policy.
 	//   - external scoring services ("moderation", "guardrails", "pi"): call

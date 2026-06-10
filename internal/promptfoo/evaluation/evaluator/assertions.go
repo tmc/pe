@@ -77,6 +77,8 @@ const (
 	// Deterministic text-metric assertions (no judge needed).
 	AssertionLevenshtein AssertionType = "levenshtein"
 	AssertionRougeN      AssertionType = "rouge-n"
+	AssertionRougeL      AssertionType = "rouge-l"
+	AssertionRougeS      AssertionType = "rouge-s"
 	AssertionBLEU        AssertionType = "bleu"
 	AssertionGLEU        AssertionType = "gleu"
 	AssertionWordCount   AssertionType = "word-count"
@@ -238,6 +240,10 @@ func (ae *AssertionEvaluator) EvaluateAssertion(ctx context.Context, assertion A
 		result = ae.evaluateLevenshtein(assertion, output)
 	case AssertionRougeN:
 		result = ae.evaluateRougeN(assertion, output)
+	case AssertionRougeL:
+		result = ae.evaluateRougeL(assertion, output)
+	case AssertionRougeS:
+		result = ae.evaluateRougeS(assertion, output)
 	case AssertionBLEU:
 		result = ae.evaluateBLEU(assertion, output)
 	case AssertionGLEU:

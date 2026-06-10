@@ -64,6 +64,41 @@ func (ae *AssertionEvaluator) evaluateRougeN(assertion Assertion, output string)
 	return scoreResult(assertion, score, threshold, fmt.Sprintf("ROUGE-%d %.3f (threshold %.2f)", n, score, threshold), map[string]interface{}{"method": "rouge_n", "n": n})
 }
 
+// evaluateRougeL computes ROUGE-L (longest-common-subsequence) overlap against
+// the reference and passes when the score is >= threshold (default 0.75). Like
+// rouge-n it mirrors js-rouge: precision = LCS/len(candidate),
+// recall = LCS/len(reference), score = F1 (beta=1), case-sensitive.
+func (ae *AssertionEvaluator) evaluateRougeL(assertion Assertion, output string) *AssertionResult {
+	reference, ok := assertion.Value.(string)
+	if !ok {
+		return failResult(assertion, "rouge-l assertion requires a reference string value")
+	}
+	score := rougeL(output, reference)
+	threshold := 0.75
+	if assertion.Threshold != nil {
+		threshold = *assertion.Threshold
+	}
+	return scoreResult(assertion, score, threshold, fmt.Sprintf("ROUGE-L %.3f (threshold %.2f)", score, threshold), map[string]interface{}{"method": "rouge_l"})
+}
+
+// evaluateRougeS computes ROUGE-S (skip-bigram) overlap against the reference
+// and passes when the score is >= threshold (default 0.75). It mirrors
+// js-rouge: skip-bigrams are all ordered token pairs (i<j) within each text,
+// the score is the F1 (beta=1) of the distinct skip-bigram set intersection,
+// case-sensitive.
+func (ae *AssertionEvaluator) evaluateRougeS(assertion Assertion, output string) *AssertionResult {
+	reference, ok := assertion.Value.(string)
+	if !ok {
+		return failResult(assertion, "rouge-s assertion requires a reference string value")
+	}
+	score := rougeS(output, reference)
+	threshold := 0.75
+	if assertion.Threshold != nil {
+		threshold = *assertion.Threshold
+	}
+	return scoreResult(assertion, score, threshold, fmt.Sprintf("ROUGE-S %.3f (threshold %.2f)", score, threshold), map[string]interface{}{"method": "rouge_s"})
+}
+
 // evaluateBLEU computes n-gram precision (default up to 4-grams, geometric
 // mean) against the reference and passes when the score is >= threshold
 // (default 0.5).
@@ -365,6 +400,83 @@ func rougeN(output, reference string, n int) float64 {
 	precision := float64(overlap) / float64(len(cand))
 	recall := float64(overlap) / float64(len(ref))
 	return fMeasure(precision, recall, 1.0)
+}
+
+// rougeL computes ROUGE-L: the F1 (beta=1) of LCS-based precision and recall,
+// where precision = LCS / len(candidate tokens) and recall = LCS / len(reference
+// tokens). This matches js-rouge and the reference implementation in
+// github.com/tmc/misc/rouge. Tokenization is case-sensitive.
+func rougeL(output, reference string) float64 {
+	cand := strings.Fields(output)
+	ref := strings.Fields(reference)
+	if len(cand) == 0 || len(ref) == 0 {
+		return 0
+	}
+	lcs := lcsLength(cand, ref)
+	if lcs == 0 {
+		return 0
+	}
+	precision := float64(lcs) / float64(len(cand))
+	recall := float64(lcs) / float64(len(ref))
+	return fMeasure(precision, recall, 1.0)
+}
+
+// lcsLength returns the length of the longest common subsequence of two token
+// slices using the standard two-row dynamic-programming algorithm.
+func lcsLength(a, b []string) int {
+	prev := make([]int, len(b)+1)
+	curr := make([]int, len(b)+1)
+	for i := 1; i <= len(a); i++ {
+		for j := 1; j <= len(b); j++ {
+			if a[i-1] == b[j-1] {
+				curr[j] = prev[j-1] + 1
+			} else if prev[j] >= curr[j-1] {
+				curr[j] = prev[j]
+			} else {
+				curr[j] = curr[j-1]
+			}
+		}
+		prev, curr = curr, prev
+		for j := range curr {
+			curr[j] = 0
+		}
+	}
+	return prev[len(b)]
+}
+
+// rougeS computes ROUGE-S: the F1 (beta=1) of the distinct skip-bigram set
+// intersection, where a skip-bigram is any ordered pair of tokens (i<j) within
+// a text. precision divides by the candidate's distinct skip-bigram count,
+// recall by the reference's. Tokenization is case-sensitive, matching js-rouge.
+func rougeS(output, reference string) float64 {
+	candSet := skipBigrams(strings.Fields(output))
+	refSet := skipBigrams(strings.Fields(reference))
+	if len(candSet) == 0 || len(refSet) == 0 {
+		return 0
+	}
+	overlap := 0
+	for sb := range candSet {
+		if refSet[sb] {
+			overlap++
+		}
+	}
+	if overlap == 0 {
+		return 0
+	}
+	precision := float64(overlap) / float64(len(candSet))
+	recall := float64(overlap) / float64(len(refSet))
+	return fMeasure(precision, recall, 1.0)
+}
+
+// skipBigrams returns the set of distinct ordered token pairs (i<j) of tokens.
+func skipBigrams(tokens []string) map[string]bool {
+	set := make(map[string]bool)
+	for i := 0; i < len(tokens); i++ {
+		for j := i + 1; j < len(tokens); j++ {
+			set[tokens[i]+"\x00"+tokens[j]] = true
+		}
+	}
+	return set
 }
 
 // fMeasure mirrors js-rouge's f-measure: with beta=1 it is the harmonic mean of
