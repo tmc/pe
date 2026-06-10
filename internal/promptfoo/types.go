@@ -300,6 +300,10 @@ type Assertion struct {
 	Provider  string                 `yaml:"provider,omitempty" json:"provider,omitempty"`
 	Threshold float64                `yaml:"threshold,omitempty" json:"threshold,omitempty"`
 	Config    map[string]interface{} `yaml:"config,omitempty" json:"config,omitempty"`
+	// Metric labels this assertion's score as a named score, as in promptfoo's
+	// assert.metric. Named scores are aggregated per metric and are the inputs
+	// to derivedMetrics expressions.
+	Metric string `yaml:"metric,omitempty" json:"metric,omitempty"`
 }
 
 // EvaluationResult mirrors promptfoo's output structure.
@@ -386,11 +390,12 @@ type CompletionDetails struct {
 
 // GradingResult represents the outcome of assertion checks.
 type GradingResult struct {
-	Pass             bool              `json:"pass"`
-	Score            float64           `json:"score"`
-	Reason           string            `json:"reason"`
-	ComponentResults []ComponentResult `json:"componentResults"`
-	TokensUsed       TokenUsage        `json:"tokensUsed"`
+	Pass             bool               `json:"pass"`
+	Score            float64            `json:"score"`
+	Reason           string             `json:"reason"`
+	ComponentResults []ComponentResult  `json:"componentResults"`
+	TokensUsed       TokenUsage         `json:"tokensUsed"`
+	NamedScores      map[string]float64 `json:"namedScores,omitempty"`
 }
 
 // ComponentResult represents the result of a single assertion.

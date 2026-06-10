@@ -81,6 +81,21 @@ func TestEvaluateAssertionsPromptfooIds(t *testing.T) {
 	}
 }
 
+func TestEvaluateAssertionsPopulatesNamedScores(t *testing.T) {
+	_, grading := evaluateAssertions("hello world", []promptfoo.Assertion{
+		{Type: "contains", Value: "hello", Metric: "Greeting"},
+		{Type: "contains", Value: "world", Metric: "Greeting"},
+		{Type: "contains", Value: "missing", Metric: "Coverage"},
+	})
+	// Two passing "Greeting" assertions sum to 2.0; one failing "Coverage" is 0.
+	if got := grading.NamedScores["Greeting"]; got != 2.0 {
+		t.Fatalf("Greeting named score = %v, want 2.0", got)
+	}
+	if got, ok := grading.NamedScores["Coverage"]; !ok || got != 0.0 {
+		t.Fatalf("Coverage named score = %v (ok=%v), want 0.0", got, ok)
+	}
+}
+
 func TestPromptfooAssertionNormalizesType(t *testing.T) {
 	got := promptfooAssertion(promptfoo.Assertion{Type: "regex", Value: "x"})
 	assert.Equal(t, AssertionMatches, got.Type)

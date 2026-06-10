@@ -185,9 +185,13 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 		var promptTotal, promptPrompt, promptCompletion, numRequests int32
 		totalCost := 0.0
 		assertPassCount, assertFailCount := 0, 0
+		namedScores := make(map[string]float64)
+		namedScoresCount := make(map[string]int)
+		resultCount := 0
 
 		for _, result := range detailedResults {
 			if result.PromptID == promptMetadata[i].ID {
+				resultCount++
 				if result.Success {
 					successes++
 				} else {
@@ -212,6 +216,25 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 						assertFailCount++
 					}
 				}
+
+				// Aggregate named scores from labeled assertions.
+				for name, score := range result.GradingResult.NamedScores {
+					namedScores[name] += score
+					namedScoresCount[name]++
+				}
+			}
+		}
+
+		// Compute derivedMetrics over the aggregated named scores for this
+		// prompt. A bad expression is skipped, not fatal.
+		if len(config.DerivedMetrics) > 0 {
+			derived, derr := promptfoo.ComputeDerivedMetrics(config.DerivedMetrics, namedScores, resultCount)
+			if derr != nil {
+				fmt.Printf("Warning: %v\n", derr)
+			}
+			for name, v := range derived {
+				namedScores[name] = v
+				namedScoresCount[name]++
 			}
 		}
 
@@ -238,8 +261,8 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 				NumRequests: numRequests,
 				Details:     completionDetails,
 			},
-			NamedScores:      make(map[string]float64),
-			NamedScoresCount: make(map[string]int),
+			NamedScores:      namedScores,
+			NamedScoresCount: namedScoresCount,
 			Cost:             totalCost,
 		}
 	}
@@ -420,6 +443,7 @@ func evaluateAssertionsWithProvider(ctx context.Context, output string, asserts 
 	totalScore := 0.0
 	assertPassCount, assertFailCount := 0, 0
 
+	namedScores := make(map[string]float64)
 	for _, assert := range asserts {
 		pass, score, reason := evaluateAssertion(ctx, output, assert, judgeProvider)
 		totalScore += score
@@ -429,6 +453,13 @@ func evaluateAssertionsWithProvider(ctx context.Context, output string, asserts 
 		} else {
 			assertFailCount++
 			success = false
+		}
+
+		// Label this assertion's score as a named score when assert.metric is
+		// set, so it can feed derivedMetrics. Scores for the same metric sum,
+		// matching promptfoo's aggregation.
+		if assert.Metric != "" {
+			namedScores[assert.Metric] += score
 		}
 
 		componentResults = append(componentResults, promptfoo.ComponentResult{
@@ -453,12 +484,16 @@ func evaluateAssertionsWithProvider(ctx context.Context, output string, asserts 
 		},
 	}
 
+	if len(namedScores) == 0 {
+		namedScores = nil
+	}
 	return success, promptfoo.GradingResult{
 		Pass:             success,
 		Score:            totalScore,
 		Reason:           ifThenElseString(success, "All assertions passed", "Some assertions failed"),
 		ComponentResults: componentResults,
 		TokensUsed:       tokenUsage,
+		NamedScores:      namedScores,
 	}
 }
 
