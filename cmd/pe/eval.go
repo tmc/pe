@@ -101,6 +101,8 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 					outputFormat = "yaml"
 				} else if strings.HasSuffix(outputFile, ".csv") {
 					outputFormat = "csv"
+				} else if strings.HasSuffix(outputFile, ".xml") || strings.HasSuffix(outputFile, ".junit") {
+					outputFormat = "junit"
 				}
 
 				// For JSON output, ensure we're getting just the JSON data
@@ -157,6 +159,13 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 						return fmt.Errorf("error formatting CSV: %v", err)
 					}
 					err = os.WriteFile(outputFile, csvData, 0644)
+				} else if outputFormat == "junit" {
+					// Format results as JUnit XML for CI consumption
+					junitData, err := evaluator.FormatResults(results, "junit")
+					if err != nil {
+						return fmt.Errorf("error formatting JUnit XML: %v", err)
+					}
+					err = os.WriteFile(outputFile, junitData, 0644)
 				} else {
 					// Default to table format
 					err = os.WriteFile(outputFile, output, 0644)
@@ -214,7 +223,7 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 	}
 
 	cmd.Flags().StringVarP(&configFile, "config", "c", "", "Path to configuration file")
-	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Write results to file (format inferred from extension: .json, .yaml, .csv)")
+	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Write results to file (format inferred from extension: .json, .yaml, .csv, .xml/.junit)")
 	cmd.Flags().StringVarP(&timeout, "timeout", "t", "30s", "Timeout for the entire test run")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show commands that would be executed without running them")
 	cmd.Flags().BoolVar(&saveToDb, "save-db", false, "Save results to promptfoo database for viewing with 'pe view'")

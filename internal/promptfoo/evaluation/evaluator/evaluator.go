@@ -586,6 +586,8 @@ func FormatResults(results promptfoo.EvaluationResult, format string) ([]byte, e
 		return yaml.Marshal(results)
 	case "csv":
 		return formatResultsAsCSV(results), nil
+	case "junit", "junit.xml", "xml":
+		return formatResultsAsJUnit(results)
 	case "table", "":
 		return formatResultsAsTable(results), nil
 	default:
