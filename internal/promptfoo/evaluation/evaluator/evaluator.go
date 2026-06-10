@@ -419,10 +419,15 @@ func evaluateOne(ctx context.Context, prompt string, provider *providers.Materia
 		judgeProvider = provider.Executor
 	}
 	// Make the rendered question and any context var available to model-graded
-	// assertions (answer-relevance, context-*).
+	// assertions (answer-relevance, context-*). The raw _conversation var (a
+	// list of {input, output} turns) is passed through unstringified for
+	// conversation-relevance.
 	assertMeta := map[string]interface{}{"input": processedPrompt}
 	if c, ok := test.Vars["context"]; ok {
 		assertMeta["context"] = fmt.Sprintf("%v", c)
+	}
+	if conv, ok := test.Vars["_conversation"]; ok {
+		assertMeta["_conversation"] = conv
 	}
 	success, grading := evaluateAssertionsWithMeta(ctx, response.Output, test.Assert, judgeProvider, assertMeta)
 	resultID := generateResultID(prompt, provider.Spec.ID, test.Vars)

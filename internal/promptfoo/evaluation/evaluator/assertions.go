@@ -45,6 +45,13 @@ const (
 	AssertionSimilarity AssertionType = "similarity"
 	AssertionGEval      AssertionType = "g-eval"
 
+	// Rubric-based model-graded assertions evaluated by the local judge.
+	// agent-rubric and search-rubric run as a plain rubric in pe (the agentic
+	// tool-use / web-search requirements are not enforced; see modelgraded.go).
+	AssertionAgentRubric           AssertionType = "agent-rubric"
+	AssertionSearchRubric          AssertionType = "search-rubric"
+	AssertionConversationRelevance AssertionType = "conversation-relevance"
+
 	// Model-graded assertions that need the question or retrieval context.
 	AssertionAnswerRelevance     AssertionType = "answer-relevance"
 	AssertionContextFaithfulness AssertionType = "context-faithfulness"
@@ -177,6 +184,16 @@ func (ae *AssertionEvaluator) EvaluateAssertion(ctx context.Context, assertion A
 		}
 	case AssertionGEval:
 		result, err = ae.evaluateGEval(ctx, assertion, output)
+		if err != nil {
+			return nil, err
+		}
+	case AssertionAgentRubric, AssertionSearchRubric:
+		result, err = ae.evaluateRubric(ctx, assertion, output)
+		if err != nil {
+			return nil, err
+		}
+	case AssertionConversationRelevance:
+		result, err = ae.evaluateConversationRelevance(ctx, assertion, output, metadata)
 		if err != nil {
 			return nil, err
 		}

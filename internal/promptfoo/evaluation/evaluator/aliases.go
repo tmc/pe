@@ -36,15 +36,22 @@ var assertionAlias = map[string]AssertionType{
 	"context-faithfulness": AssertionContextFaithfulness,
 	"context-recall":       AssertionContextRecall,
 	"context-relevance":    AssertionContextRelevance,
-	"latency":              AssertionLatency,
-	"cost":                 AssertionCost,
-	"tokens":               AssertionTokens,
-	"json":                 AssertionJSON,
-	"sql":                  AssertionSQL,
-	"code":                 AssertionCode,
-	"structure":            AssertionStructure,
-	"pass-at-n":            AssertionPassAtN,
-	"structured-output":    AssertionStructuredOutput,
+
+	// Rubric-based model-graded assertions (agent-rubric/search-rubric run as a
+	// plain rubric in pe; the agentic/web-search grader requirement is not
+	// enforced).
+	"agent-rubric":           AssertionAgentRubric,
+	"search-rubric":          AssertionSearchRubric,
+	"conversation-relevance": AssertionConversationRelevance,
+	"latency":                AssertionLatency,
+	"cost":                   AssertionCost,
+	"tokens":                 AssertionTokens,
+	"json":                   AssertionJSON,
+	"sql":                    AssertionSQL,
+	"code":                   AssertionCode,
+	"structure":              AssertionStructure,
+	"pass-at-n":              AssertionPassAtN,
+	"structured-output":      AssertionStructuredOutput,
 
 	// deterministic text-metric and structural assertions.
 	"levenshtein":                   AssertionLevenshtein,
@@ -97,6 +104,13 @@ var assertionAlias = map[string]AssertionType{
 	//     pe does not implement (only rouge-n is supported).
 	//   - code execution ("javascript", "python", "ruby", "webhook"): blocked by
 	//     pe's no-external-execution policy.
+	//   - external scoring services ("moderation", "guardrails", "pi"): call
+	//     hosted APIs (OpenAI/Azure moderation, AWS/Azure guardrail metadata,
+	//     the Pi Labs scorer); pe has no client for these yet.
+	//   - multi-output comparison ("select-best", "max-score"): rank several
+	//     candidate outputs across a test row, which the single-output
+	//     EvaluateAssertion signature cannot express; they need a comparison
+	//     layer (assert-set) that pe does not have.
 }
 
 // normalizeAssertionType resolves a config assertion id (promptfoo or pe
@@ -112,7 +126,8 @@ var assertionAlias = map[string]AssertionType{
 func isModelGraded(t AssertionType) bool {
 	switch t {
 	case AssertionLLMJudge, AssertionGEval, AssertionAnswerRelevance,
-		AssertionContextFaithfulness, AssertionContextRecall, AssertionContextRelevance:
+		AssertionContextFaithfulness, AssertionContextRecall, AssertionContextRelevance,
+		AssertionAgentRubric, AssertionSearchRubric, AssertionConversationRelevance:
 		return true
 	default:
 		return false
