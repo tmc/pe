@@ -573,6 +573,14 @@ func evaluateAssertionsWithMeta(ctx context.Context, output string, asserts []pr
 }
 
 func evaluateAssertion(ctx context.Context, output string, assert promptfoo.Assertion, judgeProvider llm.Provider, meta map[string]interface{}) (bool, float64, string) {
+	// assert-set groups child assertions and combines them into one weighted
+	// score, mirroring promptfoo. It is handled here (not in the rich
+	// evaluator) because it must recurse over child promptfoo.Assertions with
+	// the judge provider and metadata in scope.
+	if normalizeAssertSetType(assert.Type) {
+		return evaluateAssertSet(ctx, output, assert, judgeProvider, meta)
+	}
+
 	// Resolve promptfoo/pe id divergences (regex->matches, llm-rubric->llm-judge,
 	// similar->similarity, not-* inversion) before dispatch so unmodified
 	// promptfoo configs run against pe's evaluator.
