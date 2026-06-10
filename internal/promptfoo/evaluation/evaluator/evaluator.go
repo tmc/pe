@@ -210,6 +210,20 @@ func EvaluateWithCache(config promptfoo.Config, timeout time.Duration, dryRun bo
 		evalErrors = append(evalErrors, executionErr)
 	}
 
+	// Apply comparative assertions (select-best, max-score) across each test
+	// row's outputs, now that every result is available. This may flip the
+	// Success/Score of individual results, so recount pass/fail afterward.
+	if applyComparativeAssertions(ctx, config, detailedResults, materializedProviders) {
+		passedTests, failedTests = 0, 0
+		for i := range detailedResults {
+			if detailedResults[i].Success {
+				passedTests++
+			} else {
+				failedTests++
+			}
+		}
+	}
+
 	if len(evalErrors) > 0 {
 		var errs []string
 		for i := 0; i < min(5, len(evalErrors)); i++ {
@@ -520,6 +534,12 @@ func evaluateAssertionsWithMeta(ctx context.Context, output string, asserts []pr
 
 	namedScores := make(map[string]float64)
 	for _, assert := range asserts {
+		// Comparative assertions (select-best, max-score) rank a test row's
+		// outputs against each other and cannot be judged from a single output;
+		// they are applied in a post-pass over all results, so skip them here.
+		if isComparativeAssertion(assert.Type) {
+			continue
+		}
 		pass, score, reason := evaluateAssertion(ctx, output, assert, judgeProvider, meta)
 		totalScore += score
 

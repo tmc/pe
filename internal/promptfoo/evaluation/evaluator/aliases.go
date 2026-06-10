@@ -122,10 +122,10 @@ var assertionAlias = map[string]AssertionType{
 	//   - external scoring services ("moderation", "guardrails", "pi"): call
 	//     hosted APIs (OpenAI/Azure moderation, AWS/Azure guardrail metadata,
 	//     the Pi Labs scorer); pe has no client for these yet.
-	//   - multi-output comparison ("select-best", "max-score"): rank several
-	//     candidate outputs across a test row, which the single-output
-	//     EvaluateAssertion signature cannot express; they need a comparison
-	//     layer (assert-set) that pe does not have.
+	//
+	// "select-best" and "max-score" are intentionally NOT in this map: they are
+	// row-level comparisons handled by a post-pass (comparative.go), not by the
+	// single-output EvaluateAssertion path.
 }
 
 // normalizeAssertionType resolves a config assertion id (promptfoo or pe
