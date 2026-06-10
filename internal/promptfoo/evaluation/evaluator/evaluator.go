@@ -50,6 +50,12 @@ func (c *responseCache) put(key string, response *promptfoo.ProviderResponse) {
 }
 
 func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxConcurrency int, showProgressBar bool) (promptfoo.EvaluationResult, error) {
+	// Expand promptfoo scenarios into concrete tests so the rest of the runner
+	// is scenario-agnostic. A config without scenarios is unchanged.
+	if len(config.Scenarios) > 0 {
+		config.Tests = config.ExpandScenarios()
+	}
+
 	if showProgressBar {
 		fmt.Printf("Running %d evaluations with up to %d threads...\n\n",
 			len(config.Prompts)*len(config.Providers)*len(config.Tests), maxConcurrency)

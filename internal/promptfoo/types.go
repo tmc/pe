@@ -9,11 +9,96 @@ import (
 
 // Config represents the promptfoo configuration structure.
 type Config struct {
-	Description string           `yaml:"description,omitempty" json:"description,omitempty"`
-	Prompts     []string         `yaml:"prompts" json:"prompts"`
-	Providers   []ProviderConfig `yaml:"providers" json:"providers"`
-	Tests       []TestCase       `yaml:"tests" json:"tests"`
-	DefaultTest *TestDefaults    `yaml:"defaultTest,omitempty" json:"defaultTest,omitempty"`
+	Description    string           `yaml:"description,omitempty" json:"description,omitempty"`
+	Prompts        []string         `yaml:"prompts" json:"prompts"`
+	Providers      []ProviderConfig `yaml:"providers" json:"providers"`
+	Tests          []TestCase       `yaml:"tests" json:"tests"`
+	DefaultTest    *TestDefaults    `yaml:"defaultTest,omitempty" json:"defaultTest,omitempty"`
+	Scenarios      []Scenario       `yaml:"scenarios,omitempty" json:"scenarios,omitempty"`
+	DerivedMetrics []DerivedMetric  `yaml:"derivedMetrics,omitempty" json:"derivedMetrics,omitempty"`
+	OutputPath     string           `yaml:"outputPath,omitempty" json:"outputPath,omitempty"`
+
+	// Redteam captures promptfoo's redteam.* block so an unmodified red-team
+	// config loads without dropping its plugin/strategy directives. The pe
+	// redteam engine consumes this when present.
+	Redteam *RedteamConfig `yaml:"redteam,omitempty" json:"redteam,omitempty"`
+
+	// Tags and Metadata round-trip promptfoo's labeling keys.
+	Tags     map[string]string      `yaml:"tags,omitempty" json:"tags,omitempty"`
+	Metadata map[string]interface{} `yaml:"metadata,omitempty" json:"metadata,omitempty"`
+}
+
+// Scenario expands a set of partial test configs across a set of tests, as in
+// promptfoo's scenarios key. ExpandScenarios produces the cartesian product:
+// each Config entry merged into each Tests entry.
+type Scenario struct {
+	Description string     `yaml:"description,omitempty" json:"description,omitempty"`
+	Config      []TestCase `yaml:"config" json:"config"`
+	Tests       []TestCase `yaml:"tests" json:"tests"`
+}
+
+// DerivedMetric defines a metric computed from named assertion scores after
+// evaluation, as in promptfoo's derivedMetrics key. Value is a mathjs-style
+// expression over the namedScores context.
+type DerivedMetric struct {
+	Name  string `yaml:"name" json:"name"`
+	Value string `yaml:"value" json:"value"`
+}
+
+// RedteamConfig captures promptfoo's redteam.* configuration block. Fields are
+// preserved verbatim so the pe red-team engine can consume the requested
+// plugins, strategies, and scope without the config failing to load.
+type RedteamConfig struct {
+	Purpose    string        `yaml:"purpose,omitempty" json:"purpose,omitempty"`
+	NumTests   int           `yaml:"numTests,omitempty" json:"numTests,omitempty"`
+	Plugins    []interface{} `yaml:"plugins,omitempty" json:"plugins,omitempty"`
+	Strategies []interface{} `yaml:"strategies,omitempty" json:"strategies,omitempty"`
+	Language   string        `yaml:"language,omitempty" json:"language,omitempty"`
+	Provider   interface{}   `yaml:"provider,omitempty" json:"provider,omitempty"`
+}
+
+// ExpandScenarios returns the test cases produced by the config's scenarios,
+// the cartesian product of each scenario's config entries with its tests.
+// Each scenario config entry is the base (its vars and asserts), and each test
+// is layered on top: test vars override config vars by key, and test asserts
+// are appended after the config asserts. The result is appended to the config's
+// existing Tests so downstream evaluation needs no scenario awareness.
+func (c Config) ExpandScenarios() []TestCase {
+	expanded := make([]TestCase, 0, len(c.Tests))
+	expanded = append(expanded, c.Tests...)
+	for _, s := range c.Scenarios {
+		for _, base := range s.Config {
+			for _, t := range s.Tests {
+				expanded = append(expanded, mergeTestCases(base, t))
+			}
+		}
+	}
+	return expanded
+}
+
+// mergeTestCases layers override onto base: override vars win per key, override
+// asserts are appended after base asserts, and override options win per key.
+func mergeTestCases(base, override TestCase) TestCase {
+	merged := TestCase{
+		Vars:    make(map[string]interface{}, len(base.Vars)+len(override.Vars)),
+		Assert:  make([]Assertion, 0, len(base.Assert)+len(override.Assert)),
+		Options: make(map[string]interface{}, len(base.Options)+len(override.Options)),
+	}
+	for k, v := range base.Vars {
+		merged.Vars[k] = v
+	}
+	for k, v := range override.Vars {
+		merged.Vars[k] = v
+	}
+	merged.Assert = append(merged.Assert, base.Assert...)
+	merged.Assert = append(merged.Assert, override.Assert...)
+	for k, v := range base.Options {
+		merged.Options[k] = v
+	}
+	for k, v := range override.Options {
+		merged.Options[k] = v
+	}
+	return merged
 }
 
 // ProviderConfig represents a provider configuration.
