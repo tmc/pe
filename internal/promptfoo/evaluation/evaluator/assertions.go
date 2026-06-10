@@ -56,6 +56,16 @@ const (
 	AssertionStructure        AssertionType = "structure"
 	AssertionPassAtN          AssertionType = "pass-at-n"
 	AssertionStructuredOutput AssertionType = "structured-output"
+
+	// Deterministic text-metric assertions (no judge needed).
+	AssertionLevenshtein AssertionType = "levenshtein"
+	AssertionRougeN      AssertionType = "rouge-n"
+	AssertionBLEU        AssertionType = "bleu"
+	AssertionWordCount   AssertionType = "word-count"
+
+	// Tool/function-call structural assertions.
+	AssertionIsValidFunctionCall AssertionType = "is-valid-openai-function-call"
+	AssertionIsValidToolsCall    AssertionType = "is-valid-openai-tools-call"
 )
 
 // Assertion represents a test assertion with its configuration
@@ -175,6 +185,18 @@ func (ae *AssertionEvaluator) EvaluateAssertion(ctx context.Context, assertion A
 		result = ae.evaluatePassAtN(ctx, assertion, output, metadata)
 	case AssertionStructuredOutput:
 		result = ae.evaluateStructuredOutput(assertion, output)
+	case AssertionLevenshtein:
+		result = ae.evaluateLevenshtein(assertion, output)
+	case AssertionRougeN:
+		result = ae.evaluateRougeN(assertion, output)
+	case AssertionBLEU:
+		result = ae.evaluateBLEU(assertion, output)
+	case AssertionWordCount:
+		result = ae.evaluateWordCount(assertion, output)
+	case AssertionIsValidFunctionCall:
+		result = ae.evaluateIsValidFunctionCall(assertion, output)
+	case AssertionIsValidToolsCall:
+		result = ae.evaluateIsValidToolsCall(assertion, output)
 	default:
 		return nil, fmt.Errorf("unsupported assertion type: %s", assertion.Type)
 	}

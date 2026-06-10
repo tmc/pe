@@ -41,6 +41,14 @@ var assertionAlias = map[string]AssertionType{
 	"pass-at-n":            AssertionPassAtN,
 	"structured-output":    AssertionStructuredOutput,
 
+	// deterministic text-metric and structural assertions.
+	"levenshtein":                   AssertionLevenshtein,
+	"rouge-n":                       AssertionRougeN,
+	"bleu":                          AssertionBLEU,
+	"word-count":                    AssertionWordCount,
+	"is-valid-openai-function-call": AssertionIsValidFunctionCall,
+	"is-valid-openai-tools-call":    AssertionIsValidToolsCall,
+
 	// promptfoo ids that pe spells differently.
 	"regex":         AssertionMatches,
 	"llm-rubric":    AssertionLLMJudge,
@@ -59,6 +67,13 @@ var assertionAlias = map[string]AssertionType{
 	// model-graded factuality aliases.
 	"model-graded-factuality": AssertionFactuality,
 	"model-graded-closedqa":   AssertionLLMJudge,
+
+	// Deliberately absent (no pe evaluator yet), so normalizeAssertionType
+	// reports ok=false rather than silently passing:
+	//   - "perplexity": needs token logprobs, which pe's ProviderResponse does
+	//     not surface, so it cannot be computed faithfully and is deferred.
+	//   - "rouge-l" / "rouge-s": LCS- and skip-bigram-based ROUGE variants that
+	//     pe does not implement (only rouge-n is supported).
 }
 
 // normalizeAssertionType resolves a config assertion id (promptfoo or pe
