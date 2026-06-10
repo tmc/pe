@@ -61,7 +61,17 @@ const (
 	AssertionLevenshtein AssertionType = "levenshtein"
 	AssertionRougeN      AssertionType = "rouge-n"
 	AssertionBLEU        AssertionType = "bleu"
+	AssertionGLEU        AssertionType = "gleu"
 	AssertionWordCount   AssertionType = "word-count"
+
+	// Deterministic string and structural assertions.
+	AssertionStartsWith   AssertionType = "starts-with"
+	AssertionIsRefusal    AssertionType = "is-refusal"
+	AssertionIsHTML       AssertionType = "is-html"
+	AssertionContainsHTML AssertionType = "contains-html"
+	AssertionIsXML        AssertionType = "is-xml"
+	AssertionContainsXML  AssertionType = "contains-xml"
+	AssertionContainsSQL  AssertionType = "contains-sql"
 
 	// Tool/function-call structural assertions.
 	AssertionIsValidFunctionCall AssertionType = "is-valid-openai-function-call"
@@ -191,8 +201,24 @@ func (ae *AssertionEvaluator) EvaluateAssertion(ctx context.Context, assertion A
 		result = ae.evaluateRougeN(assertion, output)
 	case AssertionBLEU:
 		result = ae.evaluateBLEU(assertion, output)
+	case AssertionGLEU:
+		result = ae.evaluateGLEU(assertion, output)
 	case AssertionWordCount:
 		result = ae.evaluateWordCount(assertion, output)
+	case AssertionStartsWith:
+		result = ae.evaluateStartsWith(assertion, output)
+	case AssertionIsRefusal:
+		result = ae.evaluateIsRefusal(assertion, output)
+	case AssertionIsHTML:
+		result = ae.evaluateIsHTML(assertion, output)
+	case AssertionContainsHTML:
+		result = ae.evaluateContainsHTML(assertion, output)
+	case AssertionIsXML:
+		result = ae.evaluateIsXML(assertion, output)
+	case AssertionContainsXML:
+		result = ae.evaluateContainsXML(assertion, output)
+	case AssertionContainsSQL:
+		result = ae.evaluateContainsSQL(assertion, output)
 	case AssertionIsValidFunctionCall:
 		result = ae.evaluateIsValidFunctionCall(assertion, output)
 	case AssertionIsValidToolsCall:

@@ -45,9 +45,19 @@ var assertionAlias = map[string]AssertionType{
 	"levenshtein":                   AssertionLevenshtein,
 	"rouge-n":                       AssertionRougeN,
 	"bleu":                          AssertionBLEU,
+	"gleu":                          AssertionGLEU,
 	"word-count":                    AssertionWordCount,
+	"starts-with":                   AssertionStartsWith,
+	"is-refusal":                    AssertionIsRefusal,
+	"is-html":                       AssertionIsHTML,
+	"contains-html":                 AssertionContainsHTML,
+	"is-xml":                        AssertionIsXML,
+	"contains-xml":                  AssertionContainsXML,
+	"contains-sql":                  AssertionContainsSQL,
 	"is-valid-openai-function-call": AssertionIsValidFunctionCall,
 	"is-valid-openai-tools-call":    AssertionIsValidToolsCall,
+	// promptfoo also accepts the non-"openai" spelling of the function-call check.
+	"is-valid-function-call": AssertionIsValidFunctionCall,
 
 	// promptfoo ids that pe spells differently.
 	"regex":         AssertionMatches,
@@ -70,10 +80,18 @@ var assertionAlias = map[string]AssertionType{
 
 	// Deliberately absent (no pe evaluator yet), so normalizeAssertionType
 	// reports ok=false rather than silently passing:
-	//   - "perplexity": needs token logprobs, which pe's ProviderResponse does
-	//     not surface, so it cannot be computed faithfully and is deferred.
+	//   - "perplexity" / "perplexity-score": need token logprobs, which pe's
+	//     ProviderResponse does not surface, so they cannot be computed
+	//     faithfully and are deferred.
+	//   - "finish-reason": pe's ProviderResponse carries no finish_reason; this
+	//     must be plumbed through the provider layer first.
+	//   - "meteor": promptfoo relies on WordNet synonym matching (the natural
+	//     npm package); a faithful port needs the WordNet data set, which would
+	//     violate pe's no-large-data-dependency policy, so it is deferred.
 	//   - "rouge-l" / "rouge-s": LCS- and skip-bigram-based ROUGE variants that
 	//     pe does not implement (only rouge-n is supported).
+	//   - code execution ("javascript", "python", "ruby", "webhook"): blocked by
+	//     pe's no-external-execution policy.
 }
 
 // normalizeAssertionType resolves a config assertion id (promptfoo or pe

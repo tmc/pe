@@ -80,6 +80,27 @@ func (ae *AssertionEvaluator) evaluateBLEU(assertion Assertion, output string) *
 	return scoreResult(assertion, score, threshold, fmt.Sprintf("BLEU %.3f (threshold %.2f)", score, threshold), map[string]interface{}{"method": "bleu"})
 }
 
+// evaluateGLEU computes Google-BLEU (GLEU) against the reference and passes when
+// the score is >= threshold (default 0.5). It mirrors promptfoo's custom gleu:
+// over n-grams for n=minN..maxN (default 1..4) pooled together, GLEU is the
+// minimum of precision and recall, where precision = matches / total candidate
+// n-grams and recall = matches / total reference n-grams. minN/maxN can be
+// overridden via the assertion's config.
+func (ae *AssertionEvaluator) evaluateGLEU(assertion Assertion, output string) *AssertionResult {
+	reference, ok := assertion.Value.(string)
+	if !ok {
+		return failResult(assertion, "gleu assertion requires a reference string value")
+	}
+	minN := assertionConfigInt(assertion, "minN", 1)
+	maxN := assertionConfigInt(assertion, "maxN", 4)
+	score := gleu(output, reference, minN, maxN)
+	threshold := 0.5
+	if assertion.Threshold != nil {
+		threshold = *assertion.Threshold
+	}
+	return scoreResult(assertion, score, threshold, fmt.Sprintf("GLEU %.3f (threshold %.2f)", score, threshold), map[string]interface{}{"method": "gleu", "minN": minN, "maxN": maxN})
+}
+
 // evaluateWordCount checks the output's whitespace-delimited word count against
 // min/max bounds or an exact value, mirroring promptfoo's word-count assertion.
 func (ae *AssertionEvaluator) evaluateWordCount(assertion Assertion, output string) *AssertionResult {
@@ -112,6 +133,26 @@ func (ae *AssertionEvaluator) evaluateWordCount(assertion Assertion, output stri
 		Message:  message,
 		Metadata: map[string]interface{}{"count": count},
 	}
+}
+
+// evaluateStartsWith passes when the output begins with the reference string.
+// It is case-sensitive, mirroring promptfoo's String.prototype.startsWith check.
+func (ae *AssertionEvaluator) evaluateStartsWith(assertion Assertion, output string) *AssertionResult {
+	prefix, ok := assertion.Value.(string)
+	if !ok {
+		return failResult(assertion, "starts-with assertion requires a string value")
+	}
+	passed := strings.HasPrefix(output, prefix)
+	return boolResult(assertion, passed, fmt.Sprintf("output %s with %q", passOrNot(passed, "starts", "does not start"), prefix))
+}
+
+// passOrNot returns yes when b is true, otherwise no; a tiny helper for building
+// human-readable assertion messages.
+func passOrNot(b bool, yes, no string) string {
+	if b {
+		return yes
+	}
+	return no
 }
 
 // evaluateIsValidFunctionCall validates that the output (or its function_call
@@ -387,4 +428,45 @@ func countNgrams(s string, n int) map[string]int {
 		counts[g]++
 	}
 	return counts
+}
+
+// gleu reproduces promptfoo's gleu (Google-BLEU): it pools the n-grams for
+// n=minN..maxN of candidate and reference, counts the matches (clipped by
+// reference availability), then returns min(precision, recall) where
+// precision = matches / total candidate n-grams and recall = matches / total
+// reference n-grams. Tokenization is case-sensitive, matching promptfoo.
+func gleu(output, reference string, minN, maxN int) float64 {
+	if minN < 1 {
+		minN = 1
+	}
+	if maxN < minN {
+		maxN = minN
+	}
+	candCounts := make(map[string]int)
+	refCounts := make(map[string]int)
+	candTotal, refTotal := 0, 0
+	for n := minN; n <= maxN; n++ {
+		for _, g := range ngrams(output, n, false) {
+			candCounts[g]++
+			candTotal++
+		}
+		for _, g := range ngrams(reference, n, false) {
+			refCounts[g]++
+			refTotal++
+		}
+	}
+	if candTotal == 0 || refTotal == 0 {
+		return 0
+	}
+	matches := 0
+	for g, c := range candCounts {
+		if r := refCounts[g]; r < c {
+			matches += r
+		} else {
+			matches += c
+		}
+	}
+	precision := float64(matches) / float64(candTotal)
+	recall := float64(matches) / float64(refTotal)
+	return math.Min(precision, recall)
 }
