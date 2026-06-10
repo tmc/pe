@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/tmc/pe/internal/promptfoo"
 	"github.com/tmc/pe/internal/promptfoo/evaluation/evaluator"
+	"github.com/tmc/pe/internal/promptfoo/storage"
 	"sigs.k8s.io/yaml"
 )
 
@@ -25,6 +25,8 @@ func evalCmd() *cobra.Command {
 	var share bool
 	var maxConcurrency int
 	var noProgressBar bool
+	var noCache bool
+	var cacheDir string
 
 	cmd := &cobra.Command{
 		Use:   "eval [config_file]",
@@ -75,8 +77,15 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 				return fmt.Errorf("error parsing config file: %v", err)
 			}
 
+			// Build the persistent response cache unless disabled, so repeat
+			// runs over unchanged provider+prompt+vars skip the API call.
+			var cacheStore storage.Store
+			if !noCache && !dryRun {
+				cacheStore = storage.NewDirStore(cacheDir)
+			}
+
 			// Run evaluation
-			results, err := evaluator.Evaluate(config, parsedTimeout, dryRun, maxConcurrency, !noProgressBar)
+			results, err := evaluator.EvaluateWithCache(config, parsedTimeout, dryRun, maxConcurrency, !noProgressBar, cacheStore)
 			if err != nil {
 				return fmt.Errorf("evaluation error: %v", err)
 			}
@@ -179,43 +188,18 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 				fmt.Fprint(cmd.OutOrStdout(), string(output))
 			}
 
-			// Save to a file in the .promptfoo directory if requested
+			// Persist the run to the run store if requested.
 			if saveToDb {
 				if err := enforceRuntimeToolPolicy("write"); err != nil {
 					return err
 				}
-
-				evalId := results.EvalID
-
-				// Create the .promptfoo directory in the user's home directory
-				homeDir, err := os.UserHomeDir()
-				if err != nil {
-					return fmt.Errorf("error getting user home directory: %v", err)
+				runStore := defaultRunStore()
+				if err := runStore.Save(results); err != nil {
+					return fmt.Errorf("error saving evaluation: %v", err)
 				}
-
-				// Create the .promptfoo/evals directory
-				promptfooDir := filepath.Join(homeDir, ".promptfoo", "evals")
-				if err := os.MkdirAll(promptfooDir, 0755); err != nil {
-					return fmt.Errorf("error creating promptfoo directory: %v", err)
-				}
-
-				// Create a file for this evaluation
-				evalFile := filepath.Join(promptfooDir, evalId+".json")
-
-				// Format results as JSON for the storage
-				jsonOutput, err := evaluator.FormatResults(results, "json")
-				if err != nil {
-					return fmt.Errorf("error formatting results as JSON: %v", err)
-				}
-
-				// Write the JSON to the evaluation file
-				if err := os.WriteFile(evalFile, jsonOutput, 0644); err != nil {
-					return fmt.Errorf("error writing to evaluation file: %v", err)
-				}
-
-				fmt.Fprintf(cmd.OutOrStdout(), "Evaluation results saved to: %s\n", evalFile)
+				fmt.Fprintf(cmd.OutOrStdout(), "Evaluation results saved (id: %s)\n", results.EvalID)
 				fmt.Fprintf(cmd.OutOrStdout(), "\nTo view these results, run:\n")
-				fmt.Fprintf(cmd.OutOrStdout(), "pe view -f %s\n", evalFile)
+				fmt.Fprintf(cmd.OutOrStdout(), "pe view %s\n", results.EvalID)
 			}
 
 			return nil
@@ -230,6 +214,8 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 	cmd.Flags().BoolVar(&share, "share", false, "Create a shareable URL of evaluation results")
 	cmd.Flags().IntVarP(&maxConcurrency, "max-concurrency", "j", 4, "Maximum number of concurrent API calls")
 	cmd.Flags().BoolVar(&noProgressBar, "no-progress-bar", false, "Do not show progress bar")
+	cmd.Flags().BoolVar(&noCache, "no-cache", false, "Disable the persistent provider response cache")
+	cmd.Flags().StringVar(&cacheDir, "cache-dir", ".pe/cache", "Directory for the persistent provider response cache")
 
 	return cmd
 }

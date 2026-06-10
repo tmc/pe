@@ -15,6 +15,7 @@ import (
 	"github.com/tmc/pe/internal/distributed"
 	"github.com/tmc/pe/internal/llm"
 	"github.com/tmc/pe/internal/promptfoo"
+	"github.com/tmc/pe/internal/promptfoo/storage"
 	"github.com/tmc/pe/internal/providers"
 	"sigs.k8s.io/yaml"
 )
@@ -24,32 +25,70 @@ type evalOutcome struct {
 	err    error
 }
 
+// responseCache is an in-memory cache of provider responses with an optional
+// persistent layer. The in-memory map is the fast path; when persist is set,
+// misses fall through to it and puts write through, so responses are reused
+// across separate eval runs. persist can be any storage.Store backend (disk,
+// in-memory, a database), keeping the evaluator unaware of where it lives.
 type responseCache struct {
 	mu      sync.Mutex
 	entries map[string]*promptfoo.ProviderResponse
+	persist *storage.Cache
 }
 
+// newResponseCache returns an in-memory-only cache.
 func newResponseCache() *responseCache {
 	return &responseCache{entries: make(map[string]*promptfoo.ProviderResponse)}
+}
+
+// newPersistentResponseCache returns a cache backed by store. A nil store
+// yields an in-memory-only cache.
+func newPersistentResponseCache(store storage.Store) *responseCache {
+	c := newResponseCache()
+	if store != nil {
+		c.persist = storage.NewCache(store)
+	}
+	return c
 }
 
 func (c *responseCache) get(key string) (*promptfoo.ProviderResponse, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	response, ok := c.entries[key]
-	if !ok {
-		return nil, false
+	if response, ok := c.entries[key]; ok {
+		return cloneProviderResponse(response), true
 	}
-	return cloneProviderResponse(response), true
+	if c.persist != nil {
+		// A read error is treated as a miss; the run recomputes the response.
+		if response, ok, err := c.persist.Get(key); err == nil && ok {
+			c.entries[key] = response // promote to the in-memory fast path
+			return cloneProviderResponse(response), true
+		}
+	}
+	return nil, false
 }
 
 func (c *responseCache) put(key string, response *promptfoo.ProviderResponse) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.entries[key] = cloneProviderResponse(response)
+	clone := cloneProviderResponse(response)
+	c.entries[key] = clone
+	if c.persist != nil {
+		// A write error is non-fatal: the cache degrades to recomputation.
+		_ = c.persist.Set(key, clone)
+	}
 }
 
 func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxConcurrency int, showProgressBar bool) (promptfoo.EvaluationResult, error) {
+	return EvaluateWithCache(config, timeout, dryRun, maxConcurrency, showProgressBar, nil)
+}
+
+// EvaluateWithCache runs an evaluation with an optional persistent response
+// cache backed by store. When store is non-nil, provider responses are read
+// from and written to it (keyed by a content hash of provider+prompt+vars), so
+// repeat runs over unchanged inputs skip the API call. store may be any
+// storage.Store backend (disk, in-memory, a database); a nil store is
+// in-memory only.
+func EvaluateWithCache(config promptfoo.Config, timeout time.Duration, dryRun bool, maxConcurrency int, showProgressBar bool, store storage.Store) (promptfoo.EvaluationResult, error) {
 	// Expand promptfoo scenarios into concrete tests so the rest of the runner
 	// is scenario-agnostic. A config without scenarios is unchanged.
 	if len(config.Scenarios) > 0 {
@@ -104,7 +143,7 @@ func Evaluate(config promptfoo.Config, timeout time.Duration, dryRun bool, maxCo
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	cache := newResponseCache()
+	cache := newPersistentResponseCache(store)
 	var tasks []distributed.Task[evalOutcome]
 	for _, prompt := range config.Prompts {
 		for _, provider := range materializedProviders {

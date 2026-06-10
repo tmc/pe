@@ -54,19 +54,11 @@ Use --promptfoo to explicitly delegate to the promptfoo CLI viewer.`,
 			// Case 2: Eval ID specified as positional argument
 			if len(args) > 0 {
 				evalId := args[0]
-
-				// Check if the file exists in the standard location
-				homeDir, err := os.UserHomeDir()
+				results, err := defaultRunStore().Load(evalId)
 				if err != nil {
-					return fmt.Errorf("error getting user home directory: %v", err)
+					return fmt.Errorf("evaluation %q not found: %v", evalId, err)
 				}
-
-				evalFile := filepath.Join(homeDir, ".promptfoo", "evals", evalId+".json")
-				if _, err := os.Stat(evalFile); err == nil {
-					return viewFile(evalFile, port)
-				}
-
-				return fmt.Errorf("evaluation %q not found in %s", evalId, filepath.Dir(evalFile))
+				return viewResults(results, port)
 			}
 
 			// Case 3: No arguments, list available evaluations
@@ -82,25 +74,29 @@ Use --promptfoo to explicitly delegate to the promptfoo CLI viewer.`,
 	return cmd
 }
 
-// viewFile displays the evaluation results from a file in a browser
+// viewFile displays the evaluation results from a file in a browser.
 func viewFile(filePath string, port int) error {
-	// Read the file
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("error reading file: %v", err)
 	}
-
-	// Parse the JSON to confirm it's valid
 	var results promptfoo.EvaluationResult
 	if err := json.Unmarshal(data, &results); err != nil {
 		return fmt.Errorf("error parsing evaluation results: %v", err)
 	}
-
-	// Extract the evaluation ID
-	evalId := results.EvalID
-	if evalId == "" {
-		evalId = filepath.Base(filePath)
+	if results.EvalID == "" {
+		results.EvalID = filepath.Base(filePath)
 	}
+	return viewResults(results, port)
+}
+
+// viewResults serves an evaluation result in a local browser viewer.
+func viewResults(results promptfoo.EvaluationResult, port int) error {
+	data, err := json.Marshal(results)
+	if err != nil {
+		return fmt.Errorf("error encoding evaluation results: %v", err)
+	}
+	evalId := results.EvalID
 
 	fmt.Printf("Starting viewer for evaluation ID: %s\n", evalId)
 	fmt.Printf("Press Ctrl+C to stop the server\n\n")
@@ -132,39 +128,20 @@ func viewFile(filePath string, port int) error {
 	return http.ListenAndServe(":"+strconv.Itoa(port), nil)
 }
 
-// listEvaluations lists available evaluations in the standard location
+// listEvaluations lists available evaluations from the run store.
 func listEvaluations(cmd *cobra.Command) error {
-	homeDir, err := os.UserHomeDir()
+	ids, err := defaultRunStore().List()
 	if err != nil {
-		return fmt.Errorf("error getting user home directory: %v", err)
+		return fmt.Errorf("error listing evaluations: %v", err)
 	}
-
-	evalsDir := filepath.Join(homeDir, ".promptfoo", "evals")
-
-	// Check if the directory exists
-	if _, err := os.Stat(evalsDir); os.IsNotExist(err) {
-		fmt.Fprintln(cmd.OutOrStdout(), "No evaluations found. Run 'pe eval --save-db' to save an evaluation.")
-		return nil
-	}
-
-	// List files in the evals directory
-	files, err := os.ReadDir(evalsDir)
-	if err != nil {
-		return fmt.Errorf("error reading evaluations directory: %v", err)
-	}
-
-	if len(files) == 0 {
+	if len(ids) == 0 {
 		fmt.Fprintln(cmd.OutOrStdout(), "No evaluations found. Run 'pe eval --save-db' to save an evaluation.")
 		return nil
 	}
 
 	fmt.Fprintln(cmd.OutOrStdout(), "Available evaluations:")
-	for _, file := range files {
-		if !file.IsDir() && filepath.Ext(file.Name()) == ".json" {
-			evalId := filepath.Base(file.Name())
-			evalId = evalId[:len(evalId)-5] // Remove .json extension
-			fmt.Fprintf(cmd.OutOrStdout(), "  %s\n", evalId)
-		}
+	for _, id := range ids {
+		fmt.Fprintf(cmd.OutOrStdout(), "  %s\n", id)
 	}
 
 	fmt.Fprintln(cmd.OutOrStdout(), "\nTo view an evaluation, run:")
