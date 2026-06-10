@@ -473,9 +473,9 @@ func evaluateAssertion(ctx context.Context, output string, assert promptfoo.Asse
 		evaluator := NewAssertionEvaluator(judgeProvider)
 		result, err := evaluator.EvaluateAssertion(ctx, canonAssert, output, nil)
 		if err != nil {
-			// llm-judge without a judge provider is a hard error; other
-			// evaluators degrade to the string-match fallback below.
-			if canonical == AssertionLLMJudge {
+			// Model-graded assertions without a judge provider are a hard
+			// error; other evaluators degrade to the string-match fallback.
+			if canonical == AssertionLLMJudge || canonical == AssertionGEval {
 				return false, 0, err.Error()
 			}
 		} else {

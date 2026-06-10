@@ -102,6 +102,7 @@ func TestAssertionEvaluatorCoversAllAssertionTypes(t *testing.T) {
 		{"coherence", Assertion{Type: AssertionCoherence}, "answer", nil},
 		{"factuality", Assertion{Type: AssertionFactuality}, "answer", nil},
 		{"llm judge", Assertion{Type: AssertionLLMJudge, Value: "be correct", Threshold: &threshold}, "answer", nil},
+		{"g-eval", Assertion{Type: AssertionGEval, Value: "be coherent and correct", Threshold: &threshold}, "answer", nil},
 		{"classify", Assertion{Type: AssertionClassify, Value: "positive", Config: map[string]interface{}{"labels": map[string]interface{}{"positive": []interface{}{"good"}, "negative": []interface{}{"bad"}}}}, "good answer", nil},
 		{"similarity", Assertion{Type: AssertionSimilarity, Value: "answer"}, "answer", nil},
 		{"latency", Assertion{Type: AssertionLatency, Max: &max}, "answer", map[string]interface{}{"latency": 10 * time.Millisecond}},

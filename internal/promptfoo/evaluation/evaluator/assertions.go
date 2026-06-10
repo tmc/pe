@@ -36,6 +36,7 @@ const (
 	AssertionLLMJudge   AssertionType = "llm-judge"
 	AssertionClassify   AssertionType = "classify"
 	AssertionSimilarity AssertionType = "similarity"
+	AssertionGEval      AssertionType = "g-eval"
 
 	// Performance assertions
 	AssertionLatency AssertionType = "latency"
@@ -128,6 +129,11 @@ func (ae *AssertionEvaluator) EvaluateAssertion(ctx context.Context, assertion A
 		result = ae.evaluateFactuality(ctx, assertion, output)
 	case AssertionLLMJudge:
 		result, err = ae.evaluateLLMJudge(ctx, assertion, output)
+		if err != nil {
+			return nil, err
+		}
+	case AssertionGEval:
+		result, err = ae.evaluateGEval(ctx, assertion, output)
 		if err != nil {
 			return nil, err
 		}
@@ -514,6 +520,78 @@ REASONING: [brief explanation]`, criteria, output)
 		Actual:  score,
 		Message: fmt.Sprintf("LLM Judge Score: %.1f/10 - %s", score, reasoning),
 		Metadata: map[string]interface{}{
+			"reasoning": reasoning,
+			"criteria":  criteria,
+		},
+	}, nil
+}
+
+// evaluateGEval implements promptfoo's g-eval: a chain-of-thought, model-graded
+// assertion. The judge is asked to derive evaluation steps from the criteria,
+// reason through them, then assign a 0-10 score, which is normalized to 0-1.
+// Unlike the local heuristics, this is a real model call and requires a judge
+// provider (set on the evaluator or via the assertion's provider override).
+func (ae *AssertionEvaluator) evaluateGEval(ctx context.Context, assertion Assertion, output string) (*AssertionResult, error) {
+	criteria, ok := assertion.Value.(string)
+	if !ok || strings.TrimSpace(criteria) == "" {
+		return &AssertionResult{
+			Type:    assertion.Type,
+			Passed:  false,
+			Score:   0.0,
+			Message: "g-eval assertion requires evaluation criteria as string value",
+		}, nil
+	}
+
+	judgeProvider, err := ae.llmJudgeProvider(assertion)
+	if err != nil {
+		return nil, err
+	}
+
+	judgePrompt := fmt.Sprintf(`You are an expert evaluator using the G-Eval method.
+
+EVALUATION CRITERIA:
+%s
+
+OUTPUT TO EVALUATE:
+%s
+
+TASK:
+1. Derive a short ordered list of evaluation steps from the criteria.
+2. Apply each step to the output, reasoning explicitly.
+3. Assign a single overall score from 0 to 10 reflecting how well the output meets the criteria.
+
+FORMAT (exactly):
+STEPS: [your evaluation steps]
+REASONING: [your step-by-step assessment]
+SCORE: [0-10]`, criteria, output)
+
+	response, err := judgeProvider.Generate(ctx, judgePrompt, llm.GenerateOptions{})
+	if err != nil {
+		return &AssertionResult{
+			Type:    assertion.Type,
+			Passed:  false,
+			Score:   0.0,
+			Message: fmt.Sprintf("Failed to evaluate with g-eval: %v", err),
+		}, nil
+	}
+
+	score, reasoning := ae.parseLLMJudgeResponse(response.Text)
+	normalizedScore := score / 10.0
+
+	threshold := 0.7
+	if assertion.Threshold != nil {
+		threshold = *assertion.Threshold
+	}
+	passed := normalizedScore >= threshold
+
+	return &AssertionResult{
+		Type:    assertion.Type,
+		Passed:  passed,
+		Score:   normalizedScore,
+		Actual:  score,
+		Message: fmt.Sprintf("G-Eval Score: %.1f/10 - %s", score, reasoning),
+		Metadata: map[string]interface{}{
+			"method":    "g_eval_cot",
 			"reasoning": reasoning,
 			"criteria":  criteria,
 		},

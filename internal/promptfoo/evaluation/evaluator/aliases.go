@@ -26,6 +26,7 @@ var assertionAlias = map[string]AssertionType{
 	"llm-judge":         AssertionLLMJudge,
 	"classify":          AssertionClassify,
 	"similarity":        AssertionSimilarity,
+	"g-eval":            AssertionGEval,
 	"latency":           AssertionLatency,
 	"cost":              AssertionCost,
 	"tokens":            AssertionTokens,
