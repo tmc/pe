@@ -98,6 +98,78 @@ tests:
         value: "Says 4"
 ```
 
+## Assertion Parity
+
+PE's evaluator accepts Promptfoo's assertion `type` ids directly: an unmodified
+`promptfooconfig.yaml` runs against PE without rewriting its `assert` blocks.
+Promptfoo and PE chose different ids for some checks (`regex`/`matches`,
+`llm-rubric`/`llm-judge`, `similar`/`similarity`, `is-json`/`json`); the alias
+table in `internal/promptfoo/evaluation/evaluator/aliases.go` resolves them, and
+the `not-` prefix inverts any check. The source of truth is that alias map plus
+`isModelGraded`; the tables below mirror it.
+
+### Supported (deterministic — no judge provider required)
+
+`contains`, `not-contains`, `contains-any`, `contains-all`, `icontains`,
+`icontains-any`, `icontains-all`, `equals`, `regex`/`matches`, `length`,
+`starts-with`, `is-json`/`json`/`contains-json`, `is-sql`/`sql`, `contains-sql`,
+`is-html`, `contains-html`, `is-xml`, `contains-xml`, `is-refusal`,
+`is-valid-openai-function-call` (and the non-`openai` spelling
+`is-valid-function-call`), `is-valid-openai-tools-call`, `word-count`,
+`levenshtein`, `rouge-n`, `rouge-l`, `rouge-s`, `bleu`, `gleu`, `latency`,
+`cost`, `tokens`, `finish-reason`, `pass-at-n`, `code`, `structure`,
+`structured-output`.
+
+Text-metric ids (`rouge-*`, `bleu`, `gleu`, `levenshtein`) are numerically
+cross-checked against the libraries Promptfoo calls (js-rouge 3.2.0, etc.):
+case-sensitive, beta=1 F1 — see the per-assertion doc comments.
+
+### Supported (model-graded — require a judge provider)
+
+`llm-rubric`/`llm-judge`, `g-eval`, `model-graded-factuality`/`factuality`,
+`model-graded-closedqa`, `classifier`/`classify`, `similar`/`similarity`
+(and `similar:cosine`, `similar:dot`, `similar:euclidean`), `answer-relevance`,
+`context-faithfulness`, `context-recall`, `context-relevance`,
+`conversation-relevance`, `agent-rubric`, `search-rubric`, `skill-used`,
+`trajectory:goal-success`, plus the native `readability`, `sentiment`,
+`toxicity`, `coherence`. These error (rather than silently pass) when no judge
+provider is configured.
+
+Two documented degradations: `agent-rubric`/`search-rubric` run as a plain
+local rubric — PE does not enforce Promptfoo's agentic-tool / web-search grader
+requirement (analogous to `similar:cosine` ignoring the metric refinement).
+
+### Implemented but inert until a provider supplies the data
+
+These compute faithfully the moment the response carries the required signal;
+PE has no provider that surfaces it yet, so today they fail with a clear message
+rather than passing vacuously.
+
+| Assertion | Needs |
+|-----------|-------|
+| `perplexity`, `perplexity-score` | `metadata.logprobs` (per-token natural-log probabilities) |
+| `tool-call-f1`, `trajectory:tool-used`, `trajectory:tool-sequence`, `trajectory:tool-args-match`, `trajectory:step-count` | a recorded `_trajectory` var (falls back to parsing OpenAI `tool_calls` from the output) |
+| `trace-span-count`, `trace-span-duration`, `trace-error-spans` | a recorded `_trace` var (PE has no in-process OTEL collector) |
+
+### Comparative (row-level, applied as a post-pass)
+
+`select-best` and `max-score` compare a test row's outputs across providers, so
+they are handled after per-output assertions in `comparative.go` rather than via
+the alias map.
+
+### Deliberately not implemented (policy)
+
+| Assertion | Reason |
+|-----------|--------|
+| `javascript`, `python`, `ruby`, `webhook` | no-external-execution policy (see `docs/EXTERNAL_EXECUTION_POLICY.md`) |
+| `moderation`, `guardrails`, `pi` | call hosted scoring APIs (OpenAI/Azure moderation, AWS/Azure guardrails, Pi Labs); PE ships no client for these |
+| `meteor` | needs the WordNet dataset; violates PE's no-large-data-dependency policy |
+| `human` | manual/interactive grading; no automated analogue |
+
+An assertion id outside every list above resolves `ok=false` in
+`normalizeAssertionType` and falls back to the string-match path or surfaces an
+unsupported-assertion warning, rather than silently passing.
+
 ## Current Limits
 
 The plugin does not currently implement full Promptfoo results import/export, file include expansion, or deep provider-schema translation beyond the common config shapes above.
