@@ -42,8 +42,10 @@ func TestNormalizeAssertionType(t *testing.T) {
 		// model-graded RAG ids now resolve.
 		{"answer-relevance", AssertionAnswerRelevance, false, true},
 		{"context-faithfulness", AssertionContextFaithfulness, false, true},
-		// unknown ids report ok=false.
-		{"perplexity", "", false, false},
+		// perplexity now resolves (reads logprobs from response metadata).
+		{"perplexity", AssertionPerplexity, false, true},
+		// genuinely-unimplemented ids report ok=false.
+		{"meteor", "", false, false},
 		{"made-up", "", false, false},
 	}
 	for _, tt := range tests {

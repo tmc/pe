@@ -452,11 +452,15 @@ func evaluateOne(ctx context.Context, prompt string, provider *providers.Materia
 	if trace, ok := test.Vars["_trace"]; ok {
 		assertMeta["_trace"] = trace
 	}
-	// Surface the provider's finish reason (carried in response metadata) so the
-	// finish-reason assertion can compare against it.
+	// Surface the provider's finish reason and per-token logprobs (carried in
+	// response metadata) so the finish-reason and perplexity assertions can read
+	// them.
 	if response.Metadata != nil {
 		if fr, ok := response.Metadata["finishReason"]; ok {
 			assertMeta["finishReason"] = fr
+		}
+		if lp, ok := response.Metadata["logprobs"]; ok {
+			assertMeta["logprobs"] = lp
 		}
 	}
 	success, grading := evaluateAssertionsWithMeta(ctx, response.Output, test.Assert, judgeProvider, assertMeta)

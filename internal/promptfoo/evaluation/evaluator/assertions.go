@@ -63,8 +63,10 @@ const (
 	AssertionCost    AssertionType = "cost"
 	AssertionTokens  AssertionType = "tokens"
 
-	// Response-metadata assertion.
-	AssertionFinishReason AssertionType = "finish-reason"
+	// Response-metadata assertions.
+	AssertionFinishReason    AssertionType = "finish-reason"
+	AssertionPerplexity      AssertionType = "perplexity"
+	AssertionPerplexityScore AssertionType = "perplexity-score"
 
 	// Advanced assertions
 	AssertionJSON             AssertionType = "json"
@@ -240,6 +242,10 @@ func (ae *AssertionEvaluator) EvaluateAssertion(ctx context.Context, assertion A
 		result = ae.evaluateTokens(assertion, metadata)
 	case AssertionFinishReason:
 		result = ae.evaluateFinishReason(assertion, metadata)
+	case AssertionPerplexity:
+		result = ae.evaluatePerplexity(assertion, metadata)
+	case AssertionPerplexityScore:
+		result = ae.evaluatePerplexityScore(assertion, metadata)
 	case AssertionJSON:
 		result = ae.evaluateJSON(assertion, output)
 	case AssertionSQL:

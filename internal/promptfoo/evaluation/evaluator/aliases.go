@@ -47,6 +47,8 @@ var assertionAlias = map[string]AssertionType{
 	"cost":                   AssertionCost,
 	"tokens":                 AssertionTokens,
 	"finish-reason":          AssertionFinishReason,
+	"perplexity":             AssertionPerplexity,
+	"perplexity-score":       AssertionPerplexityScore,
 	"json":                   AssertionJSON,
 	"sql":                    AssertionSQL,
 	"code":                   AssertionCode,
@@ -111,9 +113,6 @@ var assertionAlias = map[string]AssertionType{
 
 	// Deliberately absent (no pe evaluator yet), so normalizeAssertionType
 	// reports ok=false rather than silently passing:
-	//   - "perplexity" / "perplexity-score": need token logprobs, which pe's
-	//     ProviderResponse does not surface, so they cannot be computed
-	//     faithfully and are deferred.
 	//   - "meteor": promptfoo relies on WordNet synonym matching (the natural
 	//     npm package); a faithful port needs the WordNet data set, which would
 	//     violate pe's no-large-data-dependency policy, so it is deferred.
