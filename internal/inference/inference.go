@@ -3,6 +3,7 @@ package inference
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 )
@@ -174,7 +175,7 @@ func (c *Client) Close() error {
 		}
 	}
 	if len(errs) > 0 {
-		return fmt.Errorf("errors closing providers: %v", errs)
+		return fmt.Errorf("closing providers: %w", errors.Join(errs...))
 	}
 	return nil
 }
