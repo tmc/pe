@@ -1,6 +1,10 @@
 # PE-Native RLM Design
 
-Status: v0.6+ design track. This is not a v0.5 release blocker.
+Status: v0.6+ design track. This is not a v0.5 release blocker. An initial
+implementation has landed: `internal/rlm` provides the bounded combinators,
+runner, deterministic aggregation, content addressing, and trace schema
+(`pe.rlm.trace.v1`), and `pe exp recurse` exposes them as an experimental,
+local-first command. See the Package Plan below for what each slice covers.
 
 PE should not copy OpenProse's session-VM shape or introduce a new workflow DSL
 before the core release path is stable. PE can do better by treating recursive
@@ -126,18 +130,25 @@ Minimum required trace fields:
 
 ## Package Plan
 
-Implementation should be split after v0.5:
+Implementation is split after v0.5. The following slices have landed:
 
 1. `docs/future/RLM_DESIGN.md`: schema and contract.
-2. `internal/rlm/combinators.go`: typed combinator interfaces and budgets.
-3. `internal/rlm/runner.go`: bounded runner using `distributed.RunLocal`.
+2. `internal/rlm/combinators.go`: typed combinator interfaces and budgets
+   (`chunk`, `Worker`, `reduce`).
+3. `internal/rlm/runner.go`: bounded runner using `distributed.RunLocal`, with a
+   hierarchical reduce loop that folds outputs while depth and budget remain.
 4. `internal/rlm/aggregate.go`: child result aggregation through
-   `distributed.Majority`.
-5. `internal/rlm/storage.go`: cache/attest pointer helpers for target inputs.
+   `distributed.Majority` (majority and concat rules).
+5. `internal/rlm/storage.go`: content-key helper for out-of-prompt addressing.
 6. `cmd/pe/exp_recurse.go`: experimental CLI harness.
 
-Each slice should be testable without live providers. Live-provider behavior
-belongs behind opt-in integration tests.
+Each slice is testable without live providers: the runner depends on a [Worker]
+interface, not a concrete provider, and the package tests drive it with a
+deterministic fake. Live-provider behavior belongs behind opt-in integration
+tests.
+
+Still open: a `search` combinator that selects chunks for another pass, attest
+manifest references on the target, and trace redaction for provider secrets.
 
 ## Safety Model
 
