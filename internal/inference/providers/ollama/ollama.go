@@ -271,17 +271,27 @@ func (p *Provider) Stream(ctx context.Context, req inference.Request) (<-chan in
 		defer close(ch)
 		defer resp.Body.Close()
 
+		// send delivers one chunk unless the caller has cancelled, so the
+		// goroutine never blocks on an abandoned channel.
+		send := func(chunk inference.StreamChunk) bool {
+			select {
+			case <-ctx.Done():
+				return false
+			case ch <- chunk:
+				return true
+			}
+		}
+
 		scanner := bufio.NewScanner(resp.Body)
 		for scanner.Scan() {
 			var genResp generateResponse
 			if err := json.Unmarshal(scanner.Bytes(), &genResp); err != nil {
-				ch <- inference.StreamChunk{Error: fmt.Errorf("failed to decode streaming response: %w", err)}
+				send(inference.StreamChunk{Error: fmt.Errorf("failed to decode streaming response: %w", err)})
 				return
 			}
 
-			ch <- inference.StreamChunk{
-				Delta: genResp.Response,
-				Done:  genResp.Done,
+			if !send(inference.StreamChunk{Delta: genResp.Response, Done: genResp.Done}) {
+				return
 			}
 
 			if genResp.Done {
@@ -290,7 +300,7 @@ func (p *Provider) Stream(ctx context.Context, req inference.Request) (<-chan in
 		}
 
 		if err := scanner.Err(); err != nil {
-			ch <- inference.StreamChunk{Error: fmt.Errorf("error reading stream: %w", err)}
+			send(inference.StreamChunk{Error: fmt.Errorf("error reading stream: %w", err)})
 		}
 	}()
 

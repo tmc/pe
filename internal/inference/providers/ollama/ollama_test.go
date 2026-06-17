@@ -3,6 +3,7 @@ package ollama
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -190,6 +191,72 @@ func TestProvider_Stream(t *testing.T) {
 	assert.True(t, done)
 	assert.Equal(t, []string{"This", " is", " a test"}, chunks)
 }
+
+func TestProvider_StreamCancellationDoesNotLeak(t *testing.T) {
+	// The server streams faster than the consumer reads, then blocks. After the
+	// consumer cancels and stops reading, the provider's stream goroutine must
+	// observe ctx.Done() and return rather than parking forever on a send to the
+	// abandoned channel. A custom RoundTripper reader is used so cancellation
+	// does not also close the response body and mask the channel-send block.
+	rt := &blockingRoundTripper{released: make(chan struct{})}
+	p := &Provider{baseURL: "http://ollama.invalid", client: &http.Client{Transport: rt}}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	ch, err := p.Stream(ctx, inference.Request{Prompt: "p", Model: "llama2", Stream: true})
+	require.NoError(t, err)
+
+	// Read exactly one chunk; the producer then blocks sending the second.
+	<-ch
+	cancel()
+
+	// The guarded send must release on ctx.Done(); the channel then closes.
+	select {
+	case _, ok := <-ch:
+		require.False(t, ok, "expected channel to close after cancellation")
+	case <-time.After(2 * time.Second):
+		t.Fatal("stream goroutine did not exit after cancellation (leak)")
+	}
+	close(rt.released)
+}
+
+// blockingRoundTripper returns a streaming body of two ndjson chunks followed by
+// a read that blocks until released, so the provider goroutine is parked on its
+// channel send (not on the body) when the context is cancelled.
+type blockingRoundTripper struct {
+	released chan struct{}
+}
+
+func (rt *blockingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	chunk, _ := json.Marshal(generateResponse{Response: "tok", Done: false})
+	body := &blockingBody{
+		prefix:   append(append(append([]byte{}, chunk...), '\n'), append(chunk, '\n')...),
+		released: rt.released,
+	}
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       body,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Request:    req,
+	}, nil
+}
+
+type blockingBody struct {
+	prefix   []byte
+	off      int
+	released chan struct{}
+}
+
+func (b *blockingBody) Read(p []byte) (int, error) {
+	if b.off < len(b.prefix) {
+		n := copy(p, b.prefix[b.off:])
+		b.off += n
+		return n, nil
+	}
+	<-b.released
+	return 0, io.EOF
+}
+
+func (b *blockingBody) Close() error { return nil }
 
 func TestProvider_Models(t *testing.T) {
 	// Mock server
