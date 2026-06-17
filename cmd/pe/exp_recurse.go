@@ -89,7 +89,7 @@ strict JSON trace (schema pe.rlm.trace.v1) for inspection and replay.`,
 	cmd.Flags().StringVar(&prompt, "prompt", "", "instruction applied to each chunk (required)")
 	cmd.Flags().StringVar(&provider, "provider", "cgpt", "provider to use")
 	cmd.Flags().StringVar(&model, "model", "", "model to use")
-	cmd.Flags().IntVar(&chunkSize, "chunk-size", 4096, "maximum bytes per chunk")
+	cmd.Flags().IntVar(&chunkSize, "chunk-size", rlm.DefaultChunkSize, "maximum bytes per chunk")
 	cmd.Flags().IntVar(&maxDepth, "max-depth", 1, "maximum recursive reduction depth")
 	cmd.Flags().IntVar(&maxTokens, "max-tokens", 0, "per-worker token budget (0 disables)")
 	cmd.Flags().IntVar(&workers, "workers", 4, "bounded local worker count")

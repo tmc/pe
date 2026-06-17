@@ -349,7 +349,7 @@ func TestRunValidatesOptions(t *testing.T) {
 		opts Options
 	}{
 		{"empty prompt", Options{ChunkSize: 1}},
-		{"zero chunk size", Options{Prompt: "p"}},
+		{"negative chunk size", Options{Prompt: "p", ChunkSize: -1}},
 		{"negative depth", Options{Prompt: "p", ChunkSize: 1, MaxDepth: -1}},
 		{"negative tokens", Options{Prompt: "p", ChunkSize: 1, MaxTokens: -1}},
 		{"negative workers", Options{Prompt: "p", ChunkSize: 1, Workers: -1}},
@@ -361,6 +361,26 @@ func TestRunValidatesOptions(t *testing.T) {
 				t.Fatalf("expected validation error for %s", tc.name)
 			}
 		})
+	}
+}
+
+func TestRunZeroChunkSizeUsesDefault(t *testing.T) {
+	// The zero value, with only Prompt set, must be usable: ChunkSize 0 selects
+	// DefaultChunkSize rather than failing validation.
+	w := &fakeWorker{}
+	trace, err := Run(context.Background(), w, []byte("short input"), Options{Prompt: "p"})
+	if err != nil {
+		t.Fatalf("Run with zero ChunkSize: %v", err)
+	}
+	if trace.Budget.MaxDepth != 0 {
+		t.Errorf("max depth = %d, want 0", trace.Budget.MaxDepth)
+	}
+	// Input shorter than DefaultChunkSize yields a single chunk and one call.
+	if len(trace.Calls) != 1 {
+		t.Fatalf("calls = %d, want 1 for a sub-default-size input", len(trace.Calls))
+	}
+	if trace.Calls[0].Snippet.End != len("short input") {
+		t.Errorf("single chunk end = %d, want %d", trace.Calls[0].Snippet.End, len("short input"))
 	}
 }
 

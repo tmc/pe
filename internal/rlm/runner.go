@@ -7,13 +7,17 @@ import (
 	"github.com/tmc/pe/internal/distributed"
 )
 
+// DefaultChunkSize is the chunk byte length used when Options.ChunkSize is zero.
+const DefaultChunkSize = 4096
+
 // Options configure a single recursive run. All limits are hard budgets that the
 // runner enforces before any worker call.
 type Options struct {
 	// Prompt is the instruction applied to each chunk.
 	Prompt string
 
-	// ChunkSize is the maximum byte length of each chunk. Must be positive.
+	// ChunkSize is the maximum byte length of each chunk. Zero selects
+	// DefaultChunkSize; a negative value is rejected.
 	ChunkSize int
 
 	// MaxDepth is the maximum recursive reduction depth. Depth 0 runs a single
@@ -46,12 +50,21 @@ type Options struct {
 	TargetManifest string
 }
 
+// withDefaults resolves zero-valued fields to their defaults so the zero Options
+// (with only Prompt set) is usable.
+func (o Options) withDefaults() Options {
+	if o.ChunkSize == 0 {
+		o.ChunkSize = DefaultChunkSize
+	}
+	return o
+}
+
 func (o Options) validate() error {
 	if o.Prompt == "" {
 		return fmt.Errorf("rlm: prompt is required")
 	}
-	if o.ChunkSize <= 0 {
-		return fmt.Errorf("rlm: chunk size must be positive, got %d", o.ChunkSize)
+	if o.ChunkSize < 0 {
+		return fmt.Errorf("rlm: chunk size must not be negative, got %d", o.ChunkSize)
 	}
 	if o.MaxDepth < 0 {
 		return fmt.Errorf("rlm: max depth must not be negative, got %d", o.MaxDepth)
@@ -88,6 +101,7 @@ func Run(ctx context.Context, worker Worker, target []byte, opts Options) (*Trac
 	if err := opts.validate(); err != nil {
 		return nil, err
 	}
+	opts = opts.withDefaults()
 
 	workers := max(opts.Workers, 1)
 
