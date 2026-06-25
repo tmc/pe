@@ -3,6 +3,7 @@ package testing
 import (
 	"context"
 	"math/rand"
+	"sync/atomic"
 	stdtesting "testing"
 	"time"
 )
@@ -62,21 +63,21 @@ func TestFrameworkRunPropertyBenchmarkParallelEventually(t *stdtesting.T) {
 
 	tf.Benchmark("noop", func(*TestFramework) error { return nil })
 
-	count := 0
+	var count atomic.Int64
 	tf.Parallel(
-		func(*TestFramework) { count++ },
-		func(*TestFramework) { count++ },
+		func(*TestFramework) { count.Add(1) },
+		func(*TestFramework) { count.Add(1) },
 	)
-	if count != 2 {
-		t.Fatalf("parallel count = %d, want 2", count)
+	if got := count.Load(); got != 2 {
+		t.Fatalf("parallel count = %d, want 2", got)
 	}
 
-	ready := false
+	var ready atomic.Bool
 	go func() {
 		time.Sleep(10 * time.Millisecond)
-		ready = true
+		ready.Store(true)
 	}()
-	tf.Eventually(func() bool { return ready }, time.Millisecond)
+	tf.Eventually(func() bool { return ready.Load() }, time.Millisecond)
 }
 
 func TestTestDataDeterministicGeneration(t *stdtesting.T) {

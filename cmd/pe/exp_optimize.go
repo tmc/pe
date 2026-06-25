@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/spf13/cobra"
-	"github.com/tmc/pe/internal/optimization/localopt"
+	localopt "github.com/tmc/pe/optimize"
 )
 
 type expOptimizeVariant struct {

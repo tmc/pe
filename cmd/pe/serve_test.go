@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -51,7 +52,7 @@ func TestServeCmdShutdownOnContextCancel(t *testing.T) {
 	defer cancel()
 
 	cmd := serveCmd()
-	var stdout, stderr bytes.Buffer
+	var stdout, stderr lockedBuffer
 	cmd.SetContext(ctx)
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
@@ -80,7 +81,7 @@ func TestServeCmdOperatesLocalAPI(t *testing.T) {
 	defer cancel()
 
 	cmd := serveCmd()
-	var stdout, stderr bytes.Buffer
+	var stdout, stderr lockedBuffer
 	cmd.SetContext(ctx)
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
@@ -123,7 +124,7 @@ func TestServeCmdOperatesLocalAPI(t *testing.T) {
 	}
 }
 
-func waitServeAddr(t *testing.T, stdout, stderr *bytes.Buffer, done <-chan error) string {
+func waitServeAddr(t *testing.T, stdout, stderr interface{ String() string }, done <-chan error) string {
 	t.Helper()
 	deadline := time.After(5 * time.Second)
 	for {
@@ -140,6 +141,23 @@ func waitServeAddr(t *testing.T, stdout, stderr *bytes.Buffer, done <-chan error
 			time.Sleep(10 * time.Millisecond)
 		}
 	}
+}
+
+type lockedBuffer struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (b *lockedBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.b.Write(p)
+}
+
+func (b *lockedBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.b.String()
 }
 
 func assertJSONStatus(t *testing.T, resp *http.Response, status int, contains string) {

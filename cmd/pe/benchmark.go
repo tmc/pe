@@ -135,6 +135,7 @@ func runBenchmark(cmd *cobra.Command, configFile, outputFile, outputFormat strin
 	var semaphore = make(chan struct{}, concurrency)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
+	var outMu sync.Mutex
 	var allResults []BenchmarkResult
 
 	// Run benchmarks
@@ -213,8 +214,10 @@ func runBenchmark(cmd *cobra.Command, configFile, outputFile, outputFormat strin
 						result.Cost = response.Cost
 						result.RuntimeMetrics = response.Metadata
 					} else {
+						outMu.Lock()
 						fmt.Fprintf(cmd.OutOrStderr(), "Error with prompt %d, provider %s, iteration %d: %v\n",
 							promptIdx+1, provider.Spec.ID, iteration, err)
+						outMu.Unlock()
 					}
 
 					// Thread-safe append to results
@@ -223,7 +226,9 @@ func runBenchmark(cmd *cobra.Command, configFile, outputFile, outputFormat strin
 					mu.Unlock()
 
 					// Print progress indicator
+					outMu.Lock()
 					fmt.Fprintf(cmd.OutOrStdout(), ".")
+					outMu.Unlock()
 				}(i, promptStr, provider, iter)
 			}
 		}

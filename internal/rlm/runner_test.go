@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -13,7 +14,7 @@ import (
 type fakeWorker struct {
 	name      string
 	respond   func(prompt string, c Chunk) (string, Cost, error)
-	callCount int
+	callCount atomic.Int64
 }
 
 func (w *fakeWorker) Name() string {
@@ -24,7 +25,7 @@ func (w *fakeWorker) Name() string {
 }
 
 func (w *fakeWorker) Run(ctx context.Context, prompt string, c Chunk) (string, Cost, error) {
-	w.callCount++
+	w.callCount.Add(1)
 	if err := ctx.Err(); err != nil {
 		return "", Cost{}, err
 	}
@@ -281,8 +282,8 @@ func TestRunEnforcesMaxChunks(t *testing.T) {
 	if len(trace.Calls) != 3 {
 		t.Fatalf("calls = %d, want 3 (max chunks)", len(trace.Calls))
 	}
-	if w.callCount != 3 {
-		t.Errorf("worker called %d times, want 3", w.callCount)
+	if got := w.callCount.Load(); got != 3 {
+		t.Errorf("worker called %d times, want 3", got)
 	}
 	if trace.TerminationReason != TerminationMaxChunks {
 		t.Errorf("termination = %q, want max_chunks", trace.TerminationReason)
@@ -399,8 +400,8 @@ func TestRunEmptyTarget(t *testing.T) {
 	if len(trace.Calls) != 0 {
 		t.Errorf("calls = %d, want 0 for empty target", len(trace.Calls))
 	}
-	if w.callCount != 0 {
-		t.Errorf("worker called %d times for empty target", w.callCount)
+	if got := w.callCount.Load(); got != 0 {
+		t.Errorf("worker called %d times for empty target", got)
 	}
 	if trace.TerminationReason != TerminationCompleted {
 		t.Errorf("termination = %q", trace.TerminationReason)
@@ -414,8 +415,8 @@ func TestRunRejectsUnsupportedRule(t *testing.T) {
 	if _, err := Run(context.Background(), w, []byte("abcd"), Options{Prompt: "p", ChunkSize: 2, Rule: "bogus"}); err == nil {
 		t.Fatal("expected unsupported rule error")
 	}
-	if w.callCount != 0 {
-		t.Errorf("worker called %d times for invalid rule, want 0", w.callCount)
+	if got := w.callCount.Load(); got != 0 {
+		t.Errorf("worker called %d times for invalid rule, want 0", got)
 	}
 }
 
