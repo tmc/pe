@@ -3,6 +3,17 @@
 All notable PE changes are tracked here. The project is pre-1.0; minor releases
 may still include behavior changes while the CLI and provider interfaces settle.
 
+## Unreleased
+
+### Added
+
+- `pe exp workflow run` and `pe exp workflow validate`: deterministic Starlark
+  workflow scripts (`internal/workflow`) with generate/plan/parallel/phase/log
+  builtins, a bounded worker pool, call budgets enforced before any call, and
+  strict `pe.workflow.trace.v1` traces. Scripts are plain `.star` files or
+  `pe.workflow.v1` executable text; provider use composes pe.mod capability
+  policy with the script's own `safety.providers` lists.
+
 ## v0.5.0 - 2026-07-07
 
 ### Added

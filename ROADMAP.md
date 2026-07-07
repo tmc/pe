@@ -396,10 +396,24 @@ Initial artifacts:
 4. DONE initial pass: Sketch future `pe run-text`, `pe vet-text`,
    `pe exp workflow validate`, `pe exp workflow run`, and `pe exp recurse`
    commands.
+5. DONE 2026-07-06 initial pass: `pe exp workflow run` and
+   `pe exp workflow validate` execute deterministic Starlark workflow scripts
+   (`internal/workflow`): generate/plan/parallel/phase/log builtins, bounded
+   worker pool, call budget enforced before any call, strict
+   `pe.workflow.trace.v1` traces, `pe.workflow.v1` executable-text bodies with
+   input defaults, and provider policy composed from pe.mod capability policy
+   plus the script's own `safety.providers` lists. Validated live against
+   Ollama (`examples/workflows/multi-lens-review/`, `docs/WORKFLOWS.md`).
+   Follow-ups: structured output schemas on `generate` (JSON schema
+   enforcement at the provider call), workflow-step caching/replay from
+   traces, imports of other text artifacts from scripts, and an `evaluate()`
+   builtin bridging to the promptfoo evaluator.
 
 Verification:
 - `test -f docs/future/EXECUTABLE_TEXT.md`
 - `rg "pe run-text|pe.text.v1|pe.workflow.v1|pe.trace.v1|Operator Standard Library" docs/future/EXECUTABLE_TEXT.md`
+- `go test ./internal/workflow ./cmd/pe -run 'TestRun|TestValidate|TestExpWorkflow'`
+- `pe exp workflow validate examples/workflows/multi-lens-review/review.star`
 
 
 #### Add pipe support to scripttest framework
