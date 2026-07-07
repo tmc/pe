@@ -43,3 +43,32 @@ capability {
 		t.Fatalf("plugin artifact stat error = %v, want not exist", err)
 	}
 }
+
+func TestPluginRunCmd_DeniedByExecPolicy(t *testing.T) {
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte(`module example.com/app
+
+pe 1
+
+capability {
+    tools deny exec
+}
+`), 0644); err != nil {
+		t.Fatalf("writing pe.mod: %v", err)
+	}
+
+	var out bytes.Buffer
+	cmd := pluginRunCmd()
+	cmd.SetOut(&out)
+	err := cmd.RunE(cmd, []string{"example"})
+	if err == nil {
+		t.Fatal("plugin run succeeded, want exec policy error")
+	}
+	if !strings.Contains(err.Error(), "tool exec is denied by pe.mod") {
+		t.Fatalf("plugin run error = %v, want exec policy error", err)
+	}
+}

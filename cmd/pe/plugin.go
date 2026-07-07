@@ -82,6 +82,12 @@ func pluginRunCmd() *cobra.Command {
 			pluginName := args[0]
 			pluginArgs := args[1:]
 
+			// Plugin discovery and execution both run external binaries, so
+			// the module exec policy is checked before either starts.
+			if err := enforceRuntimeToolPolicy("exec"); err != nil {
+				return err
+			}
+
 			if err := pluginManager.Discover(); err != nil {
 				return fmt.Errorf("failed to discover plugins: %w", err)
 			}
@@ -93,6 +99,12 @@ func pluginRunCmd() *cobra.Command {
 
 // dynamicPluginCommands discovers and adds plugin commands dynamically
 func dynamicPluginCommands(rootCmd *cobra.Command) {
+	// Discovery executes plugin candidates for their metadata, so a module
+	// exec denial skips dynamic plugin commands entirely.
+	if err := enforceRuntimeToolPolicyIfValid("exec"); err != nil {
+		return
+	}
+
 	// Discover plugins silently
 	if err := pluginManager.Discover(); err != nil {
 		return
@@ -107,6 +119,9 @@ func dynamicPluginCommands(rootCmd *cobra.Command) {
 			DisableFlagParsing: true,
 			Hidden:             false,
 			RunE: func(cmd *cobra.Command, args []string) error {
+				if err := enforceRuntimeToolPolicy("exec"); err != nil {
+					return err
+				}
 				return pluginManager.Execute(cmd.Context(), plugin.Name, args)
 			},
 		}

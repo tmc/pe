@@ -1593,6 +1593,13 @@ integrity semantics.
    cached manifest verification no longer creates a temporary manifest file.
    Remaining work: runtime enforcement for other tool classes and remaining
    write surfaces.
+   DONE current pass: `tools deny exec` is now enforced at the external
+   process boundaries in `cmd/pe`: `pe plugin run` and dynamic plugin
+   commands (including the discovery scan, which executes plugin candidates
+   for metadata), `pe view --promptfoo` delegation before the npx lookup, and
+   the browser opener, which prints the URL instead of launching a browser.
+   Remaining work: runtime enforcement for remaining tool classes and broader
+   placement beyond provider/network classification.
 6. Sign attest manifests with an Ed25519 envelope while preserving unsigned
    local integrity workflows.
    DONE current pass: `pe exp attest keygen`, `sign`, and `verify-signed`

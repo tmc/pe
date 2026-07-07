@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"os"
 	"os/exec"
 	"reflect"
 	"strings"
@@ -126,6 +127,45 @@ func TestRunPromptfooViewUsesExplicitArgv(t *testing.T) {
 	wantArgs := []string{"promptfoo", "view", "eval-123", "-y"}
 	if !reflect.DeepEqual(gotArgs, wantArgs) {
 		t.Fatalf("args = %#v, want %#v", gotArgs, wantArgs)
+	}
+}
+
+func TestRunPromptfooViewDeniedByExecPolicy(t *testing.T) {
+	oldLookPath := promptfooViewLookPath
+	oldRun := promptfooViewRun
+	defer func() {
+		promptfooViewLookPath = oldLookPath
+		promptfooViewRun = oldRun
+	}()
+
+	promptfooViewLookPath = func(string) (string, error) {
+		t.Fatal("npx lookup ran despite exec policy")
+		return "", nil
+	}
+	promptfooViewRun = func(string, []string) error {
+		t.Fatal("promptfoo view command ran despite exec policy")
+		return nil
+	}
+
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("pe.mod", []byte(`module example.com/app
+
+pe 1
+
+capability {
+    tools deny exec
+}
+`), 0644); err != nil {
+		t.Fatalf("writing pe.mod: %v", err)
+	}
+
+	err := runPromptfooView(nil, false)
+	if err == nil || !strings.Contains(err.Error(), "tool exec is denied by pe.mod") {
+		t.Fatalf("runPromptfooView error = %v, want exec policy denial", err)
 	}
 }
 

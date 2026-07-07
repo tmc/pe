@@ -152,6 +152,9 @@ func listEvaluations(cmd *cobra.Command) error {
 }
 
 func runPromptfooView(args []string, yes bool) error {
+	if err := enforceRuntimeToolPolicy("exec"); err != nil {
+		return err
+	}
 	if _, err := promptfooViewLookPath("npx"); err != nil {
 		return fmt.Errorf("npx not found for promptfoo viewer")
 	}
@@ -177,6 +180,12 @@ func runPromptfooViewCommand(name string, args []string) error {
 
 // openBrowser opens the default browser with the provided URL
 func openBrowser(url string) {
+	if err := enforceRuntimeToolPolicyIfValid("exec"); err != nil {
+		fmt.Printf("Not opening browser: %v\n", err)
+		fmt.Printf("Please open %s in your browser\n", url)
+		return
+	}
+
 	var err error
 
 	switch os.Getenv("GOOS") {
