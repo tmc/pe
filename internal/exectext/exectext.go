@@ -118,6 +118,9 @@ func (f *File) RenderWithImports(vars map[string]string, imports map[string]stri
 			if err := child.Validate(); err != nil {
 				return "", err
 			}
+			if err := CheckComposition(f, child); err != nil {
+				return "", fmt.Errorf("import %s: %w", name, err)
+			}
 			return child.RenderWithImports(vars, nil)
 		},
 	}
@@ -131,6 +134,41 @@ func (f *File) RenderWithImports(vars map[string]string, imports map[string]stri
 		return "", fmt.Errorf("rendering template: %w", err)
 	}
 	return buf.String(), nil
+}
+
+// CheckComposition reports whether child loosens parent's declared safety
+// policy. Composition is conservative: a child allow entry for a value the
+// parent denies is an error, and when the parent declares an allow list for
+// a dimension, child allow entries must stay within it. A child may always
+// tighten policy with additional deny entries.
+func CheckComposition(parent, child *File) error {
+	for dim, childList := range child.Meta.Safety {
+		parentList, ok := parent.Meta.Safety[dim]
+		if !ok {
+			continue
+		}
+		denied := make(map[string]bool, len(parentList.Deny))
+		for _, v := range parentList.Deny {
+			denied[v] = true
+		}
+		for _, v := range childList.Allow {
+			if denied[v] {
+				return fmt.Errorf("safety %s allows %s denied by parent", dim, v)
+			}
+		}
+		if len(parentList.Allow) > 0 {
+			allowed := make(map[string]bool, len(parentList.Allow))
+			for _, v := range parentList.Allow {
+				allowed[v] = true
+			}
+			for _, v := range childList.Allow {
+				if !allowed[v] {
+					return fmt.Errorf("safety %s allows %s outside parent allow list", dim, v)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // Validate checks the static contract without running tools or providers.

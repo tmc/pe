@@ -513,6 +513,11 @@ Tasks:
    - static checks for `pe.mod` capability and placement declarations,
    - conservative composition tests proving child artifacts cannot loosen
      parent constraints.
+   DONE current pass: `exectext.CheckComposition` enforces conservative
+   safety composition when rendering imports (a child allow entry for a
+   parent-denied value fails, and child allows must stay within a declared
+   parent allow list), with table-driven composition tests and a render-path
+   denial test in `internal/exectext`.
 
 Tools:
 - go test -cover
