@@ -63,14 +63,24 @@ func TestProvider_Complete(t *testing.T) {
 		assert.Equal(t, "/api/generate", r.URL.Path)
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
-		var req generateRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
+		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
+
+		var req generateRequest
+		require.NoError(t, json.Unmarshal(body, &req))
 
 		assert.Equal(t, "llama2", req.Model)
 		assert.Equal(t, "test prompt", req.Prompt)
 		assert.Equal(t, "test system", req.System)
-		assert.False(t, req.Stream)
+
+		// The stream field must be explicitly false on the wire: the Ollama
+		// API defaults to streaming when the field is absent, which would
+		// leave Complete reading a single NDJSON chunk with no token counts.
+		var raw map[string]json.RawMessage
+		require.NoError(t, json.Unmarshal(body, &raw))
+		streamValue, ok := raw["stream"]
+		require.True(t, ok, "request must send an explicit stream field")
+		assert.Equal(t, "false", string(streamValue))
 
 		resp := generateResponse{
 			Model:           "llama2",
@@ -144,7 +154,7 @@ func TestProvider_Stream(t *testing.T) {
 		assert.True(t, req.Stream)
 
 		w.Header().Set("Content-Type", "application/json")
-		
+
 		// Send multiple streaming responses
 		responses := []generateResponse{
 			{Response: "This", Done: false},
@@ -266,11 +276,11 @@ func TestProvider_Models(t *testing.T) {
 
 		resp := modelsResponse{
 			Models: []struct {
-				Name         string `json:"name"`
-				ModifiedAt   string `json:"modified_at"`
-				Size         int64  `json:"size"`
-				Digest       string `json:"digest"`
-				Details      struct {
+				Name       string `json:"name"`
+				ModifiedAt string `json:"modified_at"`
+				Size       int64  `json:"size"`
+				Digest     string `json:"digest"`
+				Details    struct {
 					Format            string   `json:"format"`
 					Family            string   `json:"family"`
 					Families          []string `json:"families"`
@@ -409,7 +419,7 @@ func TestProvider_ContextTimeout(t *testing.T) {
 	defer server.Close()
 
 	provider := New(server.URL)
-	
+
 	// Context with very short timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()

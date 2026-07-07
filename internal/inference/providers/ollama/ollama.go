@@ -65,11 +65,13 @@ func (p *Provider) Name() string {
 
 // generateRequest represents the Ollama generate request.
 type generateRequest struct {
-	Model     string                 `json:"model"`
-	Prompt    string                 `json:"prompt"`
-	System    string                 `json:"system,omitempty"`
-	Raw       bool                   `json:"raw,omitempty"`
-	Stream    bool                   `json:"stream,omitempty"`
+	Model  string `json:"model"`
+	Prompt string `json:"prompt"`
+	System string `json:"system,omitempty"`
+	Raw    bool   `json:"raw,omitempty"`
+	// Stream must always be sent: the Ollama API defaults to streaming when
+	// the field is absent, which would turn Complete into a one-chunk read.
+	Stream    bool                   `json:"stream"`
 	Options   map[string]interface{} `json:"options,omitempty"`
 	Context   []int                  `json:"context,omitempty"`
 	KeepAlive string                 `json:"keep_alive,omitempty"`
