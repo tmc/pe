@@ -150,18 +150,16 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 
 					// Marshal using the standard json package
 					jsonData, err := json.Marshal(output)
-
-					// Format the JSON with indentation for readability
-					var prettyBuf bytes.Buffer
-					err = json.Indent(&prettyBuf, jsonData, "", "  ")
-					if err != nil {
-						return fmt.Errorf("error indenting JSON: %v", err)
-					}
-					jsonData = prettyBuf.Bytes()
 					if err != nil {
 						return fmt.Errorf("error formatting JSON: %v", err)
 					}
-					err = os.WriteFile(outputFile, jsonData, 0644)
+
+					// Format the JSON with indentation for readability
+					var prettyBuf bytes.Buffer
+					if err := json.Indent(&prettyBuf, jsonData, "", "  "); err != nil {
+						return fmt.Errorf("error indenting JSON: %v", err)
+					}
+					err = os.WriteFile(outputFile, prettyBuf.Bytes(), 0644)
 				} else if outputFormat == "yaml" {
 					// Convert results to YAML
 					yamlData, err := yaml.Marshal(results)
