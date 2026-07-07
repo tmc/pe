@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/tmc/pe/internal/promptfoo"
 )
 
 func TestEvalCmd_BasicUsage(t *testing.T) {
@@ -434,6 +436,126 @@ tests:
 			}
 		})
 	}
+}
+
+func TestEvalCmd_FilePromptResolution(t *testing.T) {
+	oldTestMode := os.Getenv("PE_TEST_MODE")
+	os.Setenv("PE_TEST_MODE", "true")
+	defer os.Setenv("PE_TEST_MODE", oldTestMode)
+
+	tmpDir := t.TempDir()
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	if err := os.WriteFile("prompt.txt", []byte("Answer with the word four: what is 2+2?"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	configContent := `description: "file prompt test"
+prompts:
+  - file://prompt.txt
+providers:
+  - "mock"
+tests:
+  - vars: {}
+    assert:
+      - type: contains
+        value: "four"
+`
+	if err := os.WriteFile("file-config.yaml", []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := evalCmd()
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"file-config.yaml", "--no-cache"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("eval with file:// prompt: %v. Output: %s", err, buf.String())
+	}
+	// The mock provider echoes the prompt, so a passing contains assertion on
+	// prompt-file text proves the file contents (not the reference string)
+	// reached the provider.
+	if output := buf.String(); !strings.Contains(output, "Success: 1") {
+		t.Fatalf("expected passing evaluation over resolved prompt file, got: %s", output)
+	}
+}
+
+func TestResolveFilePrompts(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "a.txt"), []byte("prompt a"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "b.txt"), []byte("prompt b"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name    string
+		prompts []string
+		want    []string
+		wantErr bool
+	}{
+		{
+			name:    "file reference",
+			prompts: []string{"file://a.txt"},
+			want:    []string{"prompt a"},
+		},
+		{
+			name:    "glob expands sorted",
+			prompts: []string{"file://*.txt"},
+			want:    []string{"prompt a", "prompt b"},
+		},
+		{
+			name:    "inline prompts pass through",
+			prompts: []string{"literal prompt"},
+			want:    []string{"literal prompt"},
+		},
+		{
+			name:    "mixed inline and file",
+			prompts: []string{"literal prompt", "file://a.txt"},
+			want:    []string{"literal prompt", "prompt a"},
+		},
+		{
+			name:    "missing file fails",
+			prompts: []string{"file://missing.txt"},
+			wantErr: true,
+		},
+		{
+			name:    "path escape fails",
+			prompts: []string{"file://../escape.txt"},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := promptfooConfigWithPrompts(tt.prompts)
+			err := resolveFilePrompts(&config, dir)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("resolveFilePrompts(%v) = nil error, want error", tt.prompts)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("resolveFilePrompts(%v): %v", tt.prompts, err)
+			}
+			if len(config.Prompts) != len(tt.want) {
+				t.Fatalf("resolved prompts = %v, want %v", config.Prompts, tt.want)
+			}
+			for i := range tt.want {
+				if config.Prompts[i] != tt.want[i] {
+					t.Errorf("prompt[%d] = %q, want %q", i, config.Prompts[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
+func promptfooConfigWithPrompts(prompts []string) promptfoo.Config {
+	return promptfoo.Config{Prompts: append([]string(nil), prompts...)}
 }
 
 // TestEvalCmd_FilterFlag removed - filter flag does not exist in current implementation

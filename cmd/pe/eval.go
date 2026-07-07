@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -75,6 +76,13 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 			err = yaml.Unmarshal(data, &config)
 			if err != nil {
 				return fmt.Errorf("error parsing config file: %v", err)
+			}
+
+			// Resolve file:// prompt references relative to the config file
+			// directory so evaluations run the prompt contents, not the
+			// reference string.
+			if err := resolveFilePrompts(&config, filepath.Dir(configFile)); err != nil {
+				return fmt.Errorf("error resolving prompt files: %v", err)
 			}
 
 			// Build the persistent response cache unless disabled, so repeat
@@ -218,4 +226,25 @@ and can be viewed later using the 'pe view' command with the evaluation ID.`,
 	cmd.Flags().StringVar(&cacheDir, "cache-dir", ".pe/cache", "Directory for the persistent provider response cache")
 
 	return cmd
+}
+
+// resolveFilePrompts replaces file:// prompt references in config.Prompts with
+// the referenced file contents, resolved relative to baseDir with the same
+// path-containment rules as pe expand. A glob pattern expands to one prompt
+// per matched file. Prompts without the file:// prefix pass through unchanged.
+func resolveFilePrompts(config *promptfoo.Config, baseDir string) error {
+	resolved := make([]string, 0, len(config.Prompts))
+	for _, prompt := range config.Prompts {
+		if !strings.HasPrefix(prompt, "file://") {
+			resolved = append(resolved, prompt)
+			continue
+		}
+		contents, err := loadPromptsFromGlob(prompt, baseDir)
+		if err != nil {
+			return fmt.Errorf("prompt %q: %w", prompt, err)
+		}
+		resolved = append(resolved, contents...)
+	}
+	config.Prompts = resolved
+	return nil
 }
