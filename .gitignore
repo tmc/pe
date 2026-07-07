@@ -10,6 +10,12 @@ lastsession.txt
 
 # Go test artifacts
 coverage.out
+errors.out
+
+# Local workspace output directories
+/backups/
+/logs/
+/reports/
 
 # Test binaries
 *.test

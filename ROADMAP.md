@@ -1233,6 +1233,11 @@ Goal: ship the current stable core without claiming unfinished behavior.
    comparison/tutorial material that still reads like current product behavior.
    When a document remains in place for compatibility, add an explicit
    historical header instead of silently rewriting it into current status.
+   DONE current pass: legacy root files `README.md.old`, `CLAUDE.md.old`,
+   `HANDOFF.semantic-gaso.md`, and `DEPENDENCY_CLEANUP_SUMMARY.md` moved to
+   `docs/archive/`; tracked build artifacts (`errors.out`, `fooo.prompt`,
+   dated `reports/dependencies/` output) removed; `backups/`, `logs/`, and
+   `reports/` are now untracked local workspace directories in `.gitignore`.
 6. Keep promptfoo shell-out behavior explicitly opt-in; do not add implicit
    CLI execution paths without a reviewed command contract and tests.
 
