@@ -64,3 +64,27 @@ To run only the prompt:
 ```bash
 pe run prompt.txt --provider ollama:llama3.2:3b --var question="What is one benefit of local inference?"
 ```
+
+## Validation record (2026-07-06)
+
+Validated against a local Ollama daemon, version 0.30.6, on darwin/arm64:
+
+- `llama3.2:3b`: `pe eval config.yaml` passed (1/1, token usage reported:
+  48 prompt / 128 completion) and `pe run prompt.txt --provider
+  ollama:llama3.2:3b` returned model text.
+- `qwen2.5:7b-instruct-q4_0`: `pe eval` (provider id swapped in config) and
+  `pe run` both returned model text.
+- `gemma4:e2b-it-qat`: `pe run` returned model text through the same config
+  path.
+- Missing model (`ollama:no-such-model:1b`): fails closed with exit code 1 and
+  `ollama API error 404: {"error":"model 'no-such-model:1b' not found"}`.
+
+Notes from this pass:
+
+- Privacy: prompts and completions stay on the local machine; no API key is
+  read or sent. Model pulls (`ollama pull`) are the only network operation.
+- The daemon must be started separately (`ollama serve`); when it is down,
+  commands fail with a connection error rather than hanging.
+- `pe eval` keeps a persistent response cache under `.pe/cache` by default.
+  Use `--no-cache` (or remove the directory) when revalidating provider
+  behavior, otherwise cached responses mask provider changes.

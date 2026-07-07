@@ -462,8 +462,20 @@ Current status:
 - examples/local-ollama/ contains a local Ollama smoke example.
 
 Tasks:
-1. Add end-to-end validation notes for representative Ollama models.
-2. Run the local Ollama example against a real daemon before release.
+1. DONE current pass: Add end-to-end validation notes for representative
+   Ollama models. See the validation record in
+   `examples/local-ollama/README.md`.
+2. DONE current pass: Run the local Ollama example against a real daemon
+   before release (Ollama 0.30.6, 2026-07-06; three model families, plus
+   missing-model failure mode).
+
+Follow-ups from the validation pass:
+- `pe eval` now resolves `file://` prompt references itself; decide whether
+  other config-driven commands (`pe benchmark`, `pe test`, REPL config loads)
+  should share the same resolution helper.
+- Decide whether eval-loaded prompt files should have their executable-text
+  `-- defaults --` trailer parsed (pe prompt semantics) or continue to be sent
+  verbatim (promptfoo semantics).
 
 Benefits:
 - Local model support (no API keys needed)
@@ -1223,8 +1235,16 @@ Goal: ship the current stable core without claiming unfinished behavior.
    modules and version mismatches, and caches successful downloads under the
    canonical `.pe/cache/modules/<module>@<version>` layout used by `vendor` and
    `verify`.
-4. Run the Ollama example against a real local daemon and record model/version
-   notes, error modes, and privacy caveats.
+4. DONE current pass: Run the Ollama example against a real local daemon and
+   record model/version notes, error modes, and privacy caveats.
+   Validated 2026-07-06 against Ollama 0.30.6 with `llama3.2:3b`,
+   `qwen2.5:7b-instruct-q4_0`, and `gemma4:e2b-it-qat`; the validation record
+   lives in `examples/local-ollama/README.md`. The pass found and fixed two
+   real bugs: the native Ollama provider omitted `stream: false` from
+   non-streaming requests (the API defaulted to streaming, so `Complete`
+   returned one truncated chunk with zero token counts), and `pe eval` sent
+   `file://` prompt references to providers as literal strings instead of the
+   referenced file contents.
 5. Archive or tombstone old documentation on the cleanup branch before release:
    release-facing docs stay current, `docs/archive/` keeps historical material,
    and `docs/future/` keeps aspirational material with clear headers.
