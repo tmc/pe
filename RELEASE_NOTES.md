@@ -2,8 +2,10 @@
 
 ## Branch: `exp`
 
-Release prep is in progress as of May 5, 2026. These notes describe the current
-release candidate state of PE.
+v0.5.0 is tagged from `exp` as of July 7, 2026. The tag-triggered release
+workflow was validated end to end with the `v0.5.0-rc.1` and `v0.5.0-rc.2`
+prerelease tags (cross-platform builds, checksums, packaged-binary smoke
+tests) before tagging, and the Linux race-enabled CI suite passes on `exp`.
 
 For v0.5.0, `exp` is the integrated launchpad branch. Tag from `exp` unless the
 maintainer explicitly promotes it to `master` or creates `main`.

@@ -142,7 +142,9 @@ Remaining tasks:
 2. DONE: Document the migration decision: either add `docs/MIGRATION.md` /
    `docs/UPGRADING.md` for breaking changes, or record that v0.5.0 has no
    required migration steps.
-3. Tag version in git when all P1 release blockers below are closed.
+3. DONE 2026-07-07: v0.5.0 tagged from `exp` after the release workflow was
+   validated with the `v0.5.0-rc.1`/`v0.5.0-rc.2` prerelease tags and the
+   Linux race-enabled CI suite passed on `exp`.
 
 
 #### Release prep: README consolidation
@@ -245,11 +247,15 @@ Current status:
 Tasks:
 1. DONE: Rerun and record complete cross-compilation results for every release
    target
-2. BLOCKED remote: Dry-run the GitHub release workflow from a test tag or
-   manual `workflow_dispatch` before publishing v0.5.0. Local `gh workflow run
-   release.yml -f dry_run=true --ref exp` failed because `release.yml` is not
-   present on the remote default branch (`master`); promote the workflow first
-   or run the dry-run after `exp` becomes the release branch.
+2. DONE 2026-07-06: Dry-run the GitHub release workflow before publishing
+   v0.5.0. `workflow_dispatch` remains unavailable until `release.yml` exists
+   on the remote default branch, so the validation used prerelease tags:
+   `v0.5.0-rc.1` exercised check/build/publish and caught a release-blocking
+   packaging bug (binaries shipped under `pe-<os>-<arch>` names, which the
+   CLI rejects because `pe-*` is reserved for plugin dispatch); `v0.5.0-rc.2`
+   validated the fix with an in-workflow packaged-binary smoke test and a
+   downloaded-artifact smoke test on darwin/arm64. See
+   `docs/RELEASE_BUILD_MATRIX.md` for the run record.
 3. DONE locally: Verify release archive names and install commands against the
    workflow asset names in `docs/RELEASE_BUILD_MATRIX.md`
 4. DONE: Do not add an install script for v0.5.0; current docs favor direct

@@ -3,7 +3,7 @@
 All notable PE changes are tracked here. The project is pre-1.0; minor releases
 may still include behavior changes while the CLI and provider interfaces settle.
 
-## v0.5.0 - Unreleased
+## v0.5.0 - 2026-07-07
 
 ### Added
 
@@ -42,9 +42,29 @@ may still include behavior changes while the CLI and provider interfaces settle.
 - Compose remains under experimental commands without mutating the parent command.
 - `llm` CLI provider argument construction is covered without requiring a live
   `llm` installation.
+- The native Ollama provider always sends an explicit `stream` field, so
+  non-streaming completions return the full response and token counts instead
+  of one truncated chunk.
+- `pe eval` resolves `file://` prompt references relative to the config file
+  instead of sending the reference string to the provider.
+- Release archives package the binary as `pe` (`pe.exe` on Windows); the CLI
+  refuses to run under a `pe-*` name because that prefix is reserved for
+  plugin dispatch.
+- `pe eval` JSON output checks the marshal error where it occurs.
+
+### Security
+
+- Executable-text imports enforce conservative safety composition: an
+  imported artifact cannot allow values its parent denies or exceed a parent
+  allow list.
+- `pe.mod` `tools deny exec` is enforced before plugin discovery/execution,
+  `pe view --promptfoo` delegation, and browser opening.
 
 ### Validation
 
 - Full test suite: `go test ./...`
 - Scripttest suite: `go test ./tests`
+- Linux race-enabled CI suite on `exp`: `go test -race ./...`
+- Tag-triggered release workflow validated end to end with `v0.5.0-rc.1` and
+  `v0.5.0-rc.2`, including packaged-binary smoke tests.
 - Additional release checks are tracked in `ROADMAP.md`.
