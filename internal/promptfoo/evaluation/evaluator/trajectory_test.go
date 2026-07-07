@@ -27,7 +27,7 @@ func TestEvaluateToolCallF1(t *testing.T) {
 		threshold *float64
 		want      bool
 	}{
-		{"exact-set", []interface{}{"search", "fetch"}, nil, true},   // F1 = 1.0
+		{"exact-set", []interface{}{"search", "fetch"}, nil, true},         // F1 = 1.0
 		{"missing-one", []interface{}{"search", "fetch", "x"}, nil, false}, // recall 2/3
 		{"partial-low-threshold", []interface{}{"search", "fetch", "x"}, floatPtr(0.7), true},
 	}

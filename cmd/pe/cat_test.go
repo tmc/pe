@@ -62,24 +62,24 @@ func TestParseVariableAssignments(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := parseVariableAssignments(tt.assignments)
-			
+
 			if tt.shouldError {
 				if err == nil {
 					t.Errorf("expected error but got none")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 				return
 			}
-			
+
 			if len(result) != len(tt.expected) {
 				t.Errorf("expected %d assignments, got %d", len(tt.expected), len(result))
 				return
 			}
-			
+
 			for key, expectedValue := range tt.expected {
 				if actualValue, exists := result[key]; !exists {
 					t.Errorf("expected key %s not found", key)
@@ -132,12 +132,12 @@ func TestExtractVariablesFromText(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := extractVariablesFromText(tt.text)
-			
+
 			if len(result) != len(tt.expected) {
 				t.Errorf("expected %d variables, got %d", len(tt.expected), len(result))
 				return
 			}
-			
+
 			for key := range tt.expected {
 				if _, exists := result[key]; !exists {
 					t.Errorf("expected variable %s not found", key)
@@ -205,22 +205,22 @@ func TestSubstituteVariables(t *testing.T) {
 func TestParseTextPrompt(t *testing.T) {
 	text := "Analyze {{topic}} from {{perspective}} perspective"
 	content := []byte(text)
-	
+
 	components := parseTextPrompt(content)
-	
+
 	if components.UserPrompt != text {
 		t.Errorf("expected UserPrompt to be %q, got %q", text, components.UserPrompt)
 	}
-	
+
 	if components.RawContent != text {
 		t.Errorf("expected RawContent to be %q, got %q", text, components.RawContent)
 	}
-	
+
 	expectedVars := map[string]string{"topic": "", "perspective": ""}
 	if len(components.Variables) != len(expectedVars) {
 		t.Errorf("expected %d variables, got %d", len(expectedVars), len(components.Variables))
 	}
-	
+
 	for key := range expectedVars {
 		if _, exists := components.Variables[key]; !exists {
 			t.Errorf("expected variable %s not found", key)
@@ -240,32 +240,32 @@ config:
 metadata:
   version: "1.0"
 `
-	
+
 	components, err := parseYAMLPrompt([]byte(yamlContent))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	
+
 	if components.SystemPrompt != "You are a helpful assistant" {
 		t.Errorf("expected SystemPrompt to be 'You are a helpful assistant', got %q", components.SystemPrompt)
 	}
-	
+
 	if components.UserPrompt != "What is {{topic}}?" {
 		t.Errorf("expected UserPrompt to be 'What is {{topic}}?', got %q", components.UserPrompt)
 	}
-	
+
 	if components.Variables["topic"] != "AI" {
 		t.Errorf("expected topic variable to be 'AI', got %q", components.Variables["topic"])
 	}
-	
+
 	if components.Variables["detail"] != "basic" {
 		t.Errorf("expected detail variable to be 'basic', got %q", components.Variables["detail"])
 	}
-	
+
 	if components.Config["temperature"] != 0.7 {
 		t.Errorf("expected temperature to be 0.7, got %v", components.Config["temperature"])
 	}
-	
+
 	if components.Metadata["version"] != "1.0" {
 		t.Errorf("expected version to be '1.0', got %v", components.Metadata["version"])
 	}

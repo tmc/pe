@@ -104,8 +104,8 @@ func WrapFile(err error, path, operation string) error {
 		fileErr = NewFileWriteError(path, err)
 	default:
 		fileErr = &FileError{
-			PEError: Wrap(err, ErrCodeFileRead, fmt.Sprintf("file operation failed: %s", path)),
-			Path:    path,
+			PEError:   Wrap(err, ErrCodeFileRead, fmt.Sprintf("file operation failed: %s", path)),
+			Path:      path,
 			Operation: operation,
 		}
 	}
@@ -123,9 +123,9 @@ func WrapModule(err error, moduleName, version string) error {
 	}
 
 	moduleErr := &ModuleError{
-		PEError: Wrap(err, ErrCodeModuleInvalid, fmt.Sprintf("module error: %s", moduleName)),
+		PEError:    Wrap(err, ErrCodeModuleInvalid, fmt.Sprintf("module error: %s", moduleName)),
 		ModuleName: moduleName,
-		Version: version,
+		Version:    version,
 	}
 
 	// Analyze the error to determine specific type
@@ -225,7 +225,7 @@ func analyzeProviderError(providerErr *ProviderError, err error) {
 
 	switch {
 	case strings.Contains(errMsg, "unauthorized") || strings.Contains(errMsg, "invalid api key") ||
-		 strings.Contains(errMsg, "authentication") || strings.Contains(errMsg, "forbidden"):
+		strings.Contains(errMsg, "authentication") || strings.Contains(errMsg, "forbidden"):
 		providerErr.Code = ErrCodeProviderAuth
 		providerErr.Retryable = false
 		providerErr.Severity = SeverityHigh
@@ -246,7 +246,7 @@ func analyzeProviderError(providerErr *ProviderError, err error) {
 		providerErr.Severity = SeverityMedium
 
 	case strings.Contains(errMsg, "unavailable") || strings.Contains(errMsg, "service") ||
-		 strings.Contains(errMsg, "connection"):
+		strings.Contains(errMsg, "connection"):
 		providerErr.Code = ErrCodeProviderUnavailable
 		providerErr.Retryable = true
 		providerErr.Severity = SeverityMedium
@@ -271,8 +271,8 @@ func analyzeInferenceError(inferenceErr *InferenceError, err error) {
 	errMsg := strings.ToLower(err.Error())
 
 	switch {
-	case strings.Contains(errMsg, "context") && (strings.Contains(errMsg, "length") || 
-		 strings.Contains(errMsg, "limit") || strings.Contains(errMsg, "too long")):
+	case strings.Contains(errMsg, "context") && (strings.Contains(errMsg, "length") ||
+		strings.Contains(errMsg, "limit") || strings.Contains(errMsg, "too long")):
 		inferenceErr.Code = ErrCodeInferenceContextLen
 		inferenceErr.Retryable = false
 		inferenceErr.Severity = SeverityHigh
@@ -395,7 +395,7 @@ func analyzeSecurityError(securityErr *SecurityError, err error) {
 
 	switch {
 	case strings.Contains(errMsg, "injection") || strings.Contains(errMsg, "malicious") ||
-		 strings.Contains(errMsg, "exploit"):
+		strings.Contains(errMsg, "exploit"):
 		securityErr.Severity = SeverityCritical
 		securityErr.RiskLevel = "CRITICAL"
 

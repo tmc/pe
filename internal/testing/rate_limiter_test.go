@@ -136,8 +136,8 @@ func RetryWithPolicy(ctx context.Context, policy *RetryPolicy, fn func() error) 
 		// Add jitter if enabled
 		if policy.Jitter {
 			// Add 0-50% random jitter to delay (range: 0.5 to 1.0)
-		jitterFactor := 0.5 + 0.5*rand.Float64()
-		delay = time.Duration(float64(delay) * jitterFactor)
+			jitterFactor := 0.5 + 0.5*rand.Float64()
+			delay = time.Duration(float64(delay) * jitterFactor)
 		}
 
 		select {

@@ -3,7 +3,7 @@ package cli
 import (
 	"os"
 	"strings"
-	
+
 	"github.com/tmc/pe/internal/prompt"
 )
 
@@ -68,7 +68,7 @@ func ParseVariableFlags(args []string, promptContent string) (*VariableFlags, er
 
 			// Normalize flag name (handle hyphens -> underscores)
 			normalizedFlag := strings.ReplaceAll(flagName, "-", "_")
-			
+
 			// Check if this flag matches a prompt variable (case-insensitive)
 			if actualVar, exists := varLookup[strings.ToLower(normalizedFlag)]; exists {
 				vf.Variables[actualVar] = value
@@ -84,24 +84,24 @@ func ParseVariableFlags(args []string, promptContent string) (*VariableFlags, er
 // MergeWithDefaults merges parsed variables with defaults from the prompt
 func (vf *VariableFlags) MergeWithDefaults(defaults map[string]string) map[string]string {
 	result := make(map[string]string)
-	
+
 	// Start with defaults
 	for k, v := range defaults {
 		result[k] = v
 	}
-	
+
 	// Override with parsed values
 	for k, v := range vf.Variables {
 		result[k] = v
 	}
-	
+
 	return result
 }
 
 // GetMissingRequired returns variables that are required but not provided
 func (vf *VariableFlags) GetMissingRequired(required []string, defaults map[string]string) []string {
 	var missing []string
-	
+
 	for _, req := range required {
 		// Check if we have a value or a default
 		if _, hasValue := vf.Variables[req]; !hasValue {
@@ -110,7 +110,7 @@ func (vf *VariableFlags) GetMissingRequired(required []string, defaults map[stri
 			}
 		}
 	}
-	
+
 	return missing
 }
 
@@ -154,14 +154,14 @@ func (fp *FlagParser) IsKnownFlag(flag string) bool {
 // ExtractUnknownFlags returns flags that aren't standard pe run flags
 func (fp *FlagParser) ExtractUnknownFlags(args []string) []string {
 	var unknown []string
-	
+
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
-		
+
 		if strings.HasPrefix(arg, "-") {
 			if !fp.IsKnownFlag(arg) {
 				unknown = append(unknown, arg)
-				
+
 				// If this flag takes a value (no = sign), skip the next arg
 				if !strings.Contains(arg, "=") && i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
 					i++
@@ -174,6 +174,6 @@ func (fp *FlagParser) ExtractUnknownFlags(args []string) []string {
 			}
 		}
 	}
-	
+
 	return unknown
 }

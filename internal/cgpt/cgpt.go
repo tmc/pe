@@ -18,13 +18,13 @@ import (
 var (
 	// allowedBackends defines the allowed backend values to prevent command injection
 	allowedBackends = map[string]bool{
-		"openai":    true,
-		"anthropic": true,
-		"googleai":  true,
-		"ollama":    true,
-		"bedrock":   true,
-		"azure":     true,
-		"cohere":    true,
+		"openai":      true,
+		"anthropic":   true,
+		"googleai":    true,
+		"ollama":      true,
+		"bedrock":     true,
+		"azure":       true,
+		"cohere":      true,
 		"huggingface": true,
 	}
 
@@ -79,25 +79,25 @@ func validateModel(model string) error {
 	if model == "" {
 		return fmt.Errorf("model cannot be empty")
 	}
-	
+
 	// Check for shell metacharacters
 	if shellMetacharRegex.MatchString(model) {
 		return fmt.Errorf("model name contains forbidden characters: %s", model)
 	}
-	
+
 	// Check against allowed prefixes
 	for _, prefix := range allowedModelPrefixes {
 		if strings.HasPrefix(model, prefix) {
 			return nil
 		}
 	}
-	
+
 	// Allow models that contain only alphanumeric characters, hyphens, dots, and underscores
 	modelRegex := regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 	if !modelRegex.MatchString(model) {
 		return fmt.Errorf("model name contains invalid characters: %s", model)
 	}
-	
+
 	return nil
 }
 
@@ -105,20 +105,20 @@ func validateModel(model string) error {
 func sanitizePrompt(prompt string) string {
 	// Remove null bytes which can cause command injection
 	prompt = strings.ReplaceAll(prompt, "\x00", "")
-	
+
 	// For safety, we don't allow prompts that look like command injection attempts
 	// This is a conservative approach that maintains functionality while preventing attacks
 	dangerous := []string{
 		"$(", "`", "${", "&&", "||", ";", "|", "<", ">", "&",
 	}
-	
+
 	for _, danger := range dangerous {
 		if strings.Contains(prompt, danger) {
 			// Replace with safe alternatives or remove
 			prompt = strings.ReplaceAll(prompt, danger, "")
 		}
 	}
-	
+
 	return prompt
 }
 
@@ -190,14 +190,14 @@ func (p *ModelProvider) runCGPTCommand(prompt string, dryRun bool) (string, toke
 	if err := validateBackend(p.Backend); err != nil {
 		return "", tokenCounts{}, fmt.Errorf("backend validation failed: %w", err)
 	}
-	
+
 	if err := validateModel(p.Model); err != nil {
 		return "", tokenCounts{}, fmt.Errorf("model validation failed: %w", err)
 	}
-	
+
 	// SECURITY: Sanitize the prompt to prevent command injection
 	sanitizedPrompt := sanitizePrompt(prompt)
-	
+
 	// Build the cgpt command with the appropriate parameters
 	tempArg := fmt.Sprintf("%.1f", p.Temperature)
 	maxTokensArg := fmt.Sprintf("%d", p.MaxTokens)
@@ -205,8 +205,8 @@ func (p *ModelProvider) runCGPTCommand(prompt string, dryRun bool) (string, toke
 	// Build the cgpt command as described: cgpt --backend googleai --model gemini-2.0-flash [prompt]
 	// All inputs are now validated and sanitized
 	args := []string{
-		"--backend", p.Backend,  // Validated against allowlist
-		"--model", p.Model,      // Validated against patterns and sanitized
+		"--backend", p.Backend, // Validated against allowlist
+		"--model", p.Model, // Validated against patterns and sanitized
 	}
 
 	// Only add these flags if not in dry run mode

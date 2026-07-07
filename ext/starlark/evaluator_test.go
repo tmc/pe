@@ -97,12 +97,12 @@ func TestEvalFile(t *testing.T) {
 
 func TestEvaluateTest(t *testing.T) {
 	tests := []struct {
-		name       string
+		name        string
 		starlarkSrc string
-		testName   string
-		response   string
-		wantPass   bool
-		wantErr    bool
+		testName    string
+		response    string
+		wantPass    bool
+		wantErr     bool
 	}{
 		{
 			name: "test returns true",

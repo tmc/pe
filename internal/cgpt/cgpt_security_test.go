@@ -101,14 +101,14 @@ func TestCommandInjectionPrevention(t *testing.T) {
 	t.Run("prompt injection", func(t *testing.T) {
 		provider.Backend = "openai"
 		provider.Model = "gpt-4"
-		
+
 		// This should work but the dangerous characters should be sanitized
 		maliciousPrompt := "Generate code that runs $(whoami) and `ls -la`"
 		result, _, err := provider.runCGPTCommand(maliciousPrompt, true)
 		if err != nil {
 			t.Errorf("Expected no error for prompt sanitization, got: %v", err)
 		}
-		
+
 		// Check that the result indicates it was sanitized (dry run mode)
 		if result != "Dry run - no actual execution" {
 			t.Errorf("Expected dry run result, got: %q", result)
@@ -123,10 +123,10 @@ func TestConfigValidation(t *testing.T) {
 	// Test malicious config via vars
 	t.Run("malicious config", func(t *testing.T) {
 		maliciousVars := map[string]interface{}{
-			"backend": "openai; rm -rf /",
-			"model":   "gpt-4`whoami`",
-			"temperature": -1.0, // Invalid temperature
-			"max_tokens": 999999, // Invalid max tokens
+			"backend":     "openai; rm -rf /",
+			"model":       "gpt-4`whoami`",
+			"temperature": -1.0,   // Invalid temperature
+			"max_tokens":  999999, // Invalid max tokens
 		}
 
 		originalBackend := provider.Backend
@@ -154,10 +154,10 @@ func TestConfigValidation(t *testing.T) {
 	// Test valid config
 	t.Run("valid config", func(t *testing.T) {
 		validVars := map[string]interface{}{
-			"backend": "anthropic",
-			"model":   "claude-3",
+			"backend":     "anthropic",
+			"model":       "claude-3",
 			"temperature": 0.5,
-			"max_tokens": 1000,
+			"max_tokens":  1000,
 		}
 
 		provider.ApplyConfigFromVars(validVars)
@@ -184,7 +184,7 @@ func TestGetAllowedBackends(t *testing.T) {
 	if len(backends) == 0 {
 		t.Error("getAllowedBackends() should return non-empty slice")
 	}
-	
+
 	// Check that openai is in the list
 	found := false
 	for _, backend := range backends {

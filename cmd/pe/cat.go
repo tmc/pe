@@ -193,7 +193,7 @@ func runCat(promptFile string, opts catOptions) error {
 // parsePromptFileForCat parses a prompt file and extracts its components
 func parsePromptFileForCat(filename string, content []byte) (*PromptComponents, error) {
 	ext := strings.ToLower(filepath.Ext(filename))
-	
+
 	switch ext {
 	case ".yaml", ".yml":
 		return parseYAMLPrompt(content)
@@ -210,10 +210,10 @@ func parseYAMLPrompt(content []byte) (*PromptComponents, error) {
 	if err := yaml.Unmarshal(content, &components); err != nil {
 		return nil, fmt.Errorf("failed to parse YAML: %w", err)
 	}
-	
+
 	// Also store raw content for fallback
 	components.RawContent = string(content)
-	
+
 	// If direct unmarshaling didn't work, try manual parsing
 	if components.SystemPrompt == "" && components.UserPrompt == "" && len(components.Messages) == 0 {
 		// Try parsing as a generic map and extract fields manually
@@ -253,7 +253,7 @@ func parseYAMLPrompt(content []byte) (*PromptComponents, error) {
 			}
 		}
 	}
-	
+
 	return &components, nil
 }
 
@@ -264,22 +264,22 @@ func parseJSONPrompt(content []byte) (*PromptComponents, error) {
 	if err := yaml.Unmarshal(content, &data); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)
 	}
-	
+
 	yamlContent, err := yaml.Marshal(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert JSON to YAML: %w", err)
 	}
-	
+
 	return parseYAMLPrompt(yamlContent)
 }
 
 // parseTextPrompt parses a plain text prompt file
 func parseTextPrompt(content []byte) *PromptComponents {
 	text := string(content)
-	
+
 	// Extract variables from {{variable}} patterns
 	variables := extractVariablesFromText(text)
-	
+
 	return &PromptComponents{
 		UserPrompt: text,
 		RawContent: text,
@@ -326,23 +326,23 @@ func containsVariable(variables map[string]string, varName string) bool {
 // parseVariableAssignments parses --set key=value assignments
 func parseVariableAssignments(assignments []string) (map[string]string, error) {
 	variables := make(map[string]string)
-	
+
 	for _, assignment := range assignments {
 		parts := strings.SplitN(assignment, "=", 2)
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid variable assignment format: %s (expected key=value)", assignment)
 		}
-		
+
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
-		
+
 		if key == "" {
 			return nil, fmt.Errorf("empty variable name in assignment: %s", assignment)
 		}
-		
+
 		variables[key] = value
 	}
-	
+
 	return variables, nil
 }
 
@@ -352,18 +352,18 @@ func interactiveVariableInput(components *PromptComponents) error {
 		fmt.Println("No variables found in prompt.")
 		return nil
 	}
-	
+
 	reader := bufio.NewReader(os.Stdin)
-	
+
 	// Sort variables for consistent order
 	var varNames []string
 	for name := range components.Variables {
 		varNames = append(varNames, name)
 	}
 	sort.Strings(varNames)
-	
+
 	fmt.Printf("Found %d variable(s). Enter values (press Enter to keep current value):\n\n", len(varNames))
-	
+
 	for _, name := range varNames {
 		currentValue := components.Variables[name]
 		if currentValue != "" {
@@ -371,18 +371,18 @@ func interactiveVariableInput(components *PromptComponents) error {
 		} else {
 			fmt.Printf("%s: ", name)
 		}
-		
+
 		input, err := reader.ReadString('\n')
 		if err != nil {
 			return fmt.Errorf("failed to read input for variable %s: %w", name, err)
 		}
-		
+
 		input = strings.TrimSpace(input)
 		if input != "" {
 			components.Variables[name] = input
 		}
 	}
-	
+
 	return nil
 }
 
@@ -429,7 +429,7 @@ func displayVariables(variables map[string]string, format string) error {
 		fmt.Println("No variables found.")
 		return nil
 	}
-	
+
 	switch format {
 	case "yaml":
 		data, err := yaml.Marshal(map[string]map[string]string{"variables": variables})
@@ -450,7 +450,7 @@ func displayVariables(variables map[string]string, format string) error {
 			names = append(names, name)
 		}
 		sort.Strings(names)
-		
+
 		for _, name := range names {
 			value := variables[name]
 			if value == "" {
@@ -460,7 +460,7 @@ func displayVariables(variables map[string]string, format string) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -469,9 +469,9 @@ func displaySystemPrompt(components *PromptComponents, format string) error {
 		fmt.Println("No system prompt found.")
 		return nil
 	}
-	
+
 	systemPrompt := substituteVariables(components.SystemPrompt, components.Variables)
-	
+
 	switch format {
 	case "yaml":
 		data, err := yaml.Marshal(map[string]string{"system": systemPrompt})
@@ -488,7 +488,7 @@ func displaySystemPrompt(components *PromptComponents, format string) error {
 	default:
 		fmt.Print(systemPrompt)
 	}
-	
+
 	return nil
 }
 
@@ -501,7 +501,7 @@ func displayAllComponents(components *PromptComponents, format string) error {
 		Config:       components.Config,
 		Metadata:     components.Metadata,
 	}
-	
+
 	// Process messages
 	for _, msg := range components.Messages {
 		processedComponents.Messages = append(processedComponents.Messages, Message{
@@ -509,7 +509,7 @@ func displayAllComponents(components *PromptComponents, format string) error {
 			Content: substituteVariables(msg.Content, components.Variables),
 		})
 	}
-	
+
 	switch format {
 	case "yaml":
 		data, err := yaml.Marshal(processedComponents)
@@ -530,13 +530,13 @@ func displayAllComponents(components *PromptComponents, format string) error {
 			fmt.Println(processedComponents.SystemPrompt)
 			fmt.Println()
 		}
-		
+
 		if processedComponents.UserPrompt != "" {
 			fmt.Println("=== User Prompt ===")
 			fmt.Println(processedComponents.UserPrompt)
 			fmt.Println()
 		}
-		
+
 		if len(processedComponents.Messages) > 0 {
 			fmt.Println("=== Messages ===")
 			for i, msg := range processedComponents.Messages {
@@ -544,13 +544,13 @@ func displayAllComponents(components *PromptComponents, format string) error {
 			}
 			fmt.Println()
 		}
-		
+
 		if len(processedComponents.Variables) > 0 {
 			fmt.Println("=== Variables ===")
 			displayVariables(processedComponents.Variables, "text")
 			fmt.Println()
 		}
-		
+
 		if len(processedComponents.Config) > 0 {
 			fmt.Println("=== Config ===")
 			for k, v := range processedComponents.Config {
@@ -558,7 +558,7 @@ func displayAllComponents(components *PromptComponents, format string) error {
 			}
 			fmt.Println()
 		}
-		
+
 		if len(processedComponents.Metadata) > 0 {
 			fmt.Println("=== Metadata ===")
 			for k, v := range processedComponents.Metadata {
@@ -566,13 +566,13 @@ func displayAllComponents(components *PromptComponents, format string) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
 func displayMetadata(components *PromptComponents, format string) error {
 	metadata := make(map[string]any)
-	
+
 	// Combine config and metadata
 	for k, v := range components.Config {
 		metadata[k] = v
@@ -580,12 +580,12 @@ func displayMetadata(components *PromptComponents, format string) error {
 	for k, v := range components.Metadata {
 		metadata[k] = v
 	}
-	
+
 	if len(metadata) == 0 {
 		fmt.Println("No metadata found.")
 		return nil
 	}
-	
+
 	switch format {
 	case "yaml":
 		data, err := yaml.Marshal(map[string]any{"metadata": metadata})
@@ -605,14 +605,14 @@ func displayMetadata(components *PromptComponents, format string) error {
 			fmt.Printf("  %s: %v\n", k, v)
 		}
 	}
-	
+
 	return nil
 }
 
 func displayMainPrompt(components *PromptComponents, format string) error {
 	// Determine the main prompt content
 	var mainPrompt string
-	
+
 	if components.UserPrompt != "" {
 		mainPrompt = components.UserPrompt
 	} else if len(components.Messages) > 0 {
@@ -627,10 +627,10 @@ func displayMainPrompt(components *PromptComponents, format string) error {
 	} else {
 		return fmt.Errorf("no prompt content found")
 	}
-	
+
 	// Substitute variables
 	processedPrompt := substituteVariables(mainPrompt, components.Variables)
-	
+
 	switch format {
 	case "yaml":
 		data, err := yaml.Marshal(map[string]string{"prompt": processedPrompt})
@@ -647,6 +647,6 @@ func displayMainPrompt(components *PromptComponents, format string) error {
 	default:
 		fmt.Print(processedPrompt)
 	}
-	
+
 	return nil
 }

@@ -116,8 +116,8 @@ func TestExtractVariables(t *testing.T) {
 		expected []string
 	}{
 		{
-			name: "simple variables",
-			content: `Process {{.input}} and return {{.output}}`,
+			name:     "simple variables",
+			content:  `Process {{.input}} and return {{.output}}`,
 			expected: []string{"input", "output"},
 		},
 		{
@@ -133,18 +133,18 @@ System with {{.ignored}}`,
 			expected: []string{"var1", "var2"},
 		},
 		{
-			name: "duplicate variables",
-			content: `First {{.name}}, second {{.name}}, third {{.age}}`,
+			name:     "duplicate variables",
+			content:  `First {{.name}}, second {{.name}}, third {{.age}}`,
 			expected: []string{"name", "age"},
 		},
 		{
-			name: "variables with pipes",
-			content: `Format: {{.data | json}}`,
+			name:     "variables with pipes",
+			content:  `Format: {{.data | json}}`,
 			expected: []string{"data"},
 		},
 		{
-			name: "no variables",
-			content: `Plain text without variables`,
+			name:     "no variables",
+			content:  `Plain text without variables`,
 			expected: []string{},
 		},
 	}

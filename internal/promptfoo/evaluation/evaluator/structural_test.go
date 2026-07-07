@@ -72,8 +72,8 @@ func TestContainsHTMLScore(t *testing.T) {
 	}{
 		{"plain-text", "just some words here", 0, false},
 		{"single-uncommon-tag", "a <foo> in text", 1, false}, // open tag, not a common element = 1
-		{"common-tag-strong", "a <br> in text", 3, true},      // <br> is a common tag (2) + open (1)
-		{"div-pair", "<div>hello</div>", 2, true},             // common tag (2) + open/close (2)
+		{"common-tag-strong", "a <br> in text", 3, true},     // <br> is a common tag (2) + open (1)
+		{"div-pair", "<div>hello</div>", 2, true},            // common tag (2) + open/close (2)
 		{"doctype", "<!DOCTYPE html><p>hi</p>", 2, true},
 		{"angle-math", "if a < b and c > d then", 0, false},
 	}

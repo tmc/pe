@@ -435,17 +435,17 @@ func TestTraceFunction(t *testing.T) {
 	// Test successful function
 	err := TraceFunction(ctx, "test_function", func(ctx context.Context) error {
 		executed = true
-		
+
 		// Verify span is available in context
 		span := SpanFromContext(ctx)
 		assert.NotNil(t, span)
 		assert.Equal(t, "test_function", span.Operation)
-		
+
 		// Verify function info was tagged
 		assert.Contains(t, span.Tags, "function")
 		assert.Contains(t, span.Tags, "file")
 		assert.Contains(t, span.Tags, "line")
-		
+
 		return nil
 	})
 
@@ -485,7 +485,7 @@ func TestTraceMeasure(t *testing.T) {
 	span := writer.spans[0]
 	assert.True(t, span.Success)
 	assert.Contains(t, span.Tags, "duration_ms")
-	
+
 	// Parse duration and verify it's reasonable
 	durationStr := span.Tags["duration_ms"]
 	assert.NotEmpty(t, durationStr)
@@ -509,7 +509,7 @@ func TestTracer_AddEventNoSpan(t *testing.T) {
 
 	// Adding event without span should be no-op
 	tracer.AddEvent(ctx, "orphan_event", "message", "info")
-	
+
 	// No spans should be created or written
 	assert.Len(t, writer.spans, 0)
 	stats := tracer.GetStats()
@@ -523,7 +523,7 @@ func TestTracer_SetTagNoSpan(t *testing.T) {
 
 	// Setting tag without span should be no-op
 	tracer.SetTag(ctx, "orphan_tag", "value")
-	
+
 	// No spans should be created or written
 	assert.Len(t, writer.spans, 0)
 	stats := tracer.GetStats()
@@ -537,7 +537,7 @@ func TestTracer_SetErrorNoSpan(t *testing.T) {
 
 	// Setting error without span should be no-op
 	tracer.SetError(ctx, assert.AnError)
-	
+
 	// No spans should be created or written
 	assert.Len(t, writer.spans, 0)
 	stats := tracer.GetStats()
@@ -687,13 +687,13 @@ func TestTracer_ConcurrentAccess(t *testing.T) {
 
 			for j := 0; j < spansPerGoroutine; j++ {
 				spanCtx, span := tracer.StartSpan(ctx, fmt.Sprintf("operation_%d_%d", id, j))
-				
+
 				tracer.AddEvent(spanCtx, "event", "message", "info")
 				tracer.SetTag(spanCtx, "goroutine", fmt.Sprintf("%d", id))
 				tracer.SetTag(spanCtx, "iteration", fmt.Sprintf("%d", j))
-				
+
 				time.Sleep(time.Microsecond) // Small delay to encourage concurrency
-				
+
 				tracer.FinishSpan(span)
 			}
 		}(i)

@@ -80,7 +80,7 @@ func ExtractSystemPrompt(content string) string {
 func ExtractVariables(content string) []string {
 	// First extract just the main prompt content
 	mainContent := ExtractMainContent(content)
-	
+
 	// Find variables in the main content
 	return FindVariables(mainContent)
 }
@@ -182,7 +182,7 @@ func ExtractMetadata(content string) *PromptMetadata {
 	lines := strings.Split(content, "\n")
 	if len(lines) > 0 && strings.HasPrefix(lines[0], "#!") {
 		meta.HasShebang = true
-		
+
 		// Extract provider from shebang if present
 		if strings.Contains(lines[0], "--provider=") {
 			parts := strings.Fields(lines[0])

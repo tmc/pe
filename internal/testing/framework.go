@@ -55,10 +55,10 @@ func (tf *TestFramework) Run(name string, fn func(*TestFramework)) {
 		if tf.parallel {
 			t.Parallel()
 		}
-		
+
 		ctx, cancel := context.WithTimeout(tf.ctx, tf.timeout)
 		defer cancel()
-		
+
 		subFramework := &TestFramework{
 			t:        t,
 			ctx:      ctx,
@@ -66,7 +66,7 @@ func (tf *TestFramework) Run(name string, fn func(*TestFramework)) {
 			timeout:  tf.timeout,
 			parallel: tf.parallel,
 		}
-		
+
 		fn(subFramework)
 	})
 }
@@ -309,7 +309,7 @@ func (tf *TestFramework) RunPropertyTests(tests []PropertyTest) {
 			if iterations == 0 {
 				iterations = 100 // Default iterations
 			}
-			
+
 			for i := 0; i < iterations; i++ {
 				testData := test.Generator(tf.rand)
 				if !test.Property(testData) {
@@ -326,24 +326,24 @@ type BenchmarkFunction func(*TestFramework) error
 // Benchmark runs a benchmark and reports timing.
 func (tf *TestFramework) Benchmark(name string, fn BenchmarkFunction) {
 	tf.t.Helper()
-	
+
 	start := time.Now()
 	err := fn(tf)
 	duration := time.Since(start)
-	
+
 	if err != nil {
 		tf.t.Fatalf("Benchmark %s failed: %v", name, err)
 	}
-	
+
 	tf.t.Logf("Benchmark %s completed in %v", name, duration)
 }
 
 // Parallel runs multiple test functions in parallel and waits for all to complete.
 func (tf *TestFramework) Parallel(fns ...func(*TestFramework)) {
 	tf.t.Helper()
-	
+
 	done := make(chan error, len(fns))
-	
+
 	for i, fn := range fns {
 		go func(index int, testFn func(*TestFramework)) {
 			defer func() {
@@ -353,18 +353,18 @@ func (tf *TestFramework) Parallel(fns ...func(*TestFramework)) {
 				}
 				done <- nil
 			}()
-			
+
 			testFn(tf)
 		}(i, fn)
 	}
-	
+
 	var errors []error
 	for i := 0; i < len(fns); i++ {
 		if err := <-done; err != nil {
 			errors = append(errors, err)
 		}
 	}
-	
+
 	if len(errors) > 0 {
 		tf.t.Fatalf("Parallel execution failed with errors: %v", errors)
 	}
@@ -373,18 +373,18 @@ func (tf *TestFramework) Parallel(fns ...func(*TestFramework)) {
 // Eventually waits for a condition to become true within the timeout.
 func (tf *TestFramework) Eventually(condition func() bool, interval time.Duration, msg ...string) {
 	tf.t.Helper()
-	
+
 	ctx, cancel := context.WithTimeout(tf.ctx, tf.timeout)
 	defer cancel()
-	
+
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-	
+
 	for {
 		if condition() {
 			return
 		}
-		
+
 		select {
 		case <-ctx.Done():
 			if len(msg) > 0 {

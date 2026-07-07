@@ -17,9 +17,9 @@ import (
 
 func TestNewProfiler(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	profiler := NewProfiler(tmpDir)
-	
+
 	assert.NotNil(t, profiler)
 	assert.False(t, profiler.enabled) // Should start disabled
 	assert.Equal(t, tmpDir, profiler.outputDir)
@@ -33,14 +33,14 @@ func TestNewProfiler(t *testing.T) {
 
 func TestProfiler_EnableDisable(t *testing.T) {
 	profiler := NewProfiler(t.TempDir())
-	
+
 	// Initially disabled
 	assert.False(t, profiler.IsEnabled())
-	
+
 	// Enable
 	profiler.Enable()
 	assert.True(t, profiler.IsEnabled())
-	
+
 	// Disable
 	profiler.Disable()
 	assert.False(t, profiler.IsEnabled())
@@ -77,7 +77,7 @@ func TestProfiler_StartStop_CPUProfile(t *testing.T) {
 	// Check that profile file was created
 	files, err := os.ReadDir(tmpDir)
 	require.NoError(t, err)
-	
+
 	found := false
 	for _, file := range files {
 		if strings.Contains(file.Name(), "cpu_") && strings.HasSuffix(file.Name(), ".prof") {
@@ -120,7 +120,7 @@ func TestProfiler_StartStop_MemoryProfile(t *testing.T) {
 	// Check for profile file
 	files, err := os.ReadDir(tmpDir)
 	require.NoError(t, err)
-	
+
 	found := false
 	for _, file := range files {
 		if strings.Contains(file.Name(), "memory_") && strings.HasSuffix(file.Name(), ".prof") {
@@ -159,7 +159,7 @@ func TestProfiler_StartStop_GoroutineProfile(t *testing.T) {
 	// Check for profile file
 	files, err := os.ReadDir(tmpDir)
 	require.NoError(t, err)
-	
+
 	found := false
 	for _, file := range files {
 		if strings.Contains(file.Name(), "goroutine_") && strings.HasSuffix(file.Name(), ".prof") {
@@ -192,7 +192,7 @@ func TestProfiler_StartStop_BlockProfile(t *testing.T) {
 	// Check for profile file
 	files, err := os.ReadDir(tmpDir)
 	require.NoError(t, err)
-	
+
 	found := false
 	for _, file := range files {
 		if strings.Contains(file.Name(), "block_") && strings.HasSuffix(file.Name(), ".prof") {
@@ -214,7 +214,7 @@ func TestProfiler_StartStop_MutexProfile(t *testing.T) {
 	// Create some mutex contention
 	var mu sync.Mutex
 	done := make(chan bool)
-	
+
 	for i := 0; i < 5; i++ {
 		go func() {
 			mu.Lock()
@@ -235,7 +235,7 @@ func TestProfiler_StartStop_MutexProfile(t *testing.T) {
 	// Check for profile file
 	files, err := os.ReadDir(tmpDir)
 	require.NoError(t, err)
-	
+
 	found := false
 	for _, file := range files {
 		if strings.Contains(file.Name(), "mutex_") && strings.HasSuffix(file.Name(), ".prof") {
@@ -270,7 +270,7 @@ func TestProfiler_ErrorCases(t *testing.T) {
 	invalidDir := filepath.Join(tmpDir, "nonexistent", "path")
 	profiler2 := NewProfiler(invalidDir)
 	profiler2.Enable()
-	
+
 	// This might fail depending on the profile type
 	err = profiler2.Start(MemoryProfile)
 	// We don't assert error here as directory creation might succeed
@@ -278,16 +278,16 @@ func TestProfiler_ErrorCases(t *testing.T) {
 
 func TestProfiler_CollectSnapshot(t *testing.T) {
 	profiler := NewProfiler(t.TempDir())
-	
+
 	stats := profiler.CollectSnapshot()
-	
+
 	// Verify basic stats are populated
 	assert.Greater(t, stats.Alloc, uint64(0))
 	assert.Greater(t, stats.TotalAlloc, uint64(0))
 	assert.Greater(t, stats.Sys, uint64(0))
 	assert.GreaterOrEqual(t, stats.NumGoroutines, 1) // At least this test goroutine
 	assert.Equal(t, runtime.NumCPU(), stats.NumCPU)
-	
+
 	// GC stats might be zero in a fresh test
 	assert.GreaterOrEqual(t, stats.NumGC, uint32(0))
 }
@@ -314,10 +314,10 @@ func TestProfiler_ProfiledFunction(t *testing.T) {
 	// Check that profile files were created
 	files, err := os.ReadDir(tmpDir)
 	require.NoError(t, err)
-	
+
 	memoryFound := false
 	goroutineFound := false
-	
+
 	for _, file := range files {
 		if strings.Contains(file.Name(), "memory_") {
 			memoryFound = true
@@ -326,7 +326,7 @@ func TestProfiler_ProfiledFunction(t *testing.T) {
 			goroutineFound = true
 		}
 	}
-	
+
 	assert.True(t, memoryFound, "Memory profile should be created")
 	assert.True(t, goroutineFound, "Goroutine profile should be created")
 
@@ -357,38 +357,38 @@ func TestProfiler_ProfiledFunction_Disabled(t *testing.T) {
 
 func TestMemoryProfiler(t *testing.T) {
 	profiler := NewMemoryProfiler(10 * time.Millisecond)
-	
+
 	profiler.Start()
-	
+
 	// Allocate some memory
 	data := make([][]byte, 100)
 	for i := range data {
 		data[i] = make([]byte, 1024)
 	}
-	
+
 	// Wait for some samples
 	time.Sleep(50 * time.Millisecond)
-	
+
 	profiler.Stop()
-	
+
 	report := profiler.GetReport()
-	
+
 	// Should have collected multiple samples
 	assert.Greater(t, report.Samples, 1)
 	assert.Greater(t, report.Current.Alloc, uint64(0))
 	assert.Greater(t, report.PeakAlloc, uint64(0))
 	assert.GreaterOrEqual(t, report.Current.TotalAlloc, report.Baseline.TotalAlloc)
-	
+
 	// Should have some allocation difference
 	assert.Greater(t, report.TotalAllocated, uint64(0))
 }
 
 func TestMemoryProfiler_EmptyReport(t *testing.T) {
 	profiler := NewMemoryProfiler(time.Second)
-	
+
 	// Don't start the profiler
 	report := profiler.GetReport()
-	
+
 	// Should return empty report
 	assert.Equal(t, MemoryReport{}, report)
 }
@@ -476,7 +476,7 @@ func BenchmarkProfiler_CollectSnapshot(b *testing.B) {
 
 func BenchmarkMemoryProfiler_Sampling(b *testing.B) {
 	profiler := NewMemoryProfiler(time.Nanosecond) // Very fast sampling
-	
+
 	// Simulate the monitoring loop
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -495,11 +495,11 @@ func TestProfiler_ConcurrentAccess(t *testing.T) {
 
 	// Start multiple goroutines that start/stop profiles
 	done := make(chan bool, 10)
-	
+
 	for i := 0; i < 10; i++ {
 		go func(id int) {
 			defer func() { done <- true }()
-			
+
 			for {
 				select {
 				case <-ctx.Done():
@@ -507,7 +507,7 @@ func TestProfiler_ConcurrentAccess(t *testing.T) {
 				default:
 					// Try different profile types
 					profileType := []ProfileType{MemoryProfile, GoProfile}[id%2]
-					
+
 					if err := profiler.Start(profileType); err == nil {
 						time.Sleep(10 * time.Millisecond)
 						profiler.Stop(profileType)

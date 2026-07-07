@@ -22,7 +22,7 @@ func TestEvaluateLevenshtein(t *testing.T) {
 		want      bool
 	}{
 		{"identical", "hello", "hello", nil, true},
-		{"within-default", "hello", "hella", nil, true},   // distance 1 <= 5
+		{"within-default", "hello", "hella", nil, true},     // distance 1 <= 5
 		{"at-default-edge", "abcdef", "uvwxyz", nil, false}, // distance 6 > 5
 		{"custom-threshold-pass", "kitten", "sitting", floatPtr(3), true},
 		{"custom-threshold-fail", "kitten", "sitting", floatPtr(2), false},

@@ -38,7 +38,7 @@ func TestParseSelectBest(t *testing.T) {
 	}{
 		{"INDEX: 1\nREASON: best", 3, 1},
 		{"INDEX: 5\nREASON: clamp", 3, 2}, // clamp to n-1
-		{"INDEX: -2", 3, 0},              // clamp to 0
+		{"INDEX: -2", 3, 0},               // clamp to 0
 		{"no index here", 3, 0},
 	}
 	for _, tc := range tests {
