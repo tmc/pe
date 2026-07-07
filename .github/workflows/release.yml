@@ -67,17 +67,28 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: '0'
         run: |
-          name="pe-${GOOS}-${GOARCH}${{ matrix.suffix }}"
+          # The binary inside each archive is named pe: the CLI refuses to
+          # run under a pe-* name because that prefix is reserved for
+          # plugin dispatch. Platform names stay on the archives.
+          bin="pe${{ matrix.suffix }}"
           go build -trimpath \
             -ldflags="-s -w -X main.Version=${GITHUB_REF_NAME} -X main.Commit=${GITHUB_SHA} -X main.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            -o "$name" ./cmd/pe
+            -o "$bin" ./cmd/pe
           if [ "${{ matrix.goos }}" = windows ]; then
-            zip "pe-${GOOS}-${GOARCH}.zip" "$name"
+            zip "pe-${GOOS}-${GOARCH}.zip" "$bin"
             shasum -a 256 "pe-${GOOS}-${GOARCH}.zip" > "pe-${GOOS}-${GOARCH}.zip.sha256"
           else
-            tar -czf "pe-${GOOS}-${GOARCH}.tar.gz" "$name"
+            tar -czf "pe-${GOOS}-${GOARCH}.tar.gz" "$bin"
             shasum -a 256 "pe-${GOOS}-${GOARCH}.tar.gz" > "pe-${GOOS}-${GOARCH}.tar.gz.sha256"
           fi
+
+      - name: Smoke test packaged binary (native)
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        run: |
+          dir=$(mktemp -d)
+          tar -xzf "pe-linux-amd64.tar.gz" -C "$dir"
+          "$dir/pe" --version
+          echo 'smoke ok' | "$dir/pe" run-text -
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
